@@ -1,4 +1,4 @@
-name: Build Udhaardaar APK
+name: Build Udhaardaar APK v2
 
 on:
   workflow_dispatch:
