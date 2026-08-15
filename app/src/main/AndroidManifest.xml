@@ -17,7 +17,11 @@
             </intent-filter>
 
         </activity>
-
+        
+<activity
+    android:name=".AddUdhaarActivity"
+    android:exported="false" />
+        
     </application>
 
 </manifest>
