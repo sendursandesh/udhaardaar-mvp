@@ -1,5 +1,6 @@
 package com.udhaardaar.mvp
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
@@ -19,9 +20,8 @@ class MainActivity : AppCompatActivity() {
         val viewRecords = findViewById<Button>(R.id.btnViewRecords)
 
         addUdhaar.setOnClickListener {
-            toReceive.text = "To Receive: ₹0"
-            toPay.text = "To Pay: ₹0"
-            activeRecords.text = "Active Records: 0"
+            val intent = Intent(this, AddUdhaarActivity::class.java)
+            startActivity(intent)
         }
 
         viewRecords.setOnClickListener {
