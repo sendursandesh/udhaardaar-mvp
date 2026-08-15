@@ -25,7 +25,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewRecords.setOnClickListener {
-            activeRecords.text = "Active Records: 0"
+            val intent = Intent(this, RecordsActivity::class.java)
+            startActivity(intent)
         }
     }
 }
