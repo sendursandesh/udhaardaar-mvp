@@ -1,17 +1,16 @@
-# Udhaardaar Android MVP V1
-Investor-demo prototype for informal credit / trade acknowledgement.
+# Udhaardaar
 
-Features:
-- Dashboard and illustrative Trust Score
-- Record new Udhaar
-- Repayment / settlement
-- Transaction history
-- Offline demo flow
+Udhaardaar is an Android application concept for digitally documenting and tracking credit, loans, advances, rentals and other payable/receivable transactions.
 
-Build:
-1. Open this folder in Android Studio.
-2. Let Gradle sync.
-3. Build > Build APK(s).
-4. APK: app/build/outputs/apk/debug/app-debug.apk
+## MVP
 
-This is a prototype, not a credit bureau or production financial service.
+The MVP focuses on:
+- Recording credit transactions
+- Maintaining transaction details
+- Tracking repayment
+- Providing repayment reminders
+- Maintaining a simple repayment history
+
+## Project
+
+This repository contains the initial Android MVP project for Udhaardaar.
