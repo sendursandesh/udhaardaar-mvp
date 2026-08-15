@@ -1,8 +1,9 @@
 package com.udhaardaar.mvp
 
 import android.app.Activity
-import android.os.Bundle
+import android.app.AlertDialog
 import android.graphics.Color
+import android.os.Bundle
 import android.view.View
 import android.widget.*
 import org.json.JSONArray
@@ -64,15 +65,15 @@ class MainActivity : Activity() {
             setPadding(0, 0, 0, 24)
         })
 
-        root.addView(button("➕ Add New Credit") {
+        root.addView(button("Add New Credit") {
             showAddCredit()
         })
 
-        root.addView(button("📋 Credit Records / History") {
+        root.addView(button("Credit Records / History") {
             showRecords()
         })
 
-        root.addView(button("📊 Summary") {
+        root.addView(button("Summary") {
             showSummary()
         })
 
@@ -157,7 +158,7 @@ class MainActivity : Activity() {
             showRecords()
         })
 
-        root.addView(button("← Back") {
+        root.addView(button("Back") {
             showHome()
         })
 
@@ -171,14 +172,14 @@ class MainActivity : Activity() {
 
         val records = getRecords()
 
-        if (records.length == 0) {
+        if (records.length() == 0) {
             root.addView(TextView(this).apply {
                 text = "No credit records yet.\n\nTap 'Add New Credit' to create your first record."
                 textSize = 18f
                 setPadding(0, 16, 0, 24)
             })
         } else {
-            for (i in 0 until records.length) {
+            for (i in 0 until records.length()) {
                 val record = records.getJSONObject(i)
 
                 val amount = record.optDouble("amount", 0.0)
@@ -218,11 +219,11 @@ class MainActivity : Activity() {
             }
         }
 
-        root.addView(button("➕ Add New Credit") {
+        root.addView(button("Add New Credit") {
             showAddCredit()
         })
 
-        root.addView(button("← Home") {
+        root.addView(button("Home") {
             showHome()
         })
 
@@ -255,12 +256,12 @@ class MainActivity : Activity() {
         })
 
         if (outstanding > 0) {
-            root.addView(button("💰 Add Payment") {
+            root.addView(button("Add Payment") {
                 addPayment(index)
             })
         }
 
-        root.addView(button("← Back to Records") {
+        root.addView(button("Back to Records") {
             showRecords()
         })
 
@@ -273,7 +274,7 @@ class MainActivity : Activity() {
             inputType = 8194
         }
 
-        AlertDialogBuilder(this)
+        AlertDialog.Builder(this)
             .setTitle("Add Payment")
             .setView(input)
             .setPositiveButton("Save") { _, _ ->
@@ -309,7 +310,7 @@ class MainActivity : Activity() {
         var total = 0.0
         var paid = 0.0
 
-        for (i in 0 until records.length) {
+        for (i in 0 until records.length()) {
             val record = records.getJSONObject(i)
             total += record.optDouble("amount", 0.0)
             paid += record.optDouble("paid", 0.0)
@@ -325,16 +326,16 @@ class MainActivity : Activity() {
             text = "Total Credit: ₹${formatMoney(total)}\n\n" +
                     "Total Paid: ₹${formatMoney(paid)}\n\n" +
                     "Outstanding: ₹${formatMoney(outstanding)}\n\n" +
-                    "Total Records: ${records.length}"
+                    "Total Records: ${records.length()}"
             textSize = 20f
             setTextColor(Color.BLACK)
         })
 
-        root.addView(button("📋 View Records") {
+        root.addView(button("View Records") {
             showRecords()
         })
 
-        root.addView(button("← Home") {
+        root.addView(button("Home") {
             showHome()
         })
 
@@ -368,9 +369,5 @@ class MainActivity : Activity() {
 
     private fun formatMoney(value: Double): String {
         return String.format(Locale.getDefault(), "%.2f", value)
-    }
-
-    private fun AlertDialogBuilder(activity: Activity): android.app.AlertDialog.Builder {
-        return android.app.AlertDialog.Builder(activity)
     }
 }
