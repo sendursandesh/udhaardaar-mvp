@@ -1,10 +1,11 @@
-name: Build Udhaardaar APK v2
+name: Build Udhaardaar APK
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+      - v3-development
 
 jobs:
   build:
@@ -34,5 +35,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-debug-APK
+          name: Udhaardaar-debug-APK-${{ github.ref_name }}
           path: app/build/outputs/apk/debug/app-debug.apk
