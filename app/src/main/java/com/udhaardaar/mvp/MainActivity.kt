@@ -8,13 +8,21 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var databaseHelper: UdhaarDatabaseHelper
+
+    private lateinit var toReceive: TextView
+    private lateinit var toPay: TextView
+    private lateinit var activeRecords: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val toReceive = findViewById<TextView>(R.id.tvToReceive)
-        val toPay = findViewById<TextView>(R.id.tvToPay)
-        val activeRecords = findViewById<TextView>(R.id.tvActiveRecords)
+        databaseHelper = UdhaarDatabaseHelper(this)
+
+        toReceive = findViewById(R.id.tvToReceive)
+        toPay = findViewById(R.id.tvToPay)
+        activeRecords = findViewById(R.id.tvActiveRecords)
 
         val addUdhaar = findViewById<Button>(R.id.btnAddUdhaar)
         val viewRecords = findViewById<Button>(R.id.btnViewRecords)
@@ -28,5 +36,45 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, RecordsActivity::class.java)
             startActivity(intent)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if (::databaseHelper.isInitialized) {
+            updateDashboard()
+        }
+    }
+
+    private fun updateDashboard() {
+
+        val db = databaseHelper.readableDatabase
+
+        var totalReceivable = 0.0
+        var activeCount = 0
+
+        val cursor = db.rawQuery(
+            """
+            SELECT amount
+            FROM udhaar_records
+            WHERE status = ?
+            """.trimIndent(),
+            arrayOf("UNPAID")
+        )
+
+        while (cursor.moveToNext()) {
+            totalReceivable += cursor.getDouble(0)
+            activeCount++
+        }
+
+        cursor.close()
+
+        toReceive.text =
+            "To Receive: ₹${String.format("%.2f", totalReceivable)}"
+
+        toPay.text = "To Pay: ₹0.00"
+
+        activeRecords.text =
+            "Active Records: $activeCount"
     }
 }
