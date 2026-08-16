@@ -8,6 +8,10 @@
         android:theme="@style/Theme.Udhaardaar">
 
         <activity
+    android:name=".DashboardV3Activity"
+    android:exported="false" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true">
 
