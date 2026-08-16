@@ -45,7 +45,7 @@ class DashboardV3Activity : AppCompatActivity() {
 
             val intent = Intent(
                 this,
-                AddUdhaarActivity::class.java
+                RegisterCreditV3Activity::class.java
             )
 
             startActivity(intent)
