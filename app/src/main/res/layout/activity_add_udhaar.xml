@@ -13,7 +13,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Add New Udhaar"
+            android:text="New Udhaar"
             android:textSize="26sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -31,16 +31,69 @@
             android:id="@+id/etAmount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Amount"
+            android:hint="Principal Amount (₹)"
             android:inputType="numberDecimal"
             android:layout_marginBottom="12dp" />
 
         <EditText
-            android:id="@+id/etDueDate"
+            android:id="@+id/etRoi"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Due Date"
-            android:inputType="date"
+            android:hint="Agreed ROI (%)"
+            android:inputType="numberDecimal"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Repayment Method"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <Spinner
+            android:id="@+id/spinnerRepaymentMethod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Repayment Periodicity"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <Spinner
+            android:id="@+id/spinnerPeriodicity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+        <EditText
+            android:id="@+id/etStartDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Commencing From"
+            android:focusable="false"
+            android:clickable="true"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etEndDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="End Date"
+            android:focusable="false"
+            android:clickable="true"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etEmiAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="EMI Amount (₹)"
+            android:inputType="numberDecimal"
+            android:visibility="gone"
             android:layout_marginBottom="12dp" />
 
         <EditText
