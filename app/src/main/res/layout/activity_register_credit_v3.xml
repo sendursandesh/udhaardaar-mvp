@@ -1,1 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
 
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F7FA"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Register Credit"
+            android:textColor="#111827"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Create a complete credit record"
+            android:textColor="#6B7280"
+            android:textSize="14sp"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Credit Type -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Credit Type"
+            android:textColor="#374151"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <Spinner
+            android:id="@+id/spinnerCreditType"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Direction -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Credit Direction"
+            android:textColor="#374151"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <Spinner
+            android:id="@+id/spinnerDirection"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Party -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Borrower / Party"
+            android:textColor="#374151"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <Spinner
+            android:id="@+id/spinnerParty"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:id="@+id/tvHistoryTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Borrower Repayment History"
+            android:textColor="#111827"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvHistorySummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FFFFFF"
+            android:padding="16dp"
+            android:text="Select a borrower to view previous credit and repayment history."
+            android:textColor="#4B5563"
+            android:textSize="14sp"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Credit Amount -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Principal / Credit Amount"
+            android:textColor="#374151"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/etCreditAmount"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:hint="Enter amount"
+            android:inputType="numberDecimal"
+            android:padding="14dp"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Interest -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Interest / ROI (%)"
+            android:textColor="#374151"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/etInterestRate"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:hint="Enter agreed interest rate"
+            android:inputType="numberDecimal"
+            android:padding="14dp"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Repayment Amount -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Agreed Repayment Amount"
+            android:textColor="#374151"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/etRepaymentAmount"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:hint="Enter repayment amount"
+            android:inputType="numberDecimal"
+            android:padding="14dp"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Start Date -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Start Date"
+            android:textColor="#374151"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/etCreditStartDate"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:hint="Select start date"
+            android:focusable="false"
+            android:clickable="true"
+            android:padding="14dp"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="16dp" />
+
+        <!-- End Date -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="End / Maturity Date"
+            android:textColor="#374151"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/etCreditEndDate"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:hint="Select end date"
+            android:focusable="false"
+            android:clickable="true"
+            android:padding="14dp"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Notes -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Notes"
+            android:textColor="#374151"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/etCreditNotes"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:hint="Optional notes"
+            android:gravity="top"
+            android:inputType="textMultiLine"
+            android:padding="14dp"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Save -->
+
+        <Button
+            android:id="@+id/btnSaveCreditV3"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="REGISTER CREDIT"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+    </LinearLayout>
+
+</ScrollView>
