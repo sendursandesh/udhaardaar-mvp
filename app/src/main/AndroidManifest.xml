@@ -8,8 +8,8 @@
         android:theme="@style/Theme.Udhaardaar">
 
         <activity
-    android:name=".DashboardV3Activity"
-    android:exported="false" />
+            android:name=".DashboardV3Activity"
+            android:exported="false" />
 
         <activity
             android:name=".MainActivity"
@@ -21,16 +21,15 @@
             </intent-filter>
 
         </activity>
-        
-<activity
-    android:name=".AddUdhaarActivity"
-    android:exported="false" />
-        
-    <activity
-        
-    android:name=".RecordsActivity"
-    android:exported="false" />    
-        
+
+        <activity
+            android:name=".AddUdhaarActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".RecordsActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>
