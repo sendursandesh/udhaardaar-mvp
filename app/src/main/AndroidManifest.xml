@@ -19,7 +19,12 @@
 
         </activity>
 
-        <!-- Existing V2 Main Activity - Preserved -->
+        <!-- V3 Register Credit -->
+        <activity
+            android:name=".RegisterCreditV3Activity"
+            android:exported="false" />
+
+        <!-- Existing V2 Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="false" />
