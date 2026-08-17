@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F5F7FA">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="UDHAARDAAR" android:textSize="32sp" android:textStyle="bold" android:textColor="#111827" android:gravity="center" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Advanced Credit Intelligence • V3.1" android:textSize="15sp" android:textColor="#6B7280" android:gravity="center" android:layout_marginTop="4dp" android:layout_marginBottom="28dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Core capabilities" android:textSize="20sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginBottom="12dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✓ All credit types\n✓ Borrower / business profile\n✓ Unique ID verification and search\n✓ Credit and repayment history\n✓ Digital document capture\n✓ OTP consent checkpoint and sharing\n✓ Guarantor-ready architecture\n✓ Trade-credit / invoice-ready workflow" android:textSize="15sp" android:textColor="#374151" android:background="#FFFFFF" android:padding="18dp" />
+        <Button android:id="@+id/btnAdvancedCredit" android:layout_width="match_parent" android:layout_height="56dp" android:text="REGISTER / SELECT CREDIT" android:textStyle="bold" android:layout_marginTop="22dp" />
+        <Button android:id="@+id/btnAdvancedVerification" android:layout_width="match_parent" android:layout_height="56dp" android:text="IDENTITY • UNIQUE ID • DOCUMENTS • OTP" android:textStyle="bold" android:layout_marginTop="10dp" />
+        <Button android:id="@+id/btnAdvancedDashboard" android:layout_width="match_parent" android:layout_height="56dp" android:text="OPEN CREDIT DASHBOARD" android:textStyle="bold" android:layout_marginTop="10dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Security note: this build includes a local OTP generation/sharing checkpoint. Production SMS OTP, server-side identity verification and legally compliant e-sign/consent services must be connected before real-world deployment." android:textSize="12sp" android:textColor="#6B7280" android:layout_marginTop="22dp" android:padding="8dp" />
+    </LinearLayout>
+</ScrollView>
