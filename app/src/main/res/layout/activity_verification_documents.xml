@@ -12,7 +12,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Identity, Documents & Consent"
+            android:text="Identity, Documents &amp; Consent"
             android:textSize="25sp"
             android:textStyle="bold"
             android:textColor="#111827"
@@ -47,7 +47,7 @@
             <Button android:id="@+id/btnGenerateOtp" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:text="GENERATE OTP" android:layout_marginEnd="4dp" />
             <Button android:id="@+id/btnShareOtp" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:text="SHARE OTP" android:layout_marginStart="4dp" />
         </LinearLayout>
-        <Button android:id="@+id/btnVerifyOtp" android:layout_width="match_parent" android:layout_height="54dp" android:text="VERIFY OTP & CONSENT" android:textStyle="bold" android:layout_marginTop="8dp" />
+        <Button android:id="@+id/btnVerifyOtp" android:layout_width="match_parent" android:layout_height="54dp" android:text="VERIFY OTP &amp; CONSENT" android:textStyle="bold" android:layout_marginTop="8dp" />
 
         <TextView android:id="@+id/tvVerificationResult" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#FFFFFF" android:padding="16dp" android:text="Verification results and audit checkpoints will appear here." android:textColor="#374151" android:textSize="14sp" android:layout_marginTop="18dp" android:layout_marginBottom="30dp" />
     </LinearLayout>
