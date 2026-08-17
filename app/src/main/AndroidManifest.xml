@@ -7,38 +7,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Udhaardaar">
 
-        <!-- V3 Dashboard - App Launch Screen -->
         <activity
             android:name=".DashboardV3Activity"
             android:exported="true">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
 
-        <!-- V3 Register Credit -->
-        <activity
-            android:name=".RegisterCreditV3Activity"
-            android:exported="false" />
-
-        <!-- Existing V2 Main Activity -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="false" />
-
-        <!-- Existing V2 Credit Entry -->
-        <activity
-            android:name=".AddUdhaarActivity"
-            android:exported="false" />
-
-        <!-- Existing V2 Records -->
-        <activity
-            android:name=".RecordsActivity"
-            android:exported="false" />
+        <activity android:name=".VerificationDocumentsActivity" android:exported="false" />
+        <activity android:name=".RegisterCreditV3Activity" android:exported="false" />
+        <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".AddUdhaarActivity" android:exported="false" />
+        <activity android:name=".RecordsActivity" android:exported="false" />
 
     </application>
-
 </manifest>
