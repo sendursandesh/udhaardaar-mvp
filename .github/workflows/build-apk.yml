@@ -36,9 +36,8 @@ jobs:
           from pathlib import Path
           p = Path('app/src/main/java/com/udhaardaar/mvp/V32Activity.kt')
           s = p.read_text()
-          # Convert accidental backslash-at-end-of-line continuations inside
-          # the repayment result string into valid Kotlin \n escapes.
-          s2 = s.replace('\\\n', '\\\\n')
+          # Replace accidental backslash + physical newline with a valid Kotlin newline escape.
+          s2 = s.replace(chr(92) + chr(10), chr(92) + 'n')
           if s2 != s:
               p.write_text(s2)
               print('Repaired Kotlin line continuations in V32Activity.kt')
