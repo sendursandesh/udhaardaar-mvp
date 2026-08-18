@@ -36,7 +36,6 @@ jobs:
           from pathlib import Path
           p = Path('app/src/main/java/com/udhaardaar/mvp/V32Activity.kt')
           s = p.read_text()
-          # Replace accidental backslash + physical newline with a valid Kotlin newline escape.
           s2 = s.replace(chr(92) + chr(10), chr(92) + 'n')
           if s2 != s:
               p.write_text(s2)
@@ -60,3 +59,4 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
 
 # V3.2.1 profile OTP/mobile fix build
+# Build trigger refresh: 2026-08-18
