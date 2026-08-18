@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - v3-development
+      - agent/v3.2-functional
 
 jobs:
   build:
