@@ -6,12 +6,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Udhaardaar">
 
-        <activity android:name=".AdvancedLauncherActivity" android:exported="true">
+        <activity android:name=".V32Activity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".AdvancedLauncherActivity" android:exported="false" />
         <activity android:name=".DashboardV3Activity" android:exported="false" />
         <activity android:name=".VerificationDocumentsActivity" android:exported="false" />
         <activity android:name=".RegisterCreditV3Activity" android:exported="false" />
