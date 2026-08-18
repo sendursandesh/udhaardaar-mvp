@@ -3,6 +3,7 @@ package com.udhaardaar.mvp
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.InputFilter
 import android.text.InputType
 import android.view.Gravity
 import android.widget.*
@@ -52,7 +53,7 @@ class V32SafeLauncherActivity : AppCompatActivity() {
             setPadding(8, 12, 8, 12)
         })
         root.addView(TextView(this).apply {
-            text = "V3.2 • Secure profile-first credit management"
+            text = "V3.2.1 • Secure profile-first credit management"
             textSize = 15f
             gravity = Gravity.CENTER
             setPadding(8, 4, 8, 18)
@@ -60,11 +61,15 @@ class V32SafeLauncherActivity : AppCompatActivity() {
         root.addView(TextView(this).apply { text = "Create your Lender / Account Owner profile"; textSize = 20f; setPadding(8, 12, 8, 12) })
 
         val name = edit("Full name *")
-        val mobile = edit("Mobile number *", true)
+        val mobile = edit("Mobile number *", true).apply {
+            filters = arrayOf(InputFilter.LengthFilter(10))
+        }
         val address = edit("Address")
         val email = edit("Email")
-        val otp = edit("Enter OTP", true)
-        otp.visibility = android.view.View.GONE
+        val otp = edit("Enter 6-digit OTP", true).apply {
+            filters = arrayOf(InputFilter.LengthFilter(6))
+            visibility = android.view.View.GONE
+        }
 
         root.addView(name)
         root.addView(mobile)
@@ -80,23 +85,26 @@ class V32SafeLauncherActivity : AppCompatActivity() {
         root.addView(photo)
         root.addView(button("Add profile photo (optional)") { pickPhoto() })
 
-        val send = button("Create Profile + Send OTP") {
-            if (name.text.toString().trim().isEmpty() || mobile.text.toString().trim().length < 10) {
-                Toast.makeText(this, "Enter name and valid mobile", Toast.LENGTH_SHORT).show()
-                return@button
+        val send = button("Create Profile + Send OTP") { }
+        val verify = button("Verify OTP & Save Profile") { }
+        verify.isEnabled = false
+
+        send.setOnClickListener {
+            if (name.text.toString().trim().isEmpty() || mobile.text.toString().trim().length != 10) {
+                Toast.makeText(this, "Enter name and exactly 10-digit mobile number", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
             pendingOtp = Random.nextInt(100000, 1000000).toString()
             otp.visibility = android.view.View.VISIBLE
             send.isEnabled = false
             verify.isEnabled = true
-            Toast.makeText(this, "Demo OTP: $pendingOtp", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "OTP sent. Demo OTP: $pendingOtp", Toast.LENGTH_LONG).show()
         }
-        root.addView(send)
 
-        val verify = button("Verify OTP & Save Profile") {
+        verify.setOnClickListener {
             if (otp.text.toString() != pendingOtp || pendingOtp.isEmpty()) {
                 otp.error = "Incorrect OTP"
-                return@button
+                return@setOnClickListener
             }
             val userId = "USR-${System.currentTimeMillis()}"
             val row = db.saveUser(userId, name.text.toString().trim(), mobile.text.toString().trim(), address.text.toString().trim(), email.text.toString().trim(), selectedPhoto?.toString())
@@ -108,10 +116,10 @@ class V32SafeLauncherActivity : AppCompatActivity() {
                 Toast.makeText(this, "Could not save profile", Toast.LENGTH_LONG).show()
             }
         }
-        verify.isEnabled = false
+
+        root.addView(send)
         root.addView(otp)
         root.addView(verify)
-
         setContentView(ScrollView(this).apply { addView(root) })
     }
 
