@@ -8,6 +8,9 @@ on:
       - v3-development
       - v3.2.2-final-fixes
       - agent/v3.2-functional
+  pull_request:
+    branches:
+      - v3-development
 
 permissions:
   contents: read
