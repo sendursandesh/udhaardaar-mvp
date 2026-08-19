@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.Udhaardaar"
-        parent="Theme.AppCompat.Light.NoActionBar">
-
+    <style name="Theme.Udhaardaar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#1976D2</item>
-
+        <item name="android:statusBarColor">#0F2647</item>
+        <item name="android:navigationBarColor">#0F2647</item>
+        <item name="android:windowBackground">#F6F8FC</item>
+        <item name="colorAccent">#1F6FEB</item>
     </style>
-
 </resources>
