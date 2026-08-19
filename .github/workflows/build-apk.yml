@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - v3-development
+      - v3.2.2-final-fixes
       - agent/v3.2-functional
 
 permissions:
@@ -29,17 +30,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Repair V3.2.1 Kotlin source formatting
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('app/src/main/java/com/udhaardaar/mvp/V32Activity.kt')
-          if p.exists():
-              s = p.read_text()
-              s2 = s.replace(chr(92) + chr(10), chr(92) + 'n')
-              if s2 != s:
-                  p.write_text(s2)
-          PY
       - name: Build Debug APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Verify APK exists
@@ -49,5 +39,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-V3.2.1-debug-APK-${{ github.ref_name }}
+          name: Udhaardaar-V3.2.2-debug-APK-${{ github.ref_name }}
           path: app/build/outputs/apk/debug/app-debug.apk

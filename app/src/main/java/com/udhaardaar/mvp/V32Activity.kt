@@ -1,13 +1,14 @@
 package com.udhaardaar.mvp
 
-import android.app.DatePickerDialog
-import android.content.Intent
+import android.app.*
+import android.content.*
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputType
-import android.view.Gravity
-import android.view.View
+import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import java.text.SimpleDateFormat
@@ -20,265 +21,57 @@ class V32Activity : AppCompatActivity() {
     private val prefs by lazy { getSharedPreferences("udhaardaar_v32_session", MODE_PRIVATE) }
     private var userId = ""
     private var pendingOtp = ""
-    private var selectedPhoto: Uri? = null
+    private var selectedPhotoUri: Uri? = null
+    private var invoiceUri: Uri? = null
+    private var invoiceText = ""
+    private var currentScreen: (() -> Unit)? = null
     private var photoTarget: ImageView? = null
+    private var invoiceTarget: InvoiceTarget? = null
+    private val navy = Color.rgb(15,38,71); private val blue=Color.rgb(31,111,235); private val teal=Color.rgb(0,145,135); private val green=Color.rgb(24,145,78); private val red=Color.rgb(205,55,55); private val amber=Color.rgb(232,151,22); private val bg=Color.rgb(246,248,252)
 
-    private fun text(value: String, size: Float = 16f) = TextView(this).apply { text = value; textSize = size; setPadding(8, 10, 8, 10) }
-    private fun edit(hint: String, numeric: Boolean = false) = EditText(this).apply {
-        this.hint = hint
-        setPadding(18, 8, 18, 8)
-        if (numeric) inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-    }
-    private fun phoneEdit(hint: String) = EditText(this).apply {
-        this.hint = hint
-        setPadding(18, 8, 18, 8)
-        inputType = InputType.TYPE_CLASS_PHONE
-        filters = arrayOf(InputFilter.LengthFilter(10))
-        keyListener = android.text.method.DigitsKeyListener.getInstance("0123456789")
-    }
-    private fun button(label: String, action: () -> Unit) = Button(this).apply { text = label; setOnClickListener { action() }; isAllCaps = false }
-    private fun base(): LinearLayout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(22, 22, 22, 30) }
-    private fun show(root: View) { setContentView(ScrollView(this).apply { addView(root) }) }
+    override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); db=V32DatabaseHelper(this); if(android.os.Build.VERSION.SDK_INT>=33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED) requestPermissions(arrayOf("android.permission.POST_NOTIFICATIONS"),900); setupBackNavigation(); if(db.hasUser()&&prefs.getBoolean("logged_in",false)) dashboard() else loginOrRegister() }
+    private fun setupBackNavigation(){ onBackPressedDispatcher.addCallback(this,object:androidx.activity.OnBackPressedCallback(true){override fun handleOnBackPressed(){if(currentScreen!=null)dashboard()else finish()}}) }
+    private fun root()=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(18),dp(12),dp(18),dp(28));setBackgroundColor(bg)}
+    private fun page(title:String,subtitle:String?=null):LinearLayout{val r=root();val h=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL};val b=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;layoutParams=LinearLayout.LayoutParams(0,-2,1f)};b.addView(tv(title,25f,navy));if(subtitle!=null)b.addView(tv(subtitle,13f,Color.DKGRAY));h.addView(b);h.addView(roundButton("HOME",blue){dashboard()},LinearLayout.LayoutParams(dp(74),dp(42)));r.addView(h);r.addView(space(8));return r}
+    private fun show(v:View,screen:(()->Unit)?=null){currentScreen=screen;setContentView(ScrollView(this).apply{isFillViewport=true;setBackgroundColor(bg);addView(v)})}
+    private fun tv(s:String,size:Float=16f,color:Int=Color.DKGRAY)=TextView(this).apply{text=s;textSize=size;setTextColor(color);setPadding(dp(4),dp(5),dp(4),dp(5))}
+    private fun field(hint:String,numeric:Boolean=false,max:Int?=null)=EditText(this).apply{this.hint=hint;textSize=16f;setPadding(dp(14),dp(8),dp(14),dp(8));background=rounded(Color.WHITE,Color.rgb(215,222,232),14);if(numeric)inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL;max?.let{filters=arrayOf(InputFilter.LengthFilter(it))}}
+    private fun phone(hint:String)=field(hint,false,10).apply{inputType=InputType.TYPE_CLASS_PHONE;keyListener=android.text.method.DigitsKeyListener.getInstance("0123456789")}
+    private fun otpField()=phone("6-digit OTP").apply{filters=arrayOf(InputFilter.LengthFilter(6));gravity=Gravity.CENTER}
+    private fun roundButton(label:String,color:Int=blue,action:()->Unit)=Button(this).apply{text=label;isAllCaps=false;textSize=14f;setTextColor(Color.WHITE);background=rounded(color,color,18);setPadding(dp(10),dp(4),dp(10),dp(4));setOnClickListener{action()}}
+    private fun cardButton(icon:String,title:String,sub:String,color:Int,action:()->Unit):LinearLayout{val b=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(16),dp(14),dp(12),dp(14));background=rounded(Color.WHITE,Color.rgb(224,229,238),18);elevation=dp(2).toFloat();setOnClickListener{action()}};b.addView(tv(icon,22f,color).apply{gravity=Gravity.CENTER;background=rounded(Color.rgb(240,244,250),Color.TRANSPARENT,14);layoutParams=LinearLayout.LayoutParams(dp(48),dp(48))});val t=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(12),0,0,0);layoutParams=LinearLayout.LayoutParams(0,-2,1f)};t.addView(tv(title,16f,navy));t.addView(tv(sub,12f,Color.GRAY));b.addView(t);b.addView(tv("›",30f,color));return b}
+    private fun metric(label:String,value:String,color:Int,action:()->Unit)=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;setPadding(dp(8),dp(10),dp(8),dp(10));background=rounded(Color.WHITE,Color.rgb(224,229,238),16);elevation=dp(2).toFloat();setOnClickListener{action()};addView(tv(value,22f,color).apply{gravity=Gravity.CENTER});addView(tv(label,11f,Color.DKGRAY).apply{gravity=Gravity.CENTER})}
+    private fun row(vararg v:View)=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;v.forEach{addView(it,LinearLayout.LayoutParams(0,-2,1f).apply{setMargins(dp(3),dp(3),dp(3),dp(3))})}}
+    private fun space(h:Int)=Space(this).apply{layoutParams=LinearLayout.LayoutParams(1,dp(h))};private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt();private fun rounded(fill:Int,stroke:Int,radius:Int)=GradientDrawable().apply{setColor(fill);cornerRadius=dp(radius).toFloat();if(stroke!=Color.TRANSPARENT)setStroke(dp(1),stroke)}
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        db = V32DatabaseHelper(this)
-        val c = db.user()
-        val exists = c.moveToFirst()
-        c.close()
-        if (exists && prefs.getBoolean("logged_in", false)) dashboard() else loginOrRegister()
-    }
+    private fun loginOrRegister(){val r=root();r.addView(tv("UDHAARDAAR",32f,Color.WHITE).apply{gravity=Gravity.CENTER;background=rounded(navy,navy,24);setPadding(dp(18),dp(18),dp(18),dp(18))});r.addView(tv("Smart informal-credit record & repayment manager",15f,navy).apply{gravity=Gravity.CENTER});r.addView(space(10));val name=field("Full name *");val mobile=phone("Mobile number * (10 digits)");val address=field("Full address *");val email=field("Email (optional)");val photo=ImageView(this).apply{layoutParams=LinearLayout.LayoutParams(-1,dp(150));setImageResource(android.R.drawable.ic_menu_camera);scaleType=ImageView.ScaleType.CENTER_INSIDE;background=rounded(Color.WHITE,Color.rgb(215,222,232),18)};r.addView(tv(if(db.hasUser())"Login with registered mobile" else "Create Lender / Account Owner profile",20f,navy));if(!db.hasUser())listOf(name,mobile,address,email).forEach{r.addView(it,LinearLayout.LayoutParams(-1,dp(58)).apply{setMargins(0,dp(4),0,dp(4))})}else r.addView(mobile,LinearLayout.LayoutParams(-1,dp(58)));r.addView(photo);r.addView(roundButton("ADD PROFILE PHOTO (OPTIONAL)",teal){pickPhoto(photo)});val otp=otpField().apply{visibility=View.GONE};val verify=roundButton("VERIFY OTP",green){if(pendingOtp.isEmpty()||otp.text.toString()!=pendingOtp){otp.error="Incorrect OTP";return@roundButton};if(!db.hasUser())db.saveUser("USR-${System.currentTimeMillis()}",name.text.toString().trim(),mobile.text.toString(),address.text.toString().trim(),email.text.toString().trim(),selectedPhotoUri?.toString());prefs.edit().putBoolean("logged_in",true).apply();pendingOtp="";dashboard()}.apply{visibility=View.GONE};r.addView(roundButton(if(db.hasUser())"SEND LOGIN OTP" else "CREATE PROFILE + SEND OTP",blue){if(mobile.text.toString().length!=10||(!db.hasUser()&&(name.text.isNullOrBlank()||address.text.isNullOrBlank()))){Toast.makeText(this,"Please complete all required fields",Toast.LENGTH_SHORT).show();return@roundButton};pendingOtp=otpCode();otp.visibility=View.VISIBLE;verify.visibility=View.VISIBLE;Toast.makeText(this,"OTP sent (demo): $pendingOtp",Toast.LENGTH_LONG).show()});r.addView(otp,LinearLayout.LayoutParams(-1,dp(58)));r.addView(verify,LinearLayout.LayoutParams(-1,dp(52)));show(r,null)}
 
-    private fun loginOrRegister() {
-        val r = base()
-        r.addView(text("UDHAARDAAR", 30f).apply { gravity = Gravity.CENTER })
-        r.addView(text("V3.2.1 • Secure profile-first credit management", 15f).apply { gravity = Gravity.CENTER })
+    private fun dashboard(){val r=page("Dashboard","Everything important at a glance");val u=db.userData();userId=u?.id?:"";r.addView(tv("Good day, ${u?.name?:"Lender"}",22f,navy));r.addView(tv("Unique ID: $userId",12f,Color.GRAY));r.addView(space(4));r.addView(row(metric("Credit Extended",money(db.totalCredit("Credit Given")),blue){creditHistory("Credit Given")},metric("Credit Taken",money(db.totalCredit("Credit Received")),teal){creditHistory("Credit Received")}));r.addView(row(metric("Due / Upcoming",db.dueCount(false).toString(),amber){repaymentCenter()},metric("Overdue",db.dueCount(true).toString(),red){repaymentCenter(true)}));r.addView(space(10));r.addView(cardButton("＋","Register Credit","Borrower → terms → guarantor → documents → OTP",blue){creditForm()});r.addView(space(8));r.addView(cardButton("⌕","Search Borrower / Profile","Search by name, mobile, PAN or Aadhaar",teal){searchProfiles("BORROWER")});r.addView(space(8));r.addView(cardButton("▣","Credit History","View every registered credit and transaction",navy){creditHistory(null)});r.addView(space(8));r.addView(cardButton("₹","Repayment Centre","Payments, schedules, due dates and reminders",green){repaymentCenter()});r.addView(space(8));r.addView(cardButton("⌁","Documents & Consent","Create digital documents and standard T&C",amber){documentsCentre()});r.addView(space(8));r.addView(cardButton("◎","My Lender Profile","View/edit profile and optional bank/NACH link",teal){lenderProfile()});r.addView(space(8));r.addView(roundButton("LOGOUT",Color.DKGRAY){prefs.edit().putBoolean("logged_in",false).apply();loginOrRegister()});show(r,::dashboard)}
+    private fun lenderProfile(){val r=page("Lender Profile","Profile photo and optional banking/NACH link");val u=db.userData();val image=ImageView(this).apply{layoutParams=LinearLayout.LayoutParams(-1,dp(170));scaleType=ImageView.ScaleType.CENTER_CROP;setImageURI(u?.photo?.let{Uri.parse(it)});if(u?.photo.isNullOrBlank())setImageResource(android.R.drawable.ic_menu_camera);background=rounded(Color.WHITE,Color.rgb(215,222,232),18)};r.addView(image);r.addView(roundButton("CHANGE PHOTO",teal){pickPhoto(image)});if(u!=null){r.addView(tv("Unique ID: ${u.id}",13f,Color.GRAY));r.addView(tv("Name: ${u.name}",16f,navy));r.addView(tv("Mobile: ${u.mobile}",15f));r.addView(tv("Address: ${u.address}",15f));r.addView(tv("Email: ${u.email}",15f))};r.addView(space(8));r.addView(cardButton("⌁","Bank / NACH (Optional)","Link account details for borrower/lender mandate records",teal){bankAccountForm("LENDER",u?.id?:"")});r.addView(space(8));r.addView(roundButton("BACK TO DASHBOARD",blue){dashboard()});show(r,::lenderProfile)}
 
-        val mobile = phoneEdit("Mobile number (10 digits)")
-        val name = edit("Full name")
-        val address = edit("Address")
-        val email = edit("Email")
-        val otp = phoneEdit("6-digit OTP").apply { filters = arrayOf(InputFilter.LengthFilter(6)); visibility = View.GONE }
-        val verify = button("Verify OTP & Save Profile") { verifyUserProfile(otp, name, mobile, address, email) }.apply { visibility = View.GONE }
+    private fun profileForm(role:String,existingId:Long?=null){val p=if(existingId!=null)db.profileData(existingId)else null;val r=page(if(role=="BORROWER")"Borrower Profile" else "Guarantor Profile","Required identity checks apply in live mode");val name=field("Full name *").apply{setText(p?.name?:"")};val mobile=phone("Mobile number * (10 digits)").apply{setText(p?.mobile?:"")};val alt=phone("Alternate mobile (optional)").apply{setText(p?.alternate?:"")};val address=field("Full address *").apply{setText(p?.address?:"")};val city=field("City").apply{setText(p?.city?:"")};val state=field("State").apply{setText(p?.state?:"")};val pin=field("PIN code",true,6).apply{setText(p?.pin?:"")};val email=field("Email").apply{setText(p?.email?:"")};val pan=field("PAN").apply{setText(p?.pan?:"")};val aadhaar=field("Aadhaar").apply{setText(p?.aadhaar?:"")};val occupation=field("Occupation / Business type").apply{setText(p?.occupation?:"")};val business=field("Business name (optional)").apply{setText(p?.business?:"")};val gstin=field("GSTIN (optional)").apply{setText(p?.gstin?:"")};val photo=ImageView(this).apply{layoutParams=LinearLayout.LayoutParams(-1,dp(160));scaleType=ImageView.ScaleType.CENTER_CROP;setImageURI(p?.photo?.let{Uri.parse(it)});if(p?.photo.isNullOrBlank())setImageResource(android.R.drawable.ic_menu_camera);background=rounded(Color.WHITE,Color.rgb(215,222,232),18)};listOf(name,mobile,alt,address,city,state,pin,email,pan,aadhaar,occupation,business,gstin).forEach{r.addView(it,LinearLayout.LayoutParams(-1,dp(58)).apply{setMargins(0,dp(3),0,dp(3))})};r.addView(photo);r.addView(roundButton("ADD / CHANGE PHOTO (OPTIONAL)",teal){pickPhoto(photo)});r.addView(roundButton(if(p==null)"SAVE PROFILE"else"UPDATE PROFILE",green){if(!validName(name)||mobile.text.toString().length!=10||!validAddress(address)){Toast.makeText(this,"Name, 10-digit mobile and address are required",Toast.LENGTH_LONG).show();return@roundButton};val uid=if(p!=null)p.id else "${if(role=="BORROWER")"BOR"else"GUA"}-${System.currentTimeMillis()}";val rowId=db.upsertProfile(p?.rowId,role,uid,name.text.toString().trim(),mobile.text.toString(),alt.text.toString(),address.text.toString().trim(),city.text.toString(),state.text.toString(),pin.text.toString(),email.text.toString(),pan.text.toString().uppercase(Locale.US),aadhaar.text.toString(),occupation.text.toString(),business.text.toString(),gstin.text.toString().uppercase(Locale.US),selectedPhotoUri?.toString()?:p?.photo);Toast.makeText(this,if(rowId>0)"Profile saved: $uid"else"Could not save profile",Toast.LENGTH_LONG).show();if(rowId>0){selectedPhotoUri=null;searchProfiles(role)}});r.addView(roundButton("BACK",Color.DKGRAY){dashboard()});show(r,{profileForm(role,existingId)})}
 
-        val c = db.user()
-        val exists = c.moveToFirst()
-        c.close()
+    private fun searchProfiles(role:String){val r=page(if(role=="BORROWER")"Search Borrower"else"Search Guarantor","Name • mobile • PAN • Aadhaar");val q=field("Type name / mobile / PAN / Aadhaar");val list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};fun refresh(){list.removeAllViews();val rows=db.searchProfiles(role,q.text.toString());if(rows.isEmpty())list.addView(tv("No matching profiles. Use CREATE NEW PROFILE below.",14f,Color.GRAY));rows.forEach{p->list.addView(cardButton("●",p.name,"${p.mobile} • PAN ${p.pan.ifBlank{"—"}} • ID ${p.id}",blue){if(role=="BORROWER")borrowerSummary(p.rowId)else profileForm(role,p.rowId)});list.addView(space(6))}};r.addView(q,LinearLayout.LayoutParams(-1,dp(58)));r.addView(roundButton("SEARCH",blue){refresh()});r.addView(roundButton("CREATE NEW PROFILE",green){selectedPhotoUri=null;profileForm(role)});r.addView(space(8));r.addView(list);refresh();show(r,{searchProfiles(role)})}
+    private fun borrowerSummary(id:Long){val p=db.profileData(id)?:return;val r=page("Borrower Summary","Review history before registering new credit");r.addView(tv(p.name,24f,navy));r.addView(tv("Unique ID: ${p.id}",13f,Color.GRAY));r.addView(tv("Mobile: ${p.mobile} • PAN: ${p.pan.ifBlank{"—"}} • Aadhaar: ${p.aadhaar.ifBlank{"—"}}",13f));val img=ImageView(this).apply{layoutParams=LinearLayout.LayoutParams(-1,dp(150));scaleType=ImageView.ScaleType.CENTER_CROP;setImageURI(p.photo?.let{Uri.parse(it)});if(p.photo.isNullOrBlank())setImageResource(android.R.drawable.ic_menu_camera)};r.addView(img);val s=db.borrowerCreditSummary(id);r.addView(tv("Total credit: ${money(s.total)} • Outstanding: ${money(s.outstanding)}",16f,navy));r.addView(tv("Active: ${s.active} • Overdue: ${s.overdue}",14f,if(s.overdue>0)red else green));r.addView(space(8));db.creditsForBorrower(id).forEach{c->r.addView(cardButton("₹",c.creditId,"${c.type} • ${c.direction} • ${money(c.amount)} • ${c.status}",if(c.status=="OVERDUE")red else blue){creditDetail(c.id)});r.addView(space(5))};r.addView(roundButton("REGISTER NEW CREDIT FOR THIS BORROWER",blue){creditForm(id)});r.addView(roundButton("BACK TO SEARCH",Color.DKGRAY){searchProfiles("BORROWER")});show(r,{borrowerSummary(id)})}
 
-        if (!exists) {
-            r.addView(text("Create your Lender / Account Owner profile", 20f))
-            listOf(name, mobile, address, email).forEach { r.addView(it) }
-            val photo = ImageView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(-1, 180)
-                setImageResource(android.R.drawable.ic_menu_camera)
-                scaleType = ImageView.ScaleType.CENTER_INSIDE
-            }
-            r.addView(photo)
-            r.addView(button("Add profile photo (optional)") { pickPhoto(photo) })
-            r.addView(button("Create Profile + Send OTP") {
-                val cleanMobile = mobile.text.toString()
-                if (name.text.isNullOrBlank() || cleanMobile.length != 10) {
-                    Toast.makeText(this, "Enter name and exactly 10-digit mobile number", Toast.LENGTH_SHORT).show()
-                    return@button
-                }
-                pendingOtp = otpCode()
-                otp.visibility = View.VISIBLE
-                verify.visibility = View.VISIBLE
-                Toast.makeText(this, "OTP sent. Demo OTP: $pendingOtp", Toast.LENGTH_LONG).show()
-            })
-            r.addView(otp)
-            r.addView(verify)
-        } else {
-            r.addView(text("Login", 22f))
-            r.addView(mobile)
-            r.addView(button("Send OTP") {
-                if (mobile.text.toString().length != 10) {
-                    Toast.makeText(this, "Enter exactly 10 digits", Toast.LENGTH_SHORT).show()
-                    return@button
-                }
-                pendingOtp = otpCode()
-                otp.visibility = View.VISIBLE
-                verify.visibility = View.VISIBLE
-                Toast.makeText(this, "OTP sent. Demo OTP: $pendingOtp", Toast.LENGTH_LONG).show()
-            })
-            r.addView(otp)
-            r.addView(verify)
-        }
-        show(r)
-    }
-
-    private fun verifyUserProfile(otp: EditText, name: EditText, mobile: EditText, address: EditText, email: EditText) {
-        if (pendingOtp.isEmpty()) {
-            Toast.makeText(this, "Please send OTP first", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (otp.text.toString() != pendingOtp) {
-            otp.error = "Incorrect OTP"
-            return
-        }
-        try {
-            userId = "USR-${System.currentTimeMillis()}"
-            val row = db.saveUser(userId, name.text.toString(), mobile.text.toString(), address.text.toString(), email.text.toString(), selectedPhoto?.toString())
-            if (row > 0) {
-                prefs.edit().putBoolean("logged_in", true).apply()
-                pendingOtp = ""
-                Toast.makeText(this, "Profile saved. User ID: $userId", Toast.LENGTH_LONG).show()
-                dashboard()
-            } else {
-                Toast.makeText(this, "Could not save profile", Toast.LENGTH_LONG).show()
-            }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Profile save failed: ${e.message ?: "unknown error"}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun dashboard() {
-        val r = base()
-        val c = db.user()
-        var name = ""
-        if (c.moveToFirst()) {
-            userId = c.getString(c.getColumnIndexOrThrow("unique_id"))
-            name = c.getString(c.getColumnIndexOrThrow("name"))
-        }
-        c.close()
-        r.addView(text("Welcome, $name", 26f))
-        r.addView(text("Lender ID: $userId", 14f))
-        r.addView(text("Borrowers: ${db.borrowerCount()}   |   Guarantors: ${db.guarantorCount()}   |   Credits: ${db.creditCount()}", 15f))
-        r.addView(button("My Lender Profile") { lenderProfile() })
-        r.addView(button("Add / Search Borrower Profile") { profileForm("BORROWER") })
-        r.addView(button("Add / Search Guarantor Profile") { profileForm("GUARANTOR") })
-        r.addView(button("Register New Credit") { creditForm() })
-        r.addView(button("Logout") { prefs.edit().putBoolean("logged_in", false).apply(); loginOrRegister() })
-        show(r)
-    }
-
-    private fun lenderProfile() {
-        val r = base()
-        r.addView(text("Lender / Account Owner Profile", 24f))
-        val c = db.user()
-        if (c.moveToFirst()) {
-            r.addView(text("Unique ID: ${c.getString(c.getColumnIndexOrThrow("unique_id"))}"))
-            r.addView(text("Name: ${c.getString(c.getColumnIndexOrThrow("name"))}"))
-            r.addView(text("Mobile: ${c.getString(c.getColumnIndexOrThrow("mobile"))}"))
-            r.addView(text("Address: ${c.getString(c.getColumnIndexOrThrow("address"))}"))
-            r.addView(text("Email: ${c.getString(c.getColumnIndexOrThrow("email"))}"))
-        }
-        c.close()
-        r.addView(button("Back to Dashboard") { dashboard() })
-        show(r)
-    }
-
-    private fun profileForm(role: String) {
-        val r = base()
-        r.addView(text("${if (role == "BORROWER") "Borrower" else "Guarantor"} Profile", 25f))
-        val id = edit("Unique ID (leave blank to generate)")
-        val name = edit("Full name *")
-        val mobile = phoneEdit("Mobile number * (10 digits)")
-        val alt = phoneEdit("Alternate mobile (10 digits)")
-        val address = edit("Full address *")
-        val city = edit("City")
-        val state = edit("State")
-        val pin = edit("PIN code", true)
-        val email = edit("Email")
-        val pan = edit("PAN")
-        val aadhaar = edit("Aadhaar / other ID")
-        val occupation = edit("Occupation / Business type")
-        val business = edit("Business name (optional)")
-        val gstin = edit("GSTIN (optional)")
-        val photo = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(-1, 170)
-            setImageResource(android.R.drawable.ic_menu_camera)
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
-        }
-        listOf(id, name, mobile, alt, address, city, state, pin, email, pan, aadhaar, occupation, business, gstin).forEach { r.addView(it) }
-        r.addView(photo)
-        r.addView(button("Add photo (optional)") { pickPhoto(photo) })
-        r.addView(button("SAVE ${if (role == "BORROWER") "BORROWER" else "GUARANTOR"} PROFILE") {
-            if (name.text.isNullOrBlank() || mobile.text.length != 10 || address.text.isNullOrBlank()) {
-                Toast.makeText(this, "Name, exactly 10-digit mobile and address are required", Toast.LENGTH_SHORT).show()
-                return@button
-            }
-            val uid = if (id.text.isNullOrBlank()) "${if (role == "BORROWER") "BOR" else "GUA"}-${System.currentTimeMillis()}" else id.text.toString()
-            val row = db.addProfile(role, uid, name.text.toString(), mobile.text.toString(), alt.text.toString(), address.text.toString(), city.text.toString(), state.text.toString(), pin.text.toString(), email.text.toString(), pan.text.toString(), aadhaar.text.toString(), occupation.text.toString(), business.text.toString(), gstin.text.toString(), selectedPhoto?.toString())
-            if (row > 0) {
-                db.log(userId, row, null, "PROFILE_CREATED", "$role profile $uid created")
-                Toast.makeText(this, "Profile saved: $uid", Toast.LENGTH_LONG).show()
-                dashboard()
-            } else Toast.makeText(this, "Could not save profile", Toast.LENGTH_LONG).show()
-        })
-        r.addView(button("Back") { dashboard() })
-        show(r)
-    }
-
-    private fun creditForm() {
-        val r = base()
-        r.addView(text("Register Credit", 25f))
-        val borrowers = mutableListOf<Long>()
-        val labels = mutableListOf<String>()
-        val c = db.profiles("BORROWER")
-        while (c.moveToNext()) { borrowers.add(c.getLong(0)); labels.add("${c.getString(2)} • ${c.getString(3)} • ${c.getString(1)}") }
-        c.close()
-        if (labels.isEmpty()) { Toast.makeText(this, "Create a borrower profile first", Toast.LENGTH_LONG).show(); profileForm("BORROWER"); return }
-        val b = Spinner(this).apply { adapter = ArrayAdapter(this@V32Activity, android.R.layout.simple_spinner_dropdown_item, labels) }
-        r.addView(text("Borrower")); r.addView(b)
-        val type = Spinner(this).apply { adapter = ArrayAdapter(this@V32Activity, android.R.layout.simple_spinner_dropdown_item, arrayOf("Personal Credit", "Business Credit", "Trade Credit", "Advance", "Rental / Lease", "Other")) }
-        r.addView(text("Credit Type")); r.addView(type)
-        val direction = Spinner(this).apply { adapter = ArrayAdapter(this@V32Activity, android.R.layout.simple_spinner_dropdown_item, arrayOf("Credit Given", "Credit Received")) }
-        r.addView(direction)
-        val principal = edit("Principal amount", true)
-        val roi = edit("Annual ROI %", true)
-        val tenor = edit("Tenor in months", true)
-        val method = Spinner(this).apply { adapter = ArrayAdapter(this@V32Activity, android.R.layout.simple_spinner_dropdown_item, arrayOf("EMI", "Principal + Interest")) }
-        val result = text("Enter principal, ROI and tenor to calculate repayment", 15f)
-        r.addView(principal); r.addView(roi); r.addView(tenor); r.addView(text("Repayment Method")); r.addView(method); r.addView(result)
-        val start = edit("Start date (YYYY-MM-DD)")
-        val end = edit("End date (auto-calculated)").apply { isFocusable = false }
-        r.addView(start); r.addView(end)
-        val guarantor = Spinner(this).apply { adapter = ArrayAdapter(this@V32Activity, android.R.layout.simple_spinner_dropdown_item, arrayOf("Guarantor: NO", "Guarantor: YES")) }
-        r.addView(text("Is guarantor available?")); r.addView(guarantor)
-        val gIds = mutableListOf<Long>(); val gLabels = mutableListOf<String>()
-        val gc = db.profiles("GUARANTOR")
-        while (gc.moveToNext()) { gIds.add(gc.getLong(0)); gLabels.add("${gc.getString(2)} • ${gc.getString(3)} • ${gc.getString(1)}") }
-        gc.close()
-        val gSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V32Activity, android.R.layout.simple_spinner_dropdown_item, if (gLabels.isEmpty()) arrayOf("No guarantor profiles yet") else gLabels.toTypedArray()); visibility = View.GONE }
-        r.addView(gSpinner)
-        guarantor.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onNothingSelected(p: AdapterView<*>?) {}
-            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, itemId: Long) { gSpinner.visibility = if (pos == 1) View.VISIBLE else View.GONE }
-        }
-        fun calc() {
-            val p = principal.text.toString().toDoubleOrNull() ?: return
-            val rate = roi.text.toString().toDoubleOrNull() ?: return
-            val n = tenor.text.toString().toIntOrNull() ?: return
-            if (n <= 0) return
-            val monthly = rate / 1200.0
-            val emi = if (monthly == 0.0) p / n else p * monthly * (1 + monthly).pow(n) / ((1 + monthly).pow(n) - 1)
-            val interest = if (method.selectedItemPosition == 0) emi * n - p else p * rate / 100.0 * n / 12.0
-            val payment = if (method.selectedItemPosition == 0) emi else p / n + interest / n
-            result.text = "${method.selectedItem}: ${money(payment)} per month\nTotal interest: ${money(interest)}\nTotal payable: ${money(p + interest)}\nInstallments: $n"
-            val d = Calendar.getInstance(); start.setText(SimpleDateFormat("yyyy-MM-dd", Locale.US).format(d.time)); d.add(Calendar.MONTH, n); end.setText(SimpleDateFormat("yyyy-MM-dd", Locale.US).format(d.time))
-        }
-        principal.setOnFocusChangeListener { _, has -> if (!has) calc() }; roi.setOnFocusChangeListener { _, has -> if (!has) calc() }; tenor.setOnFocusChangeListener { _, has -> if (!has) calc() }
-        method.onItemSelectedListener = object : AdapterView.OnItemSelectedListener { override fun onNothingSelected(p: AdapterView<*>?) {}; override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) { calc() } }
-        r.addView(button("CALCULATE / REFRESH REPAYMENT") { calc() })
-        r.addView(button("SEND CONSENT OTP") { pendingOtp = otpCode(); Toast.makeText(this, "Demo OTP: $pendingOtp", Toast.LENGTH_LONG).show() })
-        val otp = phoneEdit("Enter 6-digit OTP").apply { filters = arrayOf(InputFilter.LengthFilter(6)) }
-        r.addView(otp)
-        r.addView(button("VERIFY OTP + REGISTER CREDIT") {
-            if (pendingOtp.isEmpty()) { Toast.makeText(this, "Send OTP first", Toast.LENGTH_SHORT).show(); return@button }
-            if (otp.text.toString() != pendingOtp) { otp.error = "Incorrect OTP"; return@button }
-            val p = principal.text.toString().toDoubleOrNull() ?: 0.0; val rate = roi.text.toString().toDoubleOrNull() ?: 0.0; val n = tenor.text.toString().toIntOrNull() ?: 0
-            if (p <= 0 || n <= 0) { Toast.makeText(this, "Enter valid principal and tenor", Toast.LENGTH_SHORT).show(); return@button }
-            val m = rate / 1200.0; val emi = if (m == 0.0) p / n else p * m * (1 + m).pow(n) / ((1 + m).pow(n) - 1); val interest = if (method.selectedItemPosition == 0) emi * n - p else p * rate / 100 * n / 12; val payment = if (method.selectedItemPosition == 0) emi else p / n + interest / n
-            val gid = if (guarantor.selectedItemPosition == 1 && gIds.isNotEmpty()) gIds[gSpinner.selectedItemPosition.coerceAtMost(gIds.lastIndex)] else null
-            val credit = db.addCredit(borrowers[b.selectedItemPosition], gid, type.selectedItem.toString(), if (direction.selectedItemPosition == 0) "GIVEN" else "RECEIVED", p, rate, n, method.selectedItem.toString(), payment, interest, p + interest, start.text.toString(), end.text.toString())
-            if (credit > 0) { db.log(userId, borrowers[b.selectedItemPosition], credit, "CREDIT_REGISTERED", "OTP verified; ${method.selectedItem}; repayment calculated automatically"); Toast.makeText(this, "Credit registered successfully. OTP verified.", Toast.LENGTH_LONG).show(); pendingOtp = ""; dashboard() } else Toast.makeText(this, "Unable to register credit", Toast.LENGTH_LONG).show()
-        })
-        r.addView(button("Back") { dashboard() }); show(r)
-    }
-
-    private fun otpCode() = Random.nextInt(100000, 1000000).toString()
-    private fun money(v: Double) = "₹" + String.format(Locale.US, "%,.2f", v)
-    private fun pickPhoto(target: ImageView) { photoTarget = target; startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE) }, 901) }
-    @Deprecated("Compatibility") override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { super.onActivityResult(requestCode, resultCode, data); if (requestCode == 901 && resultCode == RESULT_OK) { selectedPhoto = data?.data; photoTarget?.setImageURI(selectedPhoto) } }
+    private fun creditForm(preselectedBorrower:Long?=null){val r=page("Register New Credit","Borrower → credit type → repayment → guarantor → NACH → documents → OTP");val borrowers=db.searchProfiles("BORROWER","");if(borrowers.isEmpty()){r.addView(tv("No borrower profile exists yet.",16f,red));r.addView(roundButton("CREATE BORROWER PROFILE",green){profileForm("BORROWER")});show(r,{creditForm(preselectedBorrower)});return};val bSpinner=Spinner(this).apply{adapter=ArrayAdapter(this@V32Activity,android.R.layout.simple_spinner_dropdown_item,borrowers.map{"${it.name} • ${it.mobile} • ${it.id}"})};preselectedBorrower?.let{id->val idx=borrowers.indexOfFirst{it.rowId==id};if(idx>=0)bSpinner.setSelection(idx)};r.addView(tv("Borrower *",16f,navy));r.addView(bSpinner);r.addView(roundButton("SEARCH / VERIFY BORROWER",teal){searchProfiles("BORROWER")});val typeSpinner=Spinner(this).apply{adapter=ArrayAdapter(this@V32Activity,android.R.layout.simple_spinner_dropdown_item,arrayOf("Personal Credit","Business Credit","Trade Credit","Advance","Rental / Lease","Other"))};r.addView(tv("Nature of Credit *",16f,navy));r.addView(typeSpinner);val direction=Spinner(this).apply{adapter=ArrayAdapter(this@V32Activity,android.R.layout.simple_spinner_dropdown_item,arrayOf("Credit Given","Credit Received"))};r.addView(tv("Direction",15f,navy));r.addView(direction);val principal=field("Principal / credit amount",true);val roi=field("Annual ROI % (00.00)",true);roi.filters=arrayOf(InputFilter.LengthFilter(8));val tenor=field("Tenor / number of instalments",true,3);val installment=field("Monthly instalment / rent",true);val dueDate=field("First / invoice due date (YYYY-MM-DD)");val dueDay=field("Monthly due day (1-31)",true,2);val gstin=field("GSTIN for trade credit");val invoiceAmount=field("Invoice amount",true);val invoiceInfo=tv("No invoice selected",13f,Color.GRAY);val scanResult=tv("",12f,Color.GRAY);val method=Spinner(this);val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};listOf(principal,roi,tenor,installment,dueDate,dueDay,gstin,invoiceAmount).forEach{box.addView(it,LinearLayout.LayoutParams(-1,dp(58)).apply{setMargins(0,dp(3),0,dp(3))})};box.addView(tv("Repayment method",15f,navy));box.addView(method);r.addView(box);r.addView(roundButton("UPLOAD / SCAN INVOICE",amber){pickInvoice(invoiceInfo,scanResult,gstin,invoiceAmount)});r.addView(invoiceInfo);r.addView(scanResult);val result=tv("Enter values and tap CALCULATE",14f,navy);r.addView(result);val start=field("Start date (YYYY-MM-DD)");r.addView(start);r.addView(roundButton("CALCULATE / REFRESH TERMS",blue){calculateCredit(typeSpinner.selectedItem.toString(),principal,roi,tenor,installment,dueDate,dueDay,start,result,method)});val guarantor=Spinner(this).apply{adapter=ArrayAdapter(this@V32Activity,android.R.layout.simple_spinner_dropdown_item,arrayOf("Guarantor: NO","Guarantor: YES"))};r.addView(tv("Guarantor available?",15f,navy));r.addView(guarantor);val gs=db.searchProfiles("GUARANTOR","");val gSpinner=Spinner(this).apply{adapter=ArrayAdapter(this@V32Activity,android.R.layout.simple_spinner_dropdown_item,if(gs.isEmpty())listOf("No guarantor profile available")else gs.map{"${it.name} • ${it.mobile} • ${it.id}"});visibility=View.GONE};r.addView(gSpinner);guarantor.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){ };override fun onItemSelected(p:AdapterView<*>?,v:View?,pos:Int,id:Long){gSpinner.visibility=if(pos==1)View.VISIBLE else View.GONE}};val nach=CheckBox(this).apply{text="Enable optional NACH / bank mandate record";setTextColor(navy)};r.addView(nach);r.addView(roundButton("ADD / LINK BANK DETAILS",teal){bankAccountPicker(bSpinner,borrowers)});val consent=CheckBox(this).apply{text="I have reviewed the digital terms & standard lending T&C";setTextColor(navy)};r.addView(consent);r.addView(roundButton("VIEW STANDARD LENDING T&C",amber){createAndShareTerms(null)});r.addView(roundButton("CREATE DIGITAL CREDIT DOCUMENT",teal){createAndShareTerms("preview")});val otp=otpField();r.addView(tv("OTP consent confirmation",15f,navy));r.addView(otp);r.addView(roundButton("SEND CONSENT OTP",blue){if(!consent.isChecked){Toast.makeText(this,"Please review and accept the terms first",Toast.LENGTH_SHORT).show();return@roundButton};pendingOtp=otpCode();Toast.makeText(this,"Consent OTP sent (demo): $pendingOtp",Toast.LENGTH_LONG).show()});r.addView(roundButton("VERIFY OTP + REGISTER CREDIT",green){if(pendingOtp.isBlank()||otp.text.toString()!=pendingOtp){otp.error="Incorrect OTP";return@roundButton};val calc=buildCreditCalculation(typeSpinner.selectedItem.toString(),principal,roi,tenor,installment,dueDate,dueDay,start,method);if(calc==null){Toast.makeText(this,"Please complete the credit terms",Toast.LENGTH_LONG).show();return@roundButton};if(!consent.isChecked){Toast.makeText(this,"Consent is required",Toast.LENGTH_SHORT).show();return@roundButton};val borrower=borrowers[bSpinner.selectedItemPosition];val gid=if(guarantor.selectedItemPosition==1&&gs.isNotEmpty())gs[gSpinner.selectedItemPosition].rowId else null;val cid=db.addCredit(borrower.rowId,gid,typeSpinner.selectedItem.toString(),direction.selectedItem.toString(),calc.principal,calc.roi,calc.tenor,calc.method,calc.installment,calc.interest,calc.payable,calc.start,calc.end,invoiceAmount.text.toString().toDoubleOrNull()?:0.0,gstin.text.toString().trim(),invoiceUri?.toString(),invoiceText,nach.isChecked,calc.dueDate,calc.dueDay);if(cid>0){db.createSchedule(cid,typeSpinner.selectedItem.toString(),calc.start,calc.end,calc.installment,calc.tenor,calc.dueDay);db.log(userId,null,cid,"CREDIT_REGISTERED","${typeSpinner.selectedItem} credit registered for ${borrower.name}");scheduleReminderForCredit(cid);Toast.makeText(this,"Credit registered successfully: CR-$cid",Toast.LENGTH_LONG).show();dashboard()}else Toast.makeText(this,"Could not register credit",Toast.LENGTH_LONG).show()});r.addView(roundButton("BACK",Color.DKGRAY){dashboard()});typeSpinner.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){ };override fun onItemSelected(p:AdapterView<*>?,v:View?,pos:Int,id:Long){updateCreditFields(typeSpinner.selectedItem.toString(),principal,roi,tenor,installment,dueDate,dueDay,gstin,invoiceAmount,method)}};updateCreditFields(typeSpinner.selectedItem.toString(),principal,roi,tenor,installment,dueDate,dueDay,gstin,invoiceAmount,method);show(r,{creditForm(preselectedBorrower)})}
+    private fun updateCreditFields(type:String,p:EditText,roi:EditText,tenor:EditText,install:EditText,due:EditText,dueDay:EditText,gstin:EditText,invoice:EditText,method:Spinner){val rental=type=="Rental / Lease";val trade=type=="Trade Credit";roi.visibility=if(rental||trade)View.GONE else View.VISIBLE;p.visibility=if(rental)View.GONE else View.VISIBLE;tenor.hint=if(rental)"Number of months" else if(trade)"Days to due date / instalments" else "Tenor / number of instalments";install.hint=if(rental)"Monthly rent amount" else "Calculated / agreed instalment";dueDay.visibility=if(rental)View.VISIBLE else View.GONE;gstin.visibility=if(trade)View.VISIBLE else View.GONE;invoice.visibility=if(trade)View.VISIBLE else View.GONE;method.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,if(rental)arrayOf("Monthly Rent")else if(trade)arrayOf("Single Due")else arrayOf("EMI","Principal + Interest","Single Due"))}
+    private data class Calc(val principal:Double,val roi:Double,val tenor:Int,val method:String,val installment:Double,val interest:Double,val payable:Double,val start:String,val end:String,val dueDate:String,val dueDay:Int)
+    private fun buildCreditCalculation(type:String,p:EditText,roi:EditText,tenor:EditText,install:EditText,due:EditText,dueDay:EditText,start:EditText,method:Spinner):Calc?{val startText=start.text.toString().ifBlank{fmt(Date())};val rental=type=="Rental / Lease";val trade=type=="Trade Credit";val principal=if(rental)0.0 else p.text.toString().toDoubleOrNull()?:return null;val rate=if(rental||trade)0.0 else String.format(Locale.US,"%.2f",roi.text.toString().toDoubleOrNull()?:0.0).toDouble();val n=tenor.text.toString().toIntOrNull()?.coerceAtLeast(1)?:return null;val m=rate/1200.0;val emi=if(principal<=0)0.0 else if(m==0.0)principal/n else principal*m*(1+m).pow(n)/((1+m).pow(n)-1);val selected=method.selectedItem.toString();val monthly=when{rental->install.text.toString().toDoubleOrNull()?:return null;selected=="Principal + Interest"->principal/n+(principal*rate/100.0*n/12.0)/n;selected=="Single Due"->principal+principal*rate/100.0*n/12.0;else->emi};val interest=when{rental||trade->0.0;selected=="Principal + Interest"->principal*rate/100.0*n/12.0;selected=="Single Due"->principal*rate/100.0*n/12.0;else->emi*n-principal};val payable=if(rental)monthly*n else principal+interest;val cal=Calendar.getInstance();if(startText.matches(Regex("\\d{4}-\\d{2}-\\d{2}")))runCatching{cal.time=SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(startText)!!};cal.add(Calendar.MONTH,n);val end=fmt(cal.time);val dd=dueDay.text.toString().toIntOrNull()?.coerceIn(1,31)?:cal.get(Calendar.DAY_OF_MONTH);return Calc(principal,rate,n,selected,monthly,interest,payable,startText,end,due.text.toString().ifBlank{end},dd)}
+    private fun calculateCredit(type:String,p:EditText,roi:EditText,tenor:EditText,install:EditText,due:EditText,dueDay:EditText,start:EditText,result:TextView,method:Spinner){val c=buildCreditCalculation(type,p,roi,tenor,install,due,dueDay,start,method)?:run{result.text="Please enter valid terms";return};result.text="Repayment: ${money(c.installment)} ${if(type=="Rental / Lease")"per month"else if(c.method=="Single Due")"on due date"else"per instalment"}\nROI: ${String.format(Locale.US,"%.2f",c.roi)}%\nInterest: ${money(c.interest)}\nTotal payable: ${money(c.payable)}\nStart: ${c.start} • End: ${c.end} • Due: ${c.dueDate}"}
+    private fun bankAccountPicker(b:Spinner,borrowers:List<V32DatabaseHelper.ProfileRow>){val borrower=borrowers[b.selectedItemPosition];AlertDialog.Builder(this).setTitle("Bank / NACH link").setItems(arrayOf("Borrower: ${borrower.name}","Lender / Account Owner")){_,w->bankAccountForm(if(w==0)"BORROWER"else"LENDER",if(w==0)borrower.id else userId)}.show()}
+    private fun bankAccountForm(ownerType:String,ownerId:String){val r=page("Bank / NACH Link","Optional record only; no money is moved by this app");val h=field("Account holder name *");val b=field("Bank name *");val a=field("Account number *",true);val i=field("IFSC *");val u=field("UPI ID (optional)");val n=CheckBox(this).apply{text="Enable NACH mandate record";setTextColor(navy)};listOf(h,b,a,i,u).forEach{r.addView(it,LinearLayout.LayoutParams(-1,dp(58)))};r.addView(n);r.addView(roundButton("SAVE BANK / NACH DETAILS",green){if(h.text.isNullOrBlank()||b.text.isNullOrBlank()||a.text.length<6||i.text.length<4){Toast.makeText(this,"Please enter valid bank details",Toast.LENGTH_SHORT).show();return@roundButton};db.saveBank(ownerType,ownerId,h.text.toString(),b.text.toString(),a.text.toString(),i.text.toString().uppercase(Locale.US),u.text.toString(),n.isChecked);Toast.makeText(this,"Bank / NACH record saved",Toast.LENGTH_LONG).show();dashboard()});r.addView(roundButton("BACK",Color.DKGRAY){dashboard()});show(r,{bankAccountForm(ownerType,ownerId)})}
+    private fun creditHistory(direction:String?){val r=page("Credit History",direction?.let{"$it transactions"}?:"All registered credits");val list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};db.credits(direction).forEach{c->list.addView(cardButton("₹",c.creditId,"${c.type} • ${c.direction} • ${money(c.amount)} • ${c.status}",if(c.status=="OVERDUE")red else blue){creditDetail(c.id)});list.addView(space(6))};if(list.childCount==0)list.addView(tv("No credits registered yet.",15f,Color.GRAY));r.addView(list);r.addView(roundButton("BACK",Color.DKGRAY){dashboard()});show(r,{creditHistory(direction)})}
+    private fun creditDetail(id:Long){val c=db.creditDetail(id)?:return;val r=page("Credit ${c.creditId}","Complete transaction record");r.addView(tv("Borrower: ${c.borrowerName} (${c.borrowerId})",16f,navy));r.addView(tv("Type: ${c.type} • ${c.direction}",15f));r.addView(tv("Amount: ${money(c.amount)} • ROI: ${String.format(Locale.US,"%.2f",c.roi)}%",15f));r.addView(tv("Method: ${c.method} • Instalment: ${money(c.installment)}",15f));r.addView(tv("Interest: ${money(c.interest)} • Payable: ${money(c.payable)}",15f));r.addView(tv("Start: ${c.start} • End: ${c.end} • Due: ${c.dueDate}",15f));if(c.gstin.isNotBlank())r.addView(tv("GSTIN: ${c.gstin}",15f));if(c.invoiceUri.isNotBlank())r.addView(tv("Invoice attached",15f,green));r.addView(tv("NACH: ${if(c.nach)"Enabled"else"Not linked"} • Consent: OTP verified",15f));r.addView(space(8));r.addView(cardButton("↗","Digital document","Create/share credit acknowledgement and T&C",teal){createAndShareTerms(c.id.toString())});r.addView(cardButton("₹","Repayment schedule","View due dates and record payment",green){repaymentCenter(c.id)});r.addView(roundButton("BACK",Color.DKGRAY){dashboard()});show(r,{creditDetail(id)})}
+    private fun repaymentCenter(overdueOnly:Boolean=false)=repaymentCenter(null,overdueOnly)
+    private fun repaymentCenter(creditId:Long?=null,overdueOnly:Boolean=false){val r=page("Repayment Centre","Schedules, payments, due dates and reminders");val ss=db.schedules(creditId,overdueOnly);if(ss.isEmpty())r.addView(tv(if(overdueOnly)"No overdue instalments."else"No repayment schedule found.",15f,Color.GRAY));ss.forEach{s->val col=if(s.status=="OVERDUE")red else amber;r.addView(cardButton("₹","${s.creditId} • ${s.dueDate}","Due ${money(s.amount)} • ${s.status}",col){recordRepayment(s.id,db.creditIdByCode(s.creditId),s.amount)});r.addView(space(5))};r.addView(roundButton("SCHEDULE REMINDERS",blue){db.futureCredits().forEach{scheduleReminderForCredit(it)};Toast.makeText(this,"Due-date reminders scheduled where applicable",Toast.LENGTH_LONG).show()});r.addView(roundButton("BACK TO DASHBOARD",Color.DKGRAY){dashboard()});show(r,{repaymentCenter(creditId,overdueOnly)})}
+    private fun recordRepayment(scheduleId:Long,creditId:Long,amount:Double){val input=field("Payment amount",true).apply{setText(String.format(Locale.US,"%.2f",amount))};AlertDialog.Builder(this).setTitle("Record repayment").setView(input).setNegativeButton("Cancel",null).setPositiveButton("SAVE"){_,_->val a=input.text.toString().toDoubleOrNull()?:0.0;if(a<=0){Toast.makeText(this,"Enter a valid payment",Toast.LENGTH_SHORT).show();return@setPositiveButton};db.recordPayment(scheduleId,creditId,a);Toast.makeText(this,"Payment recorded and schedule updated",Toast.LENGTH_LONG).show();repaymentCenter()}.show()}
+    private fun documentsCentre(){val r=page("Documents & Consent","Digital records for borrower/lender transparency");r.addView(cardButton("▤","Standard Lending T&C","Word-compatible document for borrower consent",amber){createAndShareTerms(null)});r.addView(space(8));r.addView(cardButton("✎","Credit acknowledgement","Create/share a transaction document from Credit History",teal){creditHistory(null)});r.addView(space(8));r.addView(tv("Documents are generated locally from transaction data stored in the app.",13f,Color.GRAY));r.addView(roundButton("BACK",Color.DKGRAY){dashboard()});show(r,::documentsCentre)}
+    private fun createAndShareTerms(reference:String?){val stamp=fmt(Date());val html="""<html><body><h1>Udhaardaar – Standard Lending Terms & Conditions</h1><p><b>Version:</b> V3.2.1 &nbsp; <b>Date:</b> $stamp</p><ol><li>The parties should verify identity, amount, repayment terms, dates and supporting documents before consent.</li><li>The repayment schedule recorded in Udhaardaar is a transaction record of the agreed schedule.</li><li>Guarantor details should be entered only with the guarantor's knowledge and consent.</li><li>Trade credit should be supported by the relevant invoice and business identifiers such as GSTIN.</li><li>OTP consent records electronic confirmation and does not by itself replace any legally required agreement, stamp duty or registration.</li><li>Users should retain invoices, receipts, agreements and repayment evidence.</li><li>These are general standard terms and should be reviewed for the specific transaction and applicable law.</li></ol><p><b>Reference:</b> ${reference?:"Standard T&C"}</p></body></html>""";val file=java.io.File(cacheDir,"Udhaardaar_Terms_${System.currentTimeMillis()}.doc");file.writeText(html);val uri=androidx.core.content.FileProvider.getUriForFile(this,"$packageName.fileprovider",file);startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply{type="application/msword";putExtra(Intent.EXTRA_STREAM,uri);addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)},"Share / open Word document"))}
+    private fun pickPhoto(target:ImageView){photoTarget=target;startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="image/*";addCategory(Intent.CATEGORY_OPENABLE)},1001)}
+    private data class InvoiceTarget(val info:TextView,val scan:TextView,val gstin:EditText,val amount:EditText)
+    private fun pickInvoice(info:TextView,scan:TextView,gstin:EditText,amount:EditText){invoiceTarget=InvoiceTarget(info,scan,gstin,amount);startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="image/*";addCategory(Intent.CATEGORY_OPENABLE)},1002)}
+    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){super.onActivityResult(requestCode,resultCode,data);if(resultCode!=RESULT_OK||data?.data==null)return;val uri=data.data!!;if(requestCode==1001){selectedPhotoUri=uri;photoTarget?.setImageURI(uri)}else if(requestCode==1002){invoiceUri=uri;invoiceTarget?.info?.text="Invoice selected: ${uri.lastPathSegment?:"image"}";invoiceTarget?.scan?.text="Invoice attached; verify GSTIN and amount manually.";invoiceText="Invoice image selected: $uri"}}
+    private fun scheduleReminderForCredit(creditId:Long){val next=db.nextSchedule(creditId)?:return;val millis=runCatching{SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(next.dueDate)?.time?:0L}.getOrDefault(0L);if(millis<=System.currentTimeMillis())return;val intent=Intent(this,ReminderReceiver::class.java).apply{putExtra("credit_id",creditId);putExtra("due_date",next.dueDate)};val pi=PendingIntent.getBroadcast(this,(creditId%Int.MAX_VALUE).toInt(),intent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE);(getSystemService(ALARM_SERVICE)as AlarmManager).setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,millis,pi)}
+    private fun validName(e:EditText)=e.text.toString().trim().length>=2;private fun validAddress(e:EditText)=e.text.toString().trim().length>=5;private fun otpCode()=(100000+Random.nextInt(900000)).toString();private fun money(v:Double)="₹"+String.format(Locale.US,"%,.2f",v);private fun fmt(d:Date)=SimpleDateFormat("yyyy-MM-dd",Locale.US).format(d)
 }
