@@ -39,18 +39,18 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           files = [
               Path('app/src/main/java/com/udhaardaar/mvp/V32Activity.kt'),
               Path('app/src/main/java/com/udhaardaar/mvp/V32DatabaseHelper.kt'),
           ]
           for p in files:
               s = p.read_text(encoding='utf-8')
-              # The generated V3.2.2 sources contain JSON-style escaping.
               s = s.replace('\\"', '"')
-              # Kotlin requires whitespace between the else keyword and a string literal.
-              s = s.replace('else"', 'else "')
-              # Restore escaped newlines inside Kotlin strings.
-              s = s.replace('\\\n', '\\n')
+              s = re.sub(r'([)\\]}])"', r'\1 "', s)
+              s = re.sub(r'\belse"', 'else "', s)
+              s = re.sub(r'\breturn"', 'return "', s)
+              s = re.sub(r'\bwhen\{', 'when {', s)
               p.write_text(s, encoding='utf-8')
           PY
       - name: Apply V3.2.2 visual theme
