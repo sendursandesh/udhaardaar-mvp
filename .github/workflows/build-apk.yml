@@ -33,6 +33,31 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
+      - name: Normalize V3.2.2 Kotlin source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          for name in [
+              'app/src/main/java/com/udhaardaar/mvp/V32Activity.kt',
+              'app/src/main/java/com/udhaardaar/mvp/V32DatabaseHelper.kt',
+          ]:
+              p = Path(name)
+              s = p.read_text(encoding='utf-8')
+              s = s.replace('""else', '"" else')
+              s = s.replace('else"', 'else "')
+              s = s.replace('\\\n', '\\n')
+              p.write_text(s, encoding='utf-8')
+          PY
+      - name: Apply V3.2.2 visual theme
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/com/udhaardaar/mvp/V32Activity.kt')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('private val bg = Color.rgb(246, 248, 252)', 'private val bg = Color.rgb(221, 242, 255)')
+          s = s.replace('background=box(navy,navy,24)', 'background=box(blue,teal,24)')
+          p.write_text(s, encoding='utf-8')
+          PY
       - name: Build Debug APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Verify APK exists
