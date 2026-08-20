@@ -54,6 +54,25 @@ class V323Activity : AppCompatActivity() {
     private fun button(s: String, color: Int = blue, action: () -> Unit) = Button(this).apply { text = s; isAllCaps = false; textSize = 14f; setTextColor(Color.WHITE); background = bg(color, color, 18); setOnClickListener { action() } }
     private fun gap(h: Int) = Space(this).apply { layoutParams = LinearLayout.LayoutParams(1, dp(h)) }
 
+    private fun logo(size: Int = 58): ImageView = ImageView(this).apply {
+        layoutParams = LinearLayout.LayoutParams(dp(size), dp(size)).apply { gravity = Gravity.CENTER; setMargins(0, dp(2), 0, dp(2)) }
+        setImageResource(R.drawable.udhaardaar_logo)
+        scaleType = ImageView.ScaleType.CENTER_INSIDE
+        contentDescription = "Udhaardaar logo"
+    }
+
+    private fun brandHeader(title: String, subtitle: String): LinearLayout {
+        val h = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(8), dp(8), dp(8), dp(8)); background = bg(Color.WHITE, Color.rgb(190, 220, 235), 22) }
+        h.addView(logo(54))
+        val t = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(0, -2, 1f); setPadding(dp(6), 0, dp(4), 0) }
+        t.addView(label("Udhaardaar", 21f, navy))
+        t.addView(label(title, 17f, blue))
+        t.addView(label(subtitle, 11f, Color.rgb(70, 90, 105)))
+        h.addView(t)
+        h.addView(button("HOME", blue) { history.clear(); dashboard() }, LinearLayout.LayoutParams(dp(76), dp(44)))
+        return h
+    }
+
     private fun show(view: View, push: Boolean = true) {
         if (push) findViewById<ViewGroup>(android.R.id.content)?.getChildAt(0)?.let { history.addLast(it) }
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(view) })
@@ -61,11 +80,9 @@ class V323Activity : AppCompatActivity() {
 
     private fun page(title: String, subtitle: String): LinearLayout {
         val r = root()
-        val h = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val t = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(0, -2, 1f) }
-        t.addView(label("🤝  $title", 24f)); t.addView(label(subtitle, 12f, Color.DKGRAY)); h.addView(t)
-        h.addView(button("HOME", blue) { history.clear(); dashboard() }, LinearLayout.LayoutParams(dp(78), dp(44)))
-        r.addView(h); r.addView(gap(8)); return r
+        r.addView(brandHeader(title, subtitle))
+        r.addView(gap(10))
+        return r
     }
 
     private fun photoView(uri: String?, size: Int = 92) = ImageView(this).apply {
@@ -88,8 +105,14 @@ class V323Activity : AppCompatActivity() {
 
     private fun ownerRegistration() {
         history.clear(); val r = root()
-        r.addView(label("🤝  UDHAARDAAR", 29f, Color.WHITE).apply { gravity = Gravity.CENTER; background = bg(teal, teal, 24); setPadding(dp(10), dp(18), dp(10), dp(18)) })
-        r.addView(label("Your Credit. Your Trust. Our Record.", 14f).apply { gravity = Gravity.CENTER })
+        val hero = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(14), dp(14), dp(14), dp(14)); background = bg(Color.WHITE, Color.rgb(185, 218, 235), 26) }
+        hero.addView(logo(94))
+        hero.addView(label("Udhaardaar", 30f, navy).apply { gravity = Gravity.CENTER })
+        hero.addView(label("Your Credit. Your Trust. Our Record.", 14f, teal).apply { gravity = Gravity.CENTER })
+        r.addView(hero)
+        r.addView(gap(12))
+        r.addView(label("Create your secure lender profile", 20f, navy))
+        r.addView(label("Your profile is the starting point for credit records, borrower history and digital documents.", 12f, Color.rgb(70, 90, 105)))
         val name = field("Lender / Account Owner name *"); val mobile = field("Mobile number * (10 digits)", 10); val address = field("Full address *"); val email = field("Email (optional)"); val otpBox = field("Enter 6-digit OTP", 6).apply { visibility = View.GONE }
         listOf(name,mobile,address,email).forEach { r.addView(it, LinearLayout.LayoutParams(-1,dp(56)).apply { setMargins(0,dp(3),0,dp(3)) }) }
         r.addView(button("ADD PROFILE PHOTO (OPTIONAL)", teal) { choosePhoto() }); r.addView(otpBox)
@@ -106,8 +129,10 @@ class V323Activity : AppCompatActivity() {
     }
 
     private fun dashboard() {
-        val r = page("Udhaardaar Dashboard", "Digital informal-credit record & repayment manager")
-        val u = db.userData(); r.addView(photoView(u?.photo, 86)); r.addView(label("Welcome, ${u?.name ?: "Lender"}",21f)); r.addView(label("Unique ID: ${u?.id ?: "—"}",12f,Color.DKGRAY)); r.addView(gap(4))
+        val r = page("Dashboard", "Digital informal-credit record & repayment manager")
+        val u = db.userData()
+        val profileCard = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(12), dp(10), dp(12), dp(10)); background = bg(Color.WHITE, Color.rgb(190, 220, 235), 20) }
+        profileCard.addView(photoView(u?.photo, 72)); val pt = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(0, -2, 1f); setPadding(dp(10), 0, 0, 0) }; pt.addView(label("Welcome, ${u?.name ?: "Lender"}",21f)); pt.addView(label("Unique ID: ${u?.id ?: "—"}",12f,Color.DKGRAY)); profileCard.addView(pt); r.addView(profileCard); r.addView(gap(8))
         metric(r,"Credit extended",money(db.totalCredit("Credit Given")),blue){ history("Credit Given") }
         metric(r,"Credit received",money(db.totalCredit("Credit Received")),teal){ history("Credit Received") }
         metric(r,"Due / Overdue","${db.dueCount(false)} / ${db.dueCount(true)}",amber){ repayments(false) }
@@ -117,7 +142,7 @@ class V323Activity : AppCompatActivity() {
         action(r,"₹","REPAYMENT CENTRE","Record payments and review due / overdue schedules",green){ repayments(false) }
         action(r,"▤","DIGITAL DOCUMENTS & CONSENT","Read acknowledgement before consent",amber){ documents() }
         action(r,"◎","MY PROFILE","Identity and profile photo",teal){ ownerProfile() }
-        r.addView(button("LOGOUT",Color.DKGRAY){ prefs.edit().putBoolean("logged_in",false).apply(); history.clear(); ownerRegistration() }); show(r,false)
+        r.addView(button("LOGOUT",Color.rgb(90,110,125)){ prefs.edit().putBoolean("logged_in",false).apply(); history.clear(); ownerRegistration() }); show(r,false)
     }
 
     private fun metric(r:LinearLayout,title:String,value:String,color:Int,click:()->Unit){
@@ -131,7 +156,7 @@ class V323Activity : AppCompatActivity() {
 
     private fun searchProfiles(role:String){
         val r=page(if(role=="BORROWER")"Search Borrower" else "Search Guarantor","Name • mobile • PAN • Aadhaar • GSTIN • unique ID");val q=field("Search");val list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
-        r.addView(q,LinearLayout.LayoutParams(-1,dp(56)));r.addView(button("SEARCH",blue){refreshProfiles(q,list,role)});r.addView(button("CREATE NEW PROFILE",green){profileForm(role,null)});r.addView(gap(5));r.addView(list);refreshProfiles(q,list,role);r.addView(button("BACK",Color.DKGRAY){history.clear();dashboard()});show(r)
+        r.addView(q,LinearLayout.LayoutParams(-1,dp(56)));r.addView(button("SEARCH",blue){refreshProfiles(q,list,role)});r.addView(button("CREATE NEW PROFILE",green){profileForm(role,null)});r.addView(gap(5));r.addView(list);refreshProfiles(q,list,role);r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();dashboard()});show(r)
     }
     private fun refreshProfiles(q:EditText,list:LinearLayout,role:String){list.removeAllViews();val rows=db.searchProfiles(role,q.text.toString());if(rows.isEmpty())list.addView(label("No profile found."));rows.forEach{p->action(list,"●",p.name,"${p.mobile} • ${p.id}",blue){if(role=="BORROWER")borrowerSummary(p.rowId)else profileForm(role,p.rowId)}}}
 
@@ -145,11 +170,11 @@ class V323Activity : AppCompatActivity() {
             if(alternate.text.toString().isNotBlank()&&alternate.text.toString().length!=10){toast("Alternate mobile must be 10 digits");return@button}
             val id=p?.id?:"${if(role=="BORROWER")"BOR" else "GUA"}-${System.currentTimeMillis()}"
             db.upsertProfile(p?.rowId,role,id,name.text.toString().trim(),mobile.text.toString(),alternate.text.toString(),address.text.toString().trim(),city.text.toString(),state.text.toString(),pin.text.toString(),pan.text.toString().uppercase(Locale.US),aadhaar.text.toString(),gst.text.toString().uppercase(Locale.US),photoUri?.toString()?:p?.photo);toast("Profile saved: $id");searchProfiles(role)
-        });r.addView(button("BACK",Color.DKGRAY){history.clear();searchProfiles(role)});show(r)
+        });r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();searchProfiles(role)});show(r)
     }
 
     private fun borrowerSummary(id:Long){
-        val p=db.profileData(id)?:return;val s=db.borrowerSummary(id);val r=page("Borrower Summary","Review complete history before registering new credit");r.addView(photoView(p.photo,88));r.addView(label(p.name,24f));r.addView(label("Unique ID: ${p.id}"));r.addView(label("Mobile: ${p.mobile} • PAN: ${p.pan.ifBlank{"—"}}"));r.addView(label("Total credit: ${money(s.total)} • Outstanding: ${money(s.outstanding)}",16f));r.addView(label("Active: ${s.active} • Overdue: ${s.overdue}",14f,if(s.overdue>0)red else green));db.creditsForBorrower(id).forEach{c->action(r,"₹",c.creditId,"${c.type} • ${money(c.amount)} • ${c.status}",if(c.status=="OVERDUE")red else blue){creditDetail(c.id)}};r.addView(button("REGISTER NEW CREDIT FOR THIS BORROWER",blue){registerCredit(id)});r.addView(button("BACK",Color.DKGRAY){searchProfiles("BORROWER")});show(r)
+        val p=db.profileData(id)?:return;val s=db.borrowerSummary(id);val r=page("Borrower Summary","Review complete history before registering new credit");r.addView(photoView(p.photo,88));r.addView(label(p.name,24f));r.addView(label("Unique ID: ${p.id}"));r.addView(label("Mobile: ${p.mobile} • PAN: ${p.pan.ifBlank{"—"}}"));r.addView(label("Total credit: ${money(s.total)} • Outstanding: ${money(s.outstanding)}",16f));r.addView(label("Active: ${s.active} • Overdue: ${s.overdue}",14f,if(s.overdue>0)red else green));db.creditsForBorrower(id).forEach{c->action(r,"₹",c.creditId,"${c.type} • ${money(c.amount)} • ${c.status}",if(c.status=="OVERDUE")red else blue){creditDetail(c.id)}};r.addView(button("REGISTER NEW CREDIT FOR THIS BORROWER",blue){registerCredit(id)});r.addView(button("BACK",Color.rgb(90,110,125)){searchProfiles("BORROWER")});show(r)
     }
 
     private fun registerCredit(preselected:Long?){
@@ -168,15 +193,15 @@ class V323Activity : AppCompatActivity() {
             val dialog=AlertDialog.Builder(this).setTitle("Digital document & consent").setMessage(details).setView(input).setNegativeButton("CANCEL",null).setPositiveButton("SEND OTP",null).create()
             dialog.setOnShowListener{dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{toast("Demo OTP: $otp");dialog.dismiss();AlertDialog.Builder(this).setTitle("Confirm consent").setMessage(details+"\n\nDemo OTP: $otp").setView(input).setNegativeButton("CANCEL",null).setPositiveButton("CONFIRM & SAVE"){_,_->if(input.text.toString()==otp){val cid=db.addCredit(borrowers[borrower.selectedItemPosition].rowId,gId,type.selectedItem.toString(),direction.selectedItem.toString(),p,rate,months,method.selectedItem.toString(),installment,interest,payable,start,end,"",invoiceUri?.toString(),true);db.createSchedule(cid,installment,months,end);toast("Credit registered successfully");history.clear();dashboard()}else toast("Incorrect OTP")}.show()}}
             dialog.show()
-        });r.addView(button("BACK",Color.DKGRAY){history.clear();dashboard()});show(r)
+        });r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();dashboard()});show(r)
     }
 
-    private fun history(direction:String?){val r=page("Credit History",if(direction==null)"All registered transactions" else direction);val rows=db.credits(direction);if(rows.isEmpty())r.addView(label("No credit records yet."));rows.forEach{c->action(r,"₹",c.creditId,"${c.borrowerName} • ${c.type} • ${money(c.amount)} • ${c.status}",if(c.status=="OVERDUE")red else blue){creditDetail(c.id)}};r.addView(button("BACK",Color.DKGRAY){history.clear();dashboard()});show(r)}
-    private fun creditDetail(id:Long){val c=db.creditDetail(id)?:return;val r=page("Credit ${c.creditId}","Complete digital credit record");r.addView(label("Borrower: ${c.borrowerName}"));r.addView(label("Type: ${c.type} • Direction: ${c.direction}"));r.addView(label("Principal: ${money(c.amount)} • ROI: ${c.roi}%"));r.addView(label("Method: ${c.method} • Payable: ${money(c.payable)}"));r.addView(label("Period: ${c.start} to ${c.end}"));r.addView(label("Status: ${c.status}"));r.addView(button("VIEW REPAYMENT SCHEDULE",green){repayments(false)});r.addView(button("BACK",Color.DKGRAY){history(null)});show(r)}
+    private fun history(direction:String?){val r=page("Credit History",if(direction==null)"All registered transactions" else direction);val rows=db.credits(direction);if(rows.isEmpty())r.addView(label("No credit records yet."));rows.forEach{c->action(r,"₹",c.creditId,"${c.borrowerName} • ${c.type} • ${money(c.amount)} • ${c.status}",if(c.status=="OVERDUE")red else blue){creditDetail(c.id)}};r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();dashboard()});show(r)}
+    private fun creditDetail(id:Long){val c=db.creditDetail(id)?:return;val r=page("Credit ${c.creditId}","Complete digital credit record");r.addView(label("Borrower: ${c.borrowerName}"));r.addView(label("Type: ${c.type} • Direction: ${c.direction}"));r.addView(label("Principal: ${money(c.amount)} • ROI: ${c.roi}%"));r.addView(label("Method: ${c.method} • Payable: ${money(c.payable)}"));r.addView(label("Period: ${c.start} to ${c.end}"));r.addView(label("Status: ${c.status}"));r.addView(button("VIEW REPAYMENT SCHEDULE",green){repayments(false)});r.addView(button("BACK",Color.rgb(90,110,125)){history(null)});show(r)}
 
-    private fun repayments(overdue:Boolean){val r=page("Repayment Centre",if(overdue)"Overdue payments" else "Due and upcoming payments");val rows=db.schedules(null,overdue);if(rows.isEmpty())r.addView(label("No payments in this list."));rows.forEach{s->action(r,"₹",s.creditId,"Due ${s.dueDate} • ${money(s.amount)} • ${s.status}",if(s.status=="OVERDUE")red else green){recordPayment(s.id,s.creditDbId,s.amount)}};r.addView(button("BACK",Color.DKGRAY){history.clear();dashboard()});show(r)}
+    private fun repayments(overdue:Boolean){val r=page("Repayment Centre",if(overdue)"Overdue payments" else "Due and upcoming payments");val rows=db.schedules(null,overdue);if(rows.isEmpty())r.addView(label("No payments in this list."));rows.forEach{s->action(r,"₹",s.creditId,"Due ${s.dueDate} • ${money(s.amount)} • ${s.status}",if(s.status=="OVERDUE")red else green){recordPayment(s.id,s.creditDbId,s.amount)}};r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();dashboard()});show(r)}
     private fun recordPayment(scheduleId:Long,creditId:Long,due:Double){val input=field("Payment amount");input.setText(String.format(Locale.US,"%.2f",due));AlertDialog.Builder(this).setTitle("Record repayment").setView(input).setNegativeButton("CANCEL",null).setPositiveButton("SAVE"){_,_->val amount=input.text.toString().toDoubleOrNull()?:0.0;if(amount<=0)toast("Enter a valid amount")else{db.recordPayment(scheduleId,creditId,amount);toast("Repayment recorded");repayments(false)}}.show()}
 
-    private fun documents(){val r=page("Digital Documents & Consent","Borrower-readable verification document");r.addView(label("UDHAARDAAR DIGITAL CREDIT ACKNOWLEDGEMENT",19f));r.addView(label("Before consent, review borrower identity, credit type, principal, ROI, repayment method, schedule, guarantor details and supporting invoice/document. The record is retained for future verification and repayment history."));r.addView(button("I HAVE READ THE DOCUMENT",green){toast("Acknowledged. Final consent is OTP-gated during credit registration.")});r.addView(button("BACK",Color.DKGRAY){history.clear();dashboard()});show(r)}
-    private fun ownerProfile(){val u=db.userData()?:return;val r=page("Lender Profile","Identity and profile photo");r.addView(photoView(u.photo,110));r.addView(label("Unique ID: ${u.id}"));r.addView(label("Name: ${u.name}",19f));r.addView(label("Mobile: ${u.mobile}"));r.addView(label("Address: ${u.address}"));r.addView(label("Email: ${u.email.ifBlank{"—"}}"));r.addView(button("BACK",Color.DKGRAY){history.clear();dashboard()});show(r)}
+    private fun documents(){val r=page("Digital Documents & Consent","Borrower-readable verification document");r.addView(label("UDHAARDAAR DIGITAL CREDIT ACKNOWLEDGEMENT",19f));r.addView(label("Before consent, review borrower identity, credit type, principal, ROI, repayment method, schedule, guarantor details and supporting invoice/document. The record is retained for future verification and repayment history."));r.addView(button("I HAVE READ THE DOCUMENT",green){toast("Acknowledged. Final consent is OTP-gated during credit registration.")});r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();dashboard()});show(r)}
+    private fun ownerProfile(){val u=db.userData()?:return;val r=page("Lender Profile","Identity and profile photo");r.addView(photoView(u.photo,110));r.addView(label("Unique ID: ${u.id}"));r.addView(label("Name: ${u.name}",19f));r.addView(label("Mobile: ${u.mobile}"));r.addView(label("Address: ${u.address}"));r.addView(label("Email: ${u.email.ifBlank{"—"}}"));r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();dashboard()});show(r)}
 }
