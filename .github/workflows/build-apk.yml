@@ -30,34 +30,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Repair known Kotlin syntax blockers
+      - name: Validate V3.2 source
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          for p in Path('app/src/main/java').rglob('*.kt'):
-              s = p.read_text(encoding='utf-8')
-              s = s.replace('else"', 'else "')
-              p.write_text(s, encoding='utf-8')
-          PY
-          python3 - <<'PY'
-          from pathlib import Path
-          for p in Path('app/src/main/java').rglob('*.kt'):
-              s = p.read_text(encoding='utf-8')
-              if 'else"' in s:
-                  raise SystemExit(f'Invalid else-string literal remains in {p}')
-          PY
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('app/src/main/java/com/udhaardaar/mvp/V32SafeLauncherActivity.kt')
-          s = p.read_text(encoding='utf-8')
-          s = s.replace('val c = db.user()', 'val exists = db.hasUser()')
-          s = s.replace('val exists = c.moveToFirst()\n', '')
-          s = s.replace('c.close()\n', '')
-          p.write_text(s, encoding='utf-8')
-          PY
-          grep -R -n 'else"' app/src/main/java || true
+          if grep -R -n 'else"' app/src/main/java --include='*.kt'; then
+            echo 'Invalid Kotlin else-string syntax remains.'
+            exit 1
+          fi
+          sed -i 's/textColor(navy)/setTextColor(navy)/g' app/src/main/java/com/udhaardaar/mvp/V32Activity.kt
+          if grep -R -n 'db\.user()' app/src/main/java --include='*.kt'; then
+            echo 'Obsolete db.user() call remains.'
+            exit 1
+          fi
       - name: Build Debug APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Verify APK exists
