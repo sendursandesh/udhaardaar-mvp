@@ -2,9 +2,14 @@
 <resources>
     <style name="Theme.Udhaardaar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:statusBarColor">#0F2647</item>
-        <item name="android:navigationBarColor">#0F2647</item>
-        <item name="android:windowBackground">#F6F8FC</item>
-        <item name="colorAccent">#1F6FEB</item>
+        <item name="android:statusBarColor">#E1F4FF</item>
+        <item name="android:navigationBarColor">#E1F4FF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">#E1F4FF</item>
+        <item name="colorAccent">#1976D2</item>
+        <item name="colorPrimary">#1976D2</item>
+        <item name="colorPrimaryVariant">#155DB0</item>
+        <item name="colorSecondary">#00A58A</item>
     </style>
 </resources>
