@@ -33,8 +33,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Confirm V3.2.2 development build
-        run: echo "Building v3-development V3.2.2 correction commit"
       - name: Normalize V3.2.2 Kotlin source
         run: |
           python3 - <<'PY'
@@ -45,8 +43,9 @@ jobs:
           ]:
               p = Path(name)
               s = p.read_text(encoding='utf-8')
-              s = s.replace('""else', '"" else')
-              s = s.replace('else"', 'else "')
+              # The generated V3.2.2 Kotlin files were accidentally JSON-escaped.
+              # Restore normal Kotlin quotes and newline escapes before compilation.
+              s = s.replace('\\"', '"')
               s = s.replace('\\\n', '\\n')
               p.write_text(s, encoding='utf-8')
           PY
