@@ -31,14 +31,33 @@ jobs:
         with:
           gradle-version: '8.7'
       - name: Repair known Kotlin syntax blockers
+        shell: bash
         run: |
-          # Undo the previous build-time transformation that incorrectly changed valid Elvis operators.
-          find app/src/main/java -name '*.kt' -print0 | xargs -0 sed -i -E 's/\?[[:space:]]*:[[:space:]]*/?:/g'
-          # Kotlin requires separation around else when it is immediately followed by a string literal.
-          find app/src/main/java -name '*.kt' -print0 | xargs -0 sed -i -E 's/else"/else "/g'
-          # V3 safe launcher must use the database's hasUser() API.
-          sed -i 's/val c = db\.user()/val exists = db.hasUser()/g' app/src/main/java/com/udhaardaar/mvp/V32SafeLauncherActivity.kt
-          sed -i '/val exists = c\.moveToFirst()/d;/c\.close()/d' app/src/main/java/com/udhaardaar/mvp/V32SafeLauncherActivity.kt
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          for p in Path('app/src/main/java').rglob('*.kt'):
+              s = p.read_text(encoding='utf-8')
+              s = s.replace('else"', 'else "')
+              p.write_text(s, encoding='utf-8')
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
+          for p in Path('app/src/main/java').rglob('*.kt'):
+              s = p.read_text(encoding='utf-8')
+              if 'else"' in s:
+                  raise SystemExit(f'Invalid else-string literal remains in {p}')
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/com/udhaardaar/mvp/V32SafeLauncherActivity.kt')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('val c = db.user()', 'val exists = db.hasUser()')
+          s = s.replace('val exists = c.moveToFirst()\n', '')
+          s = s.replace('c.close()\n', '')
+          p.write_text(s, encoding='utf-8')
+          PY
+          grep -R -n 'else"' app/src/main/java || true
       - name: Build Debug APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Verify APK exists
