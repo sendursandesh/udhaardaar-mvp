@@ -20,7 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -30,9 +30,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Normalize Kotlin source before build
+      - name: Repair known Kotlin syntax blockers
         run: |
-          find app/src/main/java -name '*.kt' -print0 | xargs -0 sed -i -E 's/\?\s*:/ ? : /g'
+          # Undo the previous build-time transformation that incorrectly changed valid Elvis operators.
+          find app/src/main/java -name '*.kt' -print0 | xargs -0 sed -i -E 's/\?[[:space:]]*:[[:space:]]*/?:/g'
+          # Kotlin requires separation around else when it is immediately followed by a string literal.
+          find app/src/main/java -name '*.kt' -print0 | xargs -0 sed -i -E 's/else"/else "/g'
+          # V3 safe launcher must use the database's hasUser() API.
           sed -i 's/val c = db\.user()/val exists = db.hasUser()/g' app/src/main/java/com/udhaardaar/mvp/V32SafeLauncherActivity.kt
           sed -i '/val exists = c\.moveToFirst()/d;/c\.close()/d' app/src/main/java/com/udhaardaar/mvp/V32SafeLauncherActivity.kt
       - name: Build Debug APK
