@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application android:name=".UdhaardaarApp" android:allowBackup="true" android:label="Udhaardaar" android:supportsRtl="true" android:theme="@style/Theme.Udhaardaar">
-        <activity android:name=".V32Activity" android:exported="true">
+        <activity android:name=".V33Activity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".V32Activity" android:exported="false" />
         <activity android:name=".AdvancedLauncherActivity" android:exported="false" />
         <activity android:name=".DashboardV3Activity" android:exported="false" />
         <activity android:name=".VerificationDocumentsActivity" android:exported="false" />
