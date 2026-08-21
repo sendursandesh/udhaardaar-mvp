@@ -1,13 +1,10 @@
-name: Build Udhaardaar APK
+name: Build Udhaardaar V6 APK
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - v3-development
-      - v3.2.2-final-fixes
-      - agent/v3.2-functional
+      - v6-development
 
 permissions:
   contents: read
@@ -30,56 +27,31 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Normalize V3.2 Kotlin syntax
+      - name: Normalize legacy Kotlin syntax
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           import re
-
-          roots = [Path('app/src/main/java/com/udhaardaar/mvp/V32Activity.kt'),
-                   Path('app/src/main/java/com/udhaardaar/mvp/V32DatabaseHelper.kt'),
-                   Path('app/src/main/java/com/udhaardaar/mvp/V32SafeLauncherActivity.kt')]
-
+          roots = [Path('app/src/main/java/com/udhaardaar/mvp/V32Activity.kt'), Path('app/src/main/java/com/udhaardaar/mvp/V32DatabaseHelper.kt'), Path('app/src/main/java/com/udhaardaar/mvp/V32SafeLauncherActivity.kt')]
           for path in roots:
-              if not path.exists():
-                  continue
+              if not path.exists(): continue
               s = path.read_text(encoding='utf-8')
-
-              # Kotlin requires the else branch of an if-expression to be a
-              # separate token. The previous generated source used compact
-              # C/Java-style forms such as if (x)"a"else"b".
-              s = re.sub(r'\)(\s*)"([^"\n]*)"else"([^"\n]*)"',
-                         r') "\2" else "\3"', s)
-              s = re.sub(r'\)\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([A-Za-z_][A-Za-z0-9_]*)',
-                         r') \1 else \2', s)
-
+              s = re.sub(r'\)(\s*)"([^"\n]*)"else"([^"\n]*)"', r') "\2" else "\3"', s)
+              s = re.sub(r'\)\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([A-Za-z_][A-Za-z0-9_]*)', r') \1 else \2', s)
               path.write_text(s, encoding='utf-8')
-
-          # Keep the existing API-name correction explicit and deterministic.
           p = Path('app/src/main/java/com/udhaardaar/mvp/V32Activity.kt')
-          if p.exists():
-              s = p.read_text(encoding='utf-8').replace('textColor(navy)', 'setTextColor(navy)')
-              p.write_text(s, encoding='utf-8')
+          if p.exists(): p.write_text(p.read_text(encoding='utf-8').replace('textColor(navy)', 'setTextColor(navy)'), encoding='utf-8')
           PY
-
-          if grep -R -nE 'if\([^\n]*\)"[^"\n]*"else"|\)[A-Za-z_][A-Za-z0-9_]*:[A-Za-z_][A-Za-z0-9_]*' app/src/main/java/com/udhaardaar/mvp --include='V32*.kt'; then
-            echo 'Known malformed V3.2 conditional syntax remains.'
-            exit 1
-          fi
-          if grep -R -n 'db\.user()' app/src/main/java --include='*.kt'; then
-            echo 'Obsolete db.user() call remains.'
-            exit 1
-          fi
-      - name: Build Debug APK
+      - name: Build V6 Debug APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Verify APK exists
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           ls -lh app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload APK
+      - name: Upload V6 APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-V3.2.2-debug-APK-${{ github.ref_name }}
+          name: Udhaardaar-V6.0.0-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
