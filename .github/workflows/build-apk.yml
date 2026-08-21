@@ -50,8 +50,8 @@ jobs:
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           ls -lh app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload V6 APK
+      - name: Upload V6.0.1 APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-V6.0.0-debug-APK
+          name: Udhaardaar-V6.0.1-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
