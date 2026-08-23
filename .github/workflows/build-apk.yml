@@ -35,39 +35,83 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Normalize and validate V3.2.3 Kotlin source
+      - name: Apply V3.2.4 corrections for build
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-          files = [
-              Path('app/src/main/java/com/udhaardaar/mvp/V32Activity.kt'),
-              Path('app/src/main/java/com/udhaardaar/mvp/V32DatabaseHelper.kt'),
-              Path('app/src/main/java/com/udhaardaar/mvp/V323Activity.kt'),
-          ]
-          for p in files:
-              s = p.read_text(encoding='utf-8')
-              s = s.replace('\\"', '"')
-              s = re.sub(r'([)\\]}])"', r'\1 "', s)
-              s = re.sub(r'\belse"', 'else "', s)
-              s = re.sub(r'\breturn"', 'return "', s)
-              s = re.sub(r'\bwhen\{', 'when {', s)
-              p.write_text(s, encoding='utf-8')
-
           p = Path('app/src/main/java/com/udhaardaar/mvp/V323Activity.kt')
           s = p.read_text(encoding='utf-8')
+          s = s.replace('import android.widget.*\n', 'import android.widget.*\nimport android.text.InputType\nimport android.text.Editable\nimport android.text.TextWatcher\n') if 'import android.text.InputType' not in s else s
           if 'import android.view.ViewGroup' not in s:
               s = s.replace('import android.view.View\n', 'import android.view.View\nimport android.view.ViewGroup\n')
-          p.write_text(s, encoding='utf-8')
+
+          old = 'private fun field(hint: String, max: Int = 0) = EditText(this).apply { this.hint = hint; textSize = 16f; setSingleLine(true); setPadding(dp(12), dp(8), dp(12), dp(8)); background = bg(Color.WHITE, Color.rgb(190,210,225), 14); if (max > 0) filters = arrayOf(android.text.InputFilter.LengthFilter(max)) }'
+          new = '''private fun field(hint: String, max: Int = 0) = EditText(this).apply {
+              this.hint = hint; textSize = 16f; setSingleLine(true)
+              setPadding(dp(12), dp(8), dp(12), dp(8)); background = bg(Color.WHITE, Color.rgb(190,210,225), 14)
+              val h = hint.lowercase(Locale.US)
+              inputType = when {
+                  h.contains("email") -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+                  h.contains("mobile") || h.contains("pin") || h.contains("aadhaar") -> InputType.TYPE_CLASS_PHONE
+                  h.contains("roi") || h.contains("rate") || h.contains("interest") -> InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                  else -> InputType.TYPE_CLASS_TEXT
+              }
+              if (h.contains("pan") || h.contains("gstin")) inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
+              if (max > 0) filters = arrayOf(android.text.InputFilter.LengthFilter(max))
+          }'''
+          if old in s: s = s.replace(old, new)
+
+          marker = 'private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_LONG).show()'
+          helpers = '''private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_LONG).show()
+          private fun validPan(v:String)=Regex("[A-Z]{5}[0-9]{4}[A-Z]").matches(v.trim().uppercase(Locale.US))
+          private fun validGstin(v:String)=Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]").matches(v.trim().uppercase(Locale.US))
+          private fun validEmail(v:String)=v.isBlank() || android.util.Patterns.EMAIL_ADDRESS.matcher(v.trim()).matches()
+          private fun validMobile(v:String)=Regex("[0-9]{10}").matches(v)
+          private fun validAadhaar(v:String)=v.isBlank() || Regex("[0-9]{12}").matches(v)
+          private fun validPin(v:String)=v.isBlank() || Regex("[0-9]{6}").matches(v)'''
+          if marker in s and 'private fun validPan' not in s: s=s.replace(marker,helpers)
+
+          old_search='r.addView(q,LinearLayout.LayoutParams(-1,dp(56)));r.addView(button("SEARCH",blue){refreshProfiles(q,list,role)});'
+          new_search='''r.addView(q,LinearLayout.LayoutParams(-1,dp(56)))
+          q.addTextChangedListener(object:TextWatcher{
+              override fun beforeTextChanged(s:CharSequence?,start:Int,count:Int,after:Int){}
+              override fun onTextChanged(s:CharSequence?,start:Int,before:Int,count:Int){refreshProfiles(q,list,role)}
+              override fun afterTextChanged(s:Editable?){}
+          })
+          r.addView(button("SEARCH",blue){refreshProfiles(q,list,role)});'''
+          if old_search in s:s=s.replace(old_search,new_search)
+
+          old_click='if(role=="BORROWER")borrowerSummary(p.rowId)else profileForm(role,p.rowId)'
+          new_click='''if(role=="BORROWER") {
+              AlertDialog.Builder(this).setTitle("Authorised view required")
+                  .setMessage("Search alone does not disclose credit history or sensitive third-party data. Explicit consent is required before protected information can be viewed.")
+                  .setNegativeButton("CANCEL",null)
+                  .setPositiveButton("CONSENT + VIEW"){_,_->borrowerSummary(p.rowId)}.show()
+          } else profileForm(role,p.rowId)'''
+          if old_click in s:s=s.replace(old_click,new_click)
+
+          old_summary='private fun borrowerSummary(id:Long){'
+          new_summary='''private fun borrowerSummary(id:Long){
+              AlertDialog.Builder(this).setTitle("Authorised view")
+                  .setMessage("Protected borrower information is displayed only after explicit consent. Continue only with the concerned person's authorisation.")
+                  .setNegativeButton("CANCEL",null)
+                  .setPositiveButton("CONTINUE"){_,_->showBorrowerSummary(id)}.show()
+          }
+
+          private fun showBorrowerSummary(id:Long){'''
+          if old_summary in s and 'private fun showBorrowerSummary' not in s:s=s.replace(old_summary,new_summary,1)
+
+          p.write_text(s,encoding='utf-8')
           PY
-      - name: Build V3.2.3 Debug APK
+      - name: Build V3.2.4 corrected Debug APK
         run: gradle :app:assembleDebug --stacktrace
-      - name: Verify V3.2.3 APK exists
+      - name: Verify V3.2.4 APK exists
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           ls -lh app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload V3.2.3 APK
+      - name: Upload V3.2.4 corrected APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-V3.2.3-debug-APK-${{ github.ref_name }}
+          name: Udhaardaar-V3.2.4-corrected-debug-APK-${{ github.ref_name }}
           path: app/build/outputs/apk/debug/app-debug.apk
