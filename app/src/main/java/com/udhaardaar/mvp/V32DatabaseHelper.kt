@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.security.MessageDigest
 
 class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaar_v322.db", null, 5) {
     data class User(val id:String,val name:String,val mobile:String,val address:String,val email:String,val photo:String?)
@@ -16,6 +17,7 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
     data class Schedule(val id:Long,val creditId:Long,val code:String,val due:String,val amount:Double,val paid:Double,val status:String)
 
     private fun now() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
+    private fun consentHash(token:String)=MessageDigest.getInstance("SHA-256").digest(token.toByteArray(Charsets.UTF_8)).joinToString(""){"%02x".format(it)}
     private fun date(s:String):Date = runCatching { SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(s)!! }.getOrElse { Date() }
     private fun fmt(d:Date) = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(d)
 
@@ -91,7 +93,7 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
                 require(it.moveToFirst()){"Repayment schedule not found"}
                 val scheduled=it.getDouble(0);val paid=it.getDouble(1);val outstanding=(scheduled-paid).coerceAtLeast(0.0)
                 require(amount<=outstanding+0.005){"Repayment exceeds outstanding amount"}
-                db.insertOrThrow("repayment_consents",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("proposer_role",proposerRole);put("consent_token",token);put("status","CONSENTED");put("created",now());put("confirmed",now())})
+                db.insertOrThrow("repayment_consents",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("proposer_role",proposerRole);put("consent_token",consentHash(token));put("status","CONSENTED");put("created",now());put("confirmed",now())})
                 db.insertOrThrow("payments",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("date",now())})
                 val newPaid=paid+amount
                 val st=if(newPaid+0.005>=scheduled)"PAID" else "DUE"
