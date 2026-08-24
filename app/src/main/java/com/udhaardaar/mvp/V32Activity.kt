@@ -43,7 +43,7 @@ class V32Activity : AppCompatActivity() {
         val name=field("Lender / account owner name *");val mobile=field("Mobile number * (10 digits) ",true,10);val address=field("Full address *");val email=field("Email (optional) ");val otpBox=field("Enter 6-digit OTP",true,6);otpBox.visibility=View.GONE
         listOf(name,mobile,address,email).forEach{r.addView(it,LinearLayout.LayoutParams(-1,dp(58)).apply{setMargins(0,dp(3),0,dp(3))})}
         val img=ImageView(this).apply{layoutParams=LinearLayout.LayoutParams(-1,dp(150));setImageResource(android.R.drawable.ic_menu_camera);scaleType=ImageView.ScaleType.CENTER_INSIDE;background=box(Color.WHITE,Color.LTGRAY,16)};r.addView(img);r.addView(button("ADD PROFILE PHOTO (OPTIONAL) ",teal){photoTarget=img;pick(100)});r.addView(otpBox)
-        r.addView(button("CREATE PROFILE + SEND OTP",blue){if(name.text.toString().trim().length<2||mobile.text.toString().length!=10||address.text.toString().trim().length<5){toast("Name, address and exactly 10-digit mobile are required");return@button};if(!validEmail(email.text.toString())){email.error="Invalid email";return@button};if(!BuildConfig.DEBUG){toast("Live SMS OTP service is not configured; production registration is blocked.");return@button};otp=Random.nextInt(100000,1000000).toString();otpBox.visibility=View.VISIBLE;toast("Trial OTP: $otp\nDebug build only.")})
+        r.addView(button("CREATE PROFILE + SEND OTP",blue){if(name.text.toString().trim().length<2||mobile.text.toString().length!=10||address.text.toString().trim().length<5){toast("Name, address and exactly 10-digit mobile are required");return@button};if(!validEmail(email.text.toString())){email.error="Invalid email";return@button};if(!BuildConfig.DEBUG){toast("Live SMS OTP service is not configured; production registration is blocked.");return@button};otp=(java.security.SecureRandom().nextInt(900000)+100000).toString();otpBox.visibility=View.VISIBLE;toast("Trial OTP: $otp\nDebug build only.")})
         r.addView(button("VERIFY OTP + SAVE PROFILE",green){if(otp.isEmpty()||otpBox.text.toString()!=otp){otpBox.error="Incorrect OTP";return@button};db.saveUser("USR-${System.currentTimeMillis()}",name.text.toString().trim(),mobile.text.toString(),address.text.toString().trim(),email.text.toString().trim(),photoUri?.toString());dashboard()});show(r)
     }
 
@@ -143,7 +143,7 @@ class V32Activity : AppCompatActivity() {
         })
         r.addView(consent)
         val otpBox=field("Enter 6-digit consent OTP",true,6);r.addView(otpBox)
-        r.addView(button("SEND CONSENT OTP",blue){try{if(!BuildConfig.DEBUG){toast("Live SMS OTP service is not configured; production registration is blocked.");return@button};otp=Random.nextInt(100000,1000000).toString();toast("Trial OTP: "+otp+"\nDebug build only.")}catch(_:Exception){toast("OTP could not be started. Please retry.") } })
+        r.addView(button("SEND CONSENT OTP",blue){try{if(!BuildConfig.DEBUG){toast("Live SMS OTP service is not configured; production registration is blocked.");return@button};otp=(java.security.SecureRandom().nextInt(900000)+100000).toString();toast("Trial OTP: "+otp+"\nDebug build only.")}catch(_:Exception){toast("OTP could not be started. Please retry.") } })
         r.addView(button("FINAL VERIFY + REGISTER CREDIT",green){
             try{
                 if(!kfsViewed){toast("View the credit terms/KFS before consent");return@button};if(!consent.isChecked){toast("Digital consent is required");return@button}
