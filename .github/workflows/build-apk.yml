@@ -35,7 +35,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Apply V3.2.4 corrections for build
+      - name: Apply V3.2.7 corrections for build
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -104,14 +104,14 @@ jobs:
 
           p.write_text(s,encoding='utf-8')
           PY
-      - name: Build V3.2.4 corrected Debug APK
+      - name: Build V3.2.7 corrected Debug APK
         run: gradle :app:assembleDebug --stacktrace
-      - name: Verify V3.2.4 APK exists
+      - name: Verify V3.2.7 APK exists
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           ls -lh app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload V3.2.4 corrected APK
+      - name: Upload V3.2.7 corrected APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-V3.2.4-corrected-debug-APK-${{ github.ref_name }}
+          name: Udhaardaar-V3.2.7-corrected-debug-APK-${{ github.ref_name }}
           path: app/build/outputs/apk/debug/app-debug.apk
