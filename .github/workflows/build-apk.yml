@@ -11,6 +11,7 @@ on:
       - v3.2.5-final
   pull_request:
     branches:
+      - main
       - v3-development
 
 permissions:
