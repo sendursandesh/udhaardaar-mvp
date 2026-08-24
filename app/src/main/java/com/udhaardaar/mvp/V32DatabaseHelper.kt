@@ -9,9 +9,9 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaar_v322.db", null, 1) {
+class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaar_v322.db", null, 3) {
     data class User(val id:String,val name:String,val mobile:String,val address:String,val email:String,val photo:String?)
-    data class Profile(val rowId:Long,val id:String,val role:String,val name:String,val mobile:String,val address:String,val pan:String,val aadhaar:String,val gstin:String,val photo:String?)
+    data class Profile(val rowId:Long,val id:String,val role:String,val name:String,val mobile:String,val address:String,val city:String,val state:String,val pin:String,val pan:String,val aadhaar:String,val gstin:String,val photo:String?)
     data class Credit(val rowId:Long,val code:String,val borrowerId:Long,val borrowerName:String,val type:String,val direction:String,val amount:Double,val roi:Double,val method:String,val installment:Double,val interest:Double,val payable:Double,val start:String,val end:String,val due:String,val gstin:String,val invoice:String,val nach:Boolean,val status:String)
     data class Schedule(val id:Long,val creditId:Long,val code:String,val due:String,val amount:Double,val paid:Double,val status:String)
 
@@ -21,13 +21,21 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
 
     override fun onCreate(db:SQLiteDatabase) {
         db.execSQL("CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,uid TEXT UNIQUE,name TEXT,mobile TEXT,address TEXT,email TEXT,photo TEXT,created TEXT)")
-        db.execSQL("CREATE TABLE profiles(id INTEGER PRIMARY KEY AUTOINCREMENT,uid TEXT UNIQUE,role TEXT,name TEXT,mobile TEXT,address TEXT,pan TEXT,aadhaar TEXT,gstin TEXT,photo TEXT,created TEXT)")
+        db.execSQL("CREATE TABLE profiles(id INTEGER PRIMARY KEY AUTOINCREMENT,uid TEXT UNIQUE,role TEXT,name TEXT,mobile TEXT,address TEXT,city TEXT,state TEXT,pin TEXT,pan TEXT,aadhaar TEXT,gstin TEXT,photo TEXT,created TEXT)")
         db.execSQL("CREATE TABLE credits(id INTEGER PRIMARY KEY AUTOINCREMENT,code TEXT UNIQUE,borrower_id INTEGER,type TEXT,direction TEXT,amount REAL,roi REAL,method TEXT,installment REAL,interest REAL,payable REAL,start_date TEXT,end_date TEXT,due_date TEXT,gstin TEXT,invoice TEXT,nach INTEGER,status TEXT,otp INTEGER,created TEXT)")
         db.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,no INTEGER,due_date TEXT,amount REAL,paid REAL DEFAULT 0,status TEXT)")
         db.execSQL("CREATE TABLE payments(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,schedule_id INTEGER,amount REAL,date TEXT)")
+        db.execSQL("CREATE TABLE repayment_consents(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,schedule_id INTEGER,amount REAL,proposer_role TEXT,consent_token TEXT,status TEXT,created TEXT,confirmed TEXT)")
         db.execSQL("CREATE TABLE banks(id INTEGER PRIMARY KEY AUTOINCREMENT,owner_type TEXT,owner_id TEXT,holder TEXT,bank TEXT,account TEXT,ifsc TEXT,upi TEXT,nach INTEGER,created TEXT)")
     }
-    override fun onUpgrade(db:SQLiteDatabase,oldVersion:Int,newVersion:Int) {}
+    override fun onUpgrade(db:SQLiteDatabase,oldVersion:Int,newVersion:Int) {
+        if(oldVersion<2){
+            runCatching{db.execSQL("ALTER TABLE profiles ADD COLUMN city TEXT")}
+            runCatching{db.execSQL("ALTER TABLE profiles ADD COLUMN state TEXT")}
+            runCatching{db.execSQL("ALTER TABLE profiles ADD COLUMN pin TEXT")}
+        }
+        if(oldVersion<3) db.execSQL("CREATE TABLE IF NOT EXISTS repayment_consents(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,schedule_id INTEGER,amount REAL,proposer_role TEXT,consent_token TEXT,status TEXT,created TEXT,confirmed TEXT)")
+    }
 
     fun hasUser() = readableDatabase.rawQuery("SELECT id FROM users LIMIT 1",null).use { it.moveToFirst() }
     fun user():User? = readableDatabase.rawQuery("SELECT uid,name,mobile,address,email,photo FROM users LIMIT 1",null).use { if(!it.moveToFirst()) null else User(it.getString(0),it.getString(1),it.getString(2),it.getString(3),it.getString(4)?:(""),it.getString(5)) }
@@ -35,15 +43,15 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
         val v=ContentValues().apply { put("uid",uid);put("name",name);put("mobile",mobile);put("address",address);put("email",email);put("photo",photo);put("created",now()) }
         return writableDatabase.insert("users",null,v)
     }
-    fun saveProfile(existing:Long?,role:String,uid:String,name:String,mobile:String,address:String,pan:String,aadhaar:String,gstin:String,photo:String?):Long {
-        val v=ContentValues().apply { put("uid",uid);put("role",role);put("name",name);put("mobile",mobile);put("address",address);put("pan",pan);put("aadhaar",aadhaar);put("gstin",gstin);put("photo",photo);put("created",now()) }
+    fun saveProfile(existing:Long?,role:String,uid:String,name:String,mobile:String,address:String,city:String,state:String,pin:String,pan:String,aadhaar:String,gstin:String,photo:String?):Long {
+        val v=ContentValues().apply { put("uid",uid);put("role",role);put("name",name);put("mobile",mobile);put("address",address);put("city",city);put("state",state);put("pin",pin);put("pan",pan);put("aadhaar",aadhaar);put("gstin",gstin);put("photo",photo);put("created",now()) }
         if(existing==null) return writableDatabase.insert("profiles",null,v)
         writableDatabase.update("profiles",v,"id=?",arrayOf(existing.toString())); return existing
     }
-    private fun profile(c:android.database.Cursor)=Profile(c.getLong(0),c.getString(1),c.getString(2),c.getString(3),c.getString(4),c.getString(5)?:"",c.getString(6)?:"",c.getString(7)?:"",c.getString(8)?:"",c.getString(9))
+    private fun profile(c:android.database.Cursor)=Profile(c.getLong(0),c.getString(1),c.getString(2),c.getString(3),c.getString(4),c.getString(5)?:"",c.getString(6)?:"",c.getString(7)?:"",c.getString(8)?:"",c.getString(9)?:"",c.getString(10)?:"",c.getString(11)?:"",c.getString(12))
     fun profiles(role:String,q:String=""):List<Profile> {
         val out=mutableListOf<Profile>(); val x="%${q.trim()}%"
-        readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,address,pan,aadhaar,gstin,photo FROM profiles WHERE role=? AND(name LIKE ? OR mobile LIKE ? OR pan LIKE ? OR aadhaar LIKE ? OR uid LIKE ? OR gstin LIKE ?) ORDER BY name",arrayOf(role,x,x,x,x,x,x)).use { while(it.moveToNext()) out.add(profile(it)) }
+        readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,address,city,state,pin,pan,aadhaar,gstin,photo FROM profiles WHERE role=? AND(name LIKE ? OR mobile LIKE ? OR pan LIKE ? OR aadhaar LIKE ? OR uid LIKE ? OR gstin LIKE ?) ORDER BY name",arrayOf(role,x,x,x,x,x,x)).use { while(it.moveToNext()) out.add(profile(it)) }
         return out
     }
     fun profile(id:Long):Profile? = readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,address,pan,aadhaar,gstin,photo FROM profiles WHERE id=?",arrayOf(id.toString())).use { if(!it.moveToFirst()) null else profile(it) }
@@ -64,6 +72,13 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
     private fun refreshStatuses(){writableDatabase.execSQL("UPDATE schedules SET status='OVERDUE' WHERE due_date<? AND status='DUE'",arrayOf(fmt(Date())))}
     fun schedules(creditId:Long?=null,overdue:Boolean=false):List<Schedule>{refreshStatuses();val out=mutableListOf<Schedule>();val where=when{creditId!=null->"WHERE s.credit_id=?";overdue->"WHERE s.status='OVERDUE'";else->"WHERE s.status IN('DUE','OVERDUE')"};val args=if(creditId!=null)arrayOf(creditId.toString())else null;readableDatabase.rawQuery("SELECT s.id,s.credit_id,c.code,s.due_date,s.amount,s.paid,s.status FROM schedules s JOIN credits c ON c.id=s.credit_id $where ORDER BY s.due_date",args).use{while(it.moveToNext())out.add(Schedule(it.getLong(0),it.getLong(1),it.getString(2),it.getString(3),it.getDouble(4),it.getDouble(5),it.getString(6)))};return out}
     fun pay(scheduleId:Long,creditId:Long,amount:Double){writableDatabase.insert("payments",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("date",now())});readableDatabase.rawQuery("SELECT amount,paid FROM schedules WHERE id=?",arrayOf(scheduleId.toString())).use{if(it.moveToFirst()){val p=it.getDouble(1)+amount;val st=if(p+0.005>=it.getDouble(0))"PAID"else"DUE";writableDatabase.update("schedules",ContentValues().apply{put("paid",p);put("status",st)},"id=?",arrayOf(scheduleId.toString()))}}}
+    fun recordRepaymentWithConsent(scheduleId:Long,creditId:Long,amount:Double,proposerRole:String,token:String){
+        require(amount>0){"Invalid repayment amount"}
+        writableDatabase.insertOrThrow("repayment_consents",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("proposer_role",proposerRole);put("consent_token",token);put("status","CONSENTED");put("created",now());put("confirmed",now())})
+        writableDatabase.insertOrThrow("payments",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("date",now())})
+        readableDatabase.rawQuery("SELECT amount,paid FROM schedules WHERE id=?",arrayOf(scheduleId.toString())).use{if(it.moveToFirst()){val p=it.getDouble(1)+amount;val st=if(p+0.005>=it.getDouble(0))"PAID"else"DUE";writableDatabase.update("schedules",ContentValues().apply{put("paid",p);put("status",st)},"id=?",arrayOf(scheduleId.toString()))}}
+    }
+
     fun total(direction:String):Double=readableDatabase.rawQuery("SELECT COALESCE(SUM(amount),0) FROM credits WHERE direction=?",arrayOf(direction)).use{it.moveToFirst();it.getDouble(0)}
     fun dueCount(overdue:Boolean):Int=schedules(null,overdue).size
     fun saveBank(type:String,id:String,holder:String,bank:String,account:String,ifsc:String,upi:String,nach:Boolean){writableDatabase.insert("banks",null,ContentValues().apply{put("owner_type",type);put("owner_id",id);put("holder",holder);put("bank",bank);put("account",account);put("ifsc",ifsc);put("upi",upi);put("nach",if(nach)1 else 0);put("created",now())})}
