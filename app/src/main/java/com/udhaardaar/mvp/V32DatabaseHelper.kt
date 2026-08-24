@@ -9,10 +9,10 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaar_v322.db", null, 3) {
+class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaar_v322.db", null, 5) {
     data class User(val id:String,val name:String,val mobile:String,val address:String,val email:String,val photo:String?)
-    data class Profile(val rowId:Long,val id:String,val role:String,val name:String,val mobile:String,val address:String,val city:String,val state:String,val pin:String,val pan:String,val aadhaar:String,val gstin:String,val photo:String?)
-    data class Credit(val rowId:Long,val code:String,val borrowerId:Long,val borrowerName:String,val type:String,val direction:String,val amount:Double,val roi:Double,val method:String,val installment:Double,val interest:Double,val payable:Double,val start:String,val end:String,val due:String,val gstin:String,val invoice:String,val nach:Boolean,val status:String)
+    data class Profile(val rowId:Long,val id:String,val role:String,val name:String,val mobile:String,val alternateMobile:String,val address:String,val city:String,val state:String,val pin:String,val pan:String,val aadhaar:String,val gstin:String,val photo:String?)
+    data class Credit(val rowId:Long,val code:String,val borrowerId:Long,val guarantorId:Long?,val borrowerName:String,val type:String,val direction:String,val amount:Double,val roi:Double,val method:String,val installment:Double,val interest:Double,val payable:Double,val start:String,val end:String,val due:String,val gstin:String,val invoice:String,val nach:Boolean,val status:String)
     data class Schedule(val id:Long,val creditId:Long,val code:String,val due:String,val amount:Double,val paid:Double,val status:String)
 
     private fun now() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
@@ -21,8 +21,8 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
 
     override fun onCreate(db:SQLiteDatabase) {
         db.execSQL("CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,uid TEXT UNIQUE,name TEXT,mobile TEXT,address TEXT,email TEXT,photo TEXT,created TEXT) ")
-        db.execSQL("CREATE TABLE profiles(id INTEGER PRIMARY KEY AUTOINCREMENT,uid TEXT UNIQUE,role TEXT,name TEXT,mobile TEXT,address TEXT,city TEXT,state TEXT,pin TEXT,pan TEXT,aadhaar TEXT,gstin TEXT,photo TEXT,created TEXT) ")
-        db.execSQL("CREATE TABLE credits(id INTEGER PRIMARY KEY AUTOINCREMENT,code TEXT UNIQUE,borrower_id INTEGER,type TEXT,direction TEXT,amount REAL,roi REAL,method TEXT,installment REAL,interest REAL,payable REAL,start_date TEXT,end_date TEXT,due_date TEXT,gstin TEXT,invoice TEXT,nach INTEGER,status TEXT,otp INTEGER,created TEXT) ")
+        db.execSQL("CREATE TABLE profiles(id INTEGER PRIMARY KEY AUTOINCREMENT,uid TEXT UNIQUE,role TEXT,name TEXT,mobile TEXT,alternate_mobile TEXT,address TEXT,city TEXT,state TEXT,pin TEXT,pan TEXT,aadhaar TEXT,gstin TEXT,photo TEXT,created TEXT) ")
+        db.execSQL("CREATE TABLE credits(id INTEGER PRIMARY KEY AUTOINCREMENT,code TEXT UNIQUE,borrower_id INTEGER,guarantor_id INTEGER,type TEXT,direction TEXT,amount REAL,roi REAL,method TEXT,installment REAL,interest REAL,payable REAL,start_date TEXT,end_date TEXT,due_date TEXT,gstin TEXT,invoice TEXT,nach INTEGER,status TEXT,otp INTEGER,created TEXT) ")
         db.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,no INTEGER,due_date TEXT,amount REAL,paid REAL DEFAULT 0,status TEXT) ")
         db.execSQL("CREATE TABLE payments(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,schedule_id INTEGER,amount REAL,date TEXT) ")
         db.execSQL("CREATE TABLE repayment_consents(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,schedule_id INTEGER,amount REAL,proposer_role TEXT,consent_token TEXT,status TEXT,created TEXT,confirmed TEXT) ")
@@ -35,6 +35,8 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
             runCatching{db.execSQL("ALTER TABLE profiles ADD COLUMN pin TEXT")}
         }
         if(oldVersion<3) db.execSQL("CREATE TABLE IF NOT EXISTS repayment_consents(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,schedule_id INTEGER,amount REAL,proposer_role TEXT,consent_token TEXT,status TEXT,created TEXT,confirmed TEXT) ")
+        if(oldVersion<4) runCatching{db.execSQL("ALTER TABLE credits ADD COLUMN guarantor_id INTEGER")}
+        if(oldVersion<5) runCatching{db.execSQL("ALTER TABLE profiles ADD COLUMN alternate_mobile TEXT")}
     }
 
     fun hasUser() = readableDatabase.rawQuery("SELECT id FROM users LIMIT 1",null).use { it.moveToFirst() }
@@ -43,26 +45,32 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
         val v=ContentValues().apply { put("uid",uid);put("name",name);put("mobile",mobile);put("address",address);put("email",email);put("photo",photo);put("created",now()) }
         return writableDatabase.insert("users",null,v)
     }
-    fun saveProfile(existing:Long?,role:String,uid:String,name:String,mobile:String,address:String,city:String,state:String,pin:String,pan:String,aadhaar:String,gstin:String,photo:String?):Long {
-        val v=ContentValues().apply { put("uid",uid);put("role",role);put("name",name);put("mobile",mobile);put("address",address);put("city",city);put("state",state);put("pin",pin);put("pan",pan);put("aadhaar",aadhaar);put("gstin",gstin);put("photo",photo);put("created",now()) }
+    fun saveProfile(existing:Long?,role:String,uid:String,name:String,mobile:String,alternateMobile:String,address:String,city:String,state:String,pin:String,pan:String,aadhaar:String,gstin:String,photo:String?):Long {
+        val v=ContentValues().apply { put("uid",uid);put("role",role);put("name",name);put("mobile",mobile);put("alternate_mobile",alternateMobile);put("address",address);put("city",city);put("state",state);put("pin",pin);put("pan",pan);put("aadhaar",aadhaar);put("gstin",gstin);put("photo",photo);put("created",now()) }
         if(existing==null) return writableDatabase.insert("profiles",null,v)
         writableDatabase.update("profiles",v,"id=?",arrayOf(existing.toString())); return existing
     }
-    private fun profile(c:android.database.Cursor)=Profile(c.getLong(0),c.getString(1),c.getString(2),c.getString(3),c.getString(4),c.getString(5)?:"",c.getString(6)?:"",c.getString(7)?:"",c.getString(8)?:"",c.getString(9)?:"",c.getString(10)?:"",c.getString(11)?:"",c.getString(12))
+    private fun profile(c:android.database.Cursor)=Profile(c.getLong(0),c.getString(1),c.getString(2),c.getString(3),c.getString(4),c.getString(5)?:"",c.getString(6)?:"",c.getString(7)?:"",c.getString(8)?:"",c.getString(9)?:"",c.getString(10)?:"",c.getString(11)?:"",c.getString(12)?:"",c.getString(13))
     fun profiles(role:String,q:String=""):List<Profile> {
         val out=mutableListOf<Profile>(); val x="%${q.trim()}%"
-        readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,address,city,state,pin,pan,aadhaar,gstin,photo FROM profiles WHERE role=? AND(name LIKE ? OR mobile LIKE ? OR pan LIKE ? OR aadhaar LIKE ? OR uid LIKE ? OR gstin LIKE ?) ORDER BY name",arrayOf(role,x,x,x,x,x,x)).use { while(it.moveToNext()) out.add(profile(it)) }
+        readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,alternate_mobile,address,city,state,pin,pan,aadhaar,gstin,photo FROM profiles WHERE role=? AND(name LIKE ? OR mobile LIKE ? OR alternate_mobile LIKE ? OR pan LIKE ? OR aadhaar LIKE ? OR uid LIKE ? OR gstin LIKE ?) ORDER BY name",arrayOf(role,x,x,x,x,x,x,x)).use { while(it.moveToNext()) out.add(profile(it)) }
         return out
     }
-    fun profile(id:Long):Profile? = readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,address,city,state,pin,pan,aadhaar,gstin,photo FROM profiles WHERE id=?",arrayOf(id.toString())).use { if(!it.moveToFirst()) null else profile(it) }
-    fun credit(id:Long):Credit? = readableDatabase.rawQuery("SELECT c.id,c.code,c.borrower_id,p.name,c.type,c.direction,c.amount,c.roi,c.method,c.installment,c.interest,c.payable,c.start_date,c.end_date,c.due_date,COALESCE(c.gstin,''),COALESCE(c.invoice,''),c.nach,c.status FROM credits c JOIN profiles p ON p.id=c.borrower_id WHERE c.id=?",arrayOf(id.toString())).use { if(!it.moveToFirst()) null else Credit(it.getLong(0),it.getString(1),it.getLong(2),it.getString(3),it.getString(4),it.getString(5),it.getDouble(6),it.getDouble(7),it.getString(8),it.getDouble(9),it.getDouble(10),it.getDouble(11),it.getString(12),it.getString(13),it.getString(14),it.getString(15),it.getString(16),it.getInt(17)==1,it.getString(18)) }
+    fun profile(id:Long):Profile? = readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,alternate_mobile,address,city,state,pin,pan,aadhaar,gstin,photo FROM profiles WHERE id=?",arrayOf(id.toString())).use { if(!it.moveToFirst()) null else profile(it) }
+    fun credit(id:Long):Credit? {
+        val sql="SELECT c.id,c.code,c.borrower_id,c.guarantor_id,p.name,c.type,c.direction,c.amount,c.roi,c.method,c.installment,c.interest,c.payable,c.start_date,c.end_date,c.due_date,COALESCE(c.gstin,''),COALESCE(c.invoice,''),c.nach,c.status FROM credits c JOIN profiles p ON p.id=c.borrower_id WHERE c.id=?"
+        return readableDatabase.rawQuery(sql,arrayOf(id.toString())).use { if(!it.moveToFirst()) null else Credit(it.getLong(0),it.getString(1),it.getLong(2),if(it.isNull(3)) null else it.getLong(3),it.getString(4),it.getString(5),it.getString(6),it.getDouble(7),it.getDouble(8),it.getString(9),it.getDouble(10),it.getDouble(11),it.getDouble(12),it.getString(13),it.getString(14),it.getString(15),it.getString(16),it.getString(17),it.getInt(18)==1,it.getString(19)) }
+    }
     fun credits(direction:String?=null):List<Credit> {
-        val out=mutableListOf<Credit>(); val sql="SELECT c.id,c.code,c.borrower_id,p.name,c.type,c.direction,c.amount,c.roi,c.method,c.installment,c.interest,c.payable,c.start_date,c.end_date,c.due_date,COALESCE(c.gstin,''),COALESCE(c.invoice,''),c.nach,c.status FROM credits c JOIN profiles p ON p.id=c.borrower_id "+if(direction==null) "" else "WHERE c.direction=? "+"ORDER BY c.id DESC"
-        readableDatabase.rawQuery(sql,if(direction==null)null else arrayOf(direction)).use { while(it.moveToNext()) out.add(Credit(it.getLong(0),it.getString(1),it.getLong(2),it.getString(3),it.getString(4),it.getString(5),it.getDouble(6),it.getDouble(7),it.getString(8),it.getDouble(9),it.getDouble(10),it.getDouble(11),it.getString(12),it.getString(13),it.getString(14),it.getString(15),it.getString(16),it.getInt(17)==1,it.getString(18))) }
+        val out=mutableListOf<Credit>()
+        val sql="SELECT c.id,c.code,c.borrower_id,c.guarantor_id,p.name,c.type,c.direction,c.amount,c.roi,c.method,c.installment,c.interest,c.payable,c.start_date,c.end_date,c.due_date,COALESCE(c.gstin,''),COALESCE(c.invoice,''),c.nach,c.status FROM credits c JOIN profiles p ON p.id=c.borrower_id "+if(direction==null) "" else "WHERE c.direction=? "+"ORDER BY c.id DESC"
+        readableDatabase.rawQuery(sql,if(direction==null)null else arrayOf(direction)).use {
+            while(it.moveToNext()) out.add(Credit(it.getLong(0),it.getString(1),it.getLong(2),if(it.isNull(3)) null else it.getLong(3),it.getString(4),it.getString(5),it.getString(6),it.getDouble(7),it.getDouble(8),it.getString(9),it.getDouble(10),it.getDouble(11),it.getDouble(12),it.getString(13),it.getString(14),it.getString(15),it.getString(16),it.getString(17),it.getInt(18)==1,it.getString(19)))
+        }
         return out
     }
-    fun addCredit(borrower:Long,type:String,direction:String,amount:Double,roi:Double,method:String,installment:Double,interest:Double,payable:Double,start:String,end:String,due:String,gstin:String,invoice:String,nach:Boolean):Long {
-        val code="CR-${System.currentTimeMillis()}"; val v=ContentValues().apply { put("code",code);put("borrower_id",borrower);put("type",type);put("direction",direction);put("amount",amount);put("roi",roi);put("method",method);put("installment",installment);put("interest",interest);put("payable",payable);put("start_date",start);put("end_date",end);put("due_date",due);put("gstin",gstin);put("invoice",invoice);put("nach",if(nach)1 else 0);put("status","ACTIVE");put("otp",1);put("created",now()) }
+    fun addCredit(borrower:Long,guarantorId:Long?,type:String,direction:String,amount:Double,roi:Double,method:String,installment:Double,interest:Double,payable:Double,start:String,end:String,due:String,gstin:String,invoice:String,nach:Boolean):Long {
+        val code="CR-${System.currentTimeMillis()}"; val v=ContentValues().apply { put("code",code);put("borrower_id",borrower);put("guarantor_id",guarantorId);put("type",type);put("direction",direction);put("amount",amount);put("roi",roi);put("method",method);put("installment",installment);put("interest",interest);put("payable",payable);put("start_date",start);put("end_date",end);put("due_date",due);put("gstin",gstin);put("invoice",invoice);put("nach",if(nach)1 else 0);put("status","ACTIVE");put("otp",1);put("created",now()) }
         return writableDatabase.insert("credits",null,v)
     }
     fun makeSchedule(creditId:Long,type:String,start:String,end:String,amount:Double,months:Int,dueDay:Int) {
