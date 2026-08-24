@@ -42,11 +42,11 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
     fun hasUser() = readableDatabase.rawQuery("SELECT id FROM users LIMIT 1",null).use { it.moveToFirst() }
     fun user():User? = readableDatabase.rawQuery("SELECT uid,name,mobile,address,email,photo FROM users LIMIT 1",null).use { if(!it.moveToFirst()) null else User(it.getString(0),it.getString(1),it.getString(2),it.getString(3),it.getString(4)?:(""),it.getString(5)) }
     fun saveUser(uid:String,name:String,mobile:String,address:String,email:String,photo:String?) : Long {
-        val v=ContentValues().apply { put("uid",uid);put("name",name);put("mobile",mobile);put("alternate_mobile",alternateMobile);put("address",address);put("email",email);put("photo",photo);put("created",now()) }
+        val v=ContentValues().apply { put("uid",uid);put("name",name);put("mobile",mobile);put("address",address);put("email",email);put("photo",photo);put("created",now()) }
         return writableDatabase.insert("users",null,v)
     }
     fun saveProfile(existing:Long?,role:String,uid:String,name:String,mobile:String,alternateMobile:String,address:String,city:String,state:String,pin:String,pan:String,aadhaar:String,gstin:String,photo:String?):Long {
-        val v=ContentValues().apply { put("uid",uid);put("role",role);put("name",name);put("mobile",mobile);put("address",address);put("city",city);put("state",state);put("pin",pin);put("pan",pan);put("aadhaar",aadhaar);put("gstin",gstin);put("photo",photo);put("created",now()) }
+        val v=ContentValues().apply { put("uid",uid);put("role",role);put("name",name);put("mobile",mobile);put("alternate_mobile",alternateMobile);put("address",address);put("city",city);put("state",state);put("pin",pin);put("pan",pan);put("aadhaar",aadhaar);put("gstin",gstin);put("photo",photo);put("created",now()) }
         if(existing==null) return writableDatabase.insert("profiles",null,v)
         writableDatabase.update("profiles",v,"id=?",arrayOf(existing.toString())); return existing
     }
