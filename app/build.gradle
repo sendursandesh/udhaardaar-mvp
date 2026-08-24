@@ -6,6 +6,7 @@ plugins {
 android {
     namespace 'com.udhaardaar.mvp'
     compileSdk 35
+    buildFeatures { buildConfig true }
     defaultConfig {
         applicationId 'com.udhaardaar.mvp'
         minSdk 23
