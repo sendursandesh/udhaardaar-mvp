@@ -43,7 +43,7 @@ class V32Activity : AppCompatActivity() {
         val name=field("Lender / account owner name *");val mobile=field("Mobile number * (10 digits) ",true,10);val address=field("Full address *");val email=field("Email (optional) ");val otpBox=field("Enter 6-digit OTP",true,6);otpBox.visibility=View.GONE
         listOf(name,mobile,address,email).forEach{r.addView(it,LinearLayout.LayoutParams(-1,dp(58)).apply{setMargins(0,dp(3),0,dp(3))})}
         val img=ImageView(this).apply{layoutParams=LinearLayout.LayoutParams(-1,dp(150));setImageResource(android.R.drawable.ic_menu_camera);scaleType=ImageView.ScaleType.CENTER_INSIDE;background=box(Color.WHITE,Color.LTGRAY,16)};r.addView(img);r.addView(button("ADD PROFILE PHOTO (OPTIONAL) ",teal){photoTarget=img;pick(100)});r.addView(otpBox)
-        r.addView(button("CREATE PROFILE + SEND OTP",blue){if(name.text.toString().trim().length<2||mobile.text.toString().length!=10||address.text.toString().trim().length<5){toast("Name, address and exactly 10-digit mobile are required");return@button};if(!validEmail(email.text.toString())){email.error="Invalid email";return@button};otp=Random.nextInt(100000,1000000).toString();otpBox.visibility=View.VISIBLE;toast("Trial OTP: $otp\nConnect an SMS provider for live delivery.")})
+        r.addView(button("CREATE PROFILE + SEND OTP",blue){if(name.text.toString().trim().length<2||mobile.text.toString().length!=10||address.text.toString().trim().length<5){toast("Name, address and exactly 10-digit mobile are required");return@button};if(!validEmail(email.text.toString())){email.error="Invalid email";return@button};if(!BuildConfig.DEBUG){toast("Live SMS OTP service is not configured; production registration is blocked.");return@button};otp=Random.nextInt(100000,1000000).toString();otpBox.visibility=View.VISIBLE;toast("Trial OTP: $otp\nDebug build only.")})
         r.addView(button("VERIFY OTP + SAVE PROFILE",green){if(otp.isEmpty()||otpBox.text.toString()!=otp){otpBox.error="Incorrect OTP";return@button};db.saveUser("USR-${System.currentTimeMillis()}",name.text.toString().trim(),mobile.text.toString(),address.text.toString().trim(),email.text.toString().trim(),photoUri?.toString());dashboard()});show(r)
     }
 
@@ -135,7 +135,7 @@ class V32Activity : AppCompatActivity() {
         })
         r.addView(consent)
         val otpBox=field("Enter 6-digit consent OTP",true,6);r.addView(otpBox)
-        r.addView(button("SEND CONSENT OTP",blue){try{otp=Random.nextInt(100000,1000000).toString();toast("Trial OTP: "+otp+"\nLive SMS provider must be connected for real SMS delivery.")}catch(_:Exception){toast("OTP could not be started. Please retry.") } })
+        r.addView(button("SEND CONSENT OTP",blue){try{if(!BuildConfig.DEBUG){toast("Live SMS OTP service is not configured; production registration is blocked.");return@button};otp=Random.nextInt(100000,1000000).toString();toast("Trial OTP: "+otp+"\nDebug build only.")}catch(_:Exception){toast("OTP could not be started. Please retry.") } })
         r.addView(button("FINAL VERIFY + REGISTER CREDIT",green){
             try{
                 if(!kfsViewed){toast("View the credit terms/KFS before consent");return@button};if(!consent.isChecked){toast("Digital consent is required");return@button}
@@ -177,20 +177,16 @@ class V32Activity : AppCompatActivity() {
                 val proposer=if(role.selectedItemPosition==0) "LENDER" else "BORROWER"
                 val token=Random.nextInt(100000,1000000).toString()
                 confirmDialog.dismiss()
+                val otpInput=field("Enter 6-digit consent OTP",true,6)
+                val otpBox=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(20),0,dp(20),0);addView(otpInput)}
+                val otpMessage=if(BuildConfig.DEBUG)"Amount: "+money(av)+"\nInitiated by: "+proposer+"\n\nTRIAL OTP: "+token+"\nEnter the OTP to complete consent." else "Amount: "+money(av)+"\nInitiated by: "+proposer+"\n\nA live SMS OTP service must be configured before production use."
                 AlertDialog.Builder(this)
                     .setTitle("Confirm repayment consent")
-                    .setMessage("Amount: "+money(av)+"\nInitiated by: "+proposer+"\n\nTrial consent OTP: "+token+"\nBoth parties should verify before confirmation.")
+                    .setMessage(otpMessage)
+                    .setView(otpBox)
                     .setNegativeButton("CANCEL",null)
-                    .setPositiveButton("CONFIRM + RECORD"){_,_->
-                        try{
-                            db.recordRepaymentWithConsent(s.id,s.creditId,av,proposer,token)
-                            toast("Repayment recorded with consent audit trail")
-                            repayments(false)
-                        }catch(_:Exception){
-                            toast("Repayment could not be recorded safely")
-                        }
-                    }
-                    .show()
+                    .setPositiveButton("CONFIRM + RECORD",null)
+                    .create().also{d->d.setOnShowListener{d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{if(otpInput.text.toString()!=token){otpInput.error="Incorrect OTP";return@setOnClickListener};try{db.recordRepaymentWithConsent(s.id,s.creditId,av,proposer,token);d.dismiss();toast("Repayment recorded with consent audit trail");repayments(false)}catch(_:Exception){toast("Repayment could not be recorded safely")}}};d.show()}
             }
         }
         confirmDialog.show()
