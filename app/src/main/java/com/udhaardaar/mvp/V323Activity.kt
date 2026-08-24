@@ -40,7 +40,10 @@ class V323Activity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (history.isNotEmpty()) setContentView(history.removeLast()) else super.onBackPressed()
+        if (db.hasUser() && prefs.getBoolean("logged_in", false)) {
+            history.clear()
+            dashboard()
+        } else super.onBackPressed()
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
@@ -73,8 +76,7 @@ class V323Activity : AppCompatActivity() {
         return h
     }
 
-    private fun show(view: View, push: Boolean = true) {
-        if (push) findViewById<ViewGroup>(android.R.id.content)?.getChildAt(0)?.let { history.addLast(it) }
+    private fun show(view: View, push: Boolean = false) {
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(view) })
     }
 
@@ -188,10 +190,42 @@ class V323Activity : AppCompatActivity() {
             val p=amount.text.toString().toDoubleOrNull();val rate=roi.text.toString().toDoubleOrNull()?:0.0;val months=tenor.text.toString().toIntOrNull()?:0;if(p==null||p<=0||months<=0){toast("Enter valid amount and tenor");return@button}
             val monthly=rate/1200.0;val installment=if(method.selectedItem.toString()=="EMI"&&monthly>0)p*monthly*(1+monthly).pow(months)/((1+monthly).pow(months)-1) else if(method.selectedItem.toString()=="EMI")p/months.toDouble() else p/months.toDouble();val interest=if(method.selectedItem.toString()=="EMI")installment*months-p else p*rate/100.0*months/12.0;val payable=p+interest;val start=today();val end=Calendar.getInstance().apply{add(Calendar.MONTH,months)}.let{SimpleDateFormat("yyyy-MM-dd",Locale.US).format(it.time)}
             val gId=if(yesNo.selectedItemPosition==1&&!guarantors.isEmpty())guarantors[guarantor.selectedItemPosition].rowId else null
-            otp=Random.nextInt(100000,1000000).toString();val details="Amount ${money(p)}\nROI ${rate}%\nMethod ${method.selectedItem}\nInstallment ${money(installment)}\nTotal payable ${money(payable)}\nPeriod $start to $end\n\nI have reviewed the credit terms and supporting document."
-            val input=EditText(this).apply{hint="Enter 6-digit OTP";setSingleLine(true);filters=arrayOf(android.text.InputFilter.LengthFilter(6))}
-            val dialog=AlertDialog.Builder(this).setTitle("Digital document & consent").setMessage(details).setView(input).setNegativeButton("CANCEL",null).setPositiveButton("SEND OTP",null).create()
-            dialog.setOnShowListener{dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{toast("Demo OTP: $otp");dialog.dismiss();AlertDialog.Builder(this).setTitle("Confirm consent").setMessage(details+"\n\nDemo OTP: $otp").setView(input).setNegativeButton("CANCEL",null).setPositiveButton("CONFIRM & SAVE"){_,_->if(input.text.toString()==otp){val cid=db.addCredit(borrowers[borrower.selectedItemPosition].rowId,gId,type.selectedItem.toString(),direction.selectedItem.toString(),p,rate,months,method.selectedItem.toString(),installment,interest,payable,start,end,"",invoiceUri?.toString(),true);db.createSchedule(cid,installment,months,end);toast("Credit registered successfully");history.clear();dashboard()}else toast("Incorrect OTP")}.show()}}
+            otp=Random.nextInt(100000,1000000).toString()
+            val details="Amount ${money(p)}\nROI ${rate}%\nMethod ${method.selectedItem}\nInstallment ${money(installment)}\nTotal payable ${money(payable)}\nPeriod $start to $end\n\nI have reviewed the credit terms and supporting document."
+            val input=EditText(this).apply {
+                hint="Enter 6-digit OTP"
+                setSingleLine(true)
+                inputType=android.text.InputType.TYPE_CLASS_NUMBER
+                filters=arrayOf(android.text.InputFilter.LengthFilter(6))
+                requestFocus()
+            }
+            toast("Demo OTP: $otp")
+            val dialog=AlertDialog.Builder(this)
+                .setTitle("Confirm digital consent")
+                .setMessage(details+"\n\nEnter the OTP below. This consent is linked to this credit transaction.")
+                .setView(input)
+                .setNegativeButton("CANCEL",null)
+                .setPositiveButton("CONFIRM & SAVE",null)
+                .create()
+            dialog.setOnShowListener {
+                dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    if (input.text.toString() != otp) {
+                        input.error="Incorrect OTP"
+                        input.requestFocus()
+                        return@setOnClickListener
+                    }
+                    val cid=db.addCredit(borrowers[borrower.selectedItemPosition].rowId,gId,type.selectedItem.toString(),direction.selectedItem.toString(),p,rate,months,method.selectedItem.toString(),installment,interest,payable,start,end,"",invoiceUri?.toString(),true)
+                    db.createSchedule(cid,installment,months,end)
+                    db.saveConsent(cid, "OTP_VERIFIED", "DIGITAL_CREDIT_CONSENT")
+                    if (!invoiceUri?.toString().isNullOrBlank()) db.saveDocument(cid, "INVOICE", invoiceUri.toString())
+                    toast("Credit registered successfully")
+                    dialog.dismiss()
+                    history.clear()
+                    dashboard()
+                }
+                input.postDelayed({ input.requestFocus(); dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE) }, 150)
+            }
             dialog.show()
         });r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();dashboard()});show(r)
     }
@@ -200,7 +234,7 @@ class V323Activity : AppCompatActivity() {
     private fun creditDetail(id:Long){val c=db.creditDetail(id)?:return;val r=page("Credit ${c.creditId}","Complete digital credit record");r.addView(label("Borrower: ${c.borrowerName}"));r.addView(label("Type: ${c.type} • Direction: ${c.direction}"));r.addView(label("Principal: ${money(c.amount)} • ROI: ${c.roi}%"));r.addView(label("Method: ${c.method} • Payable: ${money(c.payable)}"));r.addView(label("Period: ${c.start} to ${c.end}"));r.addView(label("Status: ${c.status}"));r.addView(button("VIEW REPAYMENT SCHEDULE",green){repayments(false)});r.addView(button("BACK",Color.rgb(90,110,125)){history(null)});show(r)}
 
     private fun repayments(overdue:Boolean){val r=page("Repayment Centre",if(overdue)"Overdue payments" else "Due and upcoming payments");val rows=db.schedules(null,overdue);if(rows.isEmpty())r.addView(label("No payments in this list."));rows.forEach{s->action(r,"₹",s.creditId,"Due ${s.dueDate} • ${money(s.amount)} • ${s.status}",if(s.status=="OVERDUE")red else green){recordPayment(s.id,s.creditDbId,s.amount)}};r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();dashboard()});show(r)}
-    private fun recordPayment(scheduleId:Long,creditId:Long,due:Double){val input=field("Payment amount");input.setText(String.format(Locale.US,"%.2f",due));AlertDialog.Builder(this).setTitle("Record repayment").setView(input).setNegativeButton("CANCEL",null).setPositiveButton("SAVE"){_,_->val amount=input.text.toString().toDoubleOrNull()?:0.0;if(amount<=0)toast("Enter a valid amount")else{db.recordPayment(scheduleId,creditId,amount);toast("Repayment recorded");repayments(false)}}.show()}
+    private fun recordPayment(scheduleId:Long,creditId:Long,due:Double){val input=field("Payment amount");input.setText(String.format(Locale.US,"%.2f",due));AlertDialog.Builder(this).setTitle("Record repayment").setView(input).setNegativeButton("CANCEL",null).setPositiveButton("SAVE"){_,_->val amount=input.text.toString().toDoubleOrNull()?:0.0;if(amount<=0)toast("Enter a valid amount")else{val accepted=db.recordPayment(scheduleId,creditId,amount);if(accepted<=0)toast("No outstanding amount remains")else{toast("Repayment recorded: ${money(accepted)}");repayments(false)}}}.show()}
 
     private fun documents(){val r=page("Digital Documents & Consent","Borrower-readable verification document");r.addView(label("UDHAARDAAR DIGITAL CREDIT ACKNOWLEDGEMENT",19f));r.addView(label("Before consent, review borrower identity, credit type, principal, ROI, repayment method, schedule, guarantor details and supporting invoice/document. The record is retained for future verification and repayment history."));r.addView(button("I HAVE READ THE DOCUMENT",green){toast("Acknowledged. Final consent is OTP-gated during credit registration.")});r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();dashboard()});show(r)}
     private fun ownerProfile(){val u=db.userData()?:return;val r=page("Lender Profile","Identity and profile photo");r.addView(photoView(u.photo,110));r.addView(label("Unique ID: ${u.id}"));r.addView(label("Name: ${u.name}",19f));r.addView(label("Mobile: ${u.mobile}"));r.addView(label("Address: ${u.address}"));r.addView(label("Email: ${u.email.ifBlank{"—"}}"));r.addView(button("BACK",Color.rgb(90,110,125)){history.clear();dashboard()});show(r)}
