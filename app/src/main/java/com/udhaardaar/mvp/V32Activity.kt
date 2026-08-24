@@ -184,7 +184,7 @@ class V32Activity : AppCompatActivity() {
                 if(av<=0){toast("Enter a valid payment amount");return@setOnClickListener}
                 if(av>(s.amount-s.paid)+0.005){toast("Payment cannot exceed the outstanding amount");return@setOnClickListener}
                 val proposer=if(role.selectedItemPosition==0) "LENDER" else "BORROWER"
-                val token=java.security.SecureRandom().nextInt(900000)+100000
+                val token=(java.security.SecureRandom().nextInt(900000)+100000).toString()
                 confirmDialog.dismiss()
                 val otpInput=field("Enter 6-digit consent OTP",true,6)
                 val otpBox=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(20),0,dp(20),0);addView(otpInput)}
