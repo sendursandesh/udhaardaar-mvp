@@ -14,6 +14,8 @@ def run():
     CREATE TABLE schedules(id INTEGER PRIMARY KEY,credit_id INTEGER,no INTEGER,due_date TEXT,amount REAL,paid REAL DEFAULT 0,status TEXT);
     CREATE TABLE payments(id INTEGER PRIMARY KEY,credit_id INTEGER,schedule_id INTEGER,amount REAL,date TEXT);
     CREATE TABLE repayment_consents(id INTEGER PRIMARY KEY,credit_id INTEGER,schedule_id INTEGER,amount REAL,proposer_role TEXT,consent_token TEXT,status TEXT,created TEXT,confirmed TEXT);
+    CREATE TABLE documents(id INTEGER PRIMARY KEY,credit_id INTEGER,doc_type TEXT,title TEXT,content_hash TEXT,uri TEXT,consent INTEGER,status TEXT,created TEXT);
+    CREATE TABLE defaults(id INTEGER PRIMARY KEY,credit_id INTEGER,reason TEXT,created TEXT);
     """)
     # 10 borrower + 10 guarantor profile cases.
     for role in ("BORROWER","GUARANTOR"):
@@ -52,6 +54,12 @@ def run():
         db.execute("INSERT INTO payments(credit_id,schedule_id,amount) VALUES(?,?,?)",(cid,sid,pay))
         db.execute("UPDATE schedules SET paid=?,status='DUE' WHERE id=?",(pay,sid))
 
+    # 10 document-record cases: each registered credit gets an immutable content hash and consent flag.
+    for cid in [x[0] for x in db.execute("SELECT id FROM credits LIMIT 10")]:
+        body=f"credit:{cid}|kfs|consent"
+        db.execute("INSERT INTO documents(credit_id,doc_type,title,content_hash,consent,status) VALUES(?,?,?,?,?,?)",
+                   (cid,"CREDIT_KFS_ACKNOWLEDGEMENT","Credit KFS / acknowledgement",hashlib.sha256(body.encode()).hexdigest(),1,"RECORDED"))
+
     # 10 default/overdue cases.
     for sid in [x[0] for x in db.execute("SELECT id FROM schedules LIMIT 10")]:
         db.execute("UPDATE schedules SET status='OVERDUE',due_date='2020-01-01' WHERE id=?",(sid,))
@@ -60,13 +68,20 @@ def run():
     assert db.execute("SELECT COUNT(*) FROM credits").fetchone()[0]==10
     assert db.execute("SELECT COUNT(*) FROM payments").fetchone()[0]==10
     assert db.execute("SELECT COUNT(*) FROM repayment_consents").fetchone()[0]==10
+    assert db.execute("SELECT COUNT(*) FROM documents").fetchone()[0]==10
     assert db.execute("SELECT COUNT(*) FROM schedules WHERE status='OVERDUE'").fetchone()[0]==10
+    for cid in [x[0] for x in db.execute("SELECT id FROM credits LIMIT 10")]:
+        db.execute("INSERT INTO defaults(credit_id,reason) VALUES(?,?)",(cid,"QA default case"))
+        db.execute("UPDATE credits SET status='DEFAULT' WHERE id=?",(cid,))
+        db.execute("UPDATE schedules SET status='DEFAULT' WHERE credit_id=? AND status<>'PAID'",(cid,))
+    assert db.execute("SELECT COUNT(*) FROM defaults").fetchone()[0]==10
+    assert db.execute("SELECT COUNT(*) FROM credits WHERE status='DEFAULT'").fetchone()[0]==10
     assert db.execute("SELECT COUNT(*) FROM credits c LEFT JOIN profiles p ON p.id=c.borrower_id WHERE p.id IS NULL").fetchone()[0]==0
     assert db.execute("SELECT COUNT(*) FROM payments p JOIN schedules s ON s.id=p.schedule_id WHERE p.amount>s.amount").fetchone()[0]==0
     assert all(abs(x[0]-x[1]/2)<1e-9 for x in db.execute("SELECT paid,amount FROM schedules"))
     # Formula spot checks.
     assert abs(emi(100000,12,12)-8884.878867834177)<1e-6
-    print("PASS: 10 borrowers + 10 guarantors + 10 credit registrations + 10 consented repayments + 10 overdue/default cases.")
+    print("PASS: 10 borrowers + 10 guarantors + 10 credit registrations + 10 consented repayments + 10 document records + 10 default cases.")
     print("PASS: referential integrity, payment bounds, OTP hashing, and EMI calculation checks.")
 
 if __name__=="__main__":
