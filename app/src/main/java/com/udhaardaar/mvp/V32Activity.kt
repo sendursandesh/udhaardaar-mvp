@@ -148,17 +148,37 @@ class V32Activity : AppCompatActivity() {
         val amount=field("Payment amount",true);amount.setText(String.format(Locale.US,"%.2f",(s.amount-s.paid).coerceAtLeast(0.0)))
         val role=Spinner(this);role.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,arrayOf("Lender initiating repayment","Borrower initiating repayment"))
         val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;addView(role);addView(amount)}
-        AlertDialog.Builder(this).setTitle("Repayment — consent required").setMessage("Repayment is recorded only after the initiating party confirms the amount and the consent step is completed.")
-            .setView(box).setNegativeButton("CANCEL",null).setPositiveButton("CONTINUE",null).create().also{dialog->
-                dialog.setOnShowListener{dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{
-                    val av=amount.text.toString().toDoubleOrNull()?:0.0;if(av<=0){toast("Enter a valid payment amount");return@setOnClickListener}
-                    val proposer=if(role.selectedItemPosition==0) "LENDER" else "BORROWER";val token=Random.nextInt(100000,1000000).toString();dialog.dismiss()
-                    AlertDialog.Builder(this).setTitle("Confirm repayment consent").setMessage("Amount: "+money(av)+"\nInitiated by: "+proposer+"\n\nTrial consent OTP: "+token+"\nBoth parties should verify before confirmation.")
-                        .setNegativeButton("CANCEL",null).setPositiveButton("CONFIRM + RECORD"){_,_->try{db.recordRepaymentWithConsent(s.id,s.creditId,av,proposer,token);toast("Repayment recorded with consent audit trail");repayments(false)}catch(_:Exception){toast("Repayment could not be recorded safely") } }.show()
-                 } }.show()
+        val confirmDialog=AlertDialog.Builder(this)
+            .setTitle("Repayment — consent required")
+            .setMessage("Repayment is recorded only after the initiating party confirms the amount and the consent step is completed.")
+            .setView(box)
+            .setNegativeButton("CANCEL",null)
+            .setPositiveButton("CONTINUE",null)
+            .create()
+        confirmDialog.setOnShowListener {
+            confirmDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val av=amount.text.toString().toDoubleOrNull()?:0.0
+                if(av<=0){toast("Enter a valid payment amount");return@setOnClickListener}
+                val proposer=if(role.selectedItemPosition==0) "LENDER" else "BORROWER"
+                val token=Random.nextInt(100000,1000000).toString()
+                confirmDialog.dismiss()
+                AlertDialog.Builder(this)
+                    .setTitle("Confirm repayment consent")
+                    .setMessage("Amount: "+money(av)+"\nInitiated by: "+proposer+"\n\nTrial consent OTP: "+token+"\nBoth parties should verify before confirmation.")
+                    .setNegativeButton("CANCEL",null)
+                    .setPositiveButton("CONFIRM + RECORD"){_,_->
+                        try{
+                            db.recordRepaymentWithConsent(s.id,s.creditId,av,proposer,token)
+                            toast("Repayment recorded with consent audit trail")
+                            repayments(false)
+                        }catch(_:Exception){
+                            toast("Repayment could not be recorded safely")
+                        }
+                    }
+                    .show()
             }
-    }
-
+        }
+        confirmDialog.show()
     private fun bankForm(type:String,id:String){val r=page("Bank / NACH","Optional linkage • do not make this mandatory");val h=field("Account holder name");val bank=field("Bank name");val acc=field("Account number",true);val ifsc=field("IFSC");val upi=field("UPI ID");val nach=CheckBox(this).apply{text="Enable NACH"};listOf(h,bank,acc,ifsc,upi).forEach{r.addView(it,LinearLayout.LayoutParams(-1,dp(58)).apply{setMargins(0,dp(3),0,dp(3))})};r.addView(nach);r.addView(button("SAVE BANK / NACH",green){db.saveBank(type,id,h.text.toString(),bank.text.toString(),acc.text.toString(),ifsc.text.toString(),upi.text.toString(),nach.isChecked);toast("Optional bank/NACH link saved");dashboard()});r.addView(button("BACK",Color.DKGRAY){dashboard()}); setContentView(r)}
 
     private fun documents(){val r=page("Digital Documents","Standard T&C and consent documentation");r.addView(text("Udhaardaar V3.2.2 Standard Lending Terms",20f,navy));r.addView(text("1. Parties and identity are recorded before registration.\n2. Credit nature determines applicable repayment fields.\n3. Borrower receives the digital acknowledgement before OTP consent.\n4. Repayments are recorded against the registered schedule.\n5. Trade credit may include GSTIN and invoice evidence.\n6. Bank/NACH linkage is optional.\n7. Users should retain copies of all documents and comply with applicable law."));r.addView(button("SHARE STANDARD T&C",amber){shareTerms()});r.addView(button("BACK",Color.DKGRAY){dashboard()}); setContentView(r)}
