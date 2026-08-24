@@ -123,12 +123,22 @@ class V32Activity : AppCompatActivity() {
         val gb=button("SEARCH GUARANTOR",teal){search("GUARANTOR")};gb.visibility=View.GONE;r.addView(gb)
         ga.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(parent:AdapterView<*>?){g.visibility=View.GONE;gb.visibility=View.GONE};override fun onItemSelected(parent:AdapterView<*>?,view:View?,position:Int,id:Long){val yes=position==1;g.visibility=if(yes)View.VISIBLE else View.GONE;gb.visibility=if(yes)View.VISIBLE else View.GONE } }
         r.addView(button("UPLOAD / SCAN TRADE INVOICE (OPTIONAL) ",teal){pick(200)})
-        val consent=CheckBox(this).apply{text="I have reviewed the digital credit document and agree to the T&C"};r.addView(consent)
+        var kfsViewed=false
+        val consent=CheckBox(this).apply{text="I have reviewed the credit terms/KFS and agree to the T&C";isEnabled=false}
+        r.addView(button("VIEW CREDIT TERMS / KFS",amber){
+            val a=amount.text.toString().toDoubleOrNull()?:0.0;val rate=roi.text.toString().replace("%","").toDoubleOrNull()?:0.0;val n=months.text.toString().toIntOrNull()?:1;val m=method.selectedItem.toString()
+            if(a<=0||n<=0||rate<0){toast("Enter amount, ROI and tenor before viewing the KFS");return@button}
+            val rInst=if(m=="EMI")emi(a,rate,n) else if(m=="Rental / Lease")a else (a+a*rate/100.0*n/12.0)/n.coerceAtLeast(1);val interest=if(m=="EMI")((rInst*n-a).coerceAtLeast(0.0)) else a*rate/100.0*n/12.0;val payable=if(type.selectedItem.toString()=="Rental / Lease")a*n else a+interest
+            AlertDialog.Builder(this).setTitle("KEY FACTS STATEMENT — TRIAL")
+                .setMessage("Borrower: ${borrowers[bs.selectedItemPosition].name}\nCredit nature: ${type.selectedItem}\nPrincipal: ${money(a)}\nAnnualised interest/ROI: ${String.format(Locale.US,"%.2f",rate)}%\nRepayment method: $m\nTenor: $n months\nPeriodic amount: ${money(rInst)}\nTotal interest: ${money(interest)}\nTotal payable: ${money(payable)}\nStart: ${start.text.toString().ifBlank {today()}}\nEnd: ${end.text.toString().ifBlank {"To be calculated"}}\n\nFees/charges: none entered in this trial\nRecovery mechanism: must be disclosed by the lender before execution\nGrievance contact: must be configured before production use\nData sharing: OFF unless separately and explicitly consented\n\nThis is a trial KFS-style summary; a regulated lender must use its applicable prescribed KFS and executed agreement.")
+                .setPositiveButton("I HAVE READ"){_,_->kfsViewed=true;consent.isEnabled=true;consent.isChecked=false;toast("Terms viewed. Consent is now available.")}.setNegativeButton("CLOSE",null).show()
+        })
+        r.addView(consent)
         val otpBox=field("Enter 6-digit consent OTP",true,6);r.addView(otpBox)
         r.addView(button("SEND CONSENT OTP",blue){try{otp=Random.nextInt(100000,1000000).toString();toast("Trial OTP: "+otp+"\nLive SMS provider must be connected for real SMS delivery.")}catch(_:Exception){toast("OTP could not be started. Please retry.") } })
         r.addView(button("FINAL VERIFY + REGISTER CREDIT",green){
             try{
-                if(!consent.isChecked){toast("Digital consent is required");return@button}
+                if(!kfsViewed){toast("View the credit terms/KFS before consent");return@button};if(!consent.isChecked){toast("Digital consent is required");return@button}
                 if(otp.isEmpty()||otpBox.text.toString()!=otp){toast("Enter the consent OTP");return@button}
                 val t=type.selectedItem.toString();val a=amount.text.toString().toDoubleOrNull()?:0.0;val rate=roi.text.toString().replace("%","").toDoubleOrNull()?:0.0;val n=months.text.toString().toIntOrNull()?:1
                 if(a<=0||n<=0||rate<0){toast("Enter valid credit amount, ROI and tenor");return@button}
