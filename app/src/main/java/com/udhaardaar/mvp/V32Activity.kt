@@ -56,18 +56,11 @@ class V32Activity : AppCompatActivity() {
         }
     }
 
-    private fun configureOtpDialog(d:AlertDialog, input:EditText){
+    private fun configureOtpDialog(d:AlertDialog){
         d.window?.setSoftInputMode(
             android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or
             android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
         )
-        d.setOnShowListener {
-            input.requestFocus()
-            input.postDelayed {
-                val imm=getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-                imm.showSoftInput(input,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
-            }
-        }
     }
 
     private fun ownerRegistration(){
@@ -235,7 +228,9 @@ class V32Activity : AppCompatActivity() {
                     .setPositiveButton("CONFIRM + RECORD",null)
                     .create()
                 d.setOnShowListener{
-                    configureOtpDialog(d,otpInput)
+                    configureOtpDialog(d)
+                    otpInput.requestFocus()
+                    otpInput.postDelayed{val imm=getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager;imm.showSoftInput(otpInput,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)}
                     d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{
                         if(otpInput.text.toString()!=token){otpInput.error="Incorrect OTP";return@setOnClickListener}
                         try{
