@@ -32,7 +32,15 @@ class V32Activity : AppCompatActivity() {
     private fun button(s:String,c:Int=blue,a:()->Unit)=Button(this).apply{text=s;isAllCaps=false;textSize=14f;setTextColor(Color.WHITE);background=box(c,c,18);setOnClickListener{a() } }
     private fun root()=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(15),dp(12),dp(15),dp(25));setBackgroundColor(bg)}
     private fun gap(h:Int)=Space(this).apply{layoutParams=LinearLayout.LayoutParams(1,dp(h))}
-    private fun show(r:LinearLayout){setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})}
+    private fun show(r:LinearLayout){
+        val scroll=androidx.core.widget.NestedScrollView(this).apply{
+            isFillViewport=true
+            isSmoothScrollingEnabled=true
+            setPadding(0,0,0,dp(18))
+            addView(r,androidx.core.widget.NestedScrollView.LayoutParams(-1,-2))
+        }
+        setContentView(scroll)
+    }
     private fun page(title:String,sub:String):LinearLayout{val r=root();val h=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL};val t=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;layoutParams=LinearLayout.LayoutParams(0,-2,1f)};t.addView(text(title,25f,navy));t.addView(text(sub,12f,Color.GRAY));h.addView(t);h.addView(button("HOME",blue){dashboard()},LinearLayout.LayoutParams(dp(78),dp(44)));r.addView(h);r.addView(gap(8));return r}
     private fun money(v:Double)="₹"+String.format(Locale.US,"%,.2f",v)
 
