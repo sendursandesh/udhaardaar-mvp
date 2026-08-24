@@ -12,7 +12,7 @@ import java.util.Locale
 
 class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaar_v32.db", null, 7) {
     data class User(val id: String, val name: String, val mobile: String, val address: String, val email: String, val photo: String?)
-    data class ProfileRow(val rowId: Long, val id: String, val name: String, val mobile: String, val alternate: String, val address: String, val city: String, val state: String, val pin: String, val pan: String, val aadhaar: String, val gstin: String, val photo: String?)
+    data class ProfileRow(val rowId: Long, val id: String, val name: String, val mobile: String, val alternate: String, val address: String, val city: String, val state: String, val pin: String, val pan: String, val aadhaar: String, val gstin: String, val photo: String?, val role: String)
     data class CreditRow(val id: Long, val creditId: String, val borrowerName: String, val type: String, val direction: String, val amount: Double, val roi: Double, val method: String, val payable: Double, val start: String, val end: String, val status: String)
     data class ScheduleRow(val id: Long, val creditId: String, val creditDbId: Long, val dueDate: String, val amount: Double, val status: String)
     data class Summary(val total: Double, val outstanding: Double, val active: Int, val overdue: Int)
@@ -54,7 +54,7 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
         c.getLong(0), c.getString(1), c.getString(2), c.getString(3),
         c.getString(4) ?: "", c.getString(5) ?: "", c.getString(6) ?: "",
         c.getString(7) ?: "", c.getString(8) ?: "", c.getString(9) ?: "",
-        c.getString(10) ?: "", c.getString(11) ?: "", c.getString(12)
+        c.getString(10) ?: "", c.getString(11) ?: "", c.getString(12), c.getString(13)
     )
 
     fun hasUser(): Boolean = readableDatabase.rawQuery("SELECT 1 FROM user_profile LIMIT 1", null).use { it.moveToFirst() }
@@ -80,12 +80,12 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
     fun searchProfiles(role: String, q: String): List<ProfileRow> {
         val out = mutableListOf<ProfileRow>()
         val term = "%${q.trim()}%"
-        val sql = "SELECT id,unique_id,name,mobile,alternate_mobile,address,city,state,pin,pan,aadhaar,gstin,photo_uri FROM profiles WHERE role=? AND (name LIKE ? OR mobile LIKE ? OR alternate_mobile LIKE ? OR pan LIKE ? OR aadhaar LIKE ? OR unique_id LIKE ? OR gstin LIKE ?) ORDER BY name"
+        val sql = "SELECT id,unique_id,name,mobile,alternate_mobile,address,city,state,pin,pan,aadhaar,gstin,photo_uri,role FROM profiles WHERE role=? AND (name LIKE ? OR mobile LIKE ? OR alternate_mobile LIKE ? OR pan LIKE ? OR aadhaar LIKE ? OR unique_id LIKE ? OR gstin LIKE ?) ORDER BY name"
         readableDatabase.rawQuery(sql, arrayOf(role, term, term, term, term, term, term, term)).use { while (it.moveToNext()) out.add(profile(it)) }
         return out
     }
 
-    fun profileData(id: Long): ProfileRow? = readableDatabase.rawQuery("SELECT id,unique_id,name,mobile,alternate_mobile,address,city,state,pin,pan,aadhaar,gstin,photo_uri FROM profiles WHERE id=?", arrayOf(id.toString())).use { if (it.moveToFirst()) profile(it) else null }
+    fun profileData(id: Long): ProfileRow? = readableDatabase.rawQuery("SELECT id,unique_id,name,mobile,alternate_mobile,address,city,state,pin,pan,aadhaar,gstin,photo_uri,role FROM profiles WHERE id=?", arrayOf(id.toString())).use { if (it.moveToFirst()) profile(it) else null }
 
     fun addCredit(borrower: Long, guarantor: Long?, type: String, direction: String, principal: Double, roi: Double, tenor: Int, method: String, installment: Double, interest: Double, payable: Double, start: String, end: String, invoiceRef: String, invoiceUri: String?, verified: Boolean): Long {
         require(profileData(borrower)?.let { it.role == "BORROWER" } == true) { "Invalid borrower profile" }
