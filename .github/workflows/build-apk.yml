@@ -1,4 +1,4 @@
-name: Build Udhaardaar V3.2.5 APK
+name: Build Udhaardaar V3.2.6 APK
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
       - v3-development
       - v3.2.2-final-fixes
       - agent/v3.2-functional
-      - v3.2.5-final
+      - v3.2.6-final
   pull_request:
     branches:
       - main
@@ -35,14 +35,14 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Build V3.2.5 Debug APK
+      - name: Build V3.2.6 Debug APK
         run: gradle :app:assembleDebug --stacktrace
-      - name: Verify V3.2.5 APK exists
+      - name: Verify V3.2.6 APK exists
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           ls -lh app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload V3.2.5 APK
+      - name: Upload V3.2.6 APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-V3.2.5-corrected-debug-APK-${{ github.ref_name }}
+          name: Udhaardaar-V3.2.6-corrected-debug-APK-${{ github.ref_name }}
           path: app/build/outputs/apk/debug/app-debug.apk
