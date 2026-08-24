@@ -38,12 +38,36 @@ class V32Activity : AppCompatActivity() {
 
     override fun onCreate(b:Bundle?){super.onCreate(b);db=V32DatabaseHelper(this);if(db.hasUser())dashboard() else ownerRegistration()}
 
+    override fun onBackPressed(){
+        // This activity uses a single-screen navigation model. Never close the app
+        // accidentally from an interior page; return safely to the dashboard instead.
+        if (db.hasUser()) {
+            dashboard()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    private fun configureOtpDialog(d:AlertDialog, input:EditText){
+        d.window?.setSoftInputMode(
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
+        )
+        d.setOnShowListener {
+            input.requestFocus()
+            input.postDelayed {
+                val imm=getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                imm.showSoftInput(input,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            }
+        }
+    }
+
     private fun ownerRegistration(){
         val r=root();r.addView(text("UDHAARDAAR",31f,Color.WHITE).apply{gravity=Gravity.CENTER;background=box(navy,navy,22);setPadding(dp(12),dp(18),dp(12),dp(18))});r.addView(text("V3.2.6 • Smart informal credit manager",14f,navy).apply{gravity=Gravity.CENTER});r.addView(gap(8))
         val name=field("Lender / account owner name *");val mobile=field("Mobile number * (10 digits) ",true,10);val address=field("Full address *");val email=field("Email (optional) ");val otpBox=field("Enter 6-digit OTP",true,6);otpBox.visibility=View.GONE
         listOf(name,mobile,address,email).forEach{r.addView(it,LinearLayout.LayoutParams(-1,dp(58)).apply{setMargins(0,dp(3),0,dp(3))})}
         val img=ImageView(this).apply{layoutParams=LinearLayout.LayoutParams(-1,dp(150));setImageResource(android.R.drawable.ic_menu_camera);scaleType=ImageView.ScaleType.CENTER_INSIDE;background=box(Color.WHITE,Color.LTGRAY,16)};r.addView(img);r.addView(button("ADD PROFILE PHOTO (OPTIONAL) ",teal){photoTarget=img;pick(100)});r.addView(otpBox)
-        r.addView(button("CREATE PROFILE + SEND OTP",blue){if(name.text.toString().trim().length<2||mobile.text.toString().length!=10||address.text.toString().trim().length<5){toast("Name, address and exactly 10-digit mobile are required");return@button};if(!validEmail(email.text.toString())){email.error="Invalid email";return@button};if(!BuildConfig.DEBUG){toast("Live SMS OTP service is not configured; production registration is blocked.");return@button};otp=(java.security.SecureRandom().nextInt(900000)+100000).toString();otpBox.visibility=View.VISIBLE;toast("Trial OTP: $otp\nDebug build only.")})
+        r.addView(button("CREATE PROFILE + SEND OTP",blue){if(name.text.toString().trim().length<2||mobile.text.toString().length!=10||address.text.toString().trim().length<5){toast("Name, address and exactly 10-digit mobile are required");return@button};if(!validEmail(email.text.toString())){email.error="Invalid email";return@button};if(!BuildConfig.DEBUG){toast("Live SMS OTP service is not configured; production registration is blocked.");return@button};otp=(java.security.SecureRandom().nextInt(900000)+100000).toString();otpBox.visibility=View.VISIBLE;otpBox.requestFocus();otpBox.postDelayed{val imm=getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager;imm.showSoftInput(otpBox,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);if(BuildConfig.DEBUG)toast("Trial OTP: $otp (debug only)") }})
         r.addView(button("VERIFY OTP + SAVE PROFILE",green){if(otp.isEmpty()||otpBox.text.toString()!=otp){otpBox.error="Incorrect OTP";return@button};db.saveUser("USR-${System.currentTimeMillis()}",name.text.toString().trim(),mobile.text.toString(),address.text.toString().trim(),email.text.toString().trim(),photoUri?.toString());dashboard()});show(r)
     }
 
@@ -188,14 +212,33 @@ class V32Activity : AppCompatActivity() {
                 confirmDialog.dismiss()
                 val otpInput=field("Enter 6-digit consent OTP",true,6)
                 val otpBox=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(20),0,dp(20),0);addView(otpInput)}
-                val otpMessage=if(BuildConfig.DEBUG)"Amount: "+money(av)+"\nInitiated by: "+proposer+"\n\nTRIAL OTP: "+token+"\nEnter the OTP to complete consent." else "Amount: "+money(av)+"\nInitiated by: "+proposer+"\n\nA live SMS OTP service must be configured before production use."
-                AlertDialog.Builder(this)
+                val otpDetails=LinearLayout(this).apply{
+                    orientation=LinearLayout.VERTICAL
+                    setPadding(dp(20),dp(4),dp(20),0)
+                    addView(text("Amount: "+money(av)+"\nInitiated by: "+proposer,14f,navy))
+                    if(BuildConfig.DEBUG) addView(text("TRIAL OTP: "+token+"  (debug only)",14f,green))
+                    addView(text("Enter the 6-digit OTP below to complete consent.",13f,Color.GRAY))
+                    addView(otpInput,LinearLayout.LayoutParams(-1,dp(58)).apply{setMargins(0,dp(8),0,0)})
+                }
+                val d=AlertDialog.Builder(this)
                     .setTitle("Confirm repayment consent")
-                    .setMessage(otpMessage)
-                    .setView(otpBox)
+                    .setView(otpDetails)
                     .setNegativeButton("CANCEL",null)
                     .setPositiveButton("CONFIRM + RECORD",null)
-                    .create().also{d->d.setOnShowListener{d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{if(otpInput.text.toString()!=token){otpInput.error="Incorrect OTP";return@setOnClickListener};try{db.recordRepaymentWithConsent(s.id,s.creditId,av,proposer,token);d.dismiss();toast("Repayment recorded with consent audit trail");repayments(false)}catch(_:Exception){toast("Repayment could not be recorded safely")}}};d.show()}
+                    .create()
+                d.setOnShowListener{
+                    configureOtpDialog(d,otpInput)
+                    d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{
+                        if(otpInput.text.toString()!=token){otpInput.error="Incorrect OTP";return@setOnClickListener}
+                        try{
+                            db.recordRepaymentWithConsent(s.id,s.creditId,av,proposer,token)
+                            d.dismiss()
+                            toast("Repayment recorded with consent audit trail")
+                            repayments(false)
+                        }catch(_:Exception){toast("Repayment could not be recorded safely")}
+                    }
+                }
+                d.show()
             }
         }
         confirmDialog.show()
