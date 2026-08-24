@@ -56,10 +56,21 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
         return out
     }
     fun profile(id:Long):Profile? = readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,address,city,state,pin,pan,aadhaar,gstin,photo FROM profiles WHERE id=?",arrayOf(id.toString())).use { if(!it.moveToFirst()) null else profile(it) }
-    fun credit(id:Long):Credit? = readableDatabase.rawQuery("SELECT c.id,c.code,c.borrower_id,c.guarantor_id,p.name,c.type,c.direction,c.amount,c.roi,c.method,c.installment,c.interest,c.payable,c.start_date,c.end_date,c.due_date,COALESCE(c.gstin,''),COALESCE(c.invoice,''),c.nach,c.status FROM credits c JOIN profiles p ON p.id=c.borrower_id WHERE c.id=?",arrayOf(id.toString())).use { if(!it.moveToFirst()) null else Credit(it.getLong(0),it.getString(1),it.getLong(2),if(it.isNull(3)) null else it.getLong(3),it.getString(4),it.getString(5),it.getString(6),it.getDouble(7),it.getDouble(7),it.getString(9),it.getDouble(10),it.getDouble(11),it.getDouble(12),it.getString(13),it.getString(14),it.getString(15),it.getString(16),it.getString(17),it.getInt(18)==1,it.getString(19)) }
+    fun credit(id:Long):Credit? {
+        val sql="SELECT c.id,c.code,c.borrower_id,c.guarantor_id,p.name,c.type,c.direction,c.amount,c.roi,c.method,c.installment,c.interest,c.payable,c.start_date,c.end_date,c.due_date,COALESCE(c.gstin,''),COALESCE(c.invoice,''),c.nach,c.status FROM credits c JOIN profiles p ON p.id=c.borrower_id WHERE c.id=?"
+        return readableDatabase.rawQuery(sql,arrayOf(id.toString())).use { if(!it.moveToFirst()) null else Credit(it.getLong(0),it.getString(1),it.getLong(2),if(it.isNull(3)) null else it.getLong(3),it.getString(4),it.getString(5),it.getString(6),it.getDouble(7),it.getDouble(8),it.getString(9),it.getDouble(10),it.getDouble(11),it.getDouble(12),it.getString(13),it.getString(14),it.getString(15),it.getString(16),it.getString(17),it.getInt(18)==1,it.getString(19)) }
+    }
     fun credits(direction:String?=null):List<Credit> {
         val out=mutableListOf<Credit>(); val sql="SELECT c.id,c.code,c.borrower_id,p.name,c.type,c.direction,c.amount,c.roi,c.method,c.installment,c.interest,c.payable,c.start_date,c.end_date,c.due_date,COALESCE(c.gstin,''),COALESCE(c.invoice,''),c.nach,c.status FROM credits c JOIN profiles p ON p.id=c.borrower_id "+if(direction==null) "" else "WHERE c.direction=? "+"ORDER BY c.id DESC"
         readableDatabase.rawQuery(sql,if(direction==null)null else arrayOf(direction)).use { while(it.moveToNext()) out.add(Credit(it.getLong(0),it.getString(1),it.getLong(2),it.getString(3),it.getString(4),it.getString(5),it.getDouble(6),it.getDouble(7),it.getString(8),it.getDouble(9),it.getDouble(10),it.getDouble(11),it.getString(12),it.getString(13),it.getString(14),it.getString(15),it.getString(16),it.getInt(17)==1,it.getString(18))) }
+        return out
+    }
+    fun credits(direction:String?=null):List<Credit> {
+        val out=mutableListOf<Credit>()
+        val sql="SELECT c.id,c.code,c.borrower_id,c.guarantor_id,p.name,c.type,c.direction,c.amount,c.roi,c.method,c.installment,c.interest,c.payable,c.start_date,c.end_date,c.due_date,COALESCE(c.gstin,''),COALESCE(c.invoice,''),c.nach,c.status FROM credits c JOIN profiles p ON p.id=c.borrower_id "+if(direction==null) "" else "WHERE c.direction=? "+"ORDER BY c.id DESC"
+        readableDatabase.rawQuery(sql,if(direction==null)null else arrayOf(direction)).use {
+            while(it.moveToNext()) out.add(Credit(it.getLong(0),it.getString(1),it.getLong(2),if(it.isNull(3)) null else it.getLong(3),it.getString(4),it.getString(5),it.getString(6),it.getDouble(7),it.getDouble(8),it.getString(9),it.getDouble(10),it.getDouble(11),it.getDouble(12),it.getString(13),it.getString(14),it.getString(15),it.getString(16),it.getString(17),it.getInt(18)==1,it.getString(19)))
+        }
         return out
     }
     fun addCredit(borrower:Long,guarantorId:Long?,type:String,direction:String,amount:Double,roi:Double,method:String,installment:Double,interest:Double,payable:Double,start:String,end:String,due:String,gstin:String,invoice:String,nach:Boolean):Long {
