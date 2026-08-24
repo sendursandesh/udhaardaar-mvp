@@ -14,7 +14,6 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import java.util.Locale
 import kotlin.math.pow
-import kotlin.random.Random
 
 class V32Activity : AppCompatActivity() {
     private lateinit var db: V32DatabaseHelper
