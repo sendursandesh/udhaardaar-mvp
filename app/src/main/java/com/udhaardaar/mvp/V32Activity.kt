@@ -85,6 +85,7 @@ class V32Activity : AppCompatActivity() {
         val r=page(if(role=="BORROWER") "Borrower Profile" else "Guarantor Profile","Validated identity fields")
         val name=field("Full name *").apply{setText(p?.name?:"")}
         val mob=field("Mobile number * (10 digits) ",true,10).apply{setText(p?.mobile?:"")}
+        val altMob=field("Alternate mobile (optional; digits only, no length limit)").apply{setText(p?.alternateMobile?:"")}
         val addr=field("Full address *").apply{setText(p?.address?:"")}
         val city=field("City").apply{setText(p?.city?:"")}
         val state=field("State").apply{setText(p?.state?:"")}
@@ -93,21 +94,22 @@ class V32Activity : AppCompatActivity() {
         val aad=field("Aadhaar (12 digits) ",true,12).apply{setText(p?.aadhaar?:"")}
         val gst=field("GSTIN (optional) ").apply{setText(p?.gstin?:"")}
         val img=ImageView(this).apply{layoutParams=LinearLayout.LayoutParams(-1,dp(150));scaleType=ImageView.ScaleType.CENTER_CROP;try{if(!p?.photo.isNullOrBlank())setImageURI(Uri.parse(p?.photo)) else setImageResource(android.R.drawable.ic_menu_camera)}catch(_:Exception){setImageResource(android.R.drawable.ic_menu_camera) } }
-        listOf(name,mob,addr,city,state,pin,pan,aad,gst).forEach{r.addView(it,LinearLayout.LayoutParams(-1,dp(58)).apply{setMargins(0,dp(3),0,dp(3))})}
+        listOf(name,mob,altMob,addr,city,state,pin,pan,aad,gst).forEach{r.addView(it,LinearLayout.LayoutParams(-1,dp(58)).apply{setMargins(0,dp(3),0,dp(3))})}
         r.addView(img);r.addView(button("ADD / CHANGE PHOTO (OPTIONAL) ",teal){photoTarget=img;pick(100)})
         r.addView(button(if(id==null) "SAVE PROFILE" else "UPDATE PROFILE",green){
             val n=name.text.toString().trim();val m=mob.text.toString().trim();val ad=addr.text.toString().trim();val pi=pin.text.toString().trim();val pa=pan.text.toString().trim().uppercase(Locale.US);val aa=aad.text.toString().trim();val gg=gst.text.toString().trim().uppercase(Locale.US)
             if(n.length<2||m.length!=10||ad.length<5){toast("Name, address and exactly 10-digit mobile are required");return@button}
+            val am=altMob.text.toString().trim();if(am.isNotEmpty()&&!am.all{it.isDigit()}){altMob.error="Digits only";return@button}
             if(!validPin(pi)){pin.error="PIN must be exactly 6 digits";return@button}
             if(!validPan(pa)){pan.error="Invalid PAN format (e.g. ABCDE1234F) ";return@button}
             if(!validAadhaar(aa)){aad.error="Aadhaar must contain exactly 12 digits";return@button}
             if(!validGstin(gg)){gst.error="Invalid GSTIN format";return@button}
-            db.saveProfile(id,role,p?.id?:"ID-"+System.currentTimeMillis(),n,m,ad,city.text.toString().trim(),state.text.toString().trim(),pi,pa,aa,gg,photoUri?.toString()?:p?.photo)
+            db.saveProfile(id,role,p?.id?:"ID-"+System.currentTimeMillis(),n,m,am,ad,city.text.toString().trim(),state.text.toString().trim(),pi,pa,aa,gg,photoUri?.toString()?:p?.photo)
             toast("Profile saved");search(role)
         });r.addView(button("BACK",Color.DKGRAY){search(role)});show(r)
     }
 
-    private fun borrowerSummary(id:Long){val p=db.profile(id)?:return;val r=page("Borrower Summary","Review history before creating new credit");r.addView(text(p.name,24f,navy));r.addView(text("Unique ID: ${p.id}",12f,Color.GRAY));r.addView(text("Mobile: ${p.mobile} • PAN: ${p.pan.ifBlank {"—" } } • Aadhaar: ${p.aadhaar.ifBlank {"—" } }"));val cs=db.credits().filter{it.borrowerId==id};r.addView(text("Total registered credits: ${cs.size}",16f,navy));cs.forEach{card(r,"₹",it.code,"${it.type} • ${it.direction} • ${money(it.amount)} • ${it.status}",if(it.status=="OVERDUE")red else blue){creditDetail(it.rowId) } };r.addView(button("REGISTER NEW CREDIT FOR THIS BORROWER",blue){registerCredit(id)});r.addView(button("BACK",Color.DKGRAY){search("BORROWER")});show(r)}
+    private fun borrowerSummary(id:Long){val p=db.profile(id)?:return;val r=page("Borrower Summary","Review history before creating new credit");r.addView(text(p.name,24f,navy));r.addView(text("Unique ID: ${p.id}",12f,Color.GRAY));r.addView(text("Mobile: ${p.mobile} • Alt: ${p.alternateMobile.ifBlank {"—"}} • PAN: ${p.pan.ifBlank {"—" } } • Aadhaar: ${p.aadhaar.ifBlank {"—" } }"));val cs=db.credits().filter{it.borrowerId==id};r.addView(text("Total registered credits: ${cs.size}",16f,navy));cs.forEach{card(r,"₹",it.code,"${it.type} • ${it.direction} • ${money(it.amount)} • ${it.status}",if(it.status=="OVERDUE")red else blue){creditDetail(it.rowId) } };r.addView(button("REGISTER NEW CREDIT FOR THIS BORROWER",blue){registerCredit(id)});r.addView(button("BACK",Color.DKGRAY){search("BORROWER")});show(r)}
 
     private fun registerCredit(preselected:Long?){
         val borrowers=db.profiles("BORROWER");if(borrowers.isEmpty()){toast("Create a borrower profile first");profileForm("BORROWER",null);return}
