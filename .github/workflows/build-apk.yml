@@ -9,6 +9,7 @@ on:
       - v3.2.2-final-fixes
       - agent/v3.2-functional
       - v3.2.6-final
+      - v3.2.5-final
   pull_request:
     branches:
       - main
