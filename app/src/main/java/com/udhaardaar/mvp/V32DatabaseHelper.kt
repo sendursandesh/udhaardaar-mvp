@@ -10,7 +10,7 @@ import java.util.Date
 import java.util.Locale
 import java.security.MessageDigest
 
-class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaar_v322.db", null, 5) {
+class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaar_v322.db", null, 7) {
     data class User(val id:String,val name:String,val mobile:String,val address:String,val email:String,val photo:String?)
     data class Profile(val rowId:Long,val id:String,val role:String,val name:String,val mobile:String,val alternateMobile:String,val address:String,val city:String,val state:String,val pin:String,val pan:String,val aadhaar:String,val gstin:String,val photo:String?)
     data class Credit(val rowId:Long,val code:String,val borrowerId:Long,val guarantorId:Long?,val borrowerName:String,val type:String,val direction:String,val amount:Double,val roi:Double,val method:String,val installment:Double,val interest:Double,val payable:Double,val start:String,val end:String,val due:String,val gstin:String,val invoice:String,val nach:Boolean,val status:String)
@@ -39,6 +39,8 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
         if(oldVersion<3) db.execSQL("CREATE TABLE IF NOT EXISTS repayment_consents(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,schedule_id INTEGER,amount REAL,proposer_role TEXT,consent_token TEXT,status TEXT,created TEXT,confirmed TEXT) ")
         if(oldVersion<4) runCatching{db.execSQL("ALTER TABLE credits ADD COLUMN guarantor_id INTEGER")}
         if(oldVersion<5) runCatching{db.execSQL("ALTER TABLE profiles ADD COLUMN alternate_mobile TEXT")}
+        if(oldVersion<6) db.execSQL("CREATE TABLE IF NOT EXISTS documents(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,doc_type TEXT,title TEXT,content_hash TEXT,uri TEXT,consent INTEGER,status TEXT,created TEXT)")
+        if(oldVersion<7) db.execSQL("CREATE TABLE IF NOT EXISTS defaults(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,reason TEXT,created TEXT)")
     }
 
     fun hasUser() = readableDatabase.rawQuery("SELECT id FROM users LIMIT 1",null).use { it.moveToFirst() }
@@ -106,4 +108,21 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
     fun total(direction:String):Double=readableDatabase.rawQuery("SELECT COALESCE(SUM(amount),0) FROM credits WHERE direction=?",arrayOf(direction)).use{it.moveToFirst();it.getDouble(0)}
     fun dueCount(overdue:Boolean):Int=schedules(null,overdue).size
     fun saveBank(type:String,id:String,holder:String,bank:String,account:String,ifsc:String,upi:String,nach:Boolean){writableDatabase.insert("banks",null,ContentValues().apply{put("owner_type",type);put("owner_id",id);put("holder",holder);put("bank",bank);put("account",account);put("ifsc",ifsc);put("upi",upi);put("nach",if(nach)1 else 0);put("created",now())})}
+    fun saveDocument(creditId:Long,type:String,title:String,contentHash:String,uri:String="",consent:Boolean=true):Long{
+        return writableDatabase.insertOrThrow("documents",null,ContentValues().apply{
+            put("credit_id",creditId);put("doc_type",type);put("title",title);put("content_hash",contentHash);put("uri",uri);put("consent",if(consent)1 else 0);put("status","RECORDED");put("created",now())
+        })
+    }
+    fun documentCount(creditId:Long):Int=writableDatabase.rawQuery("SELECT COUNT(*) FROM documents WHERE credit_id=?",arrayOf(creditId.toString())).use{it.moveToFirst();it.getInt(0)}
+    fun markDefault(creditId:Long,reason:String):Long{
+        val db=writableDatabase
+        db.beginTransaction()
+        try{
+            db.insertOrThrow("defaults",null,ContentValues().apply{put("credit_id",creditId);put("reason",reason.trim());put("created",now())})
+            db.update("credits",ContentValues().apply{put("status","DEFAULT")},"id=?",arrayOf(creditId.toString()))
+            db.execSQL("UPDATE schedules SET status='DEFAULT' WHERE credit_id=? AND status<>'PAID'",arrayOf(creditId))
+            db.setTransactionSuccessful()
+        } finally { db.endTransaction() }
+        return creditId
+    }
 }
