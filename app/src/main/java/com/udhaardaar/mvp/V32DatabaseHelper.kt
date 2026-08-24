@@ -54,7 +54,7 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
         readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,address,city,state,pin,pan,aadhaar,gstin,photo FROM profiles WHERE role=? AND(name LIKE ? OR mobile LIKE ? OR pan LIKE ? OR aadhaar LIKE ? OR uid LIKE ? OR gstin LIKE ?) ORDER BY name",arrayOf(role,x,x,x,x,x,x)).use { while(it.moveToNext()) out.add(profile(it)) }
         return out
     }
-    fun profile(id:Long):Profile? = readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,address,pan,aadhaar,gstin,photo FROM profiles WHERE id=?",arrayOf(id.toString())).use { if(!it.moveToFirst()) null else profile(it) }
+    fun profile(id:Long):Profile? = readableDatabase.rawQuery("SELECT id,uid,role,name,mobile,address,city,state,pin,pan,aadhaar,gstin,photo FROM profiles WHERE id=?",arrayOf(id.toString())).use { if(!it.moveToFirst()) null else profile(it) }
     fun credit(id:Long):Credit? = readableDatabase.rawQuery("SELECT c.id,c.code,c.borrower_id,p.name,c.type,c.direction,c.amount,c.roi,c.method,c.installment,c.interest,c.payable,c.start_date,c.end_date,c.due_date,COALESCE(c.gstin,''),COALESCE(c.invoice,''),c.nach,c.status FROM credits c JOIN profiles p ON p.id=c.borrower_id WHERE c.id=?",arrayOf(id.toString())).use { if(!it.moveToFirst()) null else Credit(it.getLong(0),it.getString(1),it.getLong(2),it.getString(3),it.getString(4),it.getString(5),it.getDouble(6),it.getDouble(7),it.getString(8),it.getDouble(9),it.getDouble(10),it.getDouble(11),it.getString(12),it.getString(13),it.getString(14),it.getString(15),it.getString(16),it.getInt(17)==1,it.getString(18)) }
     fun credits(direction:String?=null):List<Credit> {
         val out=mutableListOf<Credit>(); val sql="SELECT c.id,c.code,c.borrower_id,p.name,c.type,c.direction,c.amount,c.roi,c.method,c.installment,c.interest,c.payable,c.start_date,c.end_date,c.due_date,COALESCE(c.gstin,''),COALESCE(c.invoice,''),c.nach,c.status FROM credits c JOIN profiles p ON p.id=c.borrower_id "+if(direction==null) "" else "WHERE c.direction=? "+"ORDER BY c.id DESC"
@@ -74,9 +74,23 @@ class V32DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaa
     fun pay(scheduleId:Long,creditId:Long,amount:Double){writableDatabase.insert("payments",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("date",now())});readableDatabase.rawQuery("SELECT amount,paid FROM schedules WHERE id=?",arrayOf(scheduleId.toString())).use{if(it.moveToFirst()){val p=it.getDouble(1)+amount;val st=if(p+0.005>=it.getDouble(0)) "PAID" else "DUE";writableDatabase.update("schedules",ContentValues().apply{put("paid",p);put("status",st)},"id=?",arrayOf(scheduleId.toString())) } }}
     fun recordRepaymentWithConsent(scheduleId:Long,creditId:Long,amount:Double,proposerRole:String,token:String){
         require(amount>0){"Invalid repayment amount"}
-        writableDatabase.insertOrThrow("repayment_consents",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("proposer_role",proposerRole);put("consent_token",token);put("status","CONSENTED");put("created",now());put("confirmed",now())})
-        writableDatabase.insertOrThrow("payments",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("date",now())})
-        readableDatabase.rawQuery("SELECT amount,paid FROM schedules WHERE id=?",arrayOf(scheduleId.toString())).use{if(it.moveToFirst()){val p=it.getDouble(1)+amount;val st=if(p+0.005>=it.getDouble(0)) "PAID" else "DUE";writableDatabase.update("schedules",ContentValues().apply{put("paid",p);put("status",st)},"id=?",arrayOf(scheduleId.toString())) } }
+        require(token.isNotBlank()){"Consent token missing"}
+        require(proposerRole=="LENDER"||proposerRole=="BORROWER"){"Invalid proposer role"}
+        val db=writableDatabase
+        db.beginTransaction()
+        try{
+            db.rawQuery("SELECT amount,paid FROM schedules WHERE id=? AND credit_id=?",arrayOf(scheduleId.toString(),creditId.toString())).use{
+                require(it.moveToFirst()){"Repayment schedule not found"}
+                val scheduled=it.getDouble(0);val paid=it.getDouble(1);val outstanding=(scheduled-paid).coerceAtLeast(0.0)
+                require(amount<=outstanding+0.005){"Repayment exceeds outstanding amount"}
+                db.insertOrThrow("repayment_consents",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("proposer_role",proposerRole);put("consent_token",token);put("status","CONSENTED");put("created",now());put("confirmed",now())})
+                db.insertOrThrow("payments",null,ContentValues().apply{put("credit_id",creditId);put("schedule_id",scheduleId);put("amount",amount);put("date",now())})
+                val newPaid=paid+amount
+                val st=if(newPaid+0.005>=scheduled)"PAID" else "DUE"
+                db.update("schedules",ContentValues().apply{put("paid",newPaid.coerceAtMost(scheduled));put("status",st)},"id=?",arrayOf(scheduleId.toString()))
+            }
+            db.setTransactionSuccessful()
+        } finally { db.endTransaction() }
     }
 
     fun total(direction:String):Double=readableDatabase.rawQuery("SELECT COALESCE(SUM(amount),0) FROM credits WHERE direction=?",arrayOf(direction)).use{it.moveToFirst();it.getDouble(0)}
