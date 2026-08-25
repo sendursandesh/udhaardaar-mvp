@@ -16,6 +16,11 @@ import kotlin.random.Random
  * Authentication identity is the registered mobile number, never the profile name.
  * PIN is the fast everyday login; OTP remains the recovery / verification mechanism.
  * Demo builds display the OTP locally. A production release must replace this with an SMS OTP provider.
+ *
+ * LoginActivity deliberately remains the task root. This prevents Android from restoring an
+ * old credit-entry screen when the Udhaardaar launcher icon is tapped again. Because the
+ * launcher activity is singleTask, tapping the app icon brings this activity to the front and
+ * clears the authenticated screens above it, forcing mobile + PIN/OTP authentication again.
  */
 class LoginActivity : AppCompatActivity() {
     private lateinit var db: V32DatabaseHelper
@@ -31,8 +36,21 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         db = V32DatabaseHelper(this)
-        // Never auto-enter the application from a name/profile match.
+        showLogin()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        // The launcher can return here from an existing task. Never restore the last business
+        // screen and never treat an old authenticated state as sufficient for entry.
+        setIntent(intent)
         prefs.edit().putBoolean("logged_in", false).apply()
+        showLogin()
+    }
+
+    private fun showLogin() {
+        generatedOtp = ""
+        pendingMobile = ""
         loginPage()
     }
 
@@ -104,8 +122,7 @@ class LoginActivity : AppCompatActivity() {
             if (otp.visibility != android.view.View.VISIBLE || otp.text.toString() != generatedOtp || generatedOtp.isBlank()) {
                 toast("Enter the correct OTP first"); return@button
             }
-            val m = pendingMobile
-            showSetPin(m)
+            showSetPin(pendingMobile)
         })
         r.addView(Space(this).apply { minimumHeight = dp(10) })
         r.addView(button("CREATE NEW ACCOUNT", navy) { createAccountPage() })
@@ -167,7 +184,8 @@ class LoginActivity : AppCompatActivity() {
 
     private fun enterApp(mobile: String) {
         prefs.edit().putBoolean("logged_in", true).apply()
+        // Do NOT finish LoginActivity: it must remain the launcher/task root so that tapping
+        // the app icon cannot restore the last credit-entry screen.
         startActivity(Intent(this, V323Activity::class.java).apply { putExtra("authenticated_mobile", mobile) })
-        finish()
     }
 }
