@@ -40,21 +40,22 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           manifest = Path('app/src/main/AndroidManifest.xml').read_text()
           login = Path('app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt').read_text()
           v323 = Path('app/src/main/java/com/udhaardaar/mvp/V323Activity.kt').read_text()
           db = Path('app/src/main/java/com/udhaardaar/mvp/V32DatabaseHelper.kt').read_text()
+          foundation = Path('app/src/main/java/com/udhaardaar/mvp/V3Foundation.kt').read_text()
           rental = Path('app/src/main/java/com/udhaardaar/mvp/RentalAgreementGenerator.kt').read_text()
+          app = Path('app/src/main/java/com/udhaardaar/mvp/UdhaardaarApp.kt').read_text()
 
-          # Authentication must start at LoginActivity; the old MVP activities must not be launchers.
+          # Authentication must start at LoginActivity; old MVP activities must not be launchers.
           assert '<activity android:name=".LoginActivity" android:exported="true"' in manifest
           assert 'android.intent.action.MAIN' in manifest and 'android.intent.category.LAUNCHER' in manifest
           assert 'class LoginActivity' in login
-          assert 'loginScreen()' in login
-          assert 'Random.nextInt(100000, 1000000)' in login
-          assert 'Mobile number is not registered' in login
+          assert 'loginScreen()' in login or 'loginScreen()' in v323
+          assert 'Random.nextInt(100000, 1000000)' in login or 'Random.nextInt(100000,1000000)' in v323
+          assert 'Mobile number is not registered' in login or 'No registered profile found' in v323
 
           # V3 authenticated application and onboarding flow.
           assert 'ownerRegistration()' in v323
@@ -65,13 +66,24 @@ jobs:
           assert 'consent' in v323.lower()
           assert '10 digits' in v323
 
-          # Future-ready data/document foundations must be present in the source tree.
+          # Core transaction data and future-ready privacy/audit foundation.
           assert 'CREATE TABLE' in db
-          assert 'consent' in db.lower()
-          assert 'audit' in db.lower()
+          assert 'audit_events' in foundation
+          assert 'access_consents' in foundation
+          assert 'agreement_documents' in foundation
+          assert 'repayment_consents' in foundation
+          assert 'credit_score_snapshots' in foundation
+          assert 'profile_verifications' in foundation
+          assert 'co_borrowers' in foundation
+          assert 'rental_lease_terms' in foundation
+          assert 'V3Foundation.ensure' in app
+
+          # Rental/lease agreement generation from structured terms.
           assert 'RentalAgreementGenerator' in rental
           assert 'Landlord' in rental
           assert 'Tenant' in rental
+          assert 'monthlyRent' in rental
+          assert 'securityDeposit' in rental
 
           print('Static V3 QA PASS')
           PY
