@@ -1,4 +1,4 @@
-name: Build Udhaardaar V3.2.4 Launch Candidate
+name: Build Udhaardaar V3 Launch Candidate
 
 on:
   workflow_dispatch:
@@ -34,21 +34,46 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Prepare V3.2.4 launch candidate
+      - name: Prepare V3 launch candidate
         run: python3 scripts/prepare_v324.py
-      - name: Static launch/privacy/validation QA
+      - name: Static V3 launch/privacy/data QA
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          m=Path('app/src/main/AndroidManifest.xml').read_text()
-          v=Path('app/src/main/java/com/udhaardaar/mvp/V323Activity.kt').read_text()
-          assert 'android:name=".V323Activity" android:exported="true"' in m
-          assert 'loginScreen()' in v
-          assert 'ownerRegistration()' in v
-          assert 'validPan' in v and 'validGstin' in v
-          assert 'validMobile' in v and 'validAadhaar' in v
-          assert 'consent' in v.lower()
-          print('Static QA PASS')
+          import re
+
+          manifest = Path('app/src/main/AndroidManifest.xml').read_text()
+          login = Path('app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt').read_text()
+          v323 = Path('app/src/main/java/com/udhaardaar/mvp/V323Activity.kt').read_text()
+          db = Path('app/src/main/java/com/udhaardaar/mvp/V32DatabaseHelper.kt').read_text()
+          rental = Path('app/src/main/java/com/udhaardaar/mvp/RentalAgreementGenerator.kt').read_text()
+
+          # Authentication must start at LoginActivity; the old MVP activities must not be launchers.
+          assert '<activity android:name=".LoginActivity" android:exported="true"' in manifest
+          assert 'android.intent.action.MAIN' in manifest and 'android.intent.category.LAUNCHER' in manifest
+          assert 'class LoginActivity' in login
+          assert 'loginScreen()' in login
+          assert 'Random.nextInt(100000, 1000000)' in login
+          assert 'Mobile number is not registered' in login
+
+          # V3 authenticated application and onboarding flow.
+          assert 'ownerRegistration()' in v323
+          assert 'dashboard()' in v323
+          assert 'Register Credit' in v323
+          assert 'Guarantor Profile' in v323
+          assert 'repayments(' in v323
+          assert 'consent' in v323.lower()
+          assert '10 digits' in v323
+
+          # Future-ready data/document foundations must be present in the source tree.
+          assert 'CREATE TABLE' in db
+          assert 'consent' in db.lower()
+          assert 'audit' in db.lower()
+          assert 'RentalAgreementGenerator' in rental
+          assert 'Landlord' in rental
+          assert 'Tenant' in rental
+
+          print('Static V3 QA PASS')
           PY
       - name: Build APK
         run: gradle :app:assembleDebug --stacktrace
@@ -62,5 +87,5 @@ jobs:
       - name: Upload launch candidate APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-V3.2.4-launch-candidate-debug-APK
+          name: Udhaardaar-V3-launch-candidate-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
