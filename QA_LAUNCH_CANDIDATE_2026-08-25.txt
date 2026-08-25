@@ -1,0 +1,1 @@
+V3.2.4 launch candidate QA build trigger: login gate, privacy/consent guardrails, validation, digital-document flow, and repeated build verification.
