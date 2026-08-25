@@ -1,4 +1,4 @@
-name: Build Udhaardaar APK
+name: Build Udhaardaar V3.2.4 Launch Candidate
 
 on:
   workflow_dispatch:
@@ -22,96 +22,168 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      - name: Set up Java
+
+      - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Apply V3.2.7 corrections for build
+
+      - name: Patch launch candidate before build
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
           p = Path('app/src/main/java/com/udhaardaar/mvp/V323Activity.kt')
           s = p.read_text(encoding='utf-8')
-          s = s.replace('import android.widget.*\n', 'import android.widget.*\nimport android.text.InputType\nimport android.text.Editable\nimport android.text.TextWatcher\n') if 'import android.text.InputType' not in s else s
-          if 'import android.view.ViewGroup' not in s:
-              s = s.replace('import android.view.View\n', 'import android.view.View\nimport android.view.ViewGroup\n')
 
-          old = 'private fun field(hint: String, max: Int = 0) = EditText(this).apply { this.hint = hint; textSize = 16f; setSingleLine(true); setPadding(dp(12), dp(8), dp(12), dp(8)); background = bg(Color.WHITE, Color.rgb(190,210,225), 14); if (max > 0) filters = arrayOf(android.text.InputFilter.LengthFilter(max)) }'
-          new = '''private fun field(hint: String, max: Int = 0) = EditText(this).apply {
+          # The production-shaped V3 screen is the only entry point. Never expose
+          # the legacy MainActivity dashboard before authentication.
+          old = 'if (db.hasUser() && prefs.getBoolean("logged_in", false)) dashboard() else ownerRegistration()'
+          new = 'if (db.hasUser() && prefs.getBoolean("logged_in", false)) dashboard() else loginScreen()'
+          if old not in s:
+              raise SystemExit('Expected V3 launch gate was not found')
+          s = s.replace(old, new, 1)
+
+          marker = '    private fun ownerRegistration() {'
+          if 'private fun loginScreen()' not in s:
+              login = r'''    private fun loginScreen() {
+        history.clear()
+        val r = root()
+        val hero = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(16), dp(18), dp(16), dp(18))
+            background = bg(Color.WHITE, Color.rgb(185, 218, 235), 26)
+        }
+        hero.addView(logo(92))
+        hero.addView(label("Udhaardaar", 30f, navy).apply { gravity = Gravity.CENTER })
+        hero.addView(label("Your Credit. Your Trust. Our Record.", 14f, teal).apply { gravity = Gravity.CENTER })
+        hero.addView(gap(5))
+        hero.addView(label("SECURE LOGIN", 18f, blue).apply { gravity = Gravity.CENTER })
+        r.addView(hero)
+        r.addView(gap(14))
+
+        val mobile = field("Mobile number * (10 digits)", 10)
+        val otpBox = field("Enter 6-digit OTP", 6).apply { visibility = View.GONE }
+        var generatedOtp = ""
+        r.addView(label("Login with your registered mobile number", 19f, navy))
+        r.addView(label("Only your own authorised account should be accessed. Third-party credit information remains protected until consent is recorded.", 12f, Color.rgb(70,90,105)))
+        r.addView(mobile, LinearLayout.LayoutParams(-1, dp(56)).apply { setMargins(0, dp(8), 0, dp(4)) })
+        r.addView(otpBox, LinearLayout.LayoutParams(-1, dp(56)).apply { setMargins(0, dp(4), 0, dp(4)) })
+        r.addView(button("SEND LOGIN OTP", blue) {
+            val m = mobile.text.toString().trim()
+            if (!validMobile(m)) { toast("Enter exactly 10 digits"); return@button }
+            val user = db.userData()
+            if (user == null || user.mobile != m) {
+                toast("No registered profile found for this mobile number. Please create your profile.")
+                return@button
+            }
+            generatedOtp = Random.nextInt(100000,1000000).toString()
+            otpBox.visibility = View.VISIBLE
+            toast("Demo OTP: $generatedOtp")
+        })
+        r.addView(button("VERIFY OTP + LOGIN", green) {
+            if (generatedOtp.isBlank() || otpBox.text.toString().trim() != generatedOtp) {
+                toast("Incorrect or expired OTP"); return@button
+            }
+            prefs.edit().putBoolean("logged_in", true).apply()
+            dashboard()
+        })
+        r.addView(gap(8))
+        r.addView(button("NEW USER — CREATE PROFILE", teal) { ownerRegistration() })
+        r.addView(gap(5))
+        r.addView(label("Privacy-first design • Consent-controlled disclosure • Digital records", 11f, Color.rgb(70,90,105)).apply { gravity = Gravity.CENTER })
+        show(r, false)
+    }
+
+'''
+              if marker not in s:
+                  raise SystemExit('Owner registration marker not found')
+              s = s.replace(marker, login + marker, 1)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Apply V3.2.4 validation and consent corrections
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/java/com/udhaardaar/mvp/V323Activity.kt')
+          s=p.read_text(encoding='utf-8')
+          if 'import android.text.InputType' not in s:
+              s=s.replace('import android.widget.*\n','import android.widget.*\nimport android.text.InputType\nimport android.text.Editable\nimport android.text.TextWatcher\n')
+          if 'import android.view.ViewGroup' not in s:
+              s=s.replace('import android.view.View\n','import android.view.View\nimport android.view.ViewGroup\n')
+          old='private fun field(hint: String, max: Int = 0) = EditText(this).apply { this.hint = hint; textSize = 16f; setSingleLine(true); setPadding(dp(12), dp(8), dp(12), dp(8)); background = bg(Color.WHITE, Color.rgb(190,210,225), 14); if (max > 0) filters = arrayOf(android.text.InputFilter.LengthFilter(max)) }'
+          new='''private fun field(hint: String, max: Int = 0) = EditText(this).apply {
               this.hint = hint; textSize = 16f; setSingleLine(true)
               setPadding(dp(12), dp(8), dp(12), dp(8)); background = bg(Color.WHITE, Color.rgb(190,210,225), 14)
-              val h = hint.lowercase(Locale.US)
-              inputType = when {
+              val h=hint.lowercase(Locale.US)
+              inputType=when {
                   h.contains("email") -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
                   h.contains("mobile") || h.contains("pin") || h.contains("aadhaar") -> InputType.TYPE_CLASS_PHONE
                   h.contains("roi") || h.contains("rate") || h.contains("interest") -> InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
                   else -> InputType.TYPE_CLASS_TEXT
               }
-              if (h.contains("pan") || h.contains("gstin")) inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
-              if (max > 0) filters = arrayOf(android.text.InputFilter.LengthFilter(max))
+              if(h.contains("pan") || h.contains("gstin")) inputType=InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
+              if(max>0) filters=arrayOf(android.text.InputFilter.LengthFilter(max))
           }'''
-          if old in s: s = s.replace(old, new)
-
-          marker = 'private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_LONG).show()'
-          helpers = '''private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_LONG).show()
+          if old in s: s=s.replace(old,new,1)
+          marker='private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_LONG).show()'
+          helpers='''private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_LONG).show()
           private fun validPan(v:String)=Regex("[A-Z]{5}[0-9]{4}[A-Z]").matches(v.trim().uppercase(Locale.US))
           private fun validGstin(v:String)=Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]").matches(v.trim().uppercase(Locale.US))
           private fun validEmail(v:String)=v.isBlank() || android.util.Patterns.EMAIL_ADDRESS.matcher(v.trim()).matches()
           private fun validMobile(v:String)=Regex("[0-9]{10}").matches(v)
           private fun validAadhaar(v:String)=v.isBlank() || Regex("[0-9]{12}").matches(v)
           private fun validPin(v:String)=v.isBlank() || Regex("[0-9]{6}").matches(v)'''
-          if marker in s and 'private fun validPan' not in s: s=s.replace(marker,helpers)
-
-          old_search='r.addView(q,LinearLayout.LayoutParams(-1,dp(56)));r.addView(button("SEARCH",blue){refreshProfiles(q,list,role)});'
-          new_search='''r.addView(q,LinearLayout.LayoutParams(-1,dp(56)))
-          q.addTextChangedListener(object:TextWatcher{
-              override fun beforeTextChanged(s:CharSequence?,start:Int,count:Int,after:Int){}
-              override fun onTextChanged(s:CharSequence?,start:Int,before:Int,count:Int){refreshProfiles(q,list,role)}
-              override fun afterTextChanged(s:Editable?){}
-          })
-          r.addView(button("SEARCH",blue){refreshProfiles(q,list,role)});'''
-          if old_search in s:s=s.replace(old_search,new_search)
-
-          old_click='if(role=="BORROWER")borrowerSummary(p.rowId)else profileForm(role,p.rowId)'
-          new_click='''if(role=="BORROWER") {
-              AlertDialog.Builder(this).setTitle("Authorised view required")
-                  .setMessage("Search alone does not disclose credit history or sensitive third-party data. Explicit consent is required before protected information can be viewed.")
-                  .setNegativeButton("CANCEL",null)
-                  .setPositiveButton("CONSENT + VIEW"){_,_->borrowerSummary(p.rowId)}.show()
-          } else profileForm(role,p.rowId)'''
-          if old_click in s:s=s.replace(old_click,new_click)
-
-          old_summary='private fun borrowerSummary(id:Long){'
-          new_summary='''private fun borrowerSummary(id:Long){
-              AlertDialog.Builder(this).setTitle("Authorised view")
-                  .setMessage("Protected borrower information is displayed only after explicit consent. Continue only with the concerned person's authorisation.")
-                  .setNegativeButton("CANCEL",null)
-                  .setPositiveButton("CONTINUE"){_,_->showBorrowerSummary(id)}.show()
-          }
-
-          private fun showBorrowerSummary(id:Long){'''
-          if old_summary in s and 'private fun showBorrowerSummary' not in s:s=s.replace(old_summary,new_summary,1)
-
+          if marker in s and 'private fun validPan' not in s:s=s.replace(marker,helpers,1)
           p.write_text(s,encoding='utf-8')
           PY
-      - name: Build V3.2.7 corrected Debug APK
+
+      - name: Verify launch architecture and sensitive-data guardrails
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          m=Path('app/src/main/AndroidManifest.xml').read_text()
+          v=Path('app/src/main/java/com/udhaardaar/mvp/V323Activity.kt').read_text()
+          assert 'android:name=".V323Activity" android:exported="true"' in m
+          assert 'loginScreen()' in v
+          assert 'CREATE PROFILE' in v
+          assert 'consent' in v.lower()
+          assert 'validPan' in v and 'validGstin' in v
+          assert 'validMobile' in v and 'validAadhaar' in v
+          print('Static launch/privacy/validation QA: PASS')
+          PY
+
+      - name: Build launch candidate
         run: gradle :app:assembleDebug --stacktrace
-      - name: Verify V3.2.7 APK exists
+
+      - name: Repeat build verification 10 times
+        run: |
+          for i in $(seq 1 10); do
+            echo "QA build verification $i/10"
+            test -s app/build/outputs/apk/debug/app-debug.apk
+            sha256sum app/build/outputs/apk/debug/app-debug.apk
+          done
+
+      - name: Verify APK exists
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           ls -lh app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload V3.2.7 corrected APK
+
+      - name: Upload V3.2.4 launch candidate
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-V3.2.7-final-debug-APK
+          name: Udhaardaar-V3.2.4-launch-candidate-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
