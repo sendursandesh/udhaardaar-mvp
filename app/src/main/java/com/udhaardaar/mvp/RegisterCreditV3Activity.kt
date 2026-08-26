@@ -3,8 +3,12 @@ package com.udhaardaar.mvp
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.View
+import android.view.Window
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -32,6 +36,7 @@ class RegisterCreditV3Activity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         setContentView(R.layout.activity_register_credit_v3)
         db = V3DatabaseHelper(this)
         scroll = findViewById(R.id.registerScroll)
@@ -51,6 +56,7 @@ class RegisterCreditV3Activity : AppCompatActivity() {
         calculation = findViewById(R.id.tvCalculation)
         history = findViewById(R.id.tvHistorySummary)
 
+        installImeSafeScrolling()
         setSpinner(typeSpinner, arrayOf("Personal Credit", "Business Credit", "Trade Credit", "Advance", "Rental / Lease", "Other"))
         setSpinner(directionSpinner, arrayOf("Credit Given", "Credit Received"))
         setSpinner(methodSpinner, arrayOf("EMI", "Principal + Interest", "Fixed Repayment", "Bullet / Maturity"))
@@ -59,7 +65,7 @@ class RegisterCreditV3Activity : AppCompatActivity() {
         start.setOnClickListener { pickDate(start) }
         end.setOnClickListener { pickDate(end) }
 
-        val recalc = View.OnFocusChangeListener { _, _ -> calculateRepayment() }
+        val recalc = View.OnFocusChangeListener { _, hasFocus -> if (hasFocus) calculateRepayment() }
         amount.onFocusChangeListener = recalc
         roi.onFocusChangeListener = recalc
         methodSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -77,11 +83,34 @@ class RegisterCreditV3Activity : AppCompatActivity() {
             }
         }
         listOf(amount, roi, repayment, invoice, notes).forEach { field ->
-            field.setOnFocusChangeListener { v, hasFocus ->
-                if (hasFocus) v.postDelayed({ scroll.smoothScrollTo(0, v.bottom + 180) }, 180)
-            }
+            field.setOnFocusChangeListener { v, hasFocus -> if (hasFocus) bringFieldAboveIme(v) }
+            field.setOnClickListener { if (field.isFocusable) bringFieldAboveIme(field) }
         }
         findViewById<Button>(R.id.btnSaveCreditV3).setOnClickListener { validateAndSave() }
+    }
+
+    private fun installImeSafeScrolling() {
+        val baseBottom = scroll.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(scroll) { view, insets ->
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+            val system = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
+            view.updatePadding(bottom = baseBottom + maxOf(ime, system) + 32)
+            insets
+        }
+        ViewCompat.requestApplyInsets(scroll)
+    }
+
+    private fun bringFieldAboveIme(view: View) {
+        view.postDelayed({
+            val rect = android.graphics.Rect()
+            scroll.getWindowVisibleDisplayFrame(rect)
+            val location = IntArray(2)
+            view.getLocationInWindow(location)
+            val bottom = location[1] + view.height
+            val safeBottom = rect.bottom - 32
+            val delta = bottom - safeBottom
+            if (delta > 0) scroll.smoothScrollBy(0, delta + 48)
+        }, 120)
     }
 
     private fun setSpinner(spinner: Spinner, values: Array<String>) {
@@ -108,7 +137,7 @@ class RegisterCreditV3Activity : AppCompatActivity() {
 
     private fun pickDate(target: EditText) {
         val c = Calendar.getInstance()
-        DatePickerDialog(this, { _, y, m, d -> c.set(y, m, d); target.setText(df.format(c.time)) }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
+        DatePickerDialog(this, { _, y, m, d -> c.set(y, m, d); target.setText(df.format(c.time)); bringFieldAboveIme(target) }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
     }
 
     private fun calculateRepayment() {
@@ -120,7 +149,7 @@ class RegisterCreditV3Activity : AppCompatActivity() {
             val monthly = r / 1200.0
             val emi = if (monthly == 0.0) p / 12.0 else p * monthly * Math.pow(1 + monthly, 12.0) / (Math.pow(1 + monthly, 12.0) - 1)
             repayment.setText(String.format(Locale.US, "%.2f", emi))
-            calculation.text = "Indicative EMI: ${money(emi)} per month. Review against the agreed terms before registering."
+            calculation.text = "Indicative EMI: ${money(emi)} per month. Review against agreed terms before registering."
         } else {
             val annualInterest = p * r / 100.0
             calculation.text = "Principal: ${money(p)}\nIndicative annual interest at ${String.format(Locale.US, "%.2f", r)}%: ${money(annualInterest)}\nEnter the agreed repayment amount."
@@ -148,7 +177,7 @@ class RegisterCreditV3Activity : AppCompatActivity() {
     }
 
     private fun validDateOrder(a: String, b: String): Boolean = try { !df.parse(b).before(df.parse(a)) } catch (_: Exception) { false }
-    private fun field(v: EditText, message: String) { v.error = message; v.requestFocus(); v.post { scroll.smoothScrollTo(0, v.bottom + 180) } }
+    private fun field(v: EditText, message: String) { v.error = message; v.requestFocus(); bringFieldAboveIme(v) }
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_LONG).show()
     private fun money(v: Double) = "₹" + String.format(Locale.US, "%,.2f", v)
 }
