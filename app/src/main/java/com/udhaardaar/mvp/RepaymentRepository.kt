@@ -1,9 +1,8 @@
 package com.udhaardaar.mvp
 
 /**
- * Persistence boundary for repayments. UI code must call this facade instead of
- * writing repayment rows directly, so authorization is enforced before mutation.
- * The actual database implementation can be supplied without weakening the rule.
+ * Single persistence boundary for repayment mutations.
+ * UI/controller code must use this facade; authorization is checked before the writer is called.
  */
 class RepaymentRepository(private val writer: (RepaymentService.RepaymentReceipt) -> Boolean) {
 
