@@ -80,6 +80,8 @@ jobs:
           assert 'securityDeposit' in rental
           print('Static V3 QA PASS')
           PY
+      - name: Deterministic V3 functional business QA
+        run: python3 scripts/v3_functional_qa.py
       - name: Build APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Repeat artifact/integrity verification 10 times
