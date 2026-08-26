@@ -1,241 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/registerScroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F7FA"
-    android:fillViewport="true">
-
+    android:fillViewport="true"
+    android:clipToPadding="false"
+    android:paddingBottom="140dp"
+    android:scrollbars="vertical">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="16dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Register Credit" android:textColor="#111827" android:textSize="25sp" android:textStyle="bold" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Step-by-step credit registration. Your data stays restricted to authorised parties." android:textColor="#6B7280" android:textSize="14sp" android:layout_marginTop="4dp" android:layout_marginBottom="18dp" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Register Credit"
-            android:textColor="#111827"
-            android:textSize="26sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1  Credit &amp; Party" android:textSize="18sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginBottom="10dp" />
+        <Spinner android:id="@+id/spinnerCreditType" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginBottom="10dp" />
+        <Spinner android:id="@+id/spinnerDirection" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginBottom="10dp" />
+        <Spinner android:id="@+id/spinnerParty" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginBottom="12dp" />
+        <TextView android:id="@+id/tvHistoryTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Borrower Repayment History" android:textColor="#111827" android:textSize="17sp" android:textStyle="bold" android:layout_marginBottom="6dp" />
+        <TextView android:id="@+id/tvHistorySummary" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#FFFFFF" android:padding="14dp" android:text="Select a borrower to view previous history." android:textColor="#4B5563" android:textSize="14sp" android:layout_marginBottom="18dp" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Create a complete credit record"
-            android:textColor="#6B7280"
-            android:textSize="14sp"
-            android:layout_marginBottom="24dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="2  Financial Terms" android:textSize="18sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginBottom="10dp" />
+        <EditText android:id="@+id/etCreditAmount" android:layout_width="match_parent" android:layout_height="52dp" android:hint="Principal / credit amount (₹)" android:inputType="numberDecimal" android:padding="14dp" android:background="#FFFFFF" android:layout_marginBottom="10dp" />
+        <EditText android:id="@+id/etInterestRate" android:layout_width="match_parent" android:layout_height="52dp" android:hint="ROI (%)" android:inputType="numberDecimal" android:padding="14dp" android:background="#FFFFFF" android:layout_marginBottom="10dp" />
+        <Spinner android:id="@+id/spinnerRepaymentMethod" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginBottom="10dp" />
+        <Spinner android:id="@+id/spinnerPeriodicity" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginBottom="10dp" />
+        <EditText android:id="@+id/etRepaymentAmount" android:layout_width="match_parent" android:layout_height="52dp" android:hint="Repayment / EMI amount (₹)" android:inputType="numberDecimal" android:padding="14dp" android:background="#FFFFFF" android:layout_marginBottom="8dp" />
+        <TextView android:id="@+id/tvCalculation" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enter principal, ROI and terms to calculate the repayment." android:textColor="#4B5563" android:textSize="13sp" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="18dp" />
 
-        <!-- Credit Type -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="3  Dates &amp; Trade Credit" android:textSize="18sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginBottom="10dp" />
+        <EditText android:id="@+id/etCreditStartDate" android:layout_width="match_parent" android:layout_height="52dp" android:hint="Start date" android:focusable="false" android:clickable="true" android:padding="14dp" android:background="#FFFFFF" android:layout_marginBottom="10dp" />
+        <EditText android:id="@+id/etCreditEndDate" android:layout_width="match_parent" android:layout_height="52dp" android:hint="End / maturity date (optional)" android:focusable="false" android:clickable="true" android:padding="14dp" android:background="#FFFFFF" android:layout_marginBottom="10dp" />
+        <EditText android:id="@+id/etInvoiceNumber" android:layout_width="match_parent" android:layout_height="52dp" android:hint="Invoice number (trade credit only)" android:inputType="textCapCharacters" android:padding="14dp" android:background="#FFFFFF" android:layout_marginBottom="10dp" />
+        <TextView android:id="@+id/tvInvoiceStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Invoice attachment/scanning can be added to this credit record." android:textColor="#6B7280" android:textSize="13sp" android:layout_marginBottom="18dp" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Credit Type"
-            android:textColor="#374151"
-            android:textStyle="bold"
-            android:layout_marginBottom="6dp" />
-
-        <Spinner
-            android:id="@+id/spinnerCreditType"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="#FFFFFF"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Direction -->
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Credit Direction"
-            android:textColor="#374151"
-            android:textStyle="bold"
-            android:layout_marginBottom="6dp" />
-
-        <Spinner
-            android:id="@+id/spinnerDirection"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="#FFFFFF"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Party -->
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Borrower / Party"
-            android:textColor="#374151"
-            android:textStyle="bold"
-            android:layout_marginBottom="6dp" />
-
-        <Spinner
-            android:id="@+id/spinnerParty"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="#FFFFFF"
-            android:layout_marginBottom="12dp" />
-
-        <TextView
-            android:id="@+id/tvHistoryTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Borrower Repayment History"
-            android:textColor="#111827"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:id="@+id/tvHistorySummary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#FFFFFF"
-            android:padding="16dp"
-            android:text="Select a borrower to view previous credit and repayment history."
-            android:textColor="#4B5563"
-            android:textSize="14sp"
-            android:layout_marginBottom="24dp" />
-
-        <!-- Credit Amount -->
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Principal / Credit Amount"
-            android:textColor="#374151"
-            android:textStyle="bold"
-            android:layout_marginBottom="6dp" />
-
-        <EditText
-            android:id="@+id/etCreditAmount"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:hint="Enter amount"
-            android:inputType="numberDecimal"
-            android:padding="14dp"
-            android:background="#FFFFFF"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Interest -->
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Interest / ROI (%)"
-            android:textColor="#374151"
-            android:textStyle="bold"
-            android:layout_marginBottom="6dp" />
-
-        <EditText
-            android:id="@+id/etInterestRate"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:hint="Enter agreed interest rate"
-            android:inputType="numberDecimal"
-            android:padding="14dp"
-            android:background="#FFFFFF"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Repayment Amount -->
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Agreed Repayment Amount"
-            android:textColor="#374151"
-            android:textStyle="bold"
-            android:layout_marginBottom="6dp" />
-
-        <EditText
-            android:id="@+id/etRepaymentAmount"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:hint="Enter repayment amount"
-            android:inputType="numberDecimal"
-            android:padding="14dp"
-            android:background="#FFFFFF"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Start Date -->
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Start Date"
-            android:textColor="#374151"
-            android:textStyle="bold"
-            android:layout_marginBottom="6dp" />
-
-        <EditText
-            android:id="@+id/etCreditStartDate"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:hint="Select start date"
-            android:focusable="false"
-            android:clickable="true"
-            android:padding="14dp"
-            android:background="#FFFFFF"
-            android:layout_marginBottom="16dp" />
-
-        <!-- End Date -->
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="End / Maturity Date"
-            android:textColor="#374151"
-            android:textStyle="bold"
-            android:layout_marginBottom="6dp" />
-
-        <EditText
-            android:id="@+id/etCreditEndDate"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:hint="Select end date"
-            android:focusable="false"
-            android:clickable="true"
-            android:padding="14dp"
-            android:background="#FFFFFF"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Notes -->
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Notes"
-            android:textColor="#374151"
-            android:textStyle="bold"
-            android:layout_marginBottom="6dp" />
-
-        <EditText
-            android:id="@+id/etCreditNotes"
-            android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:hint="Optional notes"
-            android:gravity="top"
-            android:inputType="textMultiLine"
-            android:padding="14dp"
-            android:background="#FFFFFF"
-            android:layout_marginBottom="24dp" />
-
-        <!-- Save -->
-
-        <Button
-            android:id="@+id/btnSaveCreditV3"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="REGISTER CREDIT"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="24dp" />
-
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="4  Consent &amp; Notes" android:textSize="18sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginBottom="10dp" />
+        <CheckBox android:id="@+id/cbConsent" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="I confirm that this credit may be recorded and viewed only by authorised parties, subject to required consent/OTP." android:layout_marginBottom="10dp" />
+        <EditText android:id="@+id/etCreditNotes" android:layout_width="match_parent" android:layout_height="100dp" android:hint="Notes (optional)" android:gravity="top" android:inputType="textMultiLine|textCapSentences" android:padding="14dp" android:background="#FFFFFF" android:layout_marginBottom="16dp" />
+        <Button android:id="@+id/btnSaveCreditV3" android:layout_width="match_parent" android:layout_height="56dp" android:text="REVIEW &amp; REGISTER CREDIT" android:textSize="15sp" android:textStyle="bold" android:layout_marginBottom="30dp" />
     </LinearLayout>
-
 </ScrollView>
