@@ -33,15 +33,16 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         db = V32DatabaseHelper(this)
         if (db.hasUser() && prefs.getBoolean("logged_in", false)) {
-            startActivity(Intent(this, V323Activity::class.java)); finish(); return
+            startActivity(Intent(this, KeyboardSafeV323Activity::class.java)); finish(); return
         }
         loginScreen()
     }
 
     private fun loginScreen() {
-        val root = ScrollView(this).apply { setBackgroundColor(sky) }
+        val root = ScrollView(this).apply { setBackgroundColor(sky); isFillViewport = true }
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(20), dp(28), dp(20), dp(32)) }
         val logo = ImageView(this).apply { layoutParams = LinearLayout.LayoutParams(dp(100), dp(100)).apply { gravity = Gravity.CENTER }; setImageResource(R.drawable.udhaardaar_logo); scaleType = ImageView.ScaleType.CENTER_INSIDE; contentDescription = "Udhaardaar logo" }
         body.addView(logo)
@@ -65,10 +66,10 @@ class LoginActivity : AppCompatActivity() {
         card.addView(button("VERIFY & LOGIN", green) {
             if (otp.isBlank() || otpBox.text.toString() != otp) { toast("Enter the correct OTP"); return@button }
             prefs.edit().putBoolean("logged_in", true).apply()
-            startActivity(Intent(this, V323Activity::class.java)); finish()
+            startActivity(Intent(this, KeyboardSafeV323Activity::class.java)); finish()
         }, LinearLayout.LayoutParams(-1, dp(52)).apply { setMargins(0,dp(2),0,dp(6)) })
         card.addView(button("NEW USER — CREATE PROFILE", Color.rgb(0,145,135)) {
-            startActivity(Intent(this, V323Activity::class.java).putExtra("open_registration", true))
+            startActivity(Intent(this, KeyboardSafeV323Activity::class.java).putExtra("open_registration", true))
         }, LinearLayout.LayoutParams(-1, dp(52)).apply { setMargins(0,dp(2),0,0) })
         body.addView(card, LinearLayout.LayoutParams(-1, -2))
         body.addView(TextView(this).apply { text = "Privacy first • Consent based access • Digital records"; textSize = 11f; setTextColor(Color.DKGRAY); gravity = Gravity.CENTER; setPadding(0,dp(18),0,0) })

@@ -8,6 +8,7 @@ on:
       - v3-development
       - v3.2.2-final-fixes
       - agent/v3.2-functional
+      - release-v3.3-qa
   pull_request:
     branches:
       - v3-development
@@ -49,15 +50,12 @@ jobs:
           rental = Path('app/src/main/java/com/udhaardaar/mvp/RentalAgreementGenerator.kt').read_text()
           app = Path('app/src/main/java/com/udhaardaar/mvp/UdhaardaarApp.kt').read_text()
 
-          # Authentication must start at LoginActivity; old MVP activities must not be launchers.
           assert '<activity android:name=".LoginActivity" android:exported="true"' in manifest
           assert 'android.intent.action.MAIN' in manifest and 'android.intent.category.LAUNCHER' in manifest
           assert 'class LoginActivity' in login
           assert 'loginScreen()' in login or 'loginScreen()' in v323
           assert 'Random.nextInt(100000, 1000000)' in login or 'Random.nextInt(100000,1000000)' in v323
           assert 'Mobile number is not registered' in login or 'No registered profile found' in v323
-
-          # V3 authenticated application and onboarding flow.
           assert 'ownerRegistration()' in v323
           assert 'dashboard()' in v323
           assert 'Register Credit' in v323
@@ -65,8 +63,6 @@ jobs:
           assert 'repayments(' in v323
           assert 'consent' in v323.lower()
           assert '10 digits' in v323
-
-          # Core transaction data and future-ready privacy/audit foundation.
           assert 'CREATE TABLE' in db
           assert 'audit_events' in foundation
           assert 'access_consents' in foundation
@@ -77,16 +73,15 @@ jobs:
           assert 'co_borrowers' in foundation
           assert 'rental_lease_terms' in foundation
           assert 'V3Foundation.ensure' in app
-
-          # Rental/lease agreement generation from structured terms.
           assert 'RentalAgreementGenerator' in rental
           assert 'Landlord' in rental
           assert 'Tenant' in rental
           assert 'monthlyRent' in rental
           assert 'securityDeposit' in rental
-
           print('Static V3 QA PASS')
           PY
+      - name: Deterministic V3 functional business QA
+        run: python3 scripts/v3_functional_qa.py
       - name: Build APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Repeat artifact/integrity verification 10 times
