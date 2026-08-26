@@ -1,10 +1,11 @@
 package com.udhaardaar.mvp
 
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 object CreditRules {
-    data class ScheduleLine(val date: LocalDate, val amount: Double, val principal: Double, val interest: Double)
+    data class ScheduleLine(val date: Date, val amount: Double, val principal: Double, val interest: Double)
 
     fun emi(principal: Double, annualRate: Double, months: Int): Double {
         if (principal <= 0 || months <= 0) return 0.0
@@ -22,7 +23,7 @@ object CreditRules {
 
     fun chronological(lines: List<ScheduleLine>): List<ScheduleLine> = lines.sortedBy { it.date }
 
-    fun date(value: String): LocalDate? = try {
-        LocalDate.parse(value, DateTimeFormatter.ofPattern("dd MMM yyyy"))
+    fun parseDate(value: String): Date? = try {
+        SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).parse(value)
     } catch (_: Exception) { null }
 }
