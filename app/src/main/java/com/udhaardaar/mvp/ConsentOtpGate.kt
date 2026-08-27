@@ -1,9 +1,10 @@
 package com.udhaardaar.mvp
 
 /**
- * Registration gate used before a credit is committed.
- * The real OTP provider supplies the verification result; this class keeps
- * registration blocked until both consent and provider verification are true.
+ * Short-lived registration gate. Registration is allowed only after the
+ * current consent state AND a verified OTP challenge are both present.
+ * OTP verification itself must come from OtpRegistrationCoordinator; this
+ * class never generates, guesses, or accepts an OTP on its own.
  */
 object ConsentOtpGate {
     data class State(
@@ -13,16 +14,25 @@ object ConsentOtpGate {
         val canRegister: Boolean get() = consentGranted && otpVerified
     }
 
-    fun grantConsent(state: State, granted: Boolean): State =
-        state.copy(consentGranted = granted)
+    @Volatile private var current = State()
 
-    fun markOtpVerified(state: State, verified: Boolean): State =
-        state.copy(otpVerified = verified)
+    fun grantConsent(granted: Boolean) {
+        current = current.copy(consentGranted = granted)
+    }
 
-    fun requireReady(state: State): Result<Unit> =
-        when {
-            !state.consentGranted -> Result.failure(IllegalStateException("Consent is required"))
-            !state.otpVerified -> Result.failure(IllegalStateException("OTP verification is required"))
-            else -> Result.success(Unit)
-        }
+    fun markOtpVerified(verified: Boolean) {
+        current = current.copy(otpVerified = verified)
+    }
+
+    fun isRegistrationAuthorised(): Boolean = current.canRegister
+
+    fun requireReady(): Result<Unit> = when {
+        !current.consentGranted -> Result.failure(IllegalStateException("Consent is required"))
+        !current.otpVerified -> Result.failure(IllegalStateException("OTP verification is required"))
+        else -> Result.success(Unit)
+    }
+
+    fun clearAfterRegistration() {
+        current = State()
+    }
 }
