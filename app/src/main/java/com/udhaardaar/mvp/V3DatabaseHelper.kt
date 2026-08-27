@@ -5,7 +5,6 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-/** Single V3 persistence layer. Sensitive mutations are authorised and auditable. */
 class V3DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaar_v3.db", null, 5) {
     override fun onConfigure(db: SQLiteDatabase) { super.onConfigure(db); db.setForeignKeyConstraintsEnabled(true) }
     override fun onCreate(db: SQLiteDatabase) {
@@ -20,10 +19,30 @@ class V3DatabaseHelper(context: Context) : SQLiteOpenHelper(context, "udhaardaar
         db.execSQL("CREATE TABLE activity_log(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,party_id INTEGER,activity_type TEXT NOT NULL,description TEXT,created_at TEXT NOT NULL,FOREIGN KEY(credit_id) REFERENCES credits(id),FOREIGN KEY(party_id) REFERENCES parties(id))")
         createIndexes(db)
     }
-    private fun createIndexes(db: SQLiteDatabase) { listOf("CREATE INDEX IF NOT EXISTS idx_parties_mobile ON parties(mobile)","CREATE INDEX IF NOT EXISTS idx_parties_pan ON parties(pan)","CREATE INDEX IF NOT EXISTS idx_parties_gstin ON parties(gstin)","CREATE INDEX IF NOT EXISTS idx_parties_aadhaar ON parties(aadhaar)","CREATE INDEX IF NOT EXISTS idx_credits_party ON credits(party_id)","CREATE INDEX IF NOT EXISTS idx_repayments_credit ON repayments(credit_id)","CREATE INDEX IF NOT EXISTS idx_access_credit_party ON credit_access(credit_id,party_id)").forEach(db::execSQL) }
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) { if(oldVersion<4){db.execSQL("CREATE TABLE IF NOT EXISTS credit_access(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER NOT NULL,party_id INTEGER NOT NULL,role TEXT NOT NULL,can_view INTEGER NOT NULL DEFAULT 0,can_repay INTEGER NOT NULL DEFAULT 0,can_edit INTEGER NOT NULL DEFAULT 0,consent_required INTEGER NOT NULL DEFAULT 1)");db.execSQL("CREATE TABLE IF NOT EXISTS activity_log(id INTEGER PRIMARY KEY AUTOINCREMENT,credit_id INTEGER,party_id INTEGER,activity_type TEXT NOT NULL,description TEXT,created_at TEXT NOT NULL)")}; if(oldVersion<5)addColumn(db,"repayments","actor_party_id","INTEGER NOT NULL DEFAULT -1"); createIndexes(db) }
-    private fun addColumn(db:SQLiteDatabase,table:String,column:String,type:String){try{db.execSQL("ALTER TABLE $table ADD COLUMN $column $type")}catch(_:Exception){}}
-    fun canView(creditId:Long,actorPartyId:Long,consentVerified:Boolean):Boolean=readableDatabase.rawQuery("SELECT can_view,consent_required FROM credit_access WHERE credit_id=? AND party_id=? LIMIT 1",arrayOf(creditId.toString(),actorPartyId.toString())).use{it.moveToFirst()&&it.getInt(0)==1&&(it.getInt(1)==0||consentVerified)}
-    fun canUpdateRepayment(creditId:Long,actorPartyId:Long,consentVerified:Boolean):Boolean=readableDatabase.rawQuery("SELECT can_repay,consent_required FROM credit_access WHERE credit_id=? AND party_id=? LIMIT 1",arrayOf(creditId.toString(),actorPartyId.toString())).use{it.moveToFirst()&&it.getInt(0)==1&&(it.getInt(1)==0||consentVerified)}
-    fun addRepaymentAuthorized(creditId:Long,actorPartyId:Long,repaymentDate:String,amount:Double,principalComponent:Double,interestComponent:Double,paymentMode:String?,referenceNumber:String?,notes:String?,createdAt:String,consentVerified:Boolean):Long{require(amount>0&&canUpdateRepayment(creditId,actorPartyId,consentVerified)){"Repayment not authorised"};val db=writableDatabase;db.beginTransaction();return try{val id=db.insertOrThrow("repayments",null,ContentValues().apply{put("credit_id",creditId);put("repayment_date",repaymentDate);put("amount",amount);put("principal_component",principalComponent.coerceAtLeast(0.0));put("interest_component",interestComponent.coerceAtLeast(0.0));put("payment_mode",paymentMode);put("reference_number",referenceNumber);put("notes",notes);put("created_at",createdAt);put("actor_party_id",actorPartyId)});db.insert("activity_log",null,ContentValues().apply{put("credit_id",creditId);put("party_id",actorPartyId);put("activity_type","REPAYMENT_RECORDED");put("description","Authorised repayment recorded");put("created_at",createdAt)});db.setTransactionSuccessful();id}finally{db.endTransaction()}}
+    private fun createIndexes(db: SQLiteDatabase) {
+        listOf("CREATE INDEX IF NOT EXISTS idx_parties_mobile ON parties(mobile)","CREATE INDEX IF NOT EXISTS idx_parties_pan ON parties(pan)","CREATE INDEX IF NOT EXISTS idx_parties_gstin ON parties(gstin)","CREATE INDEX IF NOT EXISTS idx_parties_aadhaar ON parties(aadhaar)","CREATE INDEX IF NOT EXISTS idx_credits_party ON credits(party_id)","CREATE INDEX IF NOT EXISTS idx_repayments_credit ON repayments(credit_id)","CREATE INDEX IF NOT EXISTS idx_access_credit_party ON credit_access(credit_id,party_id)").forEach(db::execSQL)
+    }
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion < 5) { addColumn(db,"repayments","actor_party_id","INTEGER NOT NULL DEFAULT -1") }
+        createIndexes(db)
+    }
+    private fun addColumn(db: SQLiteDatabase, table: String, column: String, type: String) { try { db.execSQL("ALTER TABLE $table ADD COLUMN $column $type") } catch (_: Exception) {} }
+
+    fun addCredit(partyId: Long, creditType: String, direction: String, principalAmount: Double, interestRate: Double, repaymentMethod: String, repaymentAmount: Double, periodicity: String?, startDate: String, endDate: String?, nextDueDate: String?, notes: String?, createdAt: String, graceDays: Int = 0, invoiceNumber: String? = null, invoiceUri: String? = null): Long {
+        val db=writableDatabase; db.beginTransaction()
+        return try {
+            val id=db.insertOrThrow("credits",null,ContentValues().apply { put("party_id",partyId);put("credit_type",creditType);put("direction",direction);put("principal_amount",principalAmount);put("interest_rate",interestRate);put("repayment_method",repaymentMethod);put("repayment_amount",repaymentAmount);put("periodicity",periodicity);put("start_date",startDate);put("end_date",endDate);put("next_due_date",nextDueDate);put("grace_days",graceDays);put("invoice_number",invoiceNumber);put("invoice_uri",invoiceUri);put("status","ACTIVE");put("notes",notes);put("created_at",createdAt);put("updated_at",createdAt) })
+            val role=if(direction=="GIVEN") "BORROWER" else "LENDER"
+            db.insertOrThrow("credit_access",null,ContentValues().apply { put("credit_id",id);put("party_id",partyId);put("role",role);put("can_view",1);put("can_repay",1);put("can_edit",0);put("consent_required",1) })
+            db.insert("activity_log",null,ContentValues().apply { put("credit_id",id);put("party_id",partyId);put("activity_type","CREDIT_CREATED");put("description","Credit registered");put("created_at",createdAt) })
+            db.setTransactionSuccessful();id
+        } catch(_:Exception){-1L} finally{db.endTransaction()}
+    }
+    fun canView(creditId:Long,actorPartyId:Long,consentVerified:Boolean):Boolean=authorised(creditId,actorPartyId,"can_view",consentVerified)
+    fun canUpdateRepayment(creditId:Long,actorPartyId:Long,consentVerified:Boolean):Boolean=authorised(creditId,actorPartyId,"can_repay",consentVerified)
+    private fun authorised(creditId:Long,partyId:Long,column:String,consentVerified:Boolean):Boolean { val c=readableDatabase.rawQuery("SELECT $column,consent_required FROM credit_access WHERE credit_id=? AND party_id=? LIMIT 1",arrayOf(creditId.toString(),partyId.toString())); return c.use{it.moveToFirst()&&it.getInt(0)==1&&(it.getInt(1)==0||consentVerified)} }
+    fun addRepaymentAuthorized(creditId:Long,actorPartyId:Long,repaymentDate:String,amount:Double,principalComponent:Double,interestComponent:Double,paymentMode:String?,referenceNumber:String?,notes:String?,createdAt:String,consentVerified:Boolean):Long {
+        if(amount<=0||!canUpdateRepayment(creditId,actorPartyId,consentVerified)) return -1L
+        val db=writableDatabase;db.beginTransaction();return try{val id=db.insertOrThrow("repayments",null,ContentValues().apply{put("credit_id",creditId);put("repayment_date",repaymentDate);put("amount",amount);put("principal_component",principalComponent.coerceAtLeast(0.0));put("interest_component",interestComponent.coerceAtLeast(0.0));put("payment_mode",paymentMode);put("reference_number",referenceNumber);put("notes",notes);put("created_at",createdAt);put("actor_party_id",actorPartyId)});db.insert("activity_log",null,ContentValues().apply{put("credit_id",creditId);put("party_id",actorPartyId);put("activity_type","REPAYMENT_RECORDED");put("description","Authorised repayment recorded");put("created_at",createdAt)});db.setTransactionSuccessful();id}finally{db.endTransaction()}
+    }
 }
