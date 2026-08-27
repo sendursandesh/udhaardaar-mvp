@@ -7,11 +7,13 @@ import androidx.appcompat.app.AppCompatActivity
 
 class RecordsActivity : AppCompatActivity() {
     private lateinit var databaseHelper: UdhaarDatabaseHelper
+    private lateinit var repaymentRepository: RepaymentRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_records)
         databaseHelper = UdhaarDatabaseHelper(this)
+        repaymentRepository = RepaymentRepository { receipt -> databaseHelper.persistAuthorisedRepayment(receipt) }
         val container = findViewById<LinearLayout>(R.id.recordsContainer)
         val empty = findViewById<TextView>(R.id.tvNoRecords)
         val cursor = databaseHelper.readableDatabase.query("udhaar_records", null, null, null, null, null, "id DESC")
@@ -34,19 +36,13 @@ class RecordsActivity : AppCompatActivity() {
                 val borrowerId = it.getString(it.getColumnIndexOrThrow("borrower_user_id"))
                 val consent = it.getInt(it.getColumnIndexOrThrow("consent_granted")) == 1
                 val revoked = it.getInt(it.getColumnIndexOrThrow("consent_revoked")) == 1
-
-                val card = LinearLayout(this).apply {
-                    orientation = LinearLayout.VERTICAL
-                    setPadding(16, 16, 16, 16)
-                }
+                val card = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16, 16, 16, 16) }
                 val summary = TextView(this).apply {
                     text = "Name: $name\nPrincipal: ₹${"%.2f".format(amount)}\nROI: ${"%.2f".format(roi)}%\nMethod: $method\nPeriodicity: $periodicity\nOutstanding: ₹${"%.2f".format(outstanding)}\nStatus: $status"
                     textSize = 15f
                 }
                 val repay = Button(this).apply { text = "Record repayment" }
-                repay.setOnClickListener {
-                    showRepaymentDialog(id, outstanding, lenderId, borrowerId, consent, revoked)
-                }
+                repay.setOnClickListener { showRepaymentDialog(id, outstanding, lenderId, borrowerId, consent, revoked) }
                 card.addView(summary)
                 card.addView(repay)
                 container.addView(card)
@@ -67,7 +63,6 @@ class RecordsActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Continue") { _, _ ->
                 val amount = input.text.toString().toDoubleOrNull() ?: 0.0
-                // The actual authenticated session identity must be supplied by the login layer.
                 val userId = getSharedPreferences("session", MODE_PRIVATE).getString("user_id", null)
                 val roleName = getSharedPreferences("session", MODE_PRIVATE).getString("role", null)
                 val role = roleName?.let { runCatching { AccessControl.Role.valueOf(it) }.getOrNull() }
@@ -80,12 +75,8 @@ class RecordsActivity : AppCompatActivity() {
                     lenderId?.takeIf { it.isNotBlank() }?.let { AccessControl.CreditParty(it, AccessControl.Role.LENDER, consentGranted = consent, consentRevoked = revoked) },
                     borrowerId?.takeIf { it.isNotBlank() }?.let { AccessControl.CreditParty(it, AccessControl.Role.BORROWER, consentGranted = consent, consentRevoked = revoked) }
                 )
-                when (val result = RepaymentRepository.persist(RepaymentService.RepaymentRequest(creditId, amount, outstanding, requester, parties))) {
-                    is RepaymentService.Result.Success -> {
-                        databaseHelper.persistAuthorisedRepayment(result.receipt)
-                        Toast.makeText(this, "Repayment recorded.", Toast.LENGTH_SHORT).show()
-                        recreate()
-                    }
+                when (val result = repaymentRepository.record(RepaymentService.RepaymentRequest(creditId, amount, outstanding, requester, parties))) {
+                    is RepaymentService.Result.Success -> { Toast.makeText(this, "Repayment recorded.", Toast.LENGTH_SHORT).show(); recreate() }
                     is RepaymentService.Result.Rejected -> Toast.makeText(this, result.reason, Toast.LENGTH_LONG).show()
                 }
             }.show()
