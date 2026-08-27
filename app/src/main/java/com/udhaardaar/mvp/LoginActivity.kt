@@ -36,7 +36,7 @@ class LoginActivity : AppCompatActivity() {
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         db = V32DatabaseHelper(this)
         if (db.hasUser() && prefs.getBoolean("logged_in", false)) {
-            startActivity(Intent(this, KeyboardSafeV323Activity::class.java)); finish(); return
+            startActivity(Intent(this, V323Activity::class.java)); finish(); return
         }
         loginScreen()
     }
@@ -66,10 +66,10 @@ class LoginActivity : AppCompatActivity() {
         card.addView(button("VERIFY & LOGIN", green) {
             if (otp.isBlank() || otpBox.text.toString() != otp) { toast("Enter the correct OTP"); return@button }
             prefs.edit().putBoolean("logged_in", true).apply()
-            startActivity(Intent(this, KeyboardSafeV323Activity::class.java)); finish()
+            startActivity(Intent(this, V323Activity::class.java)); finish()
         }, LinearLayout.LayoutParams(-1, dp(52)).apply { setMargins(0,dp(2),0,dp(6)) })
         card.addView(button("NEW USER — CREATE PROFILE", Color.rgb(0,145,135)) {
-            startActivity(Intent(this, KeyboardSafeV323Activity::class.java).putExtra("open_registration", true))
+            startActivity(Intent(this, V323Activity::class.java).putExtra("open_registration", true))
         }, LinearLayout.LayoutParams(-1, dp(52)).apply { setMargins(0,dp(2),0,0) })
         body.addView(card, LinearLayout.LayoutParams(-1, -2))
         body.addView(TextView(this).apply { text = "Privacy first • Consent based access • Digital records"; textSize = 11f; setTextColor(Color.DKGRAY); gravity = Gravity.CENTER; setPadding(0,dp(18),0,0) })
