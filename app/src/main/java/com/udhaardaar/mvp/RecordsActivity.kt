@@ -67,7 +67,6 @@ class RecordsActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Continue") { _, _ ->
                 val amount = input.text.toString().toDoubleOrNull() ?: 0.0
-                // The actual authenticated session identity must be supplied by the login layer.
                 val userId = getSharedPreferences("session", MODE_PRIVATE).getString("user_id", null)
                 val roleName = getSharedPreferences("session", MODE_PRIVATE).getString("role", null)
                 val role = roleName?.let { runCatching { AccessControl.Role.valueOf(it) }.getOrNull() }
@@ -80,9 +79,9 @@ class RecordsActivity : AppCompatActivity() {
                     lenderId?.takeIf { it.isNotBlank() }?.let { AccessControl.CreditParty(it, AccessControl.Role.LENDER, consentGranted = consent, consentRevoked = revoked) },
                     borrowerId?.takeIf { it.isNotBlank() }?.let { AccessControl.CreditParty(it, AccessControl.Role.BORROWER, consentGranted = consent, consentRevoked = revoked) }
                 )
-                when (val result = RepaymentRepository.persist(RepaymentService.RepaymentRequest(creditId, amount, outstanding, requester, parties))) {
+                val repository = RepaymentRepository { receipt -> databaseHelper.persistAuthorisedRepayment(receipt) }
+                when (val result = repository.record(RepaymentService.RepaymentRequest(creditId, amount, outstanding, requester, parties))) {
                     is RepaymentService.Result.Success -> {
-                        databaseHelper.persistAuthorisedRepayment(result.receipt)
                         Toast.makeText(this, "Repayment recorded.", Toast.LENGTH_SHORT).show()
                         recreate()
                     }
