@@ -17,7 +17,7 @@ import java.util.Locale
 import kotlin.math.pow
 import kotlin.random.Random
 
-class V323Activity : AppCompatActivity() {
+open class V323Activity : AppCompatActivity() {
     private lateinit var db: V32DatabaseHelper
     private val prefs by lazy { getSharedPreferences("udhaardaar_v32", MODE_PRIVATE) }
     private val history = ArrayDeque<View>()
