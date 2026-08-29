@@ -58,7 +58,8 @@ class UdhaardaarIntegrationQaTest {
         assertEquals(12, schedule.size)
         val accepted = db.recordPayment(schedule.first().id, creditIds[0], schedule.first().amount)
         assertEquals(schedule.first().amount, accepted, 0.01)
-        assertEquals(1, db.schedules(creditIds[0], false).count { it.status == "DUE" || it.status == "OVERDUE" })
+        // One of 12 installments was paid; 11 scheduled installments remain due/overdue.
+        assertEquals(11, db.schedules(creditIds[0], false).count { it.status == "DUE" || it.status == "OVERDUE" })
 
         val borrower = AccessControl.CreditParty("QA-BOR-1", AccessControl.Role.BORROWER, consentGranted = true)
         val lender = AccessControl.CreditParty("QA-LENDER", AccessControl.Role.LENDER, consentGranted = true)
