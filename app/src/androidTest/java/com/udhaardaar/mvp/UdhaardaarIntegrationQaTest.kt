@@ -1,12 +1,10 @@
 package com.udhaardaar.mvp
 
+import android.app.Activity
 import android.content.ContentValues
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withText
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -31,8 +29,8 @@ class UdhaardaarIntegrationQaTest {
         val borrowerIds = mutableListOf<Long>()
         val guarantorIds = mutableListOf<Long>()
         repeat(15) { i ->
-            borrowerIds += db.upsertProfile(null, "BORROWER", "QA-BOR-${i + 1}", "QA Borrower ${i + 1}", "900000${i.toString().padStart(4, '0')}", "", "QA Address ${i + 1}", "Ranchi", "Jharkhand", "83400${i.toString().padStart(1, '0')}", "ABCDE${(i % 10)}${i}F", "1234567890${i.toString().padStart(2, '0')}", "20ABCDE${i % 10}1Z5", null)
-            guarantorIds += db.upsertProfile(null, "GUARANTOR", "QA-GUA-${i + 1}", "QA Guarantor ${i + 1}", "910000${i.toString().padStart(4, '0')}", "", "QA G Address ${i + 1}", "Ranchi", "Jharkhand", "83410${i.toString().padStart(1, '0')}", "FGHIJ${(i % 10)}${i}K", "2234567890${i.toString().padStart(2, '0')}", "20FGHIJ${i % 10}1Z5", null)
+            borrowerIds += db.upsertProfile(null, "BORROWER", "QA-BOR-${i + 1}", "QA Borrower ${i + 1}", "900000${i.toString().padStart(4, '0')}", "", "QA Address ${i + 1}", "Ranchi", "Jharkhand", "83400${i}", "ABCDE${(i % 10)}${i}F", "1234567890${i.toString().padStart(2, '0')}", "20ABCDE${i % 10}1Z5", null)
+            guarantorIds += db.upsertProfile(null, "GUARANTOR", "QA-GUA-${i + 1}", "QA Guarantor ${i + 1}", "910000${i.toString().padStart(4, '0')}", "", "QA G Address ${i + 1}", "Ranchi", "Jharkhand", "83410${i}", "FGHIJ${(i % 10)}${i}K", "2234567890${i.toString().padStart(2, '0')}", "20FGHIJ${i % 10}1Z5", null)
         }
         assertEquals(15, db.searchProfiles("BORROWER", "QA Borrower").size)
         assertEquals(1, db.searchProfiles("BORROWER", "QA-BOR-7").size)
@@ -83,7 +81,9 @@ class UdhaardaarIntegrationQaTest {
             RecordsActivity::class.java
         )
         activities.forEach { activity ->
-            ActivityScenario.launch(activity).use { scenario ->
+            @Suppress("UNCHECKED_CAST")
+            val activityClass = activity as Class<out Activity>
+            ActivityScenario.launch(activityClass).use { scenario ->
                 assertTrue("Activity ${activity.simpleName} did not reach RESUMED", scenario.state.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED))
             }
         }
