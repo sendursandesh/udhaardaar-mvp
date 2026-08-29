@@ -2,6 +2,7 @@ package com.udhaardaar.mvp
 
 import android.app.Activity
 import android.content.ContentValues
+import android.content.Intent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -80,11 +81,10 @@ class UdhaardaarIntegrationQaTest {
             AddUdhaarActivity::class.java,
             RecordsActivity::class.java
         )
-        activities.forEach { activity ->
-            @Suppress("UNCHECKED_CAST")
-            val activityClass = activity as Class<out Activity>
-            ActivityScenario.launch(activityClass).use { scenario ->
-                assertTrue("Activity ${activity.simpleName} did not reach RESUMED", scenario.state.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED))
+        activities.forEach { activityClass ->
+            val intent = Intent(context, activityClass).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            ActivityScenario.launch<Activity>(intent).use { scenario ->
+                assertTrue("Activity ${activityClass.simpleName} did not reach RESUMED", scenario.state.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED))
             }
         }
     }
