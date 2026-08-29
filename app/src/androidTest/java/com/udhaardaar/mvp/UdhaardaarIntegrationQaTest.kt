@@ -83,7 +83,7 @@ class UdhaardaarIntegrationQaTest {
             RecordsActivity::class.java
         )
         activities.forEach { activity ->
-            ActivityScenario.launch<android.app.Activity>(activity).use { scenario ->
+            ActivityScenario.launch(activity).use { scenario ->
                 assertTrue("Activity ${activity.simpleName} did not reach RESUMED", scenario.state.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED))
             }
         }
