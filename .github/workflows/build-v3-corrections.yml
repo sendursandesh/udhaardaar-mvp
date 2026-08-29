@@ -44,9 +44,9 @@ jobs:
         continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
-          target: default
-          arch: x86
+          api-level: 35
+          target: google_apis
+          arch: x86_64
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -memory 2048
           disable-animations: true
           disable-linux-hw-accel: true
