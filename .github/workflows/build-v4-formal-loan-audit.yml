@@ -1,0 +1,62 @@
+name: Build Udhaardaar V4 Formal Loan Audit
+
+on:
+  push:
+    branches:
+      - v4-credit-received-formal-loans
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout V4
+        uses: actions/checkout@v5
+        with:
+          ref: v4-credit-received-formal-loans
+          fetch-depth: 1
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools emulator
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Build V4 debug APK
+        run: gradle :app:assembleDebug --stacktrace --no-daemon
+      - name: Run Android tests and smoke QA
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          force-avd-creation: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-load -no-snapshot-save
+          disable-animations: true
+          emulator-boot-timeout: 600
+          cores: 2
+          ram-size: 2048M
+          script: |
+            adb wait-for-device
+            timeout 1200s gradle :app:connectedDebugAndroidTest --stacktrace --no-daemon
+      - name: Verify APK
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          sha256sum app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload V4 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: udhaardaar-v4-formal-loan-audit-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
