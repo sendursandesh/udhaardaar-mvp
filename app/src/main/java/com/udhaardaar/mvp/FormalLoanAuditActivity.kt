@@ -6,7 +6,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
@@ -17,20 +20,250 @@ import java.util.Locale
 
 class FormalLoanAuditActivity : AppCompatActivity() {
     private lateinit var db: FormalLoanAuditDb
-    private var sanctionUri: Uri? = null; private var statementUri: Uri? = null; private var loanId: Long = -1L
-    private lateinit var result: TextView; private lateinit var lender: EditText; private lateinit var account: EditText; private lateinit var sanctioned: EditText; private lateinit var disbursed: EditText; private lateinit var roi: EditText; private lateinit var tenure: EditText; private lateinit var emi: EditText; private lateinit var processing: EditText; private lateinit var documentation: EditText; private lateinit var insurance: EditText; private lateinit var penal: EditText; private lateinit var bounce: EditText; private lateinit var prepayment: EditText; private lateinit var other: EditText
-    override fun onCreate(b: Bundle?) { super.onCreate(b); setContentView(R.layout.activity_formal_loan_audit); db=FormalLoanAuditDb(this); lender=f(R.id.etLender);account=f(R.id.etAccount);sanctioned=f(R.id.etSanctioned);disbursed=f(R.id.etDisbursed);roi=f(R.id.etRoi);tenure=f(R.id.etTenure);emi=f(R.id.etEmi);processing=f(R.id.etProcessing);documentation=f(R.id.etDocumentation);insurance=f(R.id.etInsurance);penal=f(R.id.etPenal);bounce=f(R.id.etBounce);prepayment=f(R.id.etPrepayment);other=f(R.id.etOther);result=f(R.id.tvAuditResult)
-        findViewById<Button>(R.id.btnSanction).setOnClickListener{pick(10)}; findViewById<Button>(R.id.btnOcr).setOnClickListener{ocrSanction()}; findViewById<Button>(R.id.btnSaveBaseline).setOnClickListener{saveBaseline()}; findViewById<Button>(R.id.btnStatement).setOnClickListener{pick(11)}; findViewById<Button>(R.id.btnCompare).setOnClickListener{compareCsv()}
+    private var sanctionUri: Uri? = null
+    private var statementUri: Uri? = null
+    private var loanId = -1L
+
+    private lateinit var result: TextView
+    private lateinit var lender: EditText
+    private lateinit var account: EditText
+    private lateinit var sanctioned: EditText
+    private lateinit var disbursed: EditText
+    private lateinit var roi: EditText
+    private lateinit var tenure: EditText
+    private lateinit var emi: EditText
+    private lateinit var processing: EditText
+    private lateinit var documentation: EditText
+    private lateinit var insurance: EditText
+    private lateinit var penal: EditText
+    private lateinit var bounce: EditText
+    private lateinit var prepayment: EditText
+    private lateinit var other: EditText
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_formal_loan_audit)
+        db = FormalLoanAuditDb(this)
+
+        lender = findViewById(R.id.etLender)
+        account = findViewById(R.id.etAccount)
+        sanctioned = findViewById(R.id.etSanctioned)
+        disbursed = findViewById(R.id.etDisbursed)
+        roi = findViewById(R.id.etRoi)
+        tenure = findViewById(R.id.etTenure)
+        emi = findViewById(R.id.etEmi)
+        processing = findViewById(R.id.etProcessing)
+        documentation = findViewById(R.id.etDocumentation)
+        insurance = findViewById(R.id.etInsurance)
+        penal = findViewById(R.id.etPenal)
+        bounce = findViewById(R.id.etBounce)
+        prepayment = findViewById(R.id.etPrepayment)
+        other = findViewById(R.id.etOther)
+        result = findViewById(R.id.tvAuditResult)
+
+        findViewById<Button>(R.id.btnSanction).setOnClickListener { pickDocument(10) }
+        findViewById<Button>(R.id.btnOcr).setOnClickListener { ocrSanction() }
+        findViewById<Button>(R.id.btnSaveBaseline).setOnClickListener { saveBaseline() }
+        findViewById<Button>(R.id.btnStatement).setOnClickListener { pickDocument(11) }
+        findViewById<Button>(R.id.btnCompare).setOnClickListener { compareCsv() }
     }
-    private fun <T:android.view.View>T.f(id:Int)=findViewById<T>(id)
-    private fun pick(code:Int){startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="*/*";addCategory(Intent.CATEGORY_OPENABLE)},code)}
-    override fun onActivityResult(r:Int,c:Int,d:Intent?){super.onActivityResult(r,c,d);if(c!=Activity.RESULT_OK||d?.data==null)return;val u=d.data!!;contentResolver.takePersistableUriPermission(u,d.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION));if(r==10){sanctionUri=u;toast("Sanction letter attached: ${name(u)}")}else{statementUri=u;toast("Statement attached: ${name(u)}")}}
-    private fun ocrSanction(){val u=sanctionUri?:return toast("Upload a sanction letter image first");try{val image=InputImage.fromFilePath(this,u);TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).process(image).addOnSuccessListener{parseTerms(it.text);result.text="Sanction document OCR completed. Please review the detected terms before saving the baseline."}.addOnFailureListener{toast("OCR could not read this document. Enter terms manually.")}}catch(e:Exception){toast("This file cannot be OCR-read. Use a clear JPG/PNG page.")}}
-    private fun parseTerms(t:String){val s=t.replace("₹","").replace(",","");fun find(p:Regex)=p.find(s)?.groupValues?.getOrNull(1)?.toDoubleOrNull();find(Regex("(?i)(?:sanctioned|sanction amount)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let{sanctioned.setText(it.toString())};find(Regex("(?i)(?:disbursed|disbursement amount)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let{disbursed.setText(it.toString())};find(Regex("(?i)(?:rate of interest|interest rate|ROI)[^0-9]{0,20}([0-9]+(?:\\.[0-9]+)?)"))?.let{roi.setText(it.toString())};find(Regex("(?i)(?:processing fee|processing charges)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let{processing.setText(it.toString())};find(Regex("(?i)(?:documentation fee|documentation charges)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let{documentation.setText(it.toString())};find(Regex("(?i)(?:insurance)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let{insurance.setText(it.toString())};find(Regex("(?i)(?:penal interest|penal rate)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let{penal.setText(it.toString())};find(Regex("(?i)(?:bounce charge|bounce charges)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let{bounce.setText(it.toString())};find(Regex("(?i)(?:prepayment|foreclosure)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let{prepayment.setText(it.toString())}}
-    private fun saveBaseline(){val v=ContentValues();v.put("lender",lender.text.toString().trim());v.put("account_no",account.text.toString().trim());v.put("loan_type","Formal Loan");v.put("sanctioned",n(sanctioned));v.put("disbursed",n(disbursed));v.put("roi",n(roi));v.put("tenure_months",n(tenure).toInt());v.put("emi",n(emi));v.put("processing_fee",n(processing));v.put("documentation_fee",n(documentation));v.put("insurance",n(insurance));v.put("penal_rate",n(penal));v.put("bounce_charge",n(bounce));v.put("prepayment_charge",n(prepayment));v.put("other_charge",n(other));v.put("sanction_uri",sanctionUri?.toString());v.put("created_at",FormalLoanAuditDb.now());loanId=db.addLoan(v);toast("Sanction baseline saved");result.text="Baseline saved. Now upload the statement and compare."}
-    private fun compareCsv(){if(loanId<=0)return toast("Save the sanction baseline first");val u=statementUri?:return toast("Upload a statement first");db.clearEntries(loanId);var totalActual=0.0;var totalExpected=0.0;var flags=0;try{BufferedReader(InputStreamReader(contentResolver.openInputStream(u)!!)).use{br->br.lineSequence().drop(1).forEach{line->val p=line.split(",");if(p.size<3)return@forEach;val date=p[0].trim();val desc=p[1].trim();val amount=p[2].trim().toDoubleOrNull()?:return@forEach;val type=if(p.size>3)p[3].trim().uppercase(Locale.US) else classify(desc);val expected=expected(type);val variance=if(expected>0)amount-expected else 0.0;val review=if(expected==0.0&&type!="EMI")"REVIEW" else if(kotlin.math.abs(variance)>0.01)"REVIEW" else "MATCH";db.addEntry(ContentValues().apply{put("loan_id",loanId);put("entry_date",date);put("description",desc);put("amount",amount);put("charge_type",type);put("expected",expected);put("variance",variance);put("review",review)});if(type!="EMI"){totalActual+=amount;totalExpected+=expected};if(review=="REVIEW")flags++}}};result.text="CHARGE AUDIT\n\nExpected charges: ₹${money(totalExpected)}\nActual charge entries: ₹${money(totalActual)}\nVariance: ₹${money(totalActual-totalExpected)}\nItems requiring review: $flags\n\nNote: REVIEW means the statement differs from the stored sanction baseline and requires human/contract verification; it is not an automatic finding of wrongful charging.";toast("Statement comparison completed")}catch(e:Exception){toast("For this first audit version, upload a CSV statement with columns: date,description,amount,charge_type")}}
-    private fun classify(d:String)=when{d.contains("interest",true)->"INTEREST";d.contains("processing",true)->"PROCESSING";d.contains("bounce",true)->"BOUNCE";d.contains("penal",true)||d.contains("late",true)->"PENAL";d.contains("insurance",true)->"INSURANCE";d.contains("documentation",true)->"DOCUMENTATION";d.contains("prepayment",true)||d.contains("foreclosure",true)->"PREPAYMENT";d.contains("emi",true)||d.contains("repayment",true)->"EMI";else->"OTHER"}
-    private fun expected(t:String)=when(t){"PROCESSING"->n(processing);"DOCUMENTATION"->n(documentation);"INSURANCE"->n(insurance);"BOUNCE"->n(bounce);"PREPAYMENT"->n(prepayment);"OTHER"->n(other);else->0.0}
-    private fun n(v:EditText)=v.text.toString().replace(",","").toDoubleOrNull()?:0.0
-    private fun money(v:Double)=String.format(Locale.US,"%,.2f",v);private fun name(u:Uri):String{var x="document";contentResolver.query(u,null,null,null,null)?.use{if(it.moveToFirst()){val i=it.getColumnIndex(OpenableColumns.DISPLAY_NAME);if(i>=0)x=it.getString(i)}};return x};private fun toast(s:String)=Toast.makeText(this,s,Toast.LENGTH_LONG).show()
+
+    private fun pickDocument(requestCode: Int) {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            type = "*/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        }
+        startActivityForResult(intent, requestCode)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode != Activity.RESULT_OK) return
+        val uri = data?.data ?: return
+        try {
+            val flags = data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
+            contentResolver.takePersistableUriPermission(uri, flags)
+        } catch (_: Exception) {
+            // Some document providers do not support persistable permissions.
+        }
+        if (requestCode == 10) {
+            sanctionUri = uri
+            toast("Sanction letter attached: ${displayName(uri)}")
+        } else if (requestCode == 11) {
+            statementUri = uri
+            toast("Statement attached: ${displayName(uri)}")
+        }
+    }
+
+    private fun ocrSanction() {
+        val uri = sanctionUri ?: run {
+            toast("Upload a sanction letter image first")
+            return
+        }
+        try {
+            val image = InputImage.fromFilePath(this, uri)
+            TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+                .process(image)
+                .addOnSuccessListener { text ->
+                    parseTerms(text.text)
+                    result.text = "Sanction document OCR completed. Review the detected terms before saving the baseline."
+                }
+                .addOnFailureListener {
+                    toast("OCR could not read this document. Enter terms manually.")
+                }
+        } catch (_: Exception) {
+            toast("This file cannot be OCR-read. Use a clear JPG/PNG page.")
+        }
+    }
+
+    private fun parseTerms(text: String) {
+        val normalized = text.replace("₹", "").replace(",", "")
+        fun find(pattern: Regex): Double? =
+            pattern.find(normalized)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
+
+        find(Regex("(?i)(?:sanctioned|sanction amount)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let { sanctioned.setText(it.toString()) }
+        find(Regex("(?i)(?:disbursed|disbursement amount)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let { disbursed.setText(it.toString()) }
+        find(Regex("(?i)(?:rate of interest|interest rate|ROI)[^0-9]{0,20}([0-9]+(?:\\.[0-9]+)?)"))?.let { roi.setText(it.toString()) }
+        find(Regex("(?i)(?:processing fee|processing charges)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let { processing.setText(it.toString()) }
+        find(Regex("(?i)(?:documentation fee|documentation charges)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let { documentation.setText(it.toString()) }
+        find(Regex("(?i)(?:insurance)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let { insurance.setText(it.toString()) }
+        find(Regex("(?i)(?:penal interest|penal rate)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let { penal.setText(it.toString()) }
+        find(Regex("(?i)(?:bounce charge|bounce charges)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let { bounce.setText(it.toString()) }
+        find(Regex("(?i)(?:prepayment|foreclosure)[^0-9]{0,30}([0-9]+(?:\\.[0-9]+)?)"))?.let { prepayment.setText(it.toString()) }
+    }
+
+    private fun saveBaseline() {
+        val values = ContentValues().apply {
+            put("lender", lender.text.toString().trim())
+            put("account_no", account.text.toString().trim())
+            put("loan_type", "Formal Loan")
+            put("sanctioned", number(sanctioned))
+            put("disbursed", number(disbursed))
+            put("roi", number(roi))
+            put("tenure_months", number(tenure).toInt())
+            put("emi", number(emi))
+            put("processing_fee", number(processing))
+            put("documentation_fee", number(documentation))
+            put("insurance", number(insurance))
+            put("penal_rate", number(penal))
+            put("bounce_charge", number(bounce))
+            put("prepayment_charge", number(prepayment))
+            put("other_charge", number(other))
+            put("sanction_uri", sanctionUri?.toString())
+            put("created_at", FormalLoanAuditDb.now())
+        }
+        try {
+            loanId = db.addLoan(values)
+            toast("Sanction baseline saved")
+            result.text = "Baseline saved. Now upload the statement and compare."
+        } catch (_: Exception) {
+            toast("Unable to save the sanction baseline")
+        }
+    }
+
+    private fun compareCsv() {
+        if (loanId <= 0L) {
+            toast("Save the sanction baseline first")
+            return
+        }
+        val uri = statementUri ?: run {
+            toast("Upload a statement first")
+            return
+        }
+
+        db.clearEntries(loanId)
+        var totalActual = 0.0
+        var totalExpected = 0.0
+        var flags = 0
+
+        try {
+            val input = contentResolver.openInputStream(uri) ?: throw IllegalStateException()
+            BufferedReader(InputStreamReader(input)).use { reader ->
+                reader.lineSequence().drop(1).forEach { line ->
+                    val parts = line.split(",")
+                    if (parts.size < 3) return@forEach
+                    val date = parts[0].trim()
+                    val description = parts[1].trim()
+                    val actual = parts[2].trim().toDoubleOrNull() ?: return@forEach
+                    val type = if (parts.size > 3) parts[3].trim().uppercase(Locale.US) else classify(description)
+                    val expected = expectedCharge(type)
+                    val variance = if (expected > 0.0) actual - expected else 0.0
+                    val review = when {
+                        expected == 0.0 && type != "EMI" -> "REVIEW"
+                        kotlin.math.abs(variance) > 0.01 -> "REVIEW"
+                        else -> "MATCH"
+                    }
+
+                    db.addEntry(ContentValues().apply {
+                        put("loan_id", loanId)
+                        put("entry_date", date)
+                        put("description", description)
+                        put("amount", actual)
+                        put("charge_type", type)
+                        put("expected", expected)
+                        put("variance", variance)
+                        put("review", review)
+                    })
+
+                    if (type != "EMI") {
+                        totalActual += actual
+                        totalExpected += expected
+                    }
+                    if (review == "REVIEW") flags++
+                }
+            }
+
+            result.text = "CHARGE AUDIT\n\n" +
+                "Expected charges: ₹${money(totalExpected)}\n" +
+                "Actual charge entries: ₹${money(totalActual)}\n" +
+                "Variance: ₹${money(totalActual - totalExpected)}\n" +
+                "Items requiring review: $flags\n\n" +
+                "REVIEW means the statement differs from the stored sanction baseline and requires human/contract verification; it is not an automatic finding of wrongful charging."
+            toast("Statement comparison completed")
+        } catch (_: Exception) {
+            toast("Upload a CSV statement with columns: date,description,amount,charge_type")
+        }
+    }
+
+    private fun classify(description: String): String = when {
+        description.contains("interest", true) -> "INTEREST"
+        description.contains("processing", true) -> "PROCESSING"
+        description.contains("bounce", true) -> "BOUNCE"
+        description.contains("penal", true) || description.contains("late", true) -> "PENAL"
+        description.contains("insurance", true) -> "INSURANCE"
+        description.contains("documentation", true) -> "DOCUMENTATION"
+        description.contains("prepayment", true) || description.contains("foreclosure", true) -> "PREPAYMENT"
+        description.contains("emi", true) || description.contains("repayment", true) -> "EMI"
+        else -> "OTHER"
+    }
+
+    private fun expectedCharge(type: String): Double = when (type) {
+        "PROCESSING" -> number(processing)
+        "DOCUMENTATION" -> number(documentation)
+        "INSURANCE" -> number(insurance)
+        "BOUNCE" -> number(bounce)
+        "PREPAYMENT" -> number(prepayment)
+        "OTHER" -> number(other)
+        else -> 0.0
+    }
+
+    private fun number(field: EditText): Double =
+        field.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+
+    private fun money(value: Double): String = String.format(Locale.US, "%,.2f", value)
+
+    private fun displayName(uri: Uri): String {
+        var name = "document"
+        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (index >= 0) name = cursor.getString(index)
+            }
+        }
+        return name
+    }
+
+    private fun toast(message: String) =
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
 }
