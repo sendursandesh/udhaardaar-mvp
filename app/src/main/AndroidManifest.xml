@@ -2,14 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application android:name=".UdhaardaarApp" android:allowBackup="false" android:label="Udhaardaar" android:icon="@drawable/udhaardaar_logo" android:roundIcon="@drawable/udhaardaar_logo" android:supportsRtl="true" android:theme="@style/Theme.Udhaardaar">
-        <activity android:name=".LoginActivity" android:exported="true" android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
-            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
-        </activity>
+        <activity android:name=".LoginActivity" android:exported="true" android:windowSoftInputMode="adjustResize|stateAlwaysHidden"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity>
         <activity android:name=".KeyboardSafeV323Activity" android:exported="false" android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity android:name=".V323Activity" android:exported="false" android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity android:name=".V32Activity" android:exported="false" android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity android:name=".AdvancedLauncherActivity" android:exported="false" />
         <activity android:name=".DashboardV3Activity" android:exported="false" />
+        <activity android:name=".FormalLoanAuditActivity" android:exported="false" android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity android:name=".VerificationDocumentsActivity" android:exported="false" />
         <activity android:name=".RegisterCreditV3Activity" android:exported="false" android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity android:name=".MainActivity" android:exported="false" />
