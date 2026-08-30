@@ -15,10 +15,12 @@ class ReminderReceiver : BroadcastReceiver() {
             manager.createNotificationChannel(NotificationChannel(channelId, "Udhaardaar repayment reminders", NotificationManager.IMPORTANCE_DEFAULT))
         }
         val due = intent.getStringExtra("due_date") ?: "today"
+        val kind = intent.getStringExtra("credit_kind") ?: "CREDIT"
+        val label = if (kind == "FORMAL") "formal loan" else "informal credit"
         manager.notify((System.currentTimeMillis() % Int.MAX_VALUE).toInt(), NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Udhaardaar repayment due")
-            .setContentText("A repayment is scheduled for $due. Open Udhaardaar to record the payment.")
+            .setContentText("A $label repayment is scheduled for $due. Open Udhaardaar to record the payment.")
             .setAutoCancel(true).build())
     }
 }
