@@ -2,10 +2,12 @@ package com.udhaardaar.mvp
 
 import android.content.Context
 
-/** V5 application service. UI calls this facade; it owns the repositories and critical transitions. */
+/** V5 application service. UI calls this facade; it owns repositories and critical transitions. */
 class V5IntegratedFlows(context: Context) {
-    private val repo = V5WorkflowRepository(context.applicationContext)
-    private val repayments = V5RepaymentRepository(context.applicationContext)
+    private val appContext = context.applicationContext
+    private val repo = V5WorkflowRepository(appContext)
+    private val repayments = V5RepaymentRepository(appContext)
+    private val credits = V5CreditRepository(appContext)
 
     data class CreditDraft(
         val id: String, val borrowerId: String, val direction: String, val type: String,
@@ -14,16 +16,14 @@ class V5IntegratedFlows(context: Context) {
     )
 
     fun registerCreditAfterConsent(c: CreditDraft, borrowerConsentId: String): String {
-        require(c.borrowerId.isNotBlank())
-        require(c.principal > 0)
-        require(borrowerConsentId.isNotBlank())
-        val id = V5CreditRepository(contextOf()).create(V5Credit(c.id, c.borrowerId, c.direction, c.type, c.principal, c.roi, c.repaymentMethod, c.start, c.end, "OTP_VERIFIED"))
+        require(c.borrowerId.isNotBlank() && c.principal > 0 && borrowerConsentId.isNotBlank())
+        val id = credits.create(V5Credit(c.id, c.borrowerId, c.direction, c.type, c.principal, c.roi, c.repaymentMethod, c.start, c.end, "OTP_VERIFIED"))
         repo.appendAudit(id, "CREDIT_REGISTERED_AFTER_BORROWER_CONSENT", borrowerConsentId, "type=${c.type};direction=${c.direction}")
         return id
     }
 
     fun borrowerScoreConsent(creditId: String, consentId: String): Boolean {
-        val ok = V5CreditRepository(contextOf()).markBorrowerConsent(creditId, consentId)
+        val ok = credits.markBorrowerConsent(creditId, consentId)
         if (ok) repo.appendAudit(creditId, "BORROWER_SCORE_CONSENT_OTP_VERIFIED", consentId, "Score may now be displayed")
         return ok
     }
@@ -44,8 +44,4 @@ class V5IntegratedFlows(context: Context) {
         require(borrowerConsentVerified) { "Borrower OTP consent is required before score display" }
         return V5ConsentAndScore.calculateScore(borrowerConsentVerified, totalCredits, completedCredits, overdueCount, repaymentEvents, disputedEvents, averageDaysLate)
     }
-
-    private fun contextOf(): Context = repoContext
-    private val repoContext: Context
-        get() = throw UnsupportedOperationException("Use the Context-injected V5IntegratedFlows constructor implementation")
 }
