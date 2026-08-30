@@ -1,17 +1,9 @@
-name: Build Udhaardaar APK
+name: Build Udhaardaar V4 APK
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - v3-development
-      - v3.2.2-final-fixes
-      - agent/v3.2-functional
-      - v4-market-ready
-  pull_request:
-    branches:
-      - v3-development
       - v4-market-ready
 
 permissions:
@@ -22,31 +14,47 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout V4 source
         uses: actions/checkout@v5
-      - name: Set up Java
+        with:
+          ref: v4-market-ready
+          fetch-depth: 1
+
+      - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Build Udhaardaar Debug APK
+
+      - name: Build V4 debug APK
         run: gradle :app:assembleDebug --stacktrace
-      - name: Verify APK exists
+
+      - name: V4 APK QA gate
         run: |
-          test -s app/build/outputs/apk/debug/app-debug.apk
-          ls -lh app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload Udhaardaar Debug APK
+          set -e
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          command -v aapt >/dev/null
+          aapt dump badging "$APK" | tee /tmp/badging.txt
+          grep -q "package: name='com.udhaardaar.mvp'" /tmp/badging.txt
+          grep -q "launchable-activity" /tmp/badging.txt
+          test "$(stat -c%s "$APK")" -gt 10000
+          echo "V4 APK QA gate PASSED"
+
+      - name: Upload verified V4 APK
         uses: actions/upload-artifact@v4
         with:
           name: Udhaardaar-v4-market-ready-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
-
-# V4 market-ready build trigger: compile and publish the installable APK artifact.
+          if-no-files-found: error
