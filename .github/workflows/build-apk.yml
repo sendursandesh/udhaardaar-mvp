@@ -28,97 +28,56 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Make Gradle executable
-        run: chmod +x ./gradlew
+      - name: Install Gradle 8.10.2
+        shell: bash
+        run: |
+          set -e
+          wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
+          /opt/gradle-8.10.2/bin/gradle --version
 
       - name: Build V4 debug APK
-        run: ./gradlew :app:assembleDebug
+        run: gradle :app:assembleDebug --no-daemon
 
       - name: Locate APK
         id: apk
         shell: bash
         run: |
           set -e
-
           APK="app/build/outputs/apk/debug/app-debug.apk"
-
           if [ ! -f "$APK" ]; then
             echo "ERROR: APK was not generated."
             exit 1
           fi
-
-          echo "APK found:"
           ls -lh "$APK"
-
           echo "APK=$APK" >> "$GITHUB_OUTPUT"
 
       - name: Verify APK integrity
         shell: bash
         run: |
           set -e
-
           APK="${{ steps.apk.outputs.APK }}"
-
-          echo "Checking APK ZIP integrity..."
           unzip -t "$APK" >/tmp/apk-unzip-test.txt
-
-          echo "Checking APK size..."
           SIZE=$(stat -c%s "$APK")
-
           if [ "$SIZE" -le 10000 ]; then
             echo "ERROR: APK is unexpectedly small: $SIZE bytes"
             exit 1
           fi
+          echo "APK integrity and size verification passed: $SIZE bytes"
 
-          echo "APK size: $SIZE bytes"
-
-      - name: Verify APK package
+      - name: Verify APK package and launcher
         shell: bash
         run: |
           set -e
-
           APK="${{ steps.apk.outputs.APK }}"
-
-          echo "Reading APK package information..."
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > /tmp/badging.txt
-
-          cat /tmp/badging.txt
-
-          echo "Checking application package..."
-
-          if ! grep -q "package: name='com.udhaardaar.mvp'" /tmp/badging.txt; then
-            echo "ERROR: Expected package com.udhaardaar.mvp was not found."
-            exit 1
-          fi
-
-          echo "Package verification passed."
-
-      - name: Verify launcher activity
-        shell: bash
-        run: |
-          set -e
-
-          APK="${{ steps.apk.outputs.APK }}"
-
-          echo "Checking Android manifest for launcher activity..."
-
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml \
-            > /tmp/manifest-tree.txt
-
-          if ! grep -q "android.intent.action.MAIN" /tmp/manifest-tree.txt; then
-            echo "ERROR: MAIN launcher intent was not found."
-            exit 1
-          fi
-
-          if ! grep -q "android.intent.category.LAUNCHER" /tmp/manifest-tree.txt; then
-            echo "ERROR: LAUNCHER category was not found."
-            exit 1
-          fi
-
-          echo "Launcher activity verification passed."
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$AAPT" dump badging "$APK" > /tmp/badging.txt
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml > /tmp/manifest-tree.txt
+          grep -q "package: name='com.udhaardaar.mvp'" /tmp/badging.txt
+          grep -q "android.intent.action.MAIN" /tmp/manifest-tree.txt
+          grep -q "android.intent.category.LAUNCHER" /tmp/manifest-tree.txt
+          echo "APK package and launcher verification passed."
 
       - name: Upload verified V4 APK
         uses: actions/upload-artifact@v4
