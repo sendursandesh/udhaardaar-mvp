@@ -48,3 +48,5 @@ jobs:
         with:
           name: Udhaardaar-v4-market-ready-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+
+# V4 market-ready build trigger: compile and publish the installable APK artifact.
