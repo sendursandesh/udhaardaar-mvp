@@ -9,6 +9,7 @@
         <activity android:name=".AdvancedLauncherActivity" android:exported="false" />
         <activity android:name=".DashboardV3Activity" android:exported="false" />
         <activity android:name=".FormalLoanAuditActivity" android:exported="false" android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
+        <activity android:name=".AssetVaultActivity" android:exported="false" android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity android:name=".VerificationDocumentsActivity" android:exported="false" />
         <activity android:name=".RegisterCreditV3Activity" android:exported="false" android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity android:name=".MainActivity" android:exported="false" />
