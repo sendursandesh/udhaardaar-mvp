@@ -6,6 +6,7 @@
         <activity android:name=".LoginActivity" android:exported="true" android:launchMode="singleTask" android:clearTaskOnLaunch="false" android:alwaysRetainTaskState="true" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
+        <activity android:name=".V5HomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V4HomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V323Activity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V32Activity" android:exported="false" android:screenOrientation="portrait" />
