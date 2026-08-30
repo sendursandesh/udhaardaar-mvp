@@ -17,32 +17,10 @@ import java.util.Locale
 
 class FormalLoanAuditActivity : AppCompatActivity() {
     private lateinit var db: FormalLoanAuditDb
-    private var sanctionUri: Uri? = null
-    private var statementUri: Uri? = null
-    private var loanId: Long = -1L
-    private lateinit var result: TextView
-    private lateinit var lender: EditText
-    private lateinit var account: EditText
-    private lateinit var sanctioned: EditText
-    private lateinit var disbursed: EditText
-    private lateinit var roi: EditText
-    private lateinit var tenure: EditText
-    private lateinit var emi: EditText
-    private lateinit var processing: EditText
-    private lateinit var documentation: EditText
-    private lateinit var insurance: EditText
-    private lateinit var penal: EditText
-    private lateinit var bounce: EditText
-    private lateinit var prepayment: EditText
-    private lateinit var other: EditText
-
-    override fun onCreate(b: Bundle?) { super.onCreate(b); setContentView(R.layout.activity_formal_loan_audit); db=FormalLoanAuditDb(this)
-        lender=f(R.id.etLender);account=f(R.id.etAccount);sanctioned=f(R.id.etSanctioned);disbursed=f(R.id.etDisbursed);roi=f(R.id.etRoi);tenure=f(R.id.etTenure);emi=f(R.id.etEmi);processing=f(R.id.etProcessing);documentation=f(R.id.etDocumentation);insurance=f(R.id.etInsurance);penal=f(R.id.etPenal);bounce=f(R.id.etBounce);prepayment=f(R.id.etPrepayment);other=f(R.id.etOther);result=f(R.id.tvAuditResult)
-        findViewById<Button>(R.id.btnSanction).setOnClickListener{pick(10)}
-        findViewById<Button>(R.id.btnOcr).setOnClickListener{ocrSanction()}
-        findViewById<Button>(R.id.btnSaveBaseline).setOnClickListener{saveBaseline()}
-        findViewById<Button>(R.id.btnStatement).setOnClickListener{pick(11)}
-        findViewById<Button>(R.id.btnCompare).setOnClickListener{compareCsv()}
+    private var sanctionUri: Uri? = null; private var statementUri: Uri? = null; private var loanId: Long = -1L
+    private lateinit var result: TextView; private lateinit var lender: EditText; private lateinit var account: EditText; private lateinit var sanctioned: EditText; private lateinit var disbursed: EditText; private lateinit var roi: EditText; private lateinit var tenure: EditText; private lateinit var emi: EditText; private lateinit var processing: EditText; private lateinit var documentation: EditText; private lateinit var insurance: EditText; private lateinit var penal: EditText; private lateinit var bounce: EditText; private lateinit var prepayment: EditText; private lateinit var other: EditText
+    override fun onCreate(b: Bundle?) { super.onCreate(b); setContentView(R.layout.activity_formal_loan_audit); db=FormalLoanAuditDb(this); lender=f(R.id.etLender);account=f(R.id.etAccount);sanctioned=f(R.id.etSanctioned);disbursed=f(R.id.etDisbursed);roi=f(R.id.etRoi);tenure=f(R.id.etTenure);emi=f(R.id.etEmi);processing=f(R.id.etProcessing);documentation=f(R.id.etDocumentation);insurance=f(R.id.etInsurance);penal=f(R.id.etPenal);bounce=f(R.id.etBounce);prepayment=f(R.id.etPrepayment);other=f(R.id.etOther);result=f(R.id.tvAuditResult)
+        findViewById<Button>(R.id.btnSanction).setOnClickListener{pick(10)}; findViewById<Button>(R.id.btnOcr).setOnClickListener{ocrSanction()}; findViewById<Button>(R.id.btnSaveBaseline).setOnClickListener{saveBaseline()}; findViewById<Button>(R.id.btnStatement).setOnClickListener{pick(11)}; findViewById<Button>(R.id.btnCompare).setOnClickListener{compareCsv()}
     }
     private fun <T:android.view.View>T.f(id:Int)=findViewById<T>(id)
     private fun pick(code:Int){startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="*/*";addCategory(Intent.CATEGORY_OPENABLE)},code)}
