@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F5F7FA">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Formal Loan Audit" android:textSize="25sp" android:textStyle="bold" android:textColor="#111827"/>
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Upload the sanction terms, confirm the baseline, then compare the lender statement." android:textSize="14sp" android:textColor="#6B7280" android:layout_marginTop="4dp" android:layout_marginBottom="16dp"/>
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1. Sanction Letter &amp; Loan Terms" android:textSize="18sp" android:textStyle="bold" android:textColor="#111827"/>
+<Button android:id="@+id/btnSanction" android:layout_width="match_parent" android:layout_height="52dp" android:text="UPLOAD SANCTION LETTER"/>
+<Button android:id="@+id/btnOcr" android:layout_width="match_parent" android:layout_height="52dp" android:text="READ / EXTRACT TERMS FROM IMAGE"/>
+<EditText android:id="@+id/etLender" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Bank / NBFC / lender" android:inputType="text"/>
+<EditText android:id="@+id/etAccount" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Loan account number"/>
+<EditText android:id="@+id/etSanctioned" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Sanctioned amount (₹)" android:inputType="numberDecimal"/>
+<EditText android:id="@+id/etDisbursed" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Disbursed amount (₹)" android:inputType="numberDecimal"/>
+<EditText android:id="@+id/etRoi" android:layout_width="match_parent" android:layout_height="50dp" android:hint="ROI / interest rate (%)" android:inputType="numberDecimal"/>
+<EditText android:id="@+id/etTenure" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Tenure (months)" android:inputType="number"/>
+<EditText android:id="@+id/etEmi" android:layout_width="match_parent" android:layout_height="50dp" android:hint="EMI (₹)" android:inputType="numberDecimal"/>
+<EditText android:id="@+id/etProcessing" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Processing fee (₹)" android:inputType="numberDecimal"/>
+<EditText android:id="@+id/etDocumentation" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Documentation / service charges (₹)" android:inputType="numberDecimal"/>
+<EditText android:id="@+id/etInsurance" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Insurance (₹)" android:inputType="numberDecimal"/>
+<EditText android:id="@+id/etPenal" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Penal / late interest (%)" android:inputType="numberDecimal"/>
+<EditText android:id="@+id/etBounce" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Bounce charge (₹)" android:inputType="numberDecimal"/>
+<EditText android:id="@+id/etPrepayment" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Prepayment / foreclosure charge (₹ or rate)" android:inputType="numberDecimal"/>
+<EditText android:id="@+id/etOther" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Other sanctioned charge (₹)" android:inputType="numberDecimal"/>
+<Button android:id="@+id/btnSaveBaseline" android:layout_width="match_parent" android:layout_height="54dp" android:text="SAVE SANCTION BASELINE" android:textStyle="bold" android:layout_marginTop="8dp"/>
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="2. Statement of Account" android:textSize="18sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginTop="24dp"/>
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="For this first audit build, use a CSV export with: date,description,amount,charge_type. The original statement file is retained." android:textSize="13sp" android:textColor="#6B7280"/>
+<Button android:id="@+id/btnStatement" android:layout_width="match_parent" android:layout_height="52dp" android:text="UPLOAD STATEMENT / CSV"/>
+<Button android:id="@+id/btnCompare" android:layout_width="match_parent" android:layout_height="54dp" android:text="COMPARE ACTUAL VS SANCTIONED CHARGES" android:textStyle="bold"/>
+<TextView android:id="@+id/tvAuditResult" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#FFFFFF" android:padding="16dp" android:text="Audit result will appear here." android:textSize="14sp" android:textColor="#111827" android:layout_marginTop="12dp"/>
+</LinearLayout></ScrollView>
