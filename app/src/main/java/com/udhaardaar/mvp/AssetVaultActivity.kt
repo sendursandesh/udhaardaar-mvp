@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
-import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.*
 
@@ -49,7 +48,7 @@ class AssetVaultActivity : Activity() {
             val amount = value.text.toString().toDoubleOrNull() ?: 0.0
             db.addAsset(category.selectedItem.toString(), name.text.toString().trim(), institution.text.toString().trim(), identifier.text.toString().trim(), amount, nominee.text.toString().trim(), nomineeRelation.text.toString().trim(), heir.text.toString().trim(), notes.text.toString().trim(), documentUri?.toString())
             Toast.makeText(this, "Asset saved", Toast.LENGTH_SHORT).show()
-            listSummary(content)
+            listSummary()
             name.text.clear(); value.text.clear(); nominee.text.clear(); nomineeRelation.text.clear(); heir.text.clear(); notes.text.clear(); documentUri=null
         }
         content.addView(save)
@@ -64,11 +63,11 @@ class AssetVaultActivity : Activity() {
             fn.text.clear(); fr.text.clear(); fm.text.clear(); fe.text.clear(); fnotes.text.clear()
         }
         content.addView(addFamily)
-        listSummary(content)
-        root.addView(scroll, ViewGroup.LayoutParams(-1,0).apply { weight=1f })
+        listSummary()
+        root.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0).apply { weight = 1f })
         setContentView(root)
     }
 
-    private fun listSummary(parent: LinearLayout) { summary.text = "Assets recorded: ${db.assetCount()}\nEstimated asset value: ₹${String.format("%,.2f",db.totalValue())}" }
+    private fun listSummary() { summary.text = "Assets recorded: ${db.assetCount()}\nEstimated asset value: ₹${String.format("%,.2f",db.totalValue())}" }
     override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) { super.onActivityResult(requestCode,resultCode,data); if(requestCode==1001 && resultCode==RESULT_OK) documentUri=data?.data; if(documentUri!=null) Toast.makeText(this,"Document attached",Toast.LENGTH_SHORT).show() }
 }
