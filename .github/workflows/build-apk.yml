@@ -8,49 +8,117 @@ on:
 
 permissions:
   contents: read
-  actions: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout V4 source
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           ref: v4-market-ready
-          fetch-depth: 1
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v5
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
 
       - name: Build V4 debug APK
-        run: gradle :app:assembleDebug --stacktrace
+        run: ./gradlew :app:assembleDebug
 
-      - name: V4 APK QA gate
+      - name: Locate APK
+        id: apk
+        shell: bash
         run: |
           set -e
-          APK=app/build/outputs/apk/debug/app-debug.apk
-          test -s "$APK"
-          unzip -t "$APK" >/dev/null
-          command -v aapt >/dev/null
-          aapt dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "package: name='com.udhaardaar.mvp'" /tmp/badging.txt
-          grep -q "launchable-activity" /tmp/badging.txt
-          test "$(stat -c%s "$APK")" -gt 10000
-          echo "V4 APK QA gate PASSED"
+
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+
+          if [ ! -f "$APK" ]; then
+            echo "ERROR: APK was not generated."
+            exit 1
+          fi
+
+          echo "APK found:"
+          ls -lh "$APK"
+
+          echo "APK=$APK" >> "$GITHUB_OUTPUT"
+
+      - name: Verify APK integrity
+        shell: bash
+        run: |
+          set -e
+
+          APK="${{ steps.apk.outputs.APK }}"
+
+          echo "Checking APK ZIP integrity..."
+          unzip -t "$APK" >/tmp/apk-unzip-test.txt
+
+          echo "Checking APK size..."
+          SIZE=$(stat -c%s "$APK")
+
+          if [ "$SIZE" -le 10000 ]; then
+            echo "ERROR: APK is unexpectedly small: $SIZE bytes"
+            exit 1
+          fi
+
+          echo "APK size: $SIZE bytes"
+
+      - name: Verify APK package
+        shell: bash
+        run: |
+          set -e
+
+          APK="${{ steps.apk.outputs.APK }}"
+
+          echo "Reading APK package information..."
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > /tmp/badging.txt
+
+          cat /tmp/badging.txt
+
+          echo "Checking application package..."
+
+          if ! grep -q "package: name='com.udhaardaar.mvp'" /tmp/badging.txt; then
+            echo "ERROR: Expected package com.udhaardaar.mvp was not found."
+            exit 1
+          fi
+
+          echo "Package verification passed."
+
+      - name: Verify launcher activity
+        shell: bash
+        run: |
+          set -e
+
+          APK="${{ steps.apk.outputs.APK }}"
+
+          echo "Checking Android manifest for launcher activity..."
+
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml \
+            > /tmp/manifest-tree.txt
+
+          if ! grep -q "android.intent.action.MAIN" /tmp/manifest-tree.txt; then
+            echo "ERROR: MAIN launcher intent was not found."
+            exit 1
+          fi
+
+          if ! grep -q "android.intent.category.LAUNCHER" /tmp/manifest-tree.txt; then
+            echo "ERROR: LAUNCHER category was not found."
+            exit 1
+          fi
+
+          echo "Launcher activity verification passed."
 
       - name: Upload verified V4 APK
         uses: actions/upload-artifact@v4
@@ -58,3 +126,4 @@ jobs:
           name: Udhaardaar-v4-market-ready-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 30
