@@ -36,6 +36,9 @@ jobs:
           echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
           /opt/gradle-8.10.2/bin/gradle --version
 
+      - name: Run V5 unit regression tests
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
       - name: Compile V5
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
