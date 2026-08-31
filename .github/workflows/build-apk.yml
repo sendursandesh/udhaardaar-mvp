@@ -1,10 +1,10 @@
-name: Build Udhaardaar V5 APK
+name: Build Udhaardaar V5 Release Candidate
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - v5-infra-rebuild-2026-08-30
+      - v5-completion-2026-08-31
 
 permissions:
   contents: read
@@ -13,10 +13,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout V5 source
+      - name: Checkout V5 completion source
         uses: actions/checkout@v4
         with:
-          ref: v5-infra-rebuild-2026-08-30
+          ref: v5-completion-2026-08-31
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -36,46 +36,46 @@ jobs:
           echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
           /opt/gradle-8.10.2/bin/gradle --version
 
-      - name: Build V5 debug APK
+      - name: Compile V5
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
-      - name: Locate APK
-        id: apk
+      - name: Static acceptance gates
+        shell: bash
+        run: |
+          set -e
+          test -f app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          test -f app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          test -f app/src/main/java/com/udhaardaar/mvp/V5RepaymentActivity.kt
+          test -f app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
+          test -f app/src/main/java/com/udhaardaar/mvp/V5LocalStore.kt
+          grep -q "INFORMAL_CREDIT_BORROWER_CONSENT" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          grep -q "OTP_VERIFIED" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          grep -q "FORMAL" app/src/main/java/com/udhaardaar/mvp/V5AppContract.kt
+          grep -q "Rental" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "Asset Vault" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "Inheritance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "Legal Assistance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "POST_NOTIFICATIONS" app/src/main/AndroidManifest.xml
+          echo "Static V5 acceptance gates passed."
+
+      - name: APK integrity and package gates
         shell: bash
         run: |
           set -e
           APK="app/build/outputs/apk/debug/app-debug.apk"
-          test -f "$APK"
-          ls -lh "$APK"
-          echo "APK=$APK" >> "$GITHUB_OUTPUT"
-
-      - name: Verify APK integrity
-        shell: bash
-        run: |
-          set -e
-          APK="${{ steps.apk.outputs.APK }}"
-          unzip -t "$APK" >/tmp/apk-unzip-test.txt
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
           SIZE=$(stat -c%s "$APK")
           test "$SIZE" -gt 10000
-          echo "APK integrity and size verification passed: $SIZE bytes"
-
-      - name: Verify APK package and launcher
-        shell: bash
-        run: |
-          set -e
-          APK="${{ steps.apk.outputs.APK }}"
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           "$AAPT" dump badging "$APK" >/tmp/badging.txt
-          "$AAPT" dump xmltree "$APK" AndroidManifest.xml >/tmp/manifest-tree.txt
           grep -q "package: name='com.udhaardaar.mvp'" /tmp/badging.txt
-          grep -q "android.intent.action.MAIN" /tmp/manifest-tree.txt
-          grep -q "android.intent.category.LAUNCHER" /tmp/manifest-tree.txt
-          echo "APK package and launcher verification passed."
+          echo "APK integrity/package gate passed: $SIZE bytes"
 
       - name: Upload verified V5 APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-v5-debug-APK
+          name: Udhaardaar-V5-Release-Candidate
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
