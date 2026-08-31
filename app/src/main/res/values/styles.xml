@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.Udhaardaar"
-        parent="Theme.AppCompat.Light.NoActionBar">
-
+    <style name="Theme.Udhaardaar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#1976D2</item>
-
+        <item name="android:statusBarColor">#E1F4FF</item>
+        <item name="android:navigationBarColor">#E1F4FF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">#E1F4FF</item>
+        <item name="android:windowSplashScreenBackground">#E1F4FF</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/udhaardaar_logo</item>
+        <item name="android:windowSplashScreenAnimationDuration">500</item>
+        <item name="colorAccent">#1976D2</item>
+        <item name="colorPrimary">#1976D2</item>
+        <item name="colorPrimaryVariant">#155DB0</item>
+        <item name="colorSecondary">#00A58A</item>
     </style>
-
 </resources>
