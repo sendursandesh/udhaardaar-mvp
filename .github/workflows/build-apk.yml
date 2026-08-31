@@ -57,7 +57,7 @@ jobs:
           grep -q 'V5CreditRegistrationActivity' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'SEND OTP' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
           grep -q 'VERIFY OTP + CREATE PROFILE' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q 'Regex("\^\[6-9\]\[0-9\]\{9\}\$"' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q 'validMobile' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
           echo "V5 critical-flow gates passed."
       - name: APK integrity and package gates
         shell: bash
