@@ -1,32 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <application
-        android:allowBackup="true"
-        android:label="Udhaardaar"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.Udhaardaar">
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application android:name=".UdhaardaarApp" android:allowBackup="true" android:label="Udhaardaar" android:icon="@drawable/udhaardaar_logo" android:roundIcon="@drawable/udhaardaar_logo" android:supportsRtl="true" android:theme="@style/Theme.Udhaardaar">
+        <activity android:name=".LoginActivity" android:exported="true" android:launchMode="singleTask" android:clearTaskOnLaunch="false" android:alwaysRetainTaskState="true" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
-        
-<activity
-    android:name=".AddUdhaarActivity"
-    android:exported="false" />
-        
-    <activity
-        
-    android:name=".RecordsActivity"
-    android:exported="false" />    
-        
+        <activity android:name=".V5HomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".V5InformalCreditActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".V5RepaymentActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".V4HomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".V323Activity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".V32Activity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".AdvancedLauncherActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".DashboardV3Activity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".VerificationDocumentsActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".RegisterCreditV3Activity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".MainActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".AddUdhaarActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".RecordsActivity" android:exported="false" android:screenOrientation="portrait" />
+        <receiver android:name=".ReminderReceiver" android:exported="false" />
+        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>
     </application>
-
 </manifest>

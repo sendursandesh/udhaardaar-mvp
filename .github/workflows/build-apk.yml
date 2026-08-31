@@ -1,7 +1,10 @@
-name: Legacy APK Build (V3 corrections source)
+name: Build Udhaardaar V5 Release Candidate
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - v5-completion-2026-08-31
 
 permissions:
   contents: read
@@ -10,31 +13,56 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout exact V3 complete-correction branch
-        uses: actions/checkout@v5
+      - name: Checkout V5 completion source
+        uses: actions/checkout@v4
         with:
-          ref: v3-complete-correction-pass-2026-08-27
-          fetch-depth: 1
-      - name: Verify exact source
-        run: |
-          echo "Building from v3-complete-correction-pass-2026-08-27"
-          git rev-parse HEAD
-      - name: Set up Java 17
-        uses: actions/setup-java@v5
+          ref: v5-completion-2026-08-31
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
-      - name: Build debug APK
-        run: gradle :app:assembleDebug --stacktrace
-      - name: Upload APK
+      - name: Install Gradle 8.10.2
+        shell: bash
+        run: |
+          set -e
+          wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
+      - name: Run V5 unit regression tests
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+      - name: Compile V5
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Static acceptance gates
+        shell: bash
+        run: |
+          set -e
+          grep -q "CREATE PROFILE / ACCOUNT" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "SEND OTP" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "VERIFY OTP + CREATE PROFILE" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "OTP SENT" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "INFORMAL_CREDIT_BORROWER_CONSENT" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          grep -q "FORMAL" app/src/main/java/com/udhaardaar/mvp/V5AppContract.kt
+          grep -q "Rental" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "Asset Vault" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "Inheritance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "Legal Assistance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "POST_NOTIFICATIONS" app/src/main/AndroidManifest.xml
+      - name: APK integrity and package gates
+        shell: bash
+        run: |
+          set -e
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          test "$(stat -c%s "$APK")" -gt 10000
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.udhaardaar.mvp'"
+      - name: Upload verified V5 APK
         uses: actions/upload-artifact@v4
         with:
-          name: udhaardaar-v3-corrections-debug-manual
+          name: Udhaardaar-V5-Release-Candidate
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 30

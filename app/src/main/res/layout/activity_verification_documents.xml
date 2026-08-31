@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F7FA">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Identity, Documents &amp; Consent"
+            android:textSize="25sp"
+            android:textStyle="bold"
+            android:textColor="#111827"
+            android:layout_marginBottom="6dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Unique ID search • borrower verification • digital document capture • OTP consent"
+            android:textSize="14sp"
+            android:textColor="#6B7280"
+            android:layout_marginBottom="20dp" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Unique ID Search" android:textStyle="bold" android:textColor="#374151" />
+        <EditText android:id="@+id/etUniqueId" android:layout_width="match_parent" android:layout_height="52dp" android:hint="e.g. UDH-2026-000001" android:inputType="textCapCharacters" android:background="#FFFFFF" android:padding="14dp" android:layout_marginTop="6dp" />
+        <Button android:id="@+id/btnSearch" android:layout_width="match_parent" android:layout_height="52dp" android:text="SEARCH / VERIFY UNIQUE ID" android:layout_marginTop="8dp" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Borrower / Business Profile" android:textStyle="bold" android:textColor="#374151" android:layout_marginTop="22dp" />
+        <EditText android:id="@+id/etPartyName" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Name / business name" android:background="#FFFFFF" android:padding="14dp" android:layout_marginTop="6dp" />
+        <EditText android:id="@+id/etMobile" android:layout_width="match_parent" android:layout_height="50dp" android:hint="Mobile number" android:inputType="phone" android:background="#FFFFFF" android:padding="14dp" android:layout_marginTop="8dp" />
+        <EditText android:id="@+id/etPan" android:layout_width="match_parent" android:layout_height="50dp" android:hint="PAN" android:inputType="textCapCharacters" android:background="#FFFFFF" android:padding="14dp" android:layout_marginTop="8dp" />
+        <EditText android:id="@+id/etGstin" android:layout_width="match_parent" android:layout_height="50dp" android:hint="GSTIN (if business)" android:inputType="textCapCharacters" android:background="#FFFFFF" android:padding="14dp" android:layout_marginTop="8dp" />
+        <Button android:id="@+id/btnCreateProfile" android:layout_width="match_parent" android:layout_height="52dp" android:text="CREATE UNIQUE PROFILE ID" android:layout_marginTop="8dp" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Digital Documentation" android:textStyle="bold" android:textColor="#374151" android:layout_marginTop="22dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Attach agreement, invoice, identity proof, promissory note or other credit documentation." android:textColor="#6B7280" android:textSize="13sp" android:layout_marginTop="5dp" />
+        <Button android:id="@+id/btnAttachDocument" android:layout_width="match_parent" android:layout_height="52dp" android:text="ATTACH DOCUMENT" android:layout_marginTop="8dp" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="OTP / Digital Consent" android:textStyle="bold" android:textColor="#374151" android:layout_marginTop="22dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="This build provides a local OTP generation and sharing checkpoint. Production SMS delivery requires an OTP provider/API." android:textColor="#6B7280" android:textSize="13sp" android:layout_marginTop="5dp" />
+        <EditText android:id="@+id/etOtp" android:layout_width="match_parent" android:layout_height="52dp" android:hint="Enter 6-digit OTP" android:inputType="number" android:maxLength="6" android:background="#FFFFFF" android:padding="14dp" android:layout_marginTop="8dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
+            <Button android:id="@+id/btnGenerateOtp" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:text="GENERATE OTP" android:layout_marginEnd="4dp" />
+            <Button android:id="@+id/btnShareOtp" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:text="SHARE OTP" android:layout_marginStart="4dp" />
+        </LinearLayout>
+        <Button android:id="@+id/btnVerifyOtp" android:layout_width="match_parent" android:layout_height="54dp" android:text="VERIFY OTP &amp; CONSENT" android:textStyle="bold" android:layout_marginTop="8dp" />
+
+        <TextView android:id="@+id/tvVerificationResult" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="#FFFFFF" android:padding="16dp" android:text="Verification results and audit checkpoints will appear here." android:textColor="#374151" android:textSize="14sp" android:layout_marginTop="18dp" android:layout_marginBottom="30dp" />
+    </LinearLayout>
+</ScrollView>

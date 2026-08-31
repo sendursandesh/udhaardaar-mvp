@@ -1,86 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:padding="20dp">
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Register New Credit" android:textSize="26sp" android:textStyle="bold"
-            android:gravity="center" android:layout_marginBottom="18dp" />
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Credit Type" android:textStyle="bold" />
-        <Spinner android:id="@+id/spinnerCreditType" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_marginBottom="12dp" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Borrower Profile" android:textSize="19sp" android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
-        <EditText android:id="@+id/etPersonName" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Full Name *" android:inputType="textPersonName" />
-        <EditText android:id="@+id/etBorrowerMobile" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Mobile Number" android:inputType="phone" />
-        <EditText android:id="@+id/etBorrowerAddress" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Address" android:inputType="textPostalAddress" />
-        <EditText android:id="@+id/etBorrowerAadhaar" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Aadhaar / Unique ID" android:inputType="number" />
-        <EditText android:id="@+id/etBorrowerPan" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="PAN" android:inputType="textCapCharacters" />
-        <Button android:id="@+id/btnBorrowerPhoto" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="ADD BORROWER PHOTO (OPTIONAL)" />
-        <TextView android:id="@+id/tvBorrowerPhoto" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="No borrower photo selected" android:textSize="12sp" android:layout_marginBottom="12dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="New Udhaar"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Credit Terms" android:textSize="19sp" android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
-        <EditText android:id="@+id/etAmount" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Principal Amount (₹) *" android:inputType="numberDecimal" />
-        <EditText android:id="@+id/etRoi" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Agreed ROI (%)" android:inputType="numberDecimal" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Repayment Method" android:textStyle="bold" android:layout_marginTop="8dp" />
-        <Spinner android:id="@+id/spinnerRepaymentMethod" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Repayment Periodicity" android:textStyle="bold" android:layout_marginTop="8dp" />
-        <Spinner android:id="@+id/spinnerPeriodicity" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <EditText android:id="@+id/etStartDate" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Commencing From *" android:focusable="false" android:clickable="true" />
-        <EditText android:id="@+id/etEndDate" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="End Date *" android:focusable="false" android:clickable="true" />
-        <EditText android:id="@+id/etEmiAmount" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="EMI Amount (₹)" android:inputType="numberDecimal" android:visibility="gone" />
+        <EditText
+            android:id="@+id/etPersonName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Person / Customer Name"
+            android:inputType="textPersonName"
+            android:layout_marginBottom="12dp" />
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Guarantor" android:textSize="19sp" android:textStyle="bold" android:layout_marginTop="16dp" />
-        <Spinner android:id="@+id/spinnerGuarantor" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <EditText android:id="@+id/etGuarantorName" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Guarantor Name" android:inputType="textPersonName" android:visibility="gone" />
-        <EditText android:id="@+id/etGuarantorMobile" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Guarantor Mobile" android:inputType="phone" android:visibility="gone" />
-        <EditText android:id="@+id/etGuarantorAddress" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Guarantor Address" android:inputType="textPostalAddress" android:visibility="gone" />
-        <Button android:id="@+id/btnGuarantorPhoto" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="ADD GUARANTOR PHOTO (OPTIONAL)" android:visibility="gone" />
-        <TextView android:id="@+id/tvGuarantorPhoto" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="No guarantor photo selected" android:textSize="12sp" android:visibility="gone" />
+        <EditText
+            android:id="@+id/etAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Principal Amount (₹)"
+            android:inputType="numberDecimal"
+            android:layout_marginBottom="12dp" />
 
-        <Button android:id="@+id/btnInvoice" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="UPLOAD INVOICE (TRADE CREDIT, OPTIONAL)" android:layout_marginTop="12dp" />
-        <TextView android:id="@+id/tvInvoice" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="No invoice selected" android:textSize="12sp" />
+        <EditText
+            android:id="@+id/etRoi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Agreed ROI (%)"
+            android:inputType="numberDecimal"
+            android:layout_marginBottom="16dp" />
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Digital Consent & OTP" android:textSize="19sp" android:textStyle="bold" android:layout_marginTop="16dp" />
-        <CheckBox android:id="@+id/cbConsent" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="I have obtained digital consent for this credit record" />
-        <Button android:id="@+id/btnVerifyOtp" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="VERIFY OTP" />
-        <TextView android:id="@+id/tvOtpStatus" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="OTP not verified" android:gravity="center" android:layout_marginBottom="12dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Repayment Method"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
 
-        <EditText android:id="@+id/etNotes" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:hint="Notes / document reference" android:inputType="textMultiLine" android:minLines="3" />
-        <Button android:id="@+id/btnSaveUdhaar" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="FINALIZE & REGISTER CREDIT" android:layout_marginTop="18dp" />
+        <Spinner
+            android:id="@+id/spinnerRepaymentMethod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Repayment Periodicity"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <Spinner
+            android:id="@+id/spinnerPeriodicity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+        <EditText
+            android:id="@+id/etStartDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Commencing From"
+            android:focusable="false"
+            android:clickable="true"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etEndDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="End Date"
+            android:focusable="false"
+            android:clickable="true"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etEmiAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="EMI Amount (₹)"
+            android:inputType="numberDecimal"
+            android:visibility="gone"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etNotes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Notes"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top"
+            android:layout_marginBottom="20dp" />
+
+        <Button
+            android:id="@+id/btnSaveUdhaar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SAVE UDHAAR" />
+
     </LinearLayout>
+
 </ScrollView>
