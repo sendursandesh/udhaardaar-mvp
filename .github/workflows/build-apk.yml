@@ -35,21 +35,30 @@ jobs:
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
       - name: Compile V5
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: Static acceptance gates
+      - name: V5 critical-flow acceptance gates
         shell: bash
         run: |
           set -e
-          grep -q "CREATE PROFILE / ACCOUNT" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q "SEND OTP" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q "VERIFY OTP + CREATE PROFILE" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q "OTP SENT" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q "INFORMAL_CREDIT_BORROWER_CONSENT" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
-          grep -q "FORMAL" app/src/main/java/com/udhaardaar/mvp/V5AppContract.kt
-          grep -q "Rental" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "Asset Vault" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "Inheritance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "Legal Assistance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "POST_NOTIFICATIONS" app/src/main/AndroidManifest.xml
+          test -f app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q "Credit Received" app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q "Lender / creditor" app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q "Guarantor name" app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q "CONSENT: LENDER" app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q "CONSENT: BORROWER" app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q "CONSENT: GUARANTOR" app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q "CREATE / REFRESH DIGITAL DOCUMENT PACKET" app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q "Create digital DPN before registering" app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q "Create guarantor guarantee before registering" app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q 'put("lenderConsent"' app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q 'put("borrowerConsent"' app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q 'put("guarantorConsent"' app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q 'btn("HOME"' app/src/main/java/com/udhaardaar/mvp/V5CreditRegistrationActivity.kt
+          grep -q 'V5CreditRegistrationActivity' app/src/main/AndroidManifest.xml
+          grep -q 'V5CreditRegistrationActivity' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'SEND OTP' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q 'VERIFY OTP + CREATE PROFILE' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q 'Regex("\^\[6-9\]\[0-9\]\{9\}\$"' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          echo "V5 critical-flow gates passed."
       - name: APK integrity and package gates
         shell: bash
         run: |
