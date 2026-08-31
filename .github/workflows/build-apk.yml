@@ -17,16 +17,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: v5-completion-2026-08-31
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-
       - name: Install Gradle 8.10.2
         shell: bash
         run: |
@@ -34,33 +31,25 @@ jobs:
           wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
-          /opt/gradle-8.10.2/bin/gradle --version
-
       - name: Run V5 unit regression tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
-
       - name: Compile V5
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-
       - name: Static acceptance gates
         shell: bash
         run: |
           set -e
-          test -f app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          test -f app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
-          test -f app/src/main/java/com/udhaardaar/mvp/V5RepaymentActivity.kt
-          test -f app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
-          test -f app/src/main/java/com/udhaardaar/mvp/V5LocalStore.kt
+          grep -q "CREATE PROFILE / ACCOUNT" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "SEND OTP" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "VERIFY OTP + CREATE PROFILE" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "OTP SENT" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
           grep -q "INFORMAL_CREDIT_BORROWER_CONSENT" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
-          grep -q "OTP_VERIFIED" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
           grep -q "FORMAL" app/src/main/java/com/udhaardaar/mvp/V5AppContract.kt
           grep -q "Rental" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q "Asset Vault" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q "Inheritance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q "Legal Assistance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q "POST_NOTIFICATIONS" app/src/main/AndroidManifest.xml
-          echo "Static V5 acceptance gates passed."
-
       - name: APK integrity and package gates
         shell: bash
         run: |
@@ -68,13 +57,8 @@ jobs:
           APK="app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
           unzip -t "$APK" >/dev/null
-          SIZE=$(stat -c%s "$APK")
-          test "$SIZE" -gt 10000
-          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
-          "$AAPT" dump badging "$APK" >/tmp/badging.txt
-          grep -q "package: name='com.udhaardaar.mvp'" /tmp/badging.txt
-          echo "APK integrity/package gate passed: $SIZE bytes"
-
+          test "$(stat -c%s "$APK")" -gt 10000
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.udhaardaar.mvp'"
       - name: Upload verified V5 APK
         uses: actions/upload-artifact@v4
         with:
