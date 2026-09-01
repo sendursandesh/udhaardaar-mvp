@@ -58,12 +58,11 @@ class UdhaardaarApp : Application() {
         if (activity !is V5HomeActivity) return
         val root = activity.window.decorView.findViewById<View>(android.R.id.content) ?: return
 
-        // Android 15/16 enforces edge-to-edge for targetSdk 35. Explicitly consume
-        // the system-bar inset so the V5 header cannot render underneath the status bar.
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val current = v.paddingTop
-            val base = (v.getTag(0x554448) as? Int) ?: current.also { v.setTag(0x554448, it) }
+            // Store the original padding using the normal View tag. Integer-keyed
+            // tags require an actual generated resource ID and caused a launch crash.
+            val base = (v.tag as? Int) ?: v.paddingTop.also { v.tag = it }
             v.setPadding(v.paddingLeft, base + bars.top, v.paddingRight, v.paddingBottom)
             insets
         }
