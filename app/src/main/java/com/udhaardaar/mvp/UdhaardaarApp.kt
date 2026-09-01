@@ -9,7 +9,10 @@ import android.text.method.DigitsKeyListener
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.TextView
+import android.widget.Button
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
@@ -21,6 +24,7 @@ class UdhaardaarApp : Application() {
             override fun onActivityResumed(activity: Activity) {
                 activity.window.decorView.post {
                     applyMobileLimits(activity.window.decorView)
+                    normalizeV5Home(activity)
                     installKeyboardAwareScrolling(activity.window.decorView)
                 }
             }
@@ -47,6 +51,51 @@ class UdhaardaarApp : Application() {
             }
         } catch (_: Exception) {}
         prefs.edit().putBoolean("legacy_migrated", true).apply()
+    }
+
+    private fun normalizeV5Home(activity: Activity) {
+        if (activity !is V5HomeActivity) return
+        val root = activity.window.decorView.findViewById<View>(android.R.id.content) ?: return
+        val scroll = root.findFirstScrollView() ?: return
+        val container = scroll.getChildAt(0) as? ViewGroup ?: return
+        for (i in 0 until container.childCount) {
+            val child = container.getChildAt(i)
+            val lp = child.layoutParams
+            if (child is LinearLayout) {
+                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                child.minimumHeight = dp(76)
+                child.setPadding(dp(12), dp(8), dp(10), dp(8))
+                for (j in 0 until child.childCount) {
+                    val inner = child.getChildAt(j)
+                    if (inner is TextView) {
+                        inner.layoutParams = inner.layoutParams.apply { height = ViewGroup.LayoutParams.WRAP_CONTENT }
+                        inner.setPadding(0, dp(2), 0, dp(2))
+                        inner.includeFontPadding = true
+                    }
+                }
+            } else if (child is Button) {
+                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                child.minimumHeight = dp(54)
+                child.setPadding(dp(10), dp(6), dp(10), dp(6))
+            } else if (child is TextView) {
+                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                child.minimumHeight = dp(28)
+                child.setPadding(0, dp(3), 0, dp(3))
+            }
+            child.layoutParams = lp
+        }
+        container.requestLayout()
+    }
+
+    private fun View.findFirstScrollView(): ScrollView? {
+        if (this is ScrollView) return this
+        if (this is ViewGroup) {
+            for (i in 0 until childCount) {
+                val found = getChildAt(i).findFirstScrollView()
+                if (found != null) return found
+            }
+        }
+        return null
     }
 
     private fun applyMobileLimits(view: View) {
