@@ -33,6 +33,28 @@ jobs:
           echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
       - name: Run unit tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+      - name: V5 architecture and release audit
+        shell: bash
+        run: |
+          set -e
+          SRC=app/src/main/java/com/udhaardaar/mvp
+          MAN=app/src/main/AndroidManifest.xml
+          for f in V5HomeActivity.kt V5CreditRegistrationActivity.kt V5PartyActivity.kt V5QrCreditActivity.kt V5RepaymentActivity.kt V5TtmmActivity.kt V5PlatformEngine.kt V5LocalStore.kt; do
+            test -s "$SRC/$f"
+          done
+          grep -q 'V5TtmmActivity' "$MAN"
+          grep -q 'V5QrCreditActivity' "$MAN"
+          grep -q 'V5RepaymentActivity' "$MAN"
+          if grep -q 'V5InformalCreditActivity' "$MAN"; then echo 'Legacy V5InformalCreditActivity must not be in V5 release manifest'; exit 1; fi
+          grep -q 'CREATE TTMM + REQUEST VERIFICATION' "$SRC/V5TtmmActivity.kt"
+          grep -q 'store.replace("credits",central)' "$SRC/V5TtmmActivity.kt"
+          grep -q 'V5OtpConsentService' "$SRC/V5CreditRegistrationActivity.kt"
+          grep -q 'generateDpnTemplate' "$SRC/V5CreditRegistrationActivity.kt"
+          grep -q 'generateGuaranteeTemplate' "$SRC/V5CreditRegistrationActivity.kt"
+          grep -q 'openDocument' "$SRC/V5HomeActivity.kt"
+          grep -q 'FORMAL_AUDIT_SOURCE' "$SRC/V5HomeActivity.kt"
+          grep -q 'BULLET_PRINCIPAL_ONLY' "$SRC/V5RepaymentActivity.kt"
+          echo 'V5 architecture/release audit PASSED'
       - name: Compile V5 APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
       - name: APK integrity and package gate
