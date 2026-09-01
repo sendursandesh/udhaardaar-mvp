@@ -3,6 +3,7 @@ package com.udhaardaar.mvp
 import android.app.Activity
 import android.app.Application
 import android.graphics.Rect
+import android.graphics.Typeface
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.method.DigitsKeyListener
@@ -56,6 +57,18 @@ class UdhaardaarApp : Application() {
     private fun normalizeV5Home(activity: Activity) {
         if (activity !is V5HomeActivity) return
         val root = activity.window.decorView.findViewById<View>(android.R.id.content) ?: return
+
+        // Android 15/16 enforces edge-to-edge for targetSdk 35. Explicitly consume
+        // the system-bar inset so the V5 header cannot render underneath the status bar.
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val current = v.paddingTop
+            val base = (v.getTag(0x554448) as? Int) ?: current.also { v.setTag(0x554448, it) }
+            v.setPadding(v.paddingLeft, base + bars.top, v.paddingRight, v.paddingBottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(root)
+
         val scroll = root.findFirstScrollView() ?: return
         val container = scroll.getChildAt(0) as? ViewGroup ?: return
         for (i in 0 until container.childCount) {
@@ -68,16 +81,19 @@ class UdhaardaarApp : Application() {
                 for (j in 0 until child.childCount) {
                     val inner = child.getChildAt(j)
                     if (inner is TextView) {
+                        inner.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
                         inner.layoutParams = inner.layoutParams.apply { height = ViewGroup.LayoutParams.WRAP_CONTENT }
                         inner.setPadding(0, dp(2), 0, dp(2))
                         inner.includeFontPadding = true
                     }
                 }
             } else if (child is Button) {
+                child.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
                 lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
                 child.minimumHeight = dp(54)
                 child.setPadding(dp(10), dp(6), dp(10), dp(6))
             } else if (child is TextView) {
+                child.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
                 lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
                 child.minimumHeight = dp(28)
                 child.setPadding(0, dp(3), 0, dp(3))
