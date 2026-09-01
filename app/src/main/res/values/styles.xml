@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Udhaardaar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="android:fontFamily">sans</item>
+        <!-- Force predictable professional typography instead of device handwriting fonts. -->
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
         <item name="android:statusBarColor">#E1F4FF</item>
         <item name="android:navigationBarColor">#E1F4FF</item>
         <item name="android:windowLightStatusBar">true</item>
