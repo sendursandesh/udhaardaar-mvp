@@ -10,7 +10,6 @@
         <activity android:name=".V5CreditRegistrationActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".V5PartyActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".V5QrCreditActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".V5InformalCreditActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".V5RepaymentActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".V5TtmmActivity" android:exported="false" android:screenOrientation="portrait" />
         <receiver android:name=".ReminderReceiver" android:exported="false" />
