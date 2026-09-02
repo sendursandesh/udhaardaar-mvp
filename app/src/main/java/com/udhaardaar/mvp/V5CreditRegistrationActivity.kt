@@ -1,303 +1,49 @@
 package com.udhaardaar.mvp
 
+import android.Manifest
 import android.app.AlertDialog
+import android.app.DatePickerDialog
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
-import android.graphics.Rect
 import android.os.Bundle
+import android.provider.CalendarContract
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.math.pow
 
-/** End-to-end V5 credit registration: parties -> terms -> documents -> consent -> registration. */
-class V5CreditRegistrationActivity : AppCompatActivity() {
-    private val store by lazy { V5LocalStore(this) }
-    private val otpService by lazy { V5OtpConsentService(this) }
-    private val consents = linkedMapOf<String, String>()
-    private var dpnCreated = false
-    private var guaranteeCreated = false
-    private lateinit var status: TextView
-    private lateinit var direction: Spinner
-    private lateinit var lender: EditText
-    private lateinit var borrower: EditText
-    private lateinit var guarantor: EditText
-    private lateinit var guarantorMobile: EditText
-    private lateinit var amount: EditText
-    private lateinit var roi: EditText
-    private lateinit var start: EditText
-    private lateinit var end: EditText
-
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
-
-    private fun e(hint: String, max: Int = 0) = EditText(this).apply {
-        this.hint = hint
-        setSingleLine(true)
-        setTextSize(16f)
-        minHeight = dp(52)
-        setPadding(dp(12), dp(8), dp(12), dp(8))
-        if (max > 0) filters = arrayOf(android.text.InputFilter.LengthFilter(max))
-        setOnFocusChangeListener { view, hasFocus ->
-            if (hasFocus) view.post {
-                view.requestRectangleOnScreen(Rect(0, 0, view.width, view.height), true)
-            }
-        }
-    }
-
-    private fun addRow(root: LinearLayout, view: View, heightDp: Int = 0) {
-        val params = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            if (heightDp > 0) dp(heightDp) else ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        params.setMargins(0, dp(6), 0, dp(6))
-        root.addView(view, params)
-        view.minimumHeight = dp(54)
-    }
-
-    private fun button(label: String, action: () -> Unit) = Button(this).apply {
-        text = label
-        isAllCaps = false
-        setTextSize(15f)
-        minHeight = dp(54)
-        setPadding(dp(12), dp(8), dp(12), dp(8))
-        setOnClickListener { action() }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-        showForm()
-    }
-
-    private fun showForm() {
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(18), dp(18), dp(24))
-        }
-
-        addRow(root, TextView(this).apply {
-            text = "UDHAARDAAR V5 • CREDIT REGISTRATION"
-            textSize = 20f
-            setTextColor(Color.rgb(24, 58, 92))
-            includeFontPadding = true
-        }, 70)
-        addRow(root, TextView(this).apply {
-            text = "Parties → terms → documents → consent → confirmation"
-            textSize = 14f
-        }, 48)
-
-        direction = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@V5CreditRegistrationActivity,
-                android.R.layout.simple_spinner_dropdown_item,
-                arrayOf("Credit Given", "Credit Received")
-            )
-        }
-        addRow(root, direction)
-
-        lender = e("Lender / creditor full name or profile ID *")
-        borrower = e("Borrower / debtor full name or profile ID *")
-        guarantor = e("Guarantor name (optional)")
-        guarantorMobile = e("Guarantor mobile (required if guarantor added)", 10)
-        amount = e("Principal amount *")
-        roi = e("Annual ROI %")
-        start = e("Start date YYYY-MM-DD *")
-        end = e("End date YYYY-MM-DD *")
-        listOf(lender, borrower, guarantor, guarantorMobile, amount, roi, start, end)
-            .forEach { addRow(root, it) }
-
-        addRow(root, button("CREATE / REFRESH DIGITAL DOCUMENT PACKET") { prepareDocuments() })
-        addRow(root, button("CONSENT: LENDER") { requestConsent("LENDER", lender.text.toString()) })
-        addRow(root, button("CONSENT: BORROWER") { requestConsent("BORROWER", borrower.text.toString()) })
-        addRow(root, button("CONSENT: GUARANTOR") {
-            if (guarantor.text.toString().trim().isEmpty()) {
-                toast("No guarantor added")
-            } else {
-                requestConsent("GUARANTOR", guarantor.text.toString())
-            }
-        })
-
-        status = TextView(this).apply {
-            text = "Required: DPN + required guarantee + lender/borrower consent + guarantor consent when applicable."
-            textSize = 14f
-            setPadding(0, dp(8), 0, dp(8))
-        }
-        addRow(root, status, 80)
-        addRow(root, button("CONFIRM & REGISTER CREDIT") { register() })
-        addRow(root, button("HOME") { goHome() })
-        addRow(root, button("BACK") { finish() })
-
-        val scroll = ScrollView(this).apply {
-            isFillViewport = true
-            isSmoothScrollingEnabled = true
-            addView(root, ViewGroup.LayoutParams(-1, -2))
-        }
-        ViewCompat.setOnApplyWindowInsetsListener(scroll) { view, insets ->
-            val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, maxOf(imeBottom, dp(24)))
-            insets
-        }
-        setContentView(scroll)
-        scroll.post { scroll.scrollTo(0, 0) }
-    }
-
-    private fun prepareDocuments() {
-        val creditId = "CR-${System.currentTimeMillis()}"
-        val lenderName = lender.text.toString().trim()
-        val borrowerName = borrower.text.toString().trim()
-        val principal = amount.text.toString().toDoubleOrNull() ?: 0.0
-        val rate = roi.text.toString().toDoubleOrNull() ?: 0.0
-        val startDate = start.text.toString().trim()
-        val endDate = end.text.toString().trim()
-
-        if (lenderName.length < 2 || borrowerName.length < 2 || principal <= 0.0 ||
-            startDate.isBlank() || endDate.isBlank()
-        ) {
-            toast("Complete lender, borrower, amount and dates first")
-            return
-        }
-
-        store.replace("documents", JSONObject().apply {
-            put("id", "DPN-$creditId")
-            put("type", "Demand Promissory Note")
-            put("creditId", creditId)
-            put("content", V5GuarantorAndDocuments.generateDpnTemplate(
-                creditId, borrowerName, lenderName, principal, rate, startDate, endDate
-            ))
-            put("status", "DRAFT")
-            put("createdAt", System.currentTimeMillis())
-        })
-        dpnCreated = true
-        guaranteeCreated = false
-
-        val guarantorName = guarantor.text.toString().trim()
-        val guarantorPhone = guarantorMobile.text.toString().trim()
-        if (guarantorName.isNotEmpty()) {
-            if (!Regex("^[6-9][0-9]{9}$").matches(guarantorPhone)) {
-                toast("Enter valid guarantor mobile")
-                dpnCreated = false
-                return
-            }
-            val profile = V5GuarantorAndDocuments.GuarantorProfile(
-                "G-${System.currentTimeMillis()}", guarantorName, guarantorPhone, ""
-            )
-            store.replace("documents", JSONObject().apply {
-                put("id", "GUA-$creditId")
-                put("type", "Guarantor Guarantee")
-                put("creditId", creditId)
-                put("content", V5GuarantorAndDocuments.generateGuaranteeTemplate(
-                    creditId, profile, borrowerName, principal
-                ))
-                put("status", "DRAFT")
-                put("createdAt", System.currentTimeMillis())
-            })
-            guaranteeCreated = true
-        }
-
-        status.text = if (guaranteeCreated) {
-            "Digital packet CREATED: DPN + Guarantor Guarantee. Obtain required OTP consents."
-        } else {
-            "Digital packet CREATED: DPN. Obtain required OTP consents."
-        }
-        toast("Digital document packet created before registration")
-    }
-
-    private fun requestConsent(party: String, recipient: String) {
-        if (recipient.trim().length < 2) {
-            toast("Enter $party details first")
-            return
-        }
-        if (party == "GUARANTOR" && !Regex("^[6-9][0-9]{9}$").matches(guarantorMobile.text.toString().trim())) {
-            toast("Enter valid guarantor mobile")
-            return
-        }
-
-        val consentId = otpService.issue("CR-PENDING", "CREDIT_${party}_CONSENT", recipient)
-        val otp = store.find("consents", consentId)?.optString("otp", "") ?: ""
-        val input = e("Enter 6-digit OTP", 6)
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("$party CONSENT OTP")
-            .setMessage("Demo OTP: $otp\nLive SMS requires configured provider.")
-            .setView(input)
-            .setNegativeButton("CANCEL", null)
-            .setPositiveButton("VERIFY", null)
-            .create()
-
-        dialog.setOnShowListener {
-            dialog.getButton(-1).setOnClickListener {
-                if (otpService.verify(consentId, input.text.toString())) {
-                    consents[party] = consentId
-                    status.text = "$party consent VERIFIED"
-                    dialog.dismiss()
-                } else {
-                    input.error = "Incorrect OTP"
-                }
-            }
-        }
-        dialog.show()
-    }
-
-    private fun register() {
-        val lenderName = lender.text.toString().trim()
-        val borrowerName = borrower.text.toString().trim()
-        val principal = amount.text.toString().toDoubleOrNull() ?: 0.0
-        val guarantorName = guarantor.text.toString().trim()
-
-        if (lenderName.length < 2 || borrowerName.length < 2 || principal <= 0.0) {
-            toast("Complete lender, borrower and amount")
-            return
-        }
-        if (!dpnCreated) {
-            toast("Create digital DPN before registering")
-            return
-        }
-        if (guarantorName.isNotEmpty() && !guaranteeCreated) {
-            toast("Create guarantor guarantee before registering")
-            return
-        }
-        if (!consents.containsKey("LENDER") || !consents.containsKey("BORROWER")) {
-            toast("Lender and borrower OTP consent are required")
-            return
-        }
-        if (guarantorName.isNotEmpty() && !consents.containsKey("GUARANTOR")) {
-            toast("Guarantor OTP consent is required")
-            return
-        }
-
-        val creditId = "CR-${System.currentTimeMillis()}"
-        store.replace("credits", JSONObject().apply {
-            put("id", creditId)
-            put("direction", direction.selectedItem.toString())
-            put("lender", lenderName)
-            put("borrower", borrowerName)
-            put("guarantor", guarantorName)
-            put("amount", principal)
-            put("roi", roi.text.toString())
-            put("start", start.text.toString())
-            put("end", end.text.toString())
-            put("dpn", "DPN-$creditId")
-            put("guarantee", if (guaranteeCreated) "GUA-$creditId" else "")
-            put("lenderConsent", consents["LENDER"])
-            put("borrowerConsent", consents["BORROWER"])
-            put("guarantorConsent", consents["GUARANTOR"] ?: "")
-            put("status", "REGISTERED")
-            put("registeredAt", System.currentTimeMillis())
-        })
-        toast("Credit registered after required documents and consents")
-        goHome()
-    }
-
-    private fun goHome() {
-        startActivity(Intent(this, V5HomeActivity::class.java).addFlags(
-            Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        ))
-        finish()
-    }
-
-    private fun toast(message: String) =
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+/** Guided V5 flow: borrower -> terms -> repayment -> documents -> OTP consent -> registration. */
+class V5CreditRegistrationActivity:AppCompatActivity(){
+ private val store by lazy{V5LocalStore(this)};private val otp by lazy{V5OtpConsentService(this)};private var profiles=emptyList<JSONObject>();private val consents=mutableMapOf<String,String>();private var docsReady=false;private var guarantorAdded=false;private var calendarTarget:EditText?=null
+ private lateinit var borrower:Spinner;private lateinit var amount:EditText;private lateinit var roi:EditText;private lateinit var tenor:Spinner;private lateinit var method:Spinner;private lateinit var start:EditText;private lateinit var end:EditText;private lateinit var gName:EditText;private lateinit var gMobile:EditText;private lateinit var history:TextView;private lateinit var status:TextView
+ private val bg=Color.rgb(238,248,253);private val navy=Color.rgb(24,58,92);private val blue=Color.rgb(25,111,220);private val teal=Color.rgb(0,145,135);private val green=Color.rgb(25,145,78);private val amber=Color.rgb(210,135,15);private val red=Color.rgb(190,55,55)
+ private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt();private fun box(c:Int=Color.WHITE)=android.graphics.drawable.GradientDrawable().apply{setColor(c);setStroke(dp(1),Color.rgb(205,218,228));cornerRadius=dp(14).toFloat()};private fun tv(s:String,z:Float=14f,c:Int=navy)=TextView(this).apply{text=s;textSize=z;setTextColor(c);includeFontPadding=true;setPadding(dp(2),dp(2),dp(2),dp(2))};private fun e(h:String)=EditText(this).apply{hint=h;textSize=15f;setSingleLine(true);minHeight=dp(50);setPadding(dp(12),dp(7),dp(12),dp(7));background=box();imeOptions=android.view.inputmethod.EditorInfo.IME_ACTION_NEXT};private fun add(r:LinearLayout,v:View){r.addView(v,LinearLayout.LayoutParams(-1,ViewGroup.LayoutParams.WRAP_CONTENT).apply{setMargins(0,dp(4),0,dp(4))})};private fun btn(s:String,c:Int,fn:()->Unit)=Button(this).apply{text=s;isAllCaps=false;textSize=14f;setTextColor(Color.WHITE);background=box(c);minHeight=dp(50);setPadding(dp(12),dp(6),dp(12),dp(6));setOnClickListener{fn()}}
+ override fun onCreate(b:Bundle?){super.onCreate(b);window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show()}
+ private fun show(){val r=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(16),dp(14),dp(16),dp(24));setBackgroundColor(bg)};add(r,tv("UDHAARDAAR V5",12f,teal));add(r,tv("Credit Registration",22f));add(r,tv("Step 1 Borrower → Step 2 Terms → Step 3 Documents → Step 4 OTP consent → Step 5 Register",12f,Color.DKGRAY))
+  profiles=store.all("profiles").filter{it.optString("type").isBlank()||it.optString("type").uppercase(Locale.US) in setOf("BORROWER","BUSINESS","BUYER","SELLER")};borrower=Spinner(this);borrower.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,if(profiles.isEmpty())listOf("No borrower — create profile first")else profiles.map{"${it.optString("name")} • ${it.optString("mobile")}"});borrower.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onItemSelected(p:AdapterView<*>?,v:View?,pos:Int,id:Long){if(pos<profiles.size)showHistory(profiles[pos])};override fun onNothingSelected(p:AdapterView<*>?) {}};add(r,tv("BORROWER",12f,blue));add(r,borrower);add(r,btn("FIND / CREATE BORROWER PROFILE",teal){startActivity(Intent(this,V5PartyActivity::class.java))})
+  val direction=Spinner(this);direction.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,listOf("Credit Given","Credit Received"));val type=Spinner(this);type.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,listOf("Personal Credit","Business Credit","Trade Credit","Advance","Other"));add(r,tv("DIRECTION",12f,blue));add(r,direction);add(r,tv("CREDIT TYPE",12f,blue));add(r,type);history=tv("Select borrower to see credit history.",13f);history.background=box();history.setPadding(dp(12),dp(10),dp(12),dp(10));add(r,history)
+  amount=e("Principal / credit amount ₹ *");roi=e("Annual ROI %");add(r,amount);add(r,roi);tenor=Spinner(this);tenor.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,arrayOf(1,3,6,9,12,18,24,36,48,60).map{"$it months"});add(r,tv("REPAYMENT PERIOD",12f,blue));add(r,tenor);method=Spinner(this);method.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,arrayOf("EMI","Principal + Interest","Bullet / Full payment"));add(r,tv("REPAYMENT METHOD",12f,blue));add(r,method)
+  start=e("Start date");end=e("End date — auto calculated");end.isFocusable=false;add(r,start);add(r,end);add(r,btn("PICK START DATE",teal){pickDate(start)});add(r,btn("PICK START FROM GOOGLE CALENDAR",blue){pickCalendar(start)});tenor.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onItemSelected(p:AdapterView<*>?,v:View?,pos:Int,id:Long){updateEnd()};override fun onNothingSelected(p:AdapterView<*>?) {}}
+  gName=e("Guarantor name (optional)");gMobile=e("Guarantor mobile (required if added)");add(r,gName);add(r,gMobile);add(r,btn("ADD / VALIDATE GUARANTOR",red){if(gName.text.trim().length<2){gName.error="Enter guarantor name";return@btn};if(!Regex("^[6-9][0-9]{9}$").matches(gMobile.text.trim())){gMobile.error="Enter valid 10-digit mobile";return@btn};guarantorAdded=true;status.text="Guarantor added. Create the document packet to generate the separate guarantee."})
+  add(r,btn("CREATE DIGITAL DOCUMENT PACKET",amber){prepareDocuments(type.selectedItem.toString())});status=tv("Required order: borrower → terms → document packet → OTP consents → registration.",13f,Color.DKGRAY);status.background=box();add(r,status);add(r,btn("CONSENT: LENDER",blue){requestConsent("LENDER","Account owner")});add(r,btn("CONSENT: BORROWER",teal){if(profiles.isEmpty())toast("Create/select borrower first")else requestConsent("BORROWER",profiles[borrower.selectedItemPosition].optString("name"))});add(r,btn("CONSENT: GUARANTOR",red){if(!guarantorAdded){toast("Add guarantor first or leave it blank");return@btn};requestConsent("GUARANTOR",gName.text.toString())});add(r,btn("CONFIRM & REGISTER CREDIT",green){register(direction.selectedItem.toString(),type.selectedItem.toString())});add(r,btn("BACK",navy){finish()});showRoot(r)}
+ private fun showRoot(r:LinearLayout){val s=ScrollView(this).apply{isFillViewport=true;isSmoothScrollingEnabled=true;addView(r)};setContentView(s);s.post{s.scrollTo(0,0)}}
+ private fun showHistory(p:JSONObject){val id=p.optString("id");val cs=store.all("credits").filter{it.optString("borrowerProfileId")==id||it.optString("borrower").equals(p.optString("name"),true)};val rs=store.all("repayments");var loansOnTime=0;var delayed=0;var emiOnTime=0;var total=0.0;var outstanding=0.0;var repaid=0;cs.forEach{val principal=it.optDouble("amount",it.optDouble("principal",0.0));total+=principal;val rr=rs.filter{x->x.optString("creditId")==it.optString("id")};val paid=rr.sumOf{x->x.optDouble("amount",0.0)};outstanding+=(principal-paid).coerceAtLeast(0.0);if(principal-paid<=0.01){repaid++;val endDate=it.optString("end");val last=rr.maxOfOrNull{x->x.optString("date")};if(endDate.isBlank()||last.isNullOrBlank()||last<=endDate)loansOnTime++};rr.forEach{x->if(x.optString("status").contains("DELAY",true)||x.optBoolean("delayed",false))delayed++ else if(x.optString("status").contains("CONFIRMED",true)||x.optString("status").contains("INDEXED",true))emiOnTime++}}
+  history.text="CREDIT HISTORY\nNumber of loans: ${cs.size}\nLoans repaid in time: $loansOnTime\nLoans currently active: ${cs.size-repaid}\nEMIs / repayments paid in time: $emiOnTime\nEMIs / repayments paid with delay: $delayed\nTotal historical credit: ₹${String.format(Locale.US,"%,.2f",total)}\nCurrent outstanding: ₹${String.format(Locale.US,"%,.2f",outstanding)}"
+ }
+ private fun prepareDocuments(type:String){if(profiles.isEmpty()){toast("Create/select borrower first");return};val a=amount.text.toString().toDoubleOrNull()?:0.0;if(a<=0||start.text.isBlank()||end.text.isBlank()){toast("Enter amount and start date; end date is auto calculated");return};val cid="CR-${System.currentTimeMillis()}";val borrowerName=profiles[borrower.selectedItemPosition].optString("name");val rate=roi.text.toString().toDoubleOrNull()?:0.0;store.replace("documents",JSONObject().apply{put("id","DPN-$cid");put("type","Demand Promissory Note");put("creditId",cid);put("content",V5GuarantorAndDocuments.generateDpnTemplate(cid,borrowerName,"Account owner",a,rate,start.text.toString(),end.text.toString()));put("status","DRAFT");put("createdAt",System.currentTimeMillis())});if(guarantorAdded){store.replace("documents",JSONObject().apply{put("id","GUA-$cid");put("type","Guarantor Guarantee");put("creditId",cid);put("content",V5GuarantorAndDocuments.generateGuaranteeTemplate(cid,V5GuarantorAndDocuments.GuarantorProfile("G-$cid",gName.text.toString(),gMobile.text.toString(),""),borrowerName,a));put("status","DRAFT");put("createdAt",System.currentTimeMillis())})};docsReady=true;status.text=if(guarantorAdded)"DPN + separate guarantor guarantee CREATED. Now obtain all required OTP consents." else "DPN CREATED. Now obtain required OTP consents.";toast("Digital documents created before OTP consent")}
+ private fun requestConsent(party:String,recipient:String){if(!docsReady){toast("Create digital document packet before OTP consent");return};val id=otp.issue("CR-PENDING","CREDIT_${party}_CONSENT",recipient);val code=store.find("consents",id)?.optString("otp","")?:"";val input=e("Enter 6-digit OTP");val d=AlertDialog.Builder(this).setTitle("$party CONSENT OTP").setMessage("Demo OTP: $code\nProduction SMS gateway is required for live delivery.").setView(input).setNegativeButton("CANCEL",null).setPositiveButton("VERIFY",null).create();d.setOnShowListener{d.getButton(-1).setOnClickListener{if(otp.verify(id,input.text.toString())){consents[party]=id;status.text="$party consent VERIFIED";d.dismiss()}else input.error="Incorrect OTP"}};d.show()}
+ private fun register(direction:String,type:String){val p=profiles.getOrNull(borrower.selectedItemPosition);val a=amount.text.toString().toDoubleOrNull()?:0.0;if(p==null){toast("Select borrower");return};if(!docsReady){toast("Create documents first");return};if(!consents.containsKey("LENDER")||!consents.containsKey("BORROWER")){toast("Lender and borrower OTP consent are required");return};if(guarantorAdded&&!consents.containsKey("GUARANTOR")){toast("Guarantor OTP consent is required");return};val months=tenor.selectedItem.toString().split(" ")[0].toInt();val rate=roi.text.toString().toDoubleOrNull()?:0.0;val q=rate/1200.0;val emi=if(method.selectedItem.toString()=="EMI"&&q>0)a*q*(1+q).pow(months)/((1+q).pow(months)-1) else a/months.toDouble();val total=if(method.selectedItem.toString()=="EMI")emi*months else a+(a*rate*months/1200.0);val cid="CR-${System.currentTimeMillis()}";store.replace("credits",JSONObject().apply{put("id",cid);put("borrowerProfileId",p.optString("id"));put("borrower",p.optString("name"));put("direction",direction);put("creditType",type);put("amount",a);put("roi",rate);put("tenorMonths",months);put("repaymentMethod",method.selectedItem.toString());put("emiAmount",emi);put("totalPayable",total);put("start",start.text.toString());put("end",end.text.toString());put("status","REGISTERED");put("outstanding",total);put("lenderConsent",consents["LENDER"]);put("borrowerConsent",consents["BORROWER"]);put("guarantor",if(guarantorAdded)gName.text.toString() else "");put("guarantorConsent",consents["GUARANTOR"]?:"");put("registeredAt",System.currentTimeMillis())});toast("Credit registered after documents and OTP consent");startActivity(Intent(this,V5HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish()}
+ private fun pickDate(t:EditText){val c=Calendar.getInstance();DatePickerDialog(this,{_,y,m,d->t.setText(String.format(Locale.US,"%02d %s %04d",d,SimpleDateFormat("MMM",Locale.US).format(Calendar.getInstance().apply{set(Calendar.MONTH,m)}.time),y));updateEnd()},c.get(Calendar.YEAR),c.get(Calendar.MONTH),c.get(Calendar.DAY_OF_MONTH)).show()}
+ private fun updateEnd(){if(!::start.isInitialized||!::tenor.isInitialized||start.text.isBlank())return;try{val c=Calendar.getInstance();c.time=SimpleDateFormat("dd MMM yyyy",Locale.US).parse(start.text.toString())!!;c.add(Calendar.MONTH,tenor.selectedItem.toString().split(" ")[0].toInt());end.setText(SimpleDateFormat("dd MMM yyyy",Locale.US).format(c.time))}catch(_:Exception){}}
+ private fun pickCalendar(t:EditText){calendarTarget=t;if(ContextCompat.checkSelfPermission(this,Manifest.permission.READ_CALENDAR)!=PackageManager.PERMISSION_GRANTED){ActivityCompat.requestPermissions(this,arrayOf(Manifest.permission.READ_CALENDAR),9201);return};showCalendar()}
+ private fun showCalendar(){val now=System.currentTimeMillis();val uri=CalendarContract.Instances.CONTENT_URI.buildUpon().appendPath(now.toString()).appendPath((now+366L*24*60*60*1000).toString()).build();val c=contentResolver.query(uri,arrayOf(CalendarContract.Instances.TITLE,CalendarContract.Instances.BEGIN),null,null,CalendarContract.Instances.BEGIN+" ASC");val a=mutableListOf<Pair<String,Long>>();c?.use{while(it.moveToNext()&&a.size<30)a.add(Pair(it.getString(0)?:"Calendar event",it.getLong(1)))};if(a.isEmpty()){toast("No synced Google/device calendar events found");return};AlertDialog.Builder(this).setTitle("Choose date from synced calendar").setItems(a.map{"${SimpleDateFormat("dd MMM yyyy",Locale.US).format(Date(it.second))} • ${it.first}"}.toTypedArray()){_,i->calendarTarget?.setText(SimpleDateFormat("dd MMM yyyy",Locale.US).format(Date(a[i].second)));updateEnd()}.setNegativeButton("CANCEL",null).show()}
+ override fun onRequestPermissionsResult(rc:Int,p:Array<out String>,g:IntArray){super.onRequestPermissionsResult(rc,p,g);if(rc==9201&&g.firstOrNull()==PackageManager.PERMISSION_GRANTED)showCalendar()}
+ private fun toast(s:String)=Toast.makeText(this,s,Toast.LENGTH_LONG).show()
 }
