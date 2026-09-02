@@ -16,7 +16,7 @@ class V5RepaymentService(context:Context){
         require(outstanding>0&&amount<=outstanding)
         val counterparty=if(initiator==V5ConsentAndScore.Party.BORROWER)V5ConsentAndScore.Party.LENDER else V5ConsentAndScore.Party.BORROWER
         val id="RP-${System.currentTimeMillis()}";val code=(100000+Random.nextInt(900000)).toString()
-        store.add("repayment_requests",JSONObject().apply{put("id",id);put("creditId",creditId);put("initiatedBy",initiator.name);put("counterparty",counterparty.name);put("amount",amount);put("date",date);put("method",method);put("reference",reference);put("evidenceId",evidenceId?:(""));put("otp",code);put("status","COUNTERPARTY_OTP_PENDING");put("createdAt",System.currentTimeMillis())})
+        store.add("repayment_requests",JSONObject().apply{put("id",id);put("creditId",creditId);put("initiatedBy",initiator.name);put("counterparty",counterparty.name);put("amount",amount);put("date",date);put("method",method);put("reference",reference);put("evidenceId",evidenceId?:"");put("otp",code);put("status","COUNTERPARTY_OTP_PENDING");put("createdAt",System.currentTimeMillis())})
         return id
     }
     fun confirm(requestId:String,otp:String,expectedOtp:String):Boolean{
