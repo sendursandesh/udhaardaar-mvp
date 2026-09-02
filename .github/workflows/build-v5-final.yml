@@ -46,8 +46,8 @@ jobs:
           if grep -q 'V5InformalCreditActivity' "$MAN"; then echo 'Legacy informal activity must not be in release manifest'; exit 1; fi
           grep -q 'generateDpnTemplate' "$SRC/V5CreditRegistrationActivity.kt"
           grep -q 'generateGuaranteeTemplate' "$SRC/V5CreditRegistrationActivity.kt"
-          grep -q 'CREDIT_BORROWER_CONSENT' "$SRC/V5CreditRegistrationActivity.kt"
-          grep -q 'CREDIT_GUARANTOR_CONSENT' "$SRC/V5CreditRegistrationActivity.kt"
+          grep -q 'CREDIT_\${party}_CONSENT' "$SRC/V5CreditRegistrationActivity.kt"
+          grep -q 'party=="GUARANTOR"' "$SRC/V5CreditRegistrationActivity.kt"
           grep -q 'FORMAL' "$SRC/V5CreditRegistrationActivity.kt"
           grep -q 'store.replace("credits"' "$SRC/V5CreditRegistrationActivity.kt"
           grep -q 'COUNTERPARTY_OTP_PENDING' "$SRC/V5RepaymentService.kt"
