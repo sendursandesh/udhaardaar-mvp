@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <application android:name=".UdhaardaarApp" android:allowBackup="true" android:label="Udhaardaar" android:icon="@drawable/udhaardaar_logo" android:roundIcon="@drawable/udhaardaar_logo" android:supportsRtl="true" android:theme="@style/Theme.Udhaardaar">
         <activity android:name=".LoginActivity" android:exported="true" android:launchMode="singleTask" android:clearTaskOnLaunch="false" android:alwaysRetainTaskState="true" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
@@ -16,6 +17,7 @@
         <activity android:name=".DashboardV3Activity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".VerificationDocumentsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".RegisterCreditV3Activity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".QrCreditScannerActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".MainActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".AddUdhaarActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".RecordsActivity" android:exported="false" android:screenOrientation="portrait" />
