@@ -1,0 +1,52 @@
+package com.udhaardaar.mvp
+
+import android.app.AlertDialog
+import android.os.Bundle
+import android.view.View
+import android.view.WindowManager
+import android.widget.*
+import org.json.JSONObject
+
+/** Shared V5 workflows for controlled access, legal support and readiness. */
+class V5SupportWorkflowsActivity : androidx.appcompat.app.AppCompatActivity() {
+    private val store by lazy { V5LocalStore(this) }
+    private fun e(h: String) = EditText(this).apply { hint=h; setSingleLine(true); setPadding(14,10,14,10) }
+    private fun add(r: LinearLayout,v: View,h:Int=56){ r.addView(v,LinearLayout.LayoutParams(-1,h).apply{setMargins(0,5,0,5)}) }
+    override fun onCreate(b:Bundle?){super.onCreate(b);window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);show()}
+    private fun show(){
+        val r=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(20,16,20,28)}
+        add(r,TextView(this).apply{text="UDHAARDAAR V5 • Support & Protection";textSize=23f},62)
+        val mode=intent.getStringExtra("mode") ?: "ACCESS"
+        when(mode){
+            "LEGAL" -> legal(r)
+            "NOTIFICATIONS" -> readiness(r)
+            else -> access(r)
+        }
+        add(r,Button(this).apply{text="BACK TO HOME";setOnClickListener{finish()}},54)
+        setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
+    }
+    private fun access(r:LinearLayout){
+        add(r,TextView(this).apply{text="Controlled family access • private by default • explicit OTP consent";textSize=13f},50)
+        val owner=e("Owner profile ID *");val person=e("Trusted person / nominee profile ID *");val scope=e("Access scope: Assets / Liabilities / Claims / Documents")
+        add(r,owner);add(r,person);add(r,scope)
+        add(r,Button(this).apply{text="CREATE ACCESS REQUEST";setOnClickListener{
+            if(owner.text.isBlank()||person.text.isBlank()){toast("Owner and trusted person are required");return@setOnClickListener}
+            val id="ACC-${System.currentTimeMillis()}";store.add("access_requests",JSONObject().apply{put("id",id);put("ownerProfileId",owner.text.toString().trim());put("trustedPersonProfileId",person.text.toString().trim());put("scope",scope.text.toString());put("status","CONSENT_PENDING");put("createdAt",System.currentTimeMillis())})
+            val otp=V5OtpConsentService(this).issue(id,"TRUSTED_ACCESS",person.text.toString());val code=store.find("consents",otp)?.optString("otp","")?:"";val input=e("Enter OTP")
+            AlertDialog.Builder(this).setTitle("Trusted access consent").setMessage("Demo OTP: $code\nProduction SMS gateway required for live delivery.").setView(input).setNegativeButton("CANCEL",null).setPositiveButton("CONFIRM",null).create().also{d->d.setOnShowListener{d.getButton(-1).setOnClickListener{if(V5OtpConsentService(this).verify(otp,input.text.toString())){val q=store.find("access_requests",id)!!;q.put("status","ACTIVE");q.put("consentedAt",System.currentTimeMillis());store.replace("access_requests",q);toast("Controlled access activated");d.dismiss()}else input.error="Incorrect OTP"}};d.show()}
+        }},60)
+    }
+    private fun legal(r:LinearLayout){
+        add(r,TextView(this).apply{text="Evidence bundle • recovery / claim support • case tracking";textSize=13f},50)
+        val subject=e("Case subject / profile ID *");val type=e("Case type: Recovery / Claim / Document dispute");val notes=e("Facts, evidence and requested assistance")
+        add(r,subject);add(r,type);add(r,notes)
+        add(r,Button(this).apply{text="CREATE LEGAL SUPPORT CASE";setOnClickListener{if(subject.text.isBlank()||notes.text.isBlank()){toast("Subject and facts are required");return@setOnClickListener};val id="LEG-${System.currentTimeMillis()}";store.add("legal_cases",JSONObject().apply{put("id",id);put("subject",subject.text.toString());put("caseType",type.text.toString());put("notes",notes.text.toString());put("status","OPEN");put("createdAt",System.currentTimeMillis());put("updatedAt",System.currentTimeMillis())});toast("Legal support case created with timestamped record")}},60)
+    }
+    private fun readiness(r:LinearLayout){
+        add(r,TextView(this).apply{text="Readiness centre • upcoming maturity, expiry, repayment and claim tasks";textSize=13f},55)
+        val items=store.all("credits").map{"Credit ${it.optString("id")}: outstanding ₹${it.optDouble("outstanding",0.0)}"}+store.all("assets").map{if(it.optString("category")=="LIABILITY")"Liability ${it.optString("title")}: ₹${it.optDouble("outstandingLiability",0.0)}" else "Asset ${it.optString("title")}: ₹${it.optDouble("estimatedValue",0.0)}"}+store.all("death_claim_cases").map{"Claim ${it.optString("id")}: ${it.optString("status","OPEN")}"}
+        add(r,TextView(this).apply{text=if(items.isEmpty())"No active readiness items yet." else items.joinToString("\n\n");textSize=15f},180)
+        add(r,Button(this).apply{text="REFRESH READINESS";setOnClickListener{show()}},54)
+    }
+    private fun toast(s:String)=Toast.makeText(this,s,Toast.LENGTH_LONG).show()
+}
