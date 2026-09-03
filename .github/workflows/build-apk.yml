@@ -58,6 +58,9 @@ jobs:
           grep -q 'Rental / Lease' app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
           grep -q 'DPN + Guarantor Guarantee' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'Financial Asset Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Liability Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'LIABILITY' app/src/main/java/com/udhaardaar/mvp/V5AssetVaultActivity.kt
+          grep -q 'LIABILITY_CREATED' app/src/main/java/com/udhaardaar/mvp/V5AssetVaultActivity.kt
           grep -q 'Inheritance & Claim Centre' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'Legal Assistance' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'POST_NOTIFICATIONS' app/src/main/AndroidManifest.xml
