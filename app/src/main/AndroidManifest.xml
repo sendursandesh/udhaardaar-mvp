@@ -8,6 +8,7 @@
         <activity android:name=".V5HomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V5InformalCreditActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V5RentalLeaseActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".V5AssetVaultActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V5RepaymentActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V5BorrowerActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V5GuarantorConsentActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
