@@ -55,7 +55,7 @@ jobs:
           grep -q 'class V5GuarantorConsentActivity' app/src/main/java/com/udhaardaar/mvp/V5GuarantorConsentActivity.kt
           grep -q 'GUARANTOR_GUARANTEE_CONSENT' app/src/main/java/com/udhaardaar/mvp/V5GuarantorConsentActivity.kt
           grep -q 'GUARANTOR_GUARANTEE_OTP_CONSENTED_AND_ARCHIVED' app/src/main/java/com/udhaardaar/mvp/V5GuarantorConsentActivity.kt
-          grep -q 'Rental / Lease' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Rental / Lease' app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
           grep -q 'DPN + Guarantor Guarantee' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'Financial Asset Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'Inheritance & Claim Centre' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
