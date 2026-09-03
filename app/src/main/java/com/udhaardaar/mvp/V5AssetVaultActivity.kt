@@ -42,7 +42,6 @@ class V5AssetVaultActivity : androidx.appcompat.app.AppCompatActivity() {
         add(r, TextView(this).apply { text = "UDHAARDAAR V5 • Asset & Liability Vault"; textSize = 23f }, 62)
         add(r, TextView(this).apply { text = "Maintain financial assets, non-financial assets and liabilities in one structured vault."; textSize = 13f }, 58)
 
-        // Create all dependent controls before attaching the category listener.
         owner = e("Owner / obligor profile ID *")
         title = e("Asset / liability title *")
         value = e("Current / estimated value ₹ *")
@@ -59,9 +58,7 @@ class V5AssetVaultActivity : androidx.appcompat.app.AppCompatActivity() {
         docs = e("Proof document IDs (comma separated)")
         notes = e("Notes / special terms / maturity instructions")
 
-        category = Spinner(this).apply {
-            adapter = ArrayAdapter(this@V5AssetVaultActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("FINANCIAL ASSET", "NON-FINANCIAL ASSET", "LIABILITY"))
-        }
+        category = Spinner(this).apply { adapter = ArrayAdapter(this@V5AssetVaultActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("FINANCIAL ASSET", "NON-FINANCIAL ASSET", "LIABILITY")) }
         add(r, category)
         subtype = Spinner(this)
         add(r, subtype)
@@ -87,17 +84,14 @@ class V5AssetVaultActivity : androidx.appcompat.app.AppCompatActivity() {
         add(r, Button(this).apply { text = "VIEW SAVED ASSETS & LIABILITIES"; setOnClickListener { list() } }, 58)
         add(r, Button(this).apply { text = "BACK"; setOnClickListener { finish() } }, 50)
         setContentView(ScrollView(this).apply { isFillViewport = true; isSmoothScrollingEnabled = true; addView(r) })
+        if (intent.getStringExtra("openCategory") == "LIABILITY") category.setSelection(2)
     }
 
     private fun today() = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
     private fun save() {
-        val o = owner.text.toString().trim()
-        val t = title.text.toString().trim()
-        val v = value.text.toString().trim().toDoubleOrNull()
-        if (o.isEmpty() || t.isEmpty() || v == null || v < 0) {
-            Toast.makeText(this, "Owner/obligor, title and valid current value/balance are required", Toast.LENGTH_LONG).show(); return
-        }
+        val o = owner.text.toString().trim(); val t = title.text.toString().trim(); val v = value.text.toString().trim().toDoubleOrNull()
+        if (o.isEmpty() || t.isEmpty() || v == null || v < 0) { Toast.makeText(this, "Owner/obligor, title and valid current value/balance are required", Toast.LENGTH_LONG).show(); return }
         val isLiability = category.selectedItemPosition == 2
         val id = "${if (isLiability) "LIA" else "AST"}-${System.currentTimeMillis()}"
         val proof = docs.text.toString().split(',').map { it.trim() }.filter { it.isNotEmpty() }
@@ -110,8 +104,7 @@ class V5AssetVaultActivity : androidx.appcompat.app.AppCompatActivity() {
     private fun list() {
         val a = store.all("assets")
         val msg = if (a.isEmpty()) "No assets or liabilities recorded yet." else a.joinToString("\n\n") { x ->
-            val cat = x.optString("category")
-            val amount = if (cat == "LIABILITY") x.optDouble("outstandingLiability", x.optDouble("estimatedValue", 0.0)) else x.optDouble("estimatedValue", 0.0)
+            val cat = x.optString("category"); val amount = if (cat == "LIABILITY") x.optDouble("outstandingLiability", x.optDouble("estimatedValue", 0.0)) else x.optDouble("estimatedValue", 0.0)
             "${x.optString("title")}\n$cat • ${x.optString("assetSubtype")}\n${if (cat == "LIABILITY") "Outstanding: ₹$amount" else "Value: ₹$amount"}\nOwner/Obligor: ${x.optString("ownerProfileId")}\nCounterparty: ${x.optString("institutionOrCounterparty")}\nReference: ${x.optString("accountOrReference")}\nOwnership: ${x.optString("ownership")} • Status: ${x.optString("encumbrance")}\nDocuments: ${x.optString("documents")}"
         }
         AlertDialog.Builder(this).setTitle("Asset & liability vault").setMessage(msg).setPositiveButton("OK", null).show()
