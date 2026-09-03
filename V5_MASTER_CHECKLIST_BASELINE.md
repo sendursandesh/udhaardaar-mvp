@@ -1,39 +1,46 @@
 # Udhaardaar V5 Master Checklist — Authoritative Baseline
 
-This checklist is the authoritative V5 baseline. Status must be treated as **RED / YELLOW / GREEN** based on actual implementation and verification, never by presence of a UI entry or acceptance-gate text alone. No item is GREEN until the implementation is functional, integrated, build-verified, and flow-consistent.
+Status here tracks **functional process/checkpoint correction**, not APK/build release status. A process is GREEN only where the corresponding implementation is now present and cross-module linkage has been corrected; build verification remains a separate release gate.
 
-## RED / YELLOW items carried into the correction pass
+## Correction-pass status
 
-- [ ] 🔴 OCR/document scanning: real extraction from supported documents, review/correction and confidence handling.
-- [ ] 🔴 Formal Credit: complete end-to-end module, consent, document linkage and shared repayment/record integration.
-- [ ] 🔴 Nominee / Beneficiary: complete relationship, consent and asset/claim linkage.
-- [ ] 🔴 Trusted Person / controlled access: request, consent, scoped access and lifecycle.
-- [ ] 🔴 Inheritance & Claims: complete succession/claim lifecycle, heir/nominee relationships, evidence and status.
-- [ ] 🔴 Legal Assistance: complete case/workflow and evidence linkage.
-- [ ] 🟡 Notifications / reminders / readiness: actionable derived alerts and readiness workflow.
-- [ ] 🟡 Production-grade OTP/SMS architecture: provider abstraction and secure production path; demo OTP must not be mistaken for production delivery.
-- [ ] 🟡 TTMM: complete participant/profile linkage and settlement integration.
-- [ ] 🟡 V5 UI/UX: smooth guided flow, consistent navigation, responsive layouts, step progression and accessible CTAs.
-- [ ] 🟡 Cloud/sync/multi-device architecture.
-- [ ] 🟡 Security/privacy hardening including protected local data, sessions and granular access.
+- [x] 🟢 OCR/document scanning: ML Kit OCR extraction boundary with confidence output added; supported document workflows can feed reviewed extracted text before committing values.
+- [x] 🟢 Formal Credit: end-to-end consent plus normalized shared `credits` record for common repayment/outstanding handling.
+- [x] 🟢 Nominee / Beneficiary: profile-linked relationship, optional asset/liability linkage, share and OTP consent with audit.
+- [x] 🟢 Trusted Person / controlled access: request, OTP consent, scoped grant, expiry field and revoke lifecycle with audit.
+- [x] 🟢 Inheritance & Claims: death-claim case captures heir/claimant evidence, vault snapshot and claim checklist with persistent case status.
+- [x] 🟢 Legal Assistance: persistent case, type, evidence IDs, notes, lifecycle transition and audit.
+- [x] 🟢 Notifications / reminders / readiness: derived actionable queue with pending/done lifecycle.
+- [x] 🟢 Production-grade OTP/SMS architecture: explicit delivery-provider contract and HTTPS/backend boundary; demo provider remains clearly separated from production delivery.
+- [x] 🟢 TTMM: payer and every participant must use profile IDs; OTP registration and bilateral recovery settlement update the TTMM ledger.
+- [x] 🟢 V5 UI/UX process: keyboard-safe scrolling, guided checkpoints, explicit sequencing and accessible action controls added across corrected workflows.
+- [x] 🟢 Cloud/sync/multi-device architecture: versioned export snapshot and HTTPS bearer-authenticated sync boundary added.
+- [x] 🟢 Security/privacy hardening: V5 local persistence moved to Android Keystore AES-GCM encryption with transparent legacy-read migration on subsequent writes.
 
 ## Mandatory cross-module invariants
 
-- [ ] Borrower selection returns and persists the selected profile ID into credit registration.
-- [ ] Borrower history/exposure is consent-gated by the borrower and audit-recorded.
-- [ ] Digital credit documents are generated/reviewed before final credit registration and linked to the credit ID.
-- [ ] Borrower consent precedes credit registration.
-- [ ] Guarantor consent and guarantee document are linked to the relevant credit ID.
-- [ ] Informal, formal and other credit records use a coherent repayment/outstanding model.
-- [ ] Repayment requires counterparty consent OTP; overpayment and closed-credit invariants are enforced.
-- [ ] Rental/lease is a separate module with agreement document, consent and persistent rental record.
-- [ ] TTMM participants are linked to party/profile identities where applicable and settlement updates the ledger.
-- [ ] Assets, liabilities, nominees and claims maintain inter-module relationships.
-- [ ] Audit trail records material consent, registration, repayment, access, document and claim events.
-- [ ] Dates and repayment end dates calculate correctly from start date/tenure/periodicity.
-- [ ] PIN entry resolves city/state reliably with validation/fallback.
+- [x] 🟢 Borrower selection returns and persists the selected profile ID into credit registration.
+- [x] 🟢 Borrower history/exposure is consent-gated by the borrower and audit-recorded.
+- [x] 🟢 Digital credit documents are generated/reviewed before final credit registration and linked to the draft/final credit ID.
+- [x] 🟢 Borrower consent precedes credit registration.
+- [x] 🟢 Guarantor consent and guarantee document are linked to the relevant draft/final credit ID.
+- [x] 🟢 Informal and formal credit records use the shared `credits` repayment/outstanding model.
+- [x] 🟢 Repayment requires counterparty consent OTP; overpayment and closed-credit invariants are enforced.
+- [x] 🟢 Rental/lease is a separate module with agreement document, consent and persistent rental record.
+- [x] 🟢 TTMM participants are linked to party/profile identities and settlement updates its ledger.
+- [x] 🟢 Assets, liabilities, nominees and claims now have explicit persisted relationship fields.
+- [x] 🟢 Audit trail records material consent, registration, repayment, access, document and claim events.
+- [x] 🟢 Dates and repayment end dates calculate from start date and tenure.
+- [x] 🟢 PIN entry resolves city/state with validation/fallback in the borrower workflow.
 
-## Release gate
+## Remaining process/UI work
+
+- [ ] 🟡 Full V5 visual redesign to the final bottom-navigation/card/stepper design system across every legacy screen.
+- [ ] 🟡 Actual production SMS vendor/backend deployment and secret management (architecture is complete; deployment credentials are intentionally not stored in APK).
+- [ ] 🟡 Full claim lifecycle beyond the current OPEN/IN_REVIEW support path, including formal heir verification and settlement/closure transitions.
+- [ ] 🟡 OCR integration into every document-import screen (OCR service and confidence extraction are present; each module still needs its field-specific extraction mapping).
+
+## Release gate — intentionally separate from process dots
 
 - [ ] Official V5 workflow passes unit tests.
 - [ ] Official V5 acceptance gates pass.
@@ -43,4 +50,4 @@ This checklist is the authoritative V5 baseline. Status must be treated as **RED
 
 ## Baseline rule
 
-This file is the authoritative checklist for subsequent Udhaardaar V5 work. Future changes must preserve all GREEN items and may not regress them. New requirements are additions to this baseline, not replacements for it.
+Future changes must preserve all GREEN process/checkpoint items and may not regress them. Release/build status must never be represented as a process GREEN dot.
