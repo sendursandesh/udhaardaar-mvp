@@ -1,14 +1,14 @@
 package com.udhaardaar.mvp
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import org.json.JSONObject
 
 /** Scans a QR payload and returns normalized credit fields to the caller. */
-class QrCreditScannerActivity : Activity() {
+class QrCreditScannerActivity : AppCompatActivity() {
     private val scanner = registerForActivityResult(ScanContract()) { result ->
         if (result.contents.isNullOrBlank()) { setResult(RESULT_CANCELED); finish(); return@registerForActivityResult }
         val data = parse(result.contents)
