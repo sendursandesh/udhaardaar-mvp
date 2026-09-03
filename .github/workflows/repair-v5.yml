@@ -1,0 +1,293 @@
+name: Repair and Verify V5
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GRADLE_VERSION: 8.10.2
+
+jobs:
+  repair-verify-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: tools platform-tools
+
+      - name: Install Gradle
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-${GRADLE_VERSION}/bin" >> "$GITHUB_PATH"
+
+      - name: Repair compile blockers and privacy defaults
+        shell: bash
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt')
+          p.write_text(r'''package com.udhaardaar.mvp
+
+import android.app.AlertDialog
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.os.Bundle
+import android.text.InputFilter
+import android.text.InputType
+import android.view.Gravity
+import android.view.View
+import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import kotlin.random.Random
+
+class LoginActivity : AppCompatActivity() {
+    private val prefs by lazy { getSharedPreferences("udhaardaar_accounts", MODE_PRIVATE) }
+    private val db by lazy { V32DatabaseHelper(this) }
+    private var otp = ""
+    private var otpMobile = ""
+    private var photoTarget: EditText? = null
+    private val blue = Color.rgb(25,111,220)
+    private val navy = Color.rgb(24,58,92)
+    private val teal = Color.rgb(0,145,135)
+    private val green = Color.rgb(25,145,78)
+    private val pageBg = Color.rgb(238,248,253)
+
+    private fun dp(v:Int) = (v * resources.displayMetrics.density).toInt()
+    private fun box(fill:Int=Color.WHITE) = GradientDrawable().apply {
+        setColor(fill); setStroke(dp(1), Color.rgb(190,210,225)); cornerRadius=dp(16).toFloat()
+    }
+    private fun text(s:String, size:Float=16f, c:Int=navy) = TextView(this).apply {
+        this.text=s; textSize=size; setTextColor(c); setPadding(dp(4),dp(4),dp(4),dp(4))
+    }
+    private fun field(h:String, max:Int=0, num:Boolean=false) = EditText(this).apply {
+        hint=h; textSize=16f; setSingleLine(true); setPadding(dp(14),dp(8),dp(14),dp(8)); background=box()
+        if(max>0) filters=arrayOf(InputFilter.LengthFilter(max))
+        if(num) inputType=InputType.TYPE_CLASS_NUMBER
+        imeOptions=EditorInfo.IME_ACTION_NEXT
+    }
+    private fun button(s:String,c:Int,fn:()->Unit) = Button(this).apply {
+        text=s; isAllCaps=false; setTextColor(Color.WHITE); background=box(c); setOnClickListener { fn() }
+    }
+    private fun base() = LinearLayout(this).apply {
+        orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER_HORIZONTAL
+        setPadding(dp(20),dp(22),dp(20),dp(30)); setBackgroundColor(pageBg)
+    }
+    private fun add(r:LinearLayout,v:View,h:Int=54) {
+        r.addView(v,LinearLayout.LayoutParams(-1,dp(h)).apply { setMargins(0,dp(4),0,dp(4)) })
+    }
+    private fun show(r:LinearLayout) {
+        setContentView(ScrollView(this).apply { isFillViewport=true; addView(r) })
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+    }
+    private fun toast(s:String) = Toast.makeText(this,s,Toast.LENGTH_LONG).show()
+
+    override fun onCreate(b:Bundle?) { super.onCreate(b); loginPage() }
+    override fun onNewIntent(i:Intent?) { super.onNewIntent(i); loginPage() }
+
+    private fun loginPage() {
+        val r=base()
+        r.addView(text("UDHAARDAAR",30f,teal))
+        r.addView(text("Personal Credit • Assets • Succession",14f))
+        r.addView(text("WELCOME",23f))
+        r.addView(text("Choose an option to continue",14f,Color.DKGRAY))
+        val m=field("Registered mobile number (10 digits)",10,true)
+        val pin=field("4-6 digit PIN",6,true).apply { inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD }
+        add(r,m); add(r,pin)
+        add(r,button("LOGIN",blue) {
+            val x=m.text.toString()
+            when {
+                !Regex("^[6-9][0-9]{9}$").matches(x) -> toast("Enter a valid 10-digit mobile number")
+                prefs.getString("pin_$x",null)==null -> toast("Account not found - tap CREATE PROFILE below")
+                prefs.getString("pin_$x","") != pin.text.toString() -> toast("Incorrect PIN")
+                else -> enter(x)
+            }
+        })
+        add(r,button("CREATE PROFILE / ACCOUNT",navy) { registrationPage() },58)
+        add(r,button("FORGOT PIN / LOGIN WITH OTP",teal) { otpLogin(m.text.toString()) },52)
+        r.addView(text("Release candidate: local test OTP only; production SMS requires a configured backend.",12f,Color.DKGRAY))
+        show(r)
+    }
+
+    private fun registrationPage() {
+        val r=base()
+        r.addView(text("CREATE PROFILE",24f))
+        r.addView(text("Enter details, send OTP, verify and create your profile.",13f,Color.DKGRAY))
+        val name=field("Full name *")
+        val m=field("Mobile number *",10,true)
+        val address=field("Full address *")
+        val photo=field("Selected photo",500).apply { isFocusable=false; visibility=View.GONE }
+        add(r,name); add(r,m); add(r,address)
+        add(r,button("ADD PROFILE PHOTO",teal) {
+            photoTarget=photo
+            startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                type="image/*"; addCategory(Intent.CATEGORY_OPENABLE)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            },501)
+        },52)
+        add(r,photo,42)
+        val p=field("Create 4-6 digit PIN",6,true).apply { inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD }
+        val p2=field("Confirm PIN",6,true).apply { inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD }
+        add(r,p); add(r,p2)
+        val ob=field("Enter 6-digit OTP",6,true).apply { visibility=View.GONE }
+        add(r,ob)
+        val status=text("OTP not sent",13f,Color.DKGRAY); add(r,status,42)
+        add(r,button("SEND OTP",blue) {
+            val x=m.text.toString()
+            val valid=Regex("^[6-9][0-9]{9}$").matches(x) && name.text.toString().trim().length>=2 && address.text.toString().trim().length>=5 && p.text.length in 4..6 && p.text.toString()==p2.text.toString()
+            if(!valid) { toast("Complete name, valid mobile, address and matching 4-6 digit PIN"); return@button }
+            if(prefs.contains("pin_$x")) { toast("Mobile already registered"); return@button }
+            otp=Random.nextInt(100000,1000000).toString(); otpMobile=x; ob.visibility=View.VISIBLE
+            status.text="OTP generated and ready for verification"; status.setTextColor(green)
+            AlertDialog.Builder(this).setTitle("OTP SENT").setMessage("Demo OTP: $otp\n\nEnter this 6-digit OTP below.\nLive SMS requires a configured backend.").setPositiveButton("OK",null).show()
+        },58)
+        add(r,button("VERIFY OTP + CREATE PROFILE",green) {
+            if(otpMobile.isBlank() || ob.text.toString()!=otp) { ob.error="Enter the latest OTP"; toast("Incorrect or missing OTP"); return@button }
+            val mobile=otpMobile; val nm=name.text.toString().trim(); val ad=address.text.toString().trim(); val photoUri=photo.text.toString().ifBlank { null }
+            prefs.edit().putString("pin_$mobile",p.text.toString()).putString("name_$mobile",nm).putString("address_$mobile",ad).putString("photo_$mobile",photoUri ?: "").apply()
+            try { db.upsertProfile(null,"BORROWER","BOR-${System.currentTimeMillis()}",nm,mobile,"",ad,"","","","","","",photoUri) } catch(_:Exception) {}
+            toast("Profile created successfully"); enter(mobile)
+        },58)
+        add(r,button("BACK TO LOGIN",Color.DKGRAY) { loginPage() },50)
+        show(r)
+    }
+
+    private fun otpLogin(m:String) {
+        if(!Regex("^[6-9][0-9]{9}$").matches(m) || !prefs.contains("pin_$m")) { toast("Enter a registered 10-digit mobile"); return }
+        otp=Random.nextInt(100000,1000000).toString(); otpMobile=m
+        val i=field("Enter 6-digit OTP",6,true)
+        val d=AlertDialog.Builder(this).setTitle("LOGIN OTP SENT").setMessage("Demo OTP: $otp\n\nEnter the OTP below.").setView(i).setNegativeButton("CANCEL",null).setPositiveButton("VERIFY",null).create()
+        d.setOnShowListener { d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { if(i.text.toString()!=otp) i.error="Incorrect OTP" else { d.dismiss(); resetPin(m) } } }
+        d.show()
+    }
+
+    private fun resetPin(m:String) {
+        val np=field("New 4-6 digit PIN",6,true)
+        val d=AlertDialog.Builder(this).setTitle("Reset PIN").setView(np).setPositiveButton("SAVE",null).setNegativeButton("CANCEL",null).create()
+        d.setOnShowListener { d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { if(np.text.length !in 4..6) np.error="4-6 digits required" else { prefs.edit().putString("pin_$m",np.text.toString()).apply(); d.dismiss(); enter(m) } } }
+        d.show()
+    }
+    private fun enter(m:String) { prefs.edit().putBoolean("logged_in",true).putString("current_mobile",m).apply(); startActivity(Intent(this,V5HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)) }
+    override fun onActivityResult(r:Int,c:Int,d:Intent?) { super.onActivityResult(r,c,d); if(r==501 && c==RESULT_OK && d?.data!=null) { val u=d.data!!; try { contentResolver.takePersistableUriPermission(u,Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch(_:Exception) {}; photoTarget?.visibility=View.VISIBLE; photoTarget?.setText(u.toString()) } }
+}
+''', encoding='utf-8')
+
+          q=Path('app/src/main/java/com/udhaardaar/mvp/QrCreditScannerActivity.kt')
+          q.write_text(r'''package com.udhaardaar.mvp
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import com.google.zxing.integration.android.IntentIntegrator
+import com.google.zxing.integration.android.IntentResult
+import org.json.JSONObject
+
+class QrCreditScannerActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        IntentIntegrator(this).apply {
+            setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
+            setPrompt("Scan credit / invoice QR code")
+            setBeepEnabled(true)
+            setOrientationLocked(false)
+        }.initiateScan()
+    }
+    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
+        val result:IntentResult?=IntentIntegrator.parseActivityResult(requestCode,resultCode,data)
+        if(result!=null) {
+            val raw=result.contents
+            if(raw.isNullOrBlank()) { setResult(RESULT_CANCELED); finish(); return }
+            val f=parse(raw)
+            setResult(RESULT_OK,Intent().apply {
+                putExtra("vendor",f.vendor); putExtra("invoice",f.invoice); putExtra("date",f.date)
+                putExtra("amount",f.amount); putExtra("raw",raw)
+            }); finish(); return
+        }
+        super.onActivityResult(requestCode,resultCode,data)
+    }
+    private data class Fields(val vendor:String="",val invoice:String="",val date:String="",val amount:String="")
+    private fun parse(raw:String):Fields {
+        return try {
+            val j=JSONObject(raw)
+            Fields(first(j,"vendor","vendor_name","seller","supplier","merchant","party"),first(j,"invoice","invoice_no","invoice_number","bill_no","bill_number"),first(j,"date","invoice_date","transaction_date"),first(j,"amount","total","total_amount","invoice_amount","grand_total"))
+        } catch(_:Exception) {
+            val map=raw.split('&','\n',';').mapNotNull { p -> val x=p.split('=',':',limit=2); if(x.size==2) x[0].trim().lowercase() to x[1].trim() else null }.toMap()
+            Fields(map["vendor"]?:map["vendor_name"]?:map["seller"]?:map["supplier"]?:"",map["invoice"]?:map["invoice_no"]?:map["invoice_number"]?:"",map["date"]?:map["invoice_date"]?:map["transaction_date"]?:"",map["amount"]?:map["total"]?:map["total_amount"]?:map["invoice_amount"]?:map["grand_total"]?:"")
+        }
+    }
+    private fun first(j:JSONObject,vararg keys:String):String=keys.firstNotNullOfOrNull { k -> if(j.has(k) && !j.isNull(k)) j.optString(k).takeIf { it.isNotBlank() } else null } ?: ""
+}
+''', encoding='utf-8')
+
+          # Disable Android app backup for financial/identity data.
+          m=Path('app/src/main/AndroidManifest.xml')
+          s=m.read_text(encoding='utf-8')
+          s=s.replace('android:allowBackup="true"','android:allowBackup="false"')
+          m.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Commit repaired source
+        shell: bash
+        run: |
+          set -e
+          if git diff --quiet; then
+            echo "No source repair changes needed"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt app/src/main/java/com/udhaardaar/mvp/QrCreditScannerActivity.kt app/src/main/AndroidManifest.xml
+            git commit -m "Repair V5 compile blockers and privacy defaults"
+            git push origin HEAD:main
+            echo "Source repaired and pushed; build continues on repaired workspace."
+          fi
+
+      - name: Unit tests
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Compile APK
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Acceptance and integrity gates
+        shell: bash
+        run: |
+          set -e
+          test -f app/build/outputs/apk/debug/app-debug.apk
+          test $(stat -c%s app/build/outputs/apk/debug/app-debug.apk) -gt 10000000
+          unzip -t app/build/outputs/apk/debug/app-debug.apk >/dev/null
+          grep -q 'SCAN QR' app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          grep -q 'sourceQr' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
+          grep -q 'markBorrowerConsent' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
+          grep -q 'POST_NOTIFICATIONS' app/src/main/AndroidManifest.xml
+          grep -q 'android:allowBackup="false"' app/src/main/AndroidManifest.xml
+          grep -q 'Rental' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Asset Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Inheritance' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Legal Assistance' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+
+      - name: Upload final V5 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Udhaardaar-V5-Final-QA-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
