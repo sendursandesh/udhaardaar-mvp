@@ -61,6 +61,8 @@ jobs:
           grep -q 'class V5TTMMActivity' app/src/main/java/com/udhaardaar/mvp/V5TTMMActivity.kt
           grep -q 'TTMM_SHARE' app/src/main/java/com/udhaardaar/mvp/V5TTMMActivity.kt
           grep -q 'TTMM_ENTRY_REGISTERED' app/src/main/java/com/udhaardaar/mvp/V5TTMMActivity.kt
+          grep -q 'TTMM_RECOVERY_CONFIRMED' app/src/main/java/com/udhaardaar/mvp/V5TTMMActivity.kt
+          grep -q 'PARTIALLY_SETTLED' app/src/main/java/com/udhaardaar/mvp/V5TTMMActivity.kt
           grep -q 'ttmm_entries' app/src/main/java/com/udhaardaar/mvp/V5TTMMActivity.kt
           grep -q 'V5TTMMActivity' app/src/main/AndroidManifest.xml
           grep -q 'Financial Asset Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
