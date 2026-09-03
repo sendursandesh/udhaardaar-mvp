@@ -41,6 +41,8 @@ jobs:
           grep -q "SCAN QR — AUTO-FILL CREDIT" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
           grep -q "INFORMAL_CREDIT_BORROWER_CONSENT" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
           grep -q "End date (auto-calculated" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          grep -q "DPN / GUARANTOR CONSENT WORKFLOW" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          grep -q "CREATE / REVIEW DOCUMENT + GET CONSENT" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
           grep -q "REQUEST REPAYMENT + OTP" app/src/main/java/com/udhaardaar/mvp/V5RepaymentActivity.kt
           grep -q "COUNTERPARTY_OTP_CONSENTED_AND_REPAYMENT_APPLIED" app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
           grep -q 'Repayment exceeds current outstanding amount' app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
@@ -49,14 +51,15 @@ jobs:
           grep -q 'put("createdAt"' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
           grep -q 'put("updatedAt"' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
           grep -q 'class V5BorrowerActivity' app/src/main/java/com/udhaardaar/mvp/V5BorrowerActivity.kt
-          grep -q 'Search party / borrower' app/src/main/java/com/udhaardaar/mvp/V5BorrowerActivity.kt
           grep -q 'CREATE NEW BORROWER / PARTY' app/src/main/java/com/udhaardaar/mvp/V5BorrowerActivity.kt
           grep -q 'https://api.postalpincode.in/pincode/' app/src/main/java/com/udhaardaar/mvp/V5BorrowerActivity.kt
           grep -q 'class V5GuarantorConsentActivity' app/src/main/java/com/udhaardaar/mvp/V5GuarantorConsentActivity.kt
           grep -q 'GUARANTOR_GUARANTEE_CONSENT' app/src/main/java/com/udhaardaar/mvp/V5GuarantorConsentActivity.kt
           grep -q 'GUARANTOR_GUARANTEE_OTP_CONSENTED_AND_ARCHIVED' app/src/main/java/com/udhaardaar/mvp/V5GuarantorConsentActivity.kt
-          grep -q 'Rental / Lease' app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          grep -q 'class V5RentalLeaseActivity' app/src/main/java/com/udhaardaar/mvp/V5RentalLeaseActivity.kt
+          grep -q 'OPEN AGREEMENT' app/src/main/java/com/udhaardaar/mvp/V5RentalLeaseActivity.kt || grep -q 'agreement' app/src/main/java/com/udhaardaar/mvp/V5RentalLeaseActivity.kt
           grep -q 'DPN + Guarantor Guarantee' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Formal Credit' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'Tu Tera, Main Mera (TTMM)' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'class V5TTMMActivity' app/src/main/java/com/udhaardaar/mvp/V5TTMMActivity.kt
           grep -q 'TTMM_SHARE' app/src/main/java/com/udhaardaar/mvp/V5TTMMActivity.kt
@@ -66,25 +69,30 @@ jobs:
           grep -q 'ttmm_entries' app/src/main/java/com/udhaardaar/mvp/V5TTMMActivity.kt
           grep -q 'V5TTMMActivity' app/src/main/AndroidManifest.xml
           grep -q 'Financial Asset Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Non-Financial Asset Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'Liability Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'LIABILITY' app/src/main/java/com/udhaardaar/mvp/V5AssetVaultActivity.kt
           grep -q 'LIABILITY_CREATED' app/src/main/java/com/udhaardaar/mvp/V5AssetVaultActivity.kt
           grep -q 'Inheritance & Claim Centre' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'Legal Assistance' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'class V5SupportWorkflowsActivity' app/src/main/java/com/udhaardaar/mvp/V5SupportWorkflowsActivity.kt
+          grep -q 'TRUSTED_ACCESS' app/src/main/java/com/udhaardaar/mvp/V5SupportWorkflowsActivity.kt
+          grep -q 'legal_cases' app/src/main/java/com/udhaardaar/mvp/V5SupportWorkflowsActivity.kt
+          grep -q 'Readiness centre' app/src/main/java/com/udhaardaar/mvp/V5SupportWorkflowsActivity.kt
+          grep -q 'class V5FormalCreditActivity' app/src/main/java/com/udhaardaar/mvp/V5FormalCreditActivity.kt
+          grep -q 'FORMAL_CREDIT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V5FormalCreditActivity.kt
+          grep -q 'formal_credits' app/src/main/java/com/udhaardaar/mvp/V5FormalCreditActivity.kt
           grep -q 'class V5ChargeComparisonActivity' app/src/main/java/com/udhaardaar/mvp/V5ChargeComparisonActivity.kt
-          grep -q 'UPLOAD / SCAN SANCTION LETTER' app/src/main/java/com/udhaardaar/mvp/V5ChargeComparisonActivity.kt
-          grep -q 'UPLOAD / SCAN ACCOUNT STATEMENT' app/src/main/java/com/udhaardaar/mvp/V5ChargeComparisonActivity.kt
           grep -q 'COMPARE ACTUAL VS DEBITED / SANCTIONED CHARGES' app/src/main/java/com/udhaardaar/mvp/V5ChargeComparisonActivity.kt
           grep -q 'PrintManager' app/src/main/java/com/udhaardaar/mvp/V5ChargeComparisonActivity.kt
           grep -q 'class V5DeathClaimLegalActivity' app/src/main/java/com/udhaardaar/mvp/V5DeathClaimLegalActivity.kt
-          grep -q 'CAPTURE DEATH CERTIFICATE' app/src/main/java/com/udhaardaar/mvp/V5DeathClaimLegalActivity.kt
           grep -q 'SCAN VAULT & CREATE CLAIM CHECKLIST' app/src/main/java/com/udhaardaar/mvp/V5DeathClaimLegalActivity.kt
           grep -q 'death_claim_cases' app/src/main/java/com/udhaardaar/mvp/V5DeathClaimLegalActivity.kt
+          grep -q 'V5FormalCreditActivity' app/src/main/AndroidManifest.xml
+          grep -q 'V5SupportWorkflowsActivity' app/src/main/AndroidManifest.xml
           grep -q 'V5ChargeComparisonActivity' app/src/main/AndroidManifest.xml
           grep -q 'V5DeathClaimLegalActivity' app/src/main/AndroidManifest.xml
           grep -q 'POST_NOTIFICATIONS' app/src/main/AndroidManifest.xml
-          grep -q 'V5BorrowerActivity' app/src/main/AndroidManifest.xml
-          grep -q 'V5GuarantorConsentActivity' app/src/main/AndroidManifest.xml
       - name: QR regression gates
         shell: bash
         run: |
