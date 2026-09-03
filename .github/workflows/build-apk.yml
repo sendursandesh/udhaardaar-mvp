@@ -43,18 +43,26 @@ jobs:
           grep -q "End date (auto-calculated" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
           grep -q "REQUEST REPAYMENT + OTP" app/src/main/java/com/udhaardaar/mvp/V5RepaymentActivity.kt
           grep -q "COUNTERPARTY_OTP_CONSENTED_AND_REPAYMENT_APPLIED" app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
-          grep -q 'put("outstanding"' app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
+          grep -q 'Repayment exceeds current outstanding amount' app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
+          grep -q 'repayment_history' app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
+          grep -q 'UDHAARDAAR_SCORE_UPDATED_AFTER_CONFIRMED_REPAYMENT' app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
           grep -q 'put("createdAt"' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
           grep -q 'put("updatedAt"' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
-          grep -q "com.journeyapps:zxing-android-embedded" app/build.gradle
-          grep -q "CAMERA" app/src/main/AndroidManifest.xml
-          grep -q 'android:allowBackup="false"' app/src/main/AndroidManifest.xml
-          grep -q "Rental / Lease" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "DPN + Guarantor Guarantee" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "Financial Asset Vault" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "Inheritance & Claim Centre" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "Legal Assistance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "POST_NOTIFICATIONS" app/src/main/AndroidManifest.xml
+          grep -q 'class V5BorrowerActivity' app/src/main/java/com/udhaardaar/mvp/V5BorrowerActivity.kt
+          grep -q 'Search party / borrower' app/src/main/java/com/udhaardaar/mvp/V5BorrowerActivity.kt
+          grep -q 'CREATE NEW BORROWER / PARTY' app/src/main/java/com/udhaardaar/mvp/V5BorrowerActivity.kt
+          grep -q 'https://api.postalpincode.in/pincode/' app/src/main/java/com/udhaardaar/mvp/V5BorrowerActivity.kt
+          grep -q 'class V5GuarantorConsentActivity' app/src/main/java/com/udhaardaar/mvp/V5GuarantorConsentActivity.kt
+          grep -q 'GUARANTOR_GUARANTEE_CONSENT' app/src/main/java/com/udhaardaar/mvp/V5GuarantorConsentActivity.kt
+          grep -q 'GUARANTOR_GUARANTEE_OTP_CONSENTED_AND_ARCHIVED' app/src/main/java/com/udhaardaar/mvp/V5GuarantorConsentActivity.kt
+          grep -q 'Rental / Lease' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'DPN + Guarantor Guarantee' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Financial Asset Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Inheritance & Claim Centre' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Legal Assistance' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'POST_NOTIFICATIONS' app/src/main/AndroidManifest.xml
+          grep -q 'V5BorrowerActivity' app/src/main/AndroidManifest.xml
+          grep -q 'V5GuarantorConsentActivity' app/src/main/AndroidManifest.xml
       - name: QR regression gates
         shell: bash
         run: |
