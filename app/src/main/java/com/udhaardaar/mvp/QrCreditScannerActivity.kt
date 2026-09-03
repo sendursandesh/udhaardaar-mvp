@@ -3,22 +3,11 @@ package com.udhaardaar.mvp
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanOptions
+import com.google.zxing.integration.android.IntentIntegrator
 import org.json.JSONObject
 
 /** Scans a QR payload and returns normalized credit fields to the caller. */
 class QrCreditScannerActivity : AppCompatActivity() {
-    private val scanner = registerForActivityResult(ScanContract()) { result ->
-        if (result.contents.isNullOrBlank()) { setResult(RESULT_CANCELED); finish(); return@registerForActivityResult }
-        val data = parse(result.contents)
-        setResult(RESULT_OK, Intent().apply {
-            putExtra("vendor", data.vendor)
-            putExtra("invoice", data.invoice)
-            putExtra("date", data.date)
-            putExtra("amount", data.amount)
-            putExtra("raw", result.contents)
-        })
         finish()
     }
 
