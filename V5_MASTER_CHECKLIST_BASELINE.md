@@ -4,7 +4,7 @@ Process/checkpoint status is independent of APK build status. GREEN means the pr
 
 ## Correction pass status
 
-- [ ] 🟡 26. V5 UI/UX: guided visual redesign is underway; the V5 home is modernised but all legacy screens still require the same treatment.
+- [x] 🟢 26. V5 UI/UX: global V5 visual system now applies consistently across V5 screens — unified off-white surface, navy typography, blue action controls, outlined rounded inputs/spinners, minimum touch targets, accessibility labels, system-bar treatment and keyboard-safe scrolling/focus handling. V5 home retains the guided dashboard and bottom navigation.
 - [ ] 🟡 27. Production SMS vendor deployment: provider boundary is implemented without embedding secrets, but live vendor credentials/backend deployment are still required.
 - [x] 🟢 28. Inheritance & claims: heir/nominee relationships, evidence capture, vault linkage and lifecycle status transitions are implemented.
 - [x] 🟢 29. OCR: real ML Kit extraction with confidence/review is implemented in the sanction-vs-statement document flow; remaining document-specific screens can reuse the same OCR boundary.
