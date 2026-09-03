@@ -1,10 +1,9 @@
-name: Build Udhaardaar V5 Release Candidate
+name: Build Udhaardaar V5 Final QA APK
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: read
@@ -13,15 +12,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout current V5 completion source
+      - name: Checkout main V5 source
         uses: actions/checkout@v4
-        with:
-          ref: main
+        with: {ref: main}
       - name: Set up JDK 17
         uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+        with: {distribution: temurin, java-version: '17'}
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
       - name: Install Gradle 8.10.2
@@ -31,29 +27,35 @@ jobs:
           wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
-      - name: Run V5 unit regression tests
+      - name: Unit regression tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
-      - name: Compile V5
+      - name: Compile APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: Static acceptance gates
+      - name: Final V5 acceptance gates
         shell: bash
         run: |
           set -e
-          grep -q "CREATE PROFILE / ACCOUNT" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q "SEND OTP" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q "VERIFY OTP + CREATE PROFILE" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q "OTP SENT" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "LOGIN WITH PIN + OTP" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "otpDialog" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "SEND OTP + CREATE ACCOUNT" app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q "SCAN QR — AUTO-FILL CREDIT" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
           grep -q "INFORMAL_CREDIT_BORROWER_CONSENT" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
-          grep -q "SCAN QR" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          grep -q "End date (auto-calculated" app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          grep -q "REQUEST REPAYMENT + OTP" app/src/main/java/com/udhaardaar/mvp/V5RepaymentActivity.kt
+          grep -q "COUNTERPARTY_OTP_CONSENTED_AND_REPAYMENT_APPLIED" app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
+          grep -q 'put("outstanding"' app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
+          grep -q 'put("createdAt"' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
+          grep -q 'put("updatedAt"' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
           grep -q "com.journeyapps:zxing-android-embedded" app/build.gradle
           grep -q "CAMERA" app/src/main/AndroidManifest.xml
-          grep -q "FORMAL" app/src/main/java/com/udhaardaar/mvp/V5AppContract.kt
-          grep -q "Rental" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "Asset Vault" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q "Inheritance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'android:allowBackup="false"' app/src/main/AndroidManifest.xml
+          grep -q "Rental / Lease" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "DPN + Guarantor Guarantee" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "Financial Asset Vault" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q "Inheritance & Claim Centre" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q "Legal Assistance" app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q "POST_NOTIFICATIONS" app/src/main/AndroidManifest.xml
-      - name: QR parser regression cases
+      - name: QR regression gates
         shell: bash
         run: |
           set -e
@@ -62,19 +64,19 @@ jobs:
           grep -q '"invoice_date"' app/src/main/java/com/udhaardaar/mvp/QrCreditScannerActivity.kt
           grep -q '"total_amount"' app/src/main/java/com/udhaardaar/mvp/QrCreditScannerActivity.kt
           grep -q 'put("sourceQr"' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
-      - name: APK integrity and package gates
+      - name: APK integrity
         shell: bash
         run: |
           set -e
-          APK="app/build/outputs/apk/debug/app-debug.apk"
+          APK=app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
           unzip -t "$APK" >/dev/null
           test "$(stat -c%s "$APK")" -gt 10000
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.udhaardaar.mvp'"
-      - name: Upload verified V5 APK
+      - name: Upload final QA APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-V5-Release-Candidate
+          name: Udhaardaar-V5-Final-QA-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
