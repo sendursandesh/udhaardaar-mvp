@@ -28,15 +28,8 @@ class V5AssetVaultActivity : androidx.appcompat.app.AppCompatActivity() {
     private lateinit var docs: EditText
     private lateinit var notes: EditText
 
-    private fun e(h: String) = EditText(this).apply {
-        hint = h
-        setSingleLine(true)
-        setPadding(14, 9, 14, 9)
-    }
-
-    private fun add(r: LinearLayout, v: android.view.View, h: Int = 55) {
-        r.addView(v, LinearLayout.LayoutParams(-1, h).apply { setMargins(0, 4, 0, 4) })
-    }
+    private fun e(h: String) = EditText(this).apply { hint = h; setSingleLine(true); setPadding(14, 9, 14, 9) }
+    private fun add(r: LinearLayout, v: android.view.View, h: Int = 55) { r.addView(v, LinearLayout.LayoutParams(-1, h).apply { setMargins(0, 4, 0, 4) }) }
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
@@ -45,47 +38,11 @@ class V5AssetVaultActivity : androidx.appcompat.app.AppCompatActivity() {
     }
 
     private fun show() {
-        val r = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(20, 16, 20, 28)
-        }
-        add(r, TextView(this).apply {
-            text = "UDHAARDAAR V5 • Asset & Liability Vault"
-            textSize = 23f
-        }, 62)
-        add(r, TextView(this).apply {
-            text = "Maintain financial assets, non-financial assets and liabilities in one structured vault."
-            textSize = 13f
-        }, 58)
+        val r = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(20, 16, 20, 28) }
+        add(r, TextView(this).apply { text = "UDHAARDAAR V5 • Asset & Liability Vault"; textSize = 23f }, 62)
+        add(r, TextView(this).apply { text = "Maintain financial assets, non-financial assets and liabilities in one structured vault."; textSize = 13f }, 58)
 
-        category = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@V5AssetVaultActivity,
-                android.R.layout.simple_spinner_dropdown_item,
-                arrayOf("FINANCIAL ASSET", "NON-FINANCIAL ASSET", "LIABILITY")
-            )
-        }
-        add(r, category)
-
-        subtype = Spinner(this)
-        add(r, subtype)
-        category.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
-            override fun onItemSelected(p: android.widget.AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) {
-                val a = when (pos) {
-                    0 -> arrayOf("Bank Account", "Fixed Deposit", "Recurring Deposit", "PPF", "EPF", "NPS", "Mutual Fund", "Shares / Stocks", "Bonds / Debentures", "Insurance / Policy", "Pension / Annuity", "Gold / Financial Gold", "Receivable / Loan Given", "Other Financial Asset")
-                    1 -> arrayOf("Land", "Residential Property", "Commercial Property", "Agricultural Property", "Vehicle", "Jewellery / Precious Items", "Business Interest", "Machinery / Equipment", "Furniture / Household Valuable", "Digital / Intellectual Property", "Other Non-Financial Asset")
-                    else -> arrayOf("Home Loan / Mortgage", "Personal Loan", "Vehicle Loan", "Business Loan", "Credit Card", "Education Loan", "Tax / Government Dues", "Rent / Lease Payable", "Supplier / Trade Payable", "Guarantee / Contingent Liability", "Other Liability")
-                }
-                subtype.adapter = ArrayAdapter(this@V5AssetVaultActivity, android.R.layout.simple_spinner_dropdown_item, a)
-                val isLiability = pos == 2
-                value.hint = if (isLiability) "Current outstanding balance ₹ *" else "Current / estimated value ₹ *"
-                liability.hint = if (isLiability) "Original / secured amount ₹ (if applicable)" else "Outstanding loan / liability ₹ (if any)"
-                encumbrance.isEnabled = !isLiability
-                ownership.isEnabled = true
-            }
-        }
-
+        // Create all dependent controls before attaching the category listener.
         owner = e("Owner / obligor profile ID *")
         title = e("Asset / liability title *")
         value = e("Current / estimated value ₹ *")
@@ -94,38 +51,42 @@ class V5AssetVaultActivity : androidx.appcompat.app.AppCompatActivity() {
         acquisition = e("Acquisition / opening / sanction date")
         maturity = e("Maturity / expiry / closure date")
         location = e("Asset location / branch / property address")
-        ownership = Spinner(this).apply {
-            adapter = ArrayAdapter(this@V5AssetVaultActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("Self", "Joint", "Family / HUF", "Business", "Other"))
-        }
-        encumbrance = Spinner(this).apply {
-            adapter = ArrayAdapter(this@V5AssetVaultActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("None", "Loan / mortgage", "Lien / pledge", "Lease / hypothecation", "Disputed", "Other"))
-        }
+        ownership = Spinner(this).apply { adapter = ArrayAdapter(this@V5AssetVaultActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("Self", "Joint", "Family / HUF", "Business", "Other")) }
+        encumbrance = Spinner(this).apply { adapter = ArrayAdapter(this@V5AssetVaultActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("None", "Loan / mortgage", "Lien / pledge", "Lease / hypothecation", "Disputed", "Other")) }
         liability = e("Outstanding loan / liability ₹ (if any)")
         policy = e("Policy / certificate / registration number")
         nominee = e("Nominee / beneficiary profile ID")
         docs = e("Proof document IDs (comma separated)")
         notes = e("Notes / special terms / maturity instructions")
 
+        category = Spinner(this).apply {
+            adapter = ArrayAdapter(this@V5AssetVaultActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("FINANCIAL ASSET", "NON-FINANCIAL ASSET", "LIABILITY"))
+        }
+        add(r, category)
+        subtype = Spinner(this)
+        add(r, subtype)
+        category.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
+            override fun onItemSelected(p: android.widget.AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) {
+                val choices = when (pos) {
+                    0 -> arrayOf("Bank Account", "Fixed Deposit", "Recurring Deposit", "PPF", "EPF", "NPS", "Mutual Fund", "Shares / Stocks", "Bonds / Debentures", "Insurance / Policy", "Pension / Annuity", "Gold / Financial Gold", "Receivable / Loan Given", "Other Financial Asset")
+                    1 -> arrayOf("Land", "Residential Property", "Commercial Property", "Agricultural Property", "Vehicle", "Jewellery / Precious Items", "Business Interest", "Machinery / Equipment", "Furniture / Household Valuable", "Digital / Intellectual Property", "Other Non-Financial Asset")
+                    else -> arrayOf("Home Loan / Mortgage", "Personal Loan", "Vehicle Loan", "Business Loan", "Credit Card", "Education Loan", "Tax / Government Dues", "Rent / Lease Payable", "Supplier / Trade Payable", "Guarantee / Contingent Liability", "Other Liability")
+                }
+                subtype.adapter = ArrayAdapter(this@V5AssetVaultActivity, android.R.layout.simple_spinner_dropdown_item, choices)
+                val isLiability = pos == 2
+                value.hint = if (isLiability) "Current outstanding balance ₹ *" else "Current / estimated value ₹ *"
+                liability.hint = if (isLiability) "Original / secured amount ₹ (if applicable)" else "Outstanding loan / liability ₹ (if any)"
+                encumbrance.isEnabled = !isLiability
+            }
+        }
+
         listOf(owner, title, value, institution, reference, acquisition, maturity, location, ownership, encumbrance, liability, policy, nominee, docs, notes).forEach { add(r, it) }
         acquisition.setText(today())
-
-        add(r, Button(this).apply {
-            text = "SAVE RECORD"
-            setOnClickListener { save() }
-        }, 58)
-        add(r, Button(this).apply {
-            text = "VIEW SAVED ASSETS & LIABILITIES"
-            setOnClickListener { list() }
-        }, 58)
-        add(r, Button(this).apply {
-            text = "BACK"
-            setOnClickListener { finish() }
-        }, 50)
-        setContentView(ScrollView(this).apply {
-            isFillViewport = true
-            isSmoothScrollingEnabled = true
-            addView(r)
-        })
+        add(r, Button(this).apply { text = "SAVE RECORD"; setOnClickListener { save() } }, 58)
+        add(r, Button(this).apply { text = "VIEW SAVED ASSETS & LIABILITIES"; setOnClickListener { list() } }, 58)
+        add(r, Button(this).apply { text = "BACK"; setOnClickListener { finish() } }, 50)
+        setContentView(ScrollView(this).apply { isFillViewport = true; isSmoothScrollingEnabled = true; addView(r) })
     }
 
     private fun today() = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
@@ -135,37 +96,13 @@ class V5AssetVaultActivity : androidx.appcompat.app.AppCompatActivity() {
         val t = title.text.toString().trim()
         val v = value.text.toString().trim().toDoubleOrNull()
         if (o.isEmpty() || t.isEmpty() || v == null || v < 0) {
-            Toast.makeText(this, "Owner/obligor, title and valid current value/balance are required", Toast.LENGTH_LONG).show()
-            return
+            Toast.makeText(this, "Owner/obligor, title and valid current value/balance are required", Toast.LENGTH_LONG).show(); return
         }
         val isLiability = category.selectedItemPosition == 2
         val id = "${if (isLiability) "LIA" else "AST"}-${System.currentTimeMillis()}"
         val proof = docs.text.toString().split(',').map { it.trim() }.filter { it.isNotEmpty() }
         val outstanding = if (isLiability) v else (liability.text.toString().toDoubleOrNull() ?: 0.0)
-        val description = if (isLiability) "Liability record" else "Asset record"
-        repo.saveAsset(
-            V5Asset(
-                id = id,
-                ownerProfileId = o,
-                category = category.selectedItem.toString(),
-                title = t,
-                description = description,
-                estimatedValue = v,
-                proofDocumentIds = proof,
-                nomineeProfileId = nominee.text.toString().ifBlank { null },
-                assetSubtype = subtype.selectedItem?.toString() ?: "",
-                institutionOrCounterparty = institution.text.toString(),
-                accountOrReference = reference.text.toString(),
-                acquisitionDate = acquisition.text.toString(),
-                maturityDate = maturity.text.toString(),
-                location = location.text.toString(),
-                ownership = ownership.selectedItem.toString(),
-                encumbrance = if (isLiability) "LIABILITY" else encumbrance.selectedItem.toString(),
-                outstandingLiability = outstanding,
-                policyOrCertificate = policy.text.toString(),
-                notes = notes.text.toString()
-            )
-        )
+        repo.saveAsset(V5Asset(id, o, category.selectedItem.toString(), t, if (isLiability) "Liability record" else "Asset record", v, proof, nominee.text.toString().ifBlank { null }, subtype.selectedItem?.toString() ?: "", institution.text.toString(), reference.text.toString(), acquisition.text.toString(), maturity.text.toString(), location.text.toString(), ownership.selectedItem.toString(), if (isLiability) "LIABILITY" else encumbrance.selectedItem.toString(), outstanding, policy.text.toString(), notes.text.toString()))
         repo.appendAudit(id, if (isLiability) "LIABILITY_CREATED" else "ASSET_CREATED", o, "category=${category.selectedItem}; subtype=${subtype.selectedItem}; amount=$v; timestamp=${System.currentTimeMillis()}")
         Toast.makeText(this, if (isLiability) "Liability saved with audit timestamp" else "Asset saved with audit timestamp", Toast.LENGTH_LONG).show()
     }
