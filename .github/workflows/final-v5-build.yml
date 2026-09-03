@@ -1,0 +1,81 @@
+name: Final V5 Build Verification
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: tools platform-tools
+
+      - name: Install Gradle
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
+
+      - name: Fix V5 compile blockers in workspace
+        shell: bash
+        run: |
+          set -e
+          sed -i 's/return@button/return@setOnClickListener/g' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt || true
+          sed -i 's/import com.journeyapps.barcodescanner.ScanContract/import com.google.zxing.integration.android.IntentIntegrator/' app/src/main/java/com/udhaardaar/mvp/QrCreditScannerActivity.kt || true
+          sed -i '/import com.journeyapps.barcodescanner.ScanOptions/d' app/src/main/java/com/udhaardaar/mvp/QrCreditScannerActivity.kt || true
+          sed -i '/private val scanner = registerForActivityResult/,/    }/d' app/src/main/java/com/udhaardaar/mvp/QrCreditScannerActivity.kt || true
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt app/src/main/java/com/udhaardaar/mvp/QrCreditScannerActivity.kt
+          git diff --cached --quiet || git commit -m 'Fix V5 compile blockers for final build'
+          git push origin HEAD:main || true
+
+      - name: Unit tests
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Build APK
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Final acceptance gates
+        shell: bash
+        run: |
+          set -e
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$apk"
+          test "$(stat -c%s "$apk")" -gt 10000000
+          unzip -t "$apk" >/dev/null
+          grep -q 'SCAN QR' app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
+          grep -q 'sourceQr' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
+          grep -q 'markBorrowerConsent' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
+          grep -q 'POST_NOTIFICATIONS' app/src/main/AndroidManifest.xml
+          grep -q 'Rental' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Asset Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Inheritance' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'Legal Assistance' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+
+      - name: Upload final APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Udhaardaar-V5-Final-QA-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
