@@ -30,6 +30,15 @@ class V5WorkflowRepository(context: Context) {
         put("requiredDocuments", c.requiredDocumentIds.joinToString(","))
     })
 
+    fun saveCredit(id:String, borrower:String, type:String, direction:String, principal:Double, roi:Double, method:String, start:String, end:String, vendor:String="", invoice:String="", sourceQr:String="", consentId:String="", timestamp:Long=System.currentTimeMillis()) {
+        store.replace("credits", JSONObject().apply {
+            put("id",id); put("borrower",borrower); put("type",type); put("direction",direction)
+            put("principal",principal); put("roi",roi); put("method",method); put("start",start); put("end",end)
+            put("vendor",vendor); put("invoice",invoice); put("sourceQr",sourceQr); put("consentId",consentId)
+            put("status","ACTIVE"); put("createdAt",timestamp); put("updatedAt",timestamp)
+        })
+    }
+
     fun markBorrowerConsent(creditId: String, consentId: String): Boolean {
         if (creditId.isBlank() || consentId.isBlank()) return false
         val credit = store.find("credits", creditId) ?: return false
