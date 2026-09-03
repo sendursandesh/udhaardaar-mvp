@@ -63,6 +63,17 @@ jobs:
           grep -q 'LIABILITY_CREATED' app/src/main/java/com/udhaardaar/mvp/V5AssetVaultActivity.kt
           grep -q 'Inheritance & Claim Centre' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
           grep -q 'Legal Assistance' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
+          grep -q 'class V5ChargeComparisonActivity' app/src/main/java/com/udhaardaar/mvp/V5ChargeComparisonActivity.kt
+          grep -q 'UPLOAD / SCAN SANCTION LETTER' app/src/main/java/com/udhaardaar/mvp/V5ChargeComparisonActivity.kt
+          grep -q 'UPLOAD / SCAN ACCOUNT STATEMENT' app/src/main/java/com/udhaardaar/mvp/V5ChargeComparisonActivity.kt
+          grep -q 'COMPARE ACTUAL VS DEBITED / SANCTIONED CHARGES' app/src/main/java/com/udhaardaar/mvp/V5ChargeComparisonActivity.kt
+          grep -q 'PrintManager' app/src/main/java/com/udhaardaar/mvp/V5ChargeComparisonActivity.kt
+          grep -q 'class V5DeathClaimLegalActivity' app/src/main/java/com/udhaardaar/mvp/V5DeathClaimLegalActivity.kt
+          grep -q 'CAPTURE DEATH CERTIFICATE' app/src/main/java/com/udhaardaar/mvp/V5DeathClaimLegalActivity.kt
+          grep -q 'SCAN VAULT & CREATE CLAIM CHECKLIST' app/src/main/java/com/udhaardaar/mvp/V5DeathClaimLegalActivity.kt
+          grep -q 'death_claim_cases' app/src/main/java/com/udhaardaar/mvp/V5DeathClaimLegalActivity.kt
+          grep -q 'V5ChargeComparisonActivity' app/src/main/AndroidManifest.xml
+          grep -q 'V5DeathClaimLegalActivity' app/src/main/AndroidManifest.xml
           grep -q 'POST_NOTIFICATIONS' app/src/main/AndroidManifest.xml
           grep -q 'V5BorrowerActivity' app/src/main/AndroidManifest.xml
           grep -q 'V5GuarantorConsentActivity' app/src/main/AndroidManifest.xml
