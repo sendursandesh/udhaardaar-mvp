@@ -97,6 +97,8 @@ class UdhaardaarApp : Application() {
                 v.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                 v.setTextColor(Color.WHITE)
                 v.setTextSize(14f)
+                v.gravity = android.view.Gravity.CENTER
+                v.includeFontPadding = false
                 v.minHeight = dp(52)
                 v.minWidth = dp(88)
                 v.setPadding(dp(14), dp(8), dp(14), dp(8))
@@ -112,7 +114,7 @@ class UdhaardaarApp : Application() {
             is TextView -> {
                 val bold = v.typeface?.isBold == true
                 v.typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
-                v.setTextColor(if (v.currentTextColor == Color.WHITE) Color.WHITE else navy)
+                v.includeFontPadding = false
                 if (v.textSize < 12f) v.setTextSize(12f)
             }
             is ScrollView -> v.setBackgroundColor(bg)
@@ -121,9 +123,7 @@ class UdhaardaarApp : Application() {
     }
 
     private fun rounded(fill: Int, stroke: Int, r: Int) = GradientDrawable().apply {
-        setColor(fill)
-        setStroke(dp(1), stroke)
-        cornerRadius = dp(r).toFloat()
+        setColor(fill); setStroke(dp(1), stroke); cornerRadius = dp(r).toFloat()
     }
 
     private fun applyMobileLimits(v: View) {
