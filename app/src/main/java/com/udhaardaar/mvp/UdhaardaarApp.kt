@@ -106,7 +106,6 @@ class UdhaardaarApp : Application() {
                 if (v.contentDescription.isNullOrBlank()) v.contentDescription = v.text.toString()
             }
             is Spinner -> {
-                v.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
                 v.minimumHeight = dp(54)
                 v.background = rounded(Color.WHITE, border, 12)
                 v.setPadding(dp(12), 0, dp(12), 0)
