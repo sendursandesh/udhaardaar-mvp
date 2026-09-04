@@ -18,16 +18,16 @@
         <activity android:name=".V5BorrowerActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V5GuarantorConsentActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V4HomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".V323Activity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".V32Activity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".AdvancedLauncherActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".DashboardV3Activity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".VerificationDocumentsActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".RegisterCreditV3Activity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".QrCreditScannerActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".MainActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".AddUdhaarActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".RecordsActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".V323Activity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".V32Activity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".AdvancedLauncherActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".DashboardV3Activity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".VerificationDocumentsActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".RegisterCreditV3Activity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".QrCreditScannerActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".MainActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".AddUdhaarActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".RecordsActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <receiver android:name=".ReminderReceiver" android:exported="false" />
         <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>
     </application>
