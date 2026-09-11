@@ -7,13 +7,14 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.method.DigitsKeyListener
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Button
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
@@ -25,6 +26,7 @@ class UdhaardaarApp : Application() {
             override fun onActivityResumed(activity: Activity) {
                 activity.window.decorView.post {
                     applyMobileLimits(activity.window.decorView)
+                    installWatermark(activity)
                     normalizeV5Home(activity)
                     installKeyboardAwareScrolling(activity.window.decorView)
                 }
@@ -54,20 +56,35 @@ class UdhaardaarApp : Application() {
         prefs.edit().putBoolean("legacy_migrated", true).apply()
     }
 
+    private fun installWatermark(activity: Activity) {
+        val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
+        if (content.findViewWithTag<View>("udhaardaar_watermark") != null) return
+        val logo = ImageView(activity).apply {
+            tag = "udhaardaar_watermark"
+            setImageResource(com.udhaardaar.mvp.R.drawable.udhaardaar_logo)
+            alpha = 0.075f
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            isClickable = false
+            isFocusable = false
+        }
+        content.addView(logo, ViewGroup.LayoutParams(dp(170), dp(170)))
+        logo.post {
+            logo.x = ((content.width - logo.width) / 2f).coerceAtLeast(0f)
+            logo.y = ((content.height - logo.height) / 2f).coerceAtLeast(0f)
+        }
+        content.post { logo.bringToFront() }
+    }
+
     private fun normalizeV5Home(activity: Activity) {
         if (activity !is V5HomeActivity) return
         val root = activity.window.decorView.findViewById<View>(android.R.id.content) ?: return
-
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            // Store the original padding using the normal View tag. Integer-keyed
-            // tags require an actual generated resource ID and caused a launch crash.
             val base = (v.tag as? Int) ?: v.paddingTop.also { v.tag = it }
             v.setPadding(v.paddingLeft, base + bars.top, v.paddingRight, v.paddingBottom)
             insets
         }
         ViewCompat.requestApplyInsets(root)
-
         val scroll = root.findFirstScrollView() ?: return
         val container = scroll.getChildAt(0) as? ViewGroup ?: return
         for (i in 0 until container.childCount) {
@@ -75,27 +92,22 @@ class UdhaardaarApp : Application() {
             val lp = child.layoutParams
             if (child is LinearLayout) {
                 lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                child.minimumHeight = dp(76)
-                child.setPadding(dp(12), dp(8), dp(10), dp(8))
+                child.minimumHeight = dp(64)
+                child.setPadding(dp(10), dp(6), dp(10), dp(6))
                 for (j in 0 until child.childCount) {
                     val inner = child.getChildAt(j)
                     if (inner is TextView) {
                         inner.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
                         inner.layoutParams = inner.layoutParams.apply { height = ViewGroup.LayoutParams.WRAP_CONTENT }
-                        inner.setPadding(0, dp(2), 0, dp(2))
+                        inner.setPadding(0, dp(1), 0, dp(1))
                         inner.includeFontPadding = true
                     }
                 }
-            } else if (child is Button) {
-                child.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
-                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                child.minimumHeight = dp(54)
-                child.setPadding(dp(10), dp(6), dp(10), dp(6))
             } else if (child is TextView) {
                 child.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
                 lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                child.minimumHeight = dp(28)
-                child.setPadding(0, dp(3), 0, dp(3))
+                child.minimumHeight = dp(24)
+                child.setPadding(0, dp(2), 0, dp(2))
             }
             child.layoutParams = lp
         }
@@ -104,11 +116,9 @@ class UdhaardaarApp : Application() {
 
     private fun View.findFirstScrollView(): ScrollView? {
         if (this is ScrollView) return this
-        if (this is ViewGroup) {
-            for (i in 0 until childCount) {
-                val found = getChildAt(i).findFirstScrollView()
-                if (found != null) return found
-            }
+        if (this is ViewGroup) for (i in 0 until childCount) {
+            val found = getChildAt(i).findFirstScrollView()
+            if (found != null) return found
         }
         return null
     }
