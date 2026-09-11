@@ -14,4 +14,5 @@ class V5LocalStore(context: Context) {
     fun find(key:String,id:String)=all(key).firstOrNull{it.optString("id")==id}
     fun replace(key:String,value:JSONObject){val a=read(key);for(i in 0 until a.length())if(a.optJSONObject(i)?.optString("id")==value.optString("id")){a.put(i,value);write(key,a);return};a.put(value);write(key,a)}
     fun remove(key:String,id:String){val a=read(key);for(i in a.length()-1 downTo 0)if(a.optJSONObject(i)?.optString("id")==id)a.remove(i);write(key,a)}
+    fun removeAllForCredit(key:String,creditId:String){val a=read(key);for(i in a.length()-1 downTo 0)if(a.optJSONObject(i)?.optString("creditId")==creditId)a.remove(i);write(key,a)}
 }
