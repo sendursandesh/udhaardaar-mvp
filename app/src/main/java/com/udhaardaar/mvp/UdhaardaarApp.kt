@@ -3,7 +3,9 @@ package com.udhaardaar.mvp
 import android.app.Activity
 import android.app.Application
 import android.graphics.Rect
+import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.method.DigitsKeyListener
@@ -15,6 +17,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Button
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
@@ -86,32 +89,91 @@ class UdhaardaarApp : Application() {
         }
         ViewCompat.requestApplyInsets(root)
         val scroll = root.findFirstScrollView() ?: return
-        val container = scroll.getChildAt(0) as? ViewGroup ?: return
-        for (i in 0 until container.childCount) {
-            val child = container.getChildAt(i)
-            val lp = child.layoutParams
-            if (child is LinearLayout) {
-                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                child.minimumHeight = dp(64)
-                child.setPadding(dp(10), dp(6), dp(10), dp(6))
-                for (j in 0 until child.childCount) {
-                    val inner = child.getChildAt(j)
-                    if (inner is TextView) {
-                        inner.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
-                        inner.layoutParams = inner.layoutParams.apply { height = ViewGroup.LayoutParams.WRAP_CONTENT }
-                        inner.setPadding(0, dp(1), 0, dp(1))
-                        inner.includeFontPadding = true
-                    }
-                }
-            } else if (child is TextView) {
-                child.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
-                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                child.minimumHeight = dp(24)
-                child.setPadding(0, dp(2), 0, dp(2))
+        val container = scroll.getChildAt(0) as? LinearLayout ?: return
+        if (container.getTag(R.id.v5_grid_normalized) == true) return
+
+        val original = (0 until container.childCount).map { container.getChildAt(it) }
+        container.removeAllViews()
+        var i = 0
+        while (i < original.size) {
+            val child = original[i]
+            if (!isHomeAction(child)) {
+                styleHomeNonAction(child)
+                container.addView(child)
+                i++
+                continue
             }
-            child.layoutParams = lp
+            val row = LinearLayout(activity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(3), 0, dp(3))
+            }
+            var count = 0
+            while (i < original.size && isHomeAction(original[i]) && count < 2) {
+                val action = original[i]
+                styleHomeAction(action)
+                val lp = LinearLayout.LayoutParams(0, dp(82), 1f)
+                lp.setMargins(if (count == 0) 0 else dp(5), dp(3), if (count == 1) 0 else dp(5), dp(3))
+                action.layoutParams = lp
+                row.addView(action)
+                count++
+                i++
+            }
+            if (count == 1) {
+                val spacer = Space(activity)
+                row.addView(spacer, LinearLayout.LayoutParams(0, dp(82), 1f).apply { setMargins(dp(5), dp(3), 0, dp(3)) })
+            }
+            container.addView(row)
         }
+        container.setTag(R.id.v5_grid_normalized, true)
         container.requestLayout()
+    }
+
+    private fun isHomeAction(v: View): Boolean =
+        v is Button || (v is LinearLayout && v.isClickable)
+
+    private fun styleHomeNonAction(v: View) {
+        if (v is TextView) {
+            v.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            v.setTextColor(if (v.text.toString().contains("UDHAARDAAR", true)) Color.rgb(0,145,135) else Color.rgb(24,58,92))
+            v.setPadding(0, dp(7), 0, dp(4))
+        } else if (v is LinearLayout) {
+            v.minimumHeight = dp(76)
+        }
+    }
+
+    private fun styleHomeAction(v: View) {
+        val bg = GradientDrawable().apply {
+            setColor(Color.WHITE)
+            setStroke(dp(1), Color.rgb(210,222,232))
+            cornerRadius = dp(16).toFloat()
+        }
+        v.background = bg
+        v.elevation = dp(2).toFloat()
+        v.minimumHeight = dp(78)
+        v.setPadding(dp(10), dp(7), dp(10), dp(7))
+        v.alpha = 1f
+        if (v is Button) {
+            v.isAllCaps = false
+            v.textSize = 13f
+            v.setTextColor(Color.rgb(24,58,92))
+            v.gravity = Gravity.CENTER
+            v.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            v.maxLines = 3
+        } else if (v is LinearLayout) {
+            v.gravity = Gravity.CENTER_VERTICAL
+            for (j in 0 until v.childCount) {
+                val inner = v.getChildAt(j)
+                if (inner is TextView) {
+                    inner.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                    inner.setTextColor(Color.rgb(24,58,92))
+                    inner.textSize = if (j == 0) 14f else 10f
+                    inner.maxLines = if (j == 0) 2 else 2
+                    inner.ellipsize = android.text.TextUtils.TruncateAt.END
+                    inner.setPadding(0, dp(1), 0, dp(1))
+                }
+            }
+        }
     }
 
     private fun View.findFirstScrollView(): ScrollView? {
