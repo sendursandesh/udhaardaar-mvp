@@ -46,7 +46,8 @@ class V5RepaymentActivity:AppCompatActivity(){
     try{val req=service.requestForCurrentUser(c.optString("id"),a,date.text.toString(),mode.selectedItem.toString(),ref.text.toString(),evidence.text.toString());val code=store.find("repayment_requests",req)?.optString("otp","")?:"";val input=e("Enter 6-digit OTP");val d=AlertDialog.Builder(this).setTitle("Counterparty consent required").setMessage("Repayment: ₹${money(a)}\nDemo OTP: $code").setView(input).setNegativeButton("CANCEL",null).setPositiveButton("VERIFY",null).create();d.setOnShowListener{d.getButton(-1).setOnClickListener{if(service.confirm(req,input.text.toString(),code)){d.dismiss();toast("Repayment confirmed and ledger updated");show()}else input.error="Incorrect OTP"}};d.show()}catch(ex:Exception){toast(ex.message?:"Unable to create repayment request")}
    }else{
     val accounts=getSharedPreferences("udhaardaar_accounts",MODE_PRIVATE);val mobile=accounts.getString("current_mobile","").orEmpty();val borrowerMobile=c.optString("borrowerMobile");val lenderMobile=c.optString("lenderMobile");if(mobile!=borrowerMobile&&mobile!=lenderMobile){toast("This account is not a party to the selected credit");return@b}
-    store.add("repayments",JSONObject().apply{put("id","LED-${System.currentTimeMillis()}");put("creditId",c.optString("id"));put("counterparty",c.optString("borrower"));put("amount",a);put("date",date.text.toString());put("method",mode.selectedItem.toString());put("direction",directionOf(c));put("evidence",evidence.text.toString());put("status","CONFIRMED_FORMAL");put("consent","NOT_REQUIRED");put("createdAt",System.currentTimeMillis())});val newOut=(out-a).coerceAtLeast(0.0);c.put("outstanding",newOut);c.put("status",if(newOut<=0.01)"SETTLED" else "ACTIVE");store.replace("credits",c);toast("Formal repayment recorded and credit outstanding updated");show()
+    val counterparty=if(mobile==borrowerMobile)c.optString("lenderMobile") else c.optString("borrowerMobile")
+    store.add("repayments",JSONObject().apply{put("id","LED-${System.currentTimeMillis()}");put("creditId",c.optString("id"));put("counterparty",counterparty);put("amount",a);put("date",date.text.toString());put("method",mode.selectedItem.toString());put("direction",directionOf(c));put("evidence",evidence.text.toString());put("status","CONFIRMED_FORMAL");put("consent","NOT_REQUIRED");put("createdAt",System.currentTimeMillis())});val newOut=(out-a).coerceAtLeast(0.0);c.put("outstanding",newOut);c.put("status",if(newOut<=0.01)"SETTLED" else "ACTIVE");store.replace("credits",c);toast("Formal repayment recorded and credit outstanding updated");show()
    }
   })
   add(r,TextView(this).apply{text="REPAYMENT VIEWS";textSize=12f;setTextColor(navy)})
@@ -57,8 +58,33 @@ class V5RepaymentActivity:AppCompatActivity(){
  private fun historyLine(j:JSONObject):String{val id=j.optString("creditId","-");val dir=j.optString("direction","-");val amt=money(j.optDouble("amount",0.0));val date=j.optString("date","-");val status=j.optString("status","-");val consent=j.optString("consent","-");return id+" • "+dir+"\n₹"+amt+" • "+date+"\nStatus: "+status+" • Consent: "+consent}
  private fun directionOf(c:JSONObject)=if(c.optString("direction")=="Credit Given")"RECEIVABLE" else "PAYABLE"
  private fun money(v:Double)=String.format(Locale.US,"%,.2f",v)
- private fun scheduleText(c:JSONObject):String{val rows=store.all("repayment_schedule").filter{it.optString("creditId")==c.optString("id")}.sortedBy{it.optInt("installmentNo",0)};if(rows.isEmpty())return "REPAYMENT SCHEDULE\nNo generated schedule found for this credit.";val today=Calendar.getInstance().time;return "REPAYMENT SCHEDULE\n"+rows.joinToString("\n"){j->val status=if(j.optString("status")=="PAID")"PAID"else try{if(dateFmt.parse(j.optString("dueDate"))?.before(today)==true)"OVERDUE"else"DUE/PENDING"}catch(_:Exception){j.optString("status","PENDING")};"${j.optInt("installmentNo")}. ${j.optString("dueDate")} • ₹${money(j.optDouble("dueAmount",0.0))} • $status"}}
- private fun matchesFilter(j:JSONObject,f:String):Boolean=when(f){"Payable"->j.optString("direction")=="PAYABLE";"Receivable"->j.optString("direction")=="RECEIVABLE";"Pending Consent"->j.optString("status")=="COUNTERPARTY_OTP_PENDING";"Settled"->setOf("SETTLED","CONFIRMED","CONFIRMED_FORMAL").contains(j.optString("status"));"Due"->j.optString("status")=="ACTIVE";"Overdue"->false;else->true}
+ private fun scheduleText(c:JSONObject):String{
+  val rows=store.all("repayment_schedule").filter{it.optString("creditId")==c.optString("id")}.sortedBy{it.optInt("installmentNo",0)}
+  if(rows.isEmpty())return "REPAYMENT SCHEDULE\nNo generated schedule found for this credit."
+  val today=Calendar.getInstance().time
+  val lines=ArrayList<String>()
+  lines.add("REPAYMENT SCHEDULE")
+  for(j in rows){
+   val status=if(j.optString("status")=="PAID")"PAID" else try{if(dateFmt.parse(j.optString("dueDate"))?.before(today)==true)"OVERDUE" else "DUE/PENDING"}catch(_:Exception){j.optString("status","PENDING")}
+   lines.add(j.optInt("installmentNo").toString()+". "+j.optString("dueDate")+" • ₹"+money(j.optDouble("dueAmount",0.0))+" • "+status)
+  }
+  return lines.joinToString("\n")
+ }
+ private fun isScheduleOverdue(creditId:String):Boolean{val today=Calendar.getInstance().time;return store.all("repayment_schedule").any{it.optString("creditId")==creditId&&it.optString("status")!="PAID"&&try{dateFmt.parse(it.optString("dueDate"))?.before(today)==true}catch(_:Exception){false}}}
+ private fun isScheduleDue(creditId:String):Boolean{val today=Calendar.getInstance().time;return store.all("repayment_schedule").any{it.optString("creditId")==creditId&&it.optString("status")!="PAID"&&try{!dateFmt.parse(it.optString("dueDate"))!!.after(today)}catch(_:Exception){false}}}
+ private fun matchesFilter(j:JSONObject,f:String):Boolean{
+  val dir=j.optString("direction")
+  val creditId=j.optString("creditId")
+  return when(f){
+   "Payable"->dir=="PAYABLE"
+   "Receivable"->dir=="RECEIVABLE"
+   "Pending Consent"->j.optString("status")=="COUNTERPARTY_OTP_PENDING"
+   "Settled"->setOf("SETTLED","CONFIRMED","CONFIRMED_FORMAL").contains(j.optString("status"))
+   "Due"->if(creditId.isBlank())false else isScheduleDue(creditId)&&!isScheduleOverdue(creditId)&&j.optString("status")!="SETTLED"
+   "Overdue"->if(creditId.isBlank())false else isScheduleOverdue(creditId)&&j.optString("status")!="SETTLED"
+   else->true
+  }
+ }
  private fun pickDate(t:EditText){val c=Calendar.getInstance();DatePickerDialog(this,{_,y,m,d->t.setText(String.format(Locale.US,"%02d %s %04d",d,SimpleDateFormat("MMM",Locale.US).format(Calendar.getInstance().apply{set(Calendar.MONTH,m)}.time),y))},c.get(Calendar.YEAR),c.get(Calendar.MONTH),c.get(Calendar.DAY_OF_MONTH)).show()}
  private fun toast(s:String)=Toast.makeText(this,s,Toast.LENGTH_LONG).show()
 }
