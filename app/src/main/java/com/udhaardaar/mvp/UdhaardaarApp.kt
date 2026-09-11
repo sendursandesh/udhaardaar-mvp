@@ -18,6 +18,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Button
+import android.widget.Space
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
@@ -90,7 +91,7 @@ class UdhaardaarApp : Application() {
         ViewCompat.requestApplyInsets(root)
         val scroll = root.findFirstScrollView() ?: return
         val container = scroll.getChildAt(0) as? LinearLayout ?: return
-        if (container.getTag(R.id.v5_grid_normalized) == true) return
+        if (container.tag == "v5_grid_normalized") return
 
         val original = (0 until container.childCount).map { container.getChildAt(it) }
         container.removeAllViews()
@@ -125,21 +126,18 @@ class UdhaardaarApp : Application() {
             }
             container.addView(row)
         }
-        container.setTag(R.id.v5_grid_normalized, true)
+        container.tag = "v5_grid_normalized"
         container.requestLayout()
     }
 
-    private fun isHomeAction(v: View): Boolean =
-        v is Button || (v is LinearLayout && v.isClickable)
+    private fun isHomeAction(v: View): Boolean = v is Button || (v is LinearLayout && v.isClickable)
 
     private fun styleHomeNonAction(v: View) {
         if (v is TextView) {
             v.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             v.setTextColor(if (v.text.toString().contains("UDHAARDAAR", true)) Color.rgb(0,145,135) else Color.rgb(24,58,92))
             v.setPadding(0, dp(7), 0, dp(4))
-        } else if (v is LinearLayout) {
-            v.minimumHeight = dp(76)
-        }
+        } else if (v is LinearLayout) v.minimumHeight = dp(76)
     }
 
     private fun styleHomeAction(v: View) {
