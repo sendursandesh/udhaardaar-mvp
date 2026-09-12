@@ -1,4 +1,4 @@
-name: ArthSaathi V6.1.2 Rectified APK
+name: ArthSaathi V6.2 UI UX Multilingual APK
 
 on:
   push:
@@ -34,22 +34,23 @@ jobs:
           echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
       - name: Unit tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
-      - name: Compile V6.1.2 APK
+      - name: Compile V6.2 APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: V6.1 rectification gates
+      - name: V6.2 UI and language gates
         shell: bash
         run: |
           set -e
-          test -f app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
+          test -f app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          test -f app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
+          grep -q 'LanguageManager.HI' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
+          grep -q 'हिन्दी' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
+          grep -q 'V62HomeActivity' app/src/main/AndroidManifest.xml
+          grep -q 'V61RectifiedActivity' app/src/main/AndroidManifest.xml
           grep -q 'No such user found' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'CREDIT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'REPAYMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q 'policyNumber' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q 'sumInsured' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'DOCUMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q 'LOG OUT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q 'V61RectifiedActivity' app/src/main/AndroidManifest.xml
-          test "$(grep -o "versionName '[^']*'" app/build.gradle | head -1)" = "versionName '6.1.2'"
+          test "$(grep -o "versionName '[^']*'" app/build.gradle | head -1)" = "versionName '6.2'"
       - name: APK integrity
         shell: bash
         run: |
@@ -59,11 +60,11 @@ jobs:
           unzip -t "$APK" >/dev/null
           test "$(stat -c%s "$APK")" -gt 10000
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.udhaardaar.mvp'"
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "versionName='6.1.2'"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "versionName='6.2'"
       - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
-          name: ArthSaathi-V6.1.2-Rectified-APK
+          name: ArthSaathi-V6.2-UI-Multilingual-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
