@@ -1,5 +1,6 @@
 package com.udhaardaar.mvp
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
@@ -17,7 +18,6 @@ class V62HomeActivity : AppCompatActivity() {
     private val green = Color.rgb(22,137,75); private val red = Color.rgb(190,65,65); private val amber = Color.rgb(188,122,18)
     private val bg = Color.rgb(246,249,252); private val muted = Color.rgb(92,108,124); private val border = Color.rgb(220,228,236)
     private val prefs by lazy { getSharedPreferences("udhaardaar_accounts", MODE_PRIVATE) }
-    private val store by lazy { V5LocalStore(this) }
     private val photoRequest = 6201
     private fun dp(v:Int) = (v * resources.displayMetrics.density).toInt()
     private fun text(s:String, size:Float, color:Int=navy, bold:Boolean=false) = TextView(this).apply { text=s; textSize=size; setTextColor(color); typeface=Typeface.create("sans-serif", if(bold) Typeface.BOLD else Typeface.NORMAL) }
@@ -29,11 +29,9 @@ class V62HomeActivity : AppCompatActivity() {
         val b=LinearLayout(this@V62HomeActivity).apply{orientation=LinearLayout.VERTICAL}; b.addView(text(title,15f,navy,true)); b.addView(text(sub,11f,muted),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(3)}); addView(b,LinearLayout.LayoutParams(0,-2,1f)); addView(text("›",28f,accent))
     }
     private fun action(title:String, accent:Int, click:()->Unit) = TextView(this).apply { text=title; textSize=14f; setTextColor(Color.WHITE); gravity=Gravity.CENTER; typeface=Typeface.DEFAULT_BOLD; minHeight=dp(54); background=bg(accent,14,false); setOnClickListener{click()} }
-
     override fun onCreate(b:Bundle?) { super.onCreate(b); window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE); render() }
     override fun onResume(){ super.onResume(); if(::dummy.isInitialized) render() }
     private lateinit var dummy:TextView
-
     private fun render() {
         if(!prefs.getBoolean("logged_in",false)){startActivity(Intent(this,LoginActivity::class.java));finish();return}
         val r=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(16),dp(12),dp(16),dp(30));setBackgroundColor(bg)}
