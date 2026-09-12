@@ -1,17 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="96dp" android:height="96dp" android:viewportWidth="96" android:viewportHeight="96">
-    <path android:fillColor="#0B5D43" android:pathData="M8,84 L37,18 Q48,3 59,18 L88,84 L72,84 L51,35 Q48,29 45,35 L24,84 Z"/>
-    <path android:fillColor="#D7A51A" android:pathData="M37,84 L48,66 L59,84 Z"/>
-    <path android:fillColor="#F2C34B" android:pathData="M48,31 L62,73 Q48,63 34,73 Z"/>
-    <path android:fillColor="#FFFFFF" android:pathData="M48,31 L48,72 L51,72 L51,31 Z"/>
-    <path android:fillColor="#D7A51A" android:pathData="M48,18 A4,4 0,1 0,48.1,18 Z"/>
-    <path android:fillColor="#0F7655" android:pathData="M46,42 Q35,32 28,43 Q37,49 46,47 Z"/>
-    <path android:fillColor="#0F7655" android:pathData="M52,42 Q63,32 70,43 Q61,49 52,47 Z"/>
-    <path android:fillColor="#0F7655" android:pathData="M45,53 Q33,46 27,57 Q36,63 45,58 Z"/>
-    <path android:fillColor="#0F7655" android:pathData="M53,53 Q65,46 71,57 Q62,63 53,58 Z"/>
-    <path android:fillColor="#0F7655" android:pathData="M44,64 Q34,60 30,69 Q38,73 44,68 Z"/>
-    <path android:fillColor="#0F7655" android:pathData="M54,64 Q64,60 68,69 Q60,73 54,68 Z"/>
-    <path android:fillColor="#D7A51A" android:pathData="M48,45 A4,4 0,1 0,48.1,45 Z"/>
-    <path android:fillColor="#D7A51A" android:pathData="M48,18 L51,24 L48,29 L45,24 Z"/>
-    <path android:fillColor="#D7A51A" android:pathData="M12,83 Q48,67 84,83 Q48,78 12,83 Z"/>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- A-shaped protective frame. The complete tree/asset ecosystem stays inside the A. -->
+    <path
+        android:fillColor="#0A6248"
+        android:fillType="evenOdd"
+        android:pathData="M8,92 L36,22 Q42,9 54,7 Q66,9 72,22 L100,92 L82,92 L54,30 L26,92 Z M35,80 L54,39 L73,80 L65,80 L54,56 L43,80 Z" />
+
+    <!-- Central golden trunk / growth line -->
+    <path
+        android:fillColor="#D6A51A"
+        android:pathData="M51,32 L57,32 L57,77 L51,77 Z" />
+    <path
+        android:fillColor="#D6A51A"
+        android:pathData="M54,24 L60,31 L54,39 L48,31 Z" />
+
+    <!-- Asset nodes -->
+    <path
+        android:fillColor="#E7B52A"
+        android:pathData="M54,48 A6,6 0,1 0,54.1,48 Z" />
+    <path
+        android:fillColor="#E7B52A"
+        android:pathData="M54,75 A5,5 0,1 0,54.1,75 Z" />
+
+    <!-- Leaves / asset categories, all enclosed by the A -->
+    <path android:fillColor="#118260" android:pathData="M48,44 Q37,35 28,44 Q38,52 48,48 Z" />
+    <path android:fillColor="#118260" android:pathData="M60,44 Q71,35 80,44 Q70,52 60,48 Z" />
+    <path android:fillColor="#15906A" android:pathData="M48,57 Q36,48 27,58 Q38,66 48,61 Z" />
+    <path android:fillColor="#15906A" android:pathData="M60,57 Q72,48 81,58 Q70,66 60,61 Z" />
+    <path android:fillColor="#1B9A70" android:pathData="M49,70 Q39,63 31,71 Q40,77 49,74 Z" />
+    <path android:fillColor="#1B9A70" android:pathData="M59,70 Q69,63 77,71 Q68,77 59,74 Z" />
+
+    <!-- Ground / foundation -->
+    <path
+        android:fillColor="#D6A51A"
+        android:pathData="M18,91 Q54,76 90,91 Q54,86 18,91 Z" />
+    <path
+        android:fillColor="#F1C94C"
+        android:pathData="M29,89 L54,80 L79,89 L54,86 Z" />
 </vector>
