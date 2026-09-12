@@ -7,8 +7,7 @@ class V5WorkflowRepository(context:Context){
  private val store=V5LocalStore(context)
  fun saveProfile(p:V5Profile){
   require(p.name.trim().length>=2);require(V5Validation.mobile(p.mobile));require(V5Validation.pan(p.pan.orEmpty())&&V5Validation.aadhaar(p.aadhaar.orEmpty())&&V5Validation.gstin(p.gstin.orEmpty())&&(p.pin.isNullOrBlank()||V5Validation.pin(p.pin!!)))
-  val mobile=p.mobile.trim();val pan=p.pan?.trim()?.uppercase()? : ""
-  val aadhaar=p.aadhaar?.filterNot{it.isWhitespace()} ?: "";val gstin=p.gstin?.trim()?.uppercase() ?: ""
+  val mobile=p.mobile.trim();val pan=p.pan?.trim()?.uppercase() ?: "";val aadhaar=p.aadhaar?.filterNot{it.isWhitespace()} ?: "";val gstin=p.gstin?.trim()?.uppercase() ?: ""
   val duplicate=store.all("profiles").any{it.optString("id")!=p.id&&(it.optString("mobile")==mobile||(pan.isNotBlank()&&it.optString("pan")==pan)||(aadhaar.isNotBlank()&&it.optString("aadhaar")==aadhaar)||(gstin.isNotBlank()&&it.optString("gstin")==gstin))}
   require(!duplicate){"A profile already exists with the supplied identity/mobile"}
   store.replace("profiles",JSONObject().apply{put("id",p.id);put("type",p.type);put("name",p.name.trim());put("mobile",mobile);put("pan",pan);put("aadhaar",aadhaar);put("gstin",gstin);put("photoUri",p.photoUri ?: "");put("city",p.city ?: "");put("state",p.state ?: "");put("pin",p.pin ?: "");put("updatedAt",System.currentTimeMillis())})
