@@ -1,9 +1,9 @@
 package com.udhaardaar.mvp
 
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
-import java.time.temporal.ChronoUnit
+import java.text.ParsePosition
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import kotlin.math.pow
 
 object V5FinanceRules {
@@ -28,8 +28,8 @@ object V5FinanceRules {
         require(endDateOnOrAfterStart(startDate, endDate)) { "End date cannot be before start date" }
 
         val periods = monthsBetween(startDate, endDate).coerceAtLeast(1)
-        val normalizedMethod = repaymentMethod.trim().lowercase()
-        val ratePerPeriod = roiPercent / 100.0 / 12.0
+        val normalizedMethod = repaymentMethod.trim().lowercase(Locale.ROOT)
+        val ratePerMonth = roiPercent / 100.0 / 12.0
         val totalPayable: Double
         val emi: Double
 
@@ -38,12 +38,11 @@ object V5FinanceRules {
             totalPayable = principal + totalInterest
             emi = totalPayable / periods
         } else {
-            totalPayable = if (ratePerPeriod == 0.0) {
+            totalPayable = if (ratePerMonth == 0.0) {
                 principal
             } else {
-                principal * ratePerPeriod * (1 + ratePerPeriod).pow(periods) /
-                    ((1 + ratePerPeriod).pow(periods) - 1)
-                    * periods
+                val factor = (1 + ratePerMonth).pow(periods)
+                principal * ratePerMonth * factor / (factor - 1) * periods
             }
             emi = totalPayable / periods
         }
@@ -58,27 +57,30 @@ object V5FinanceRules {
 
     fun validDate(value: String): Boolean {
         if (!Regex("^\\d{4}-\\d{2}-\\d{2}$").matches(value)) return false
-        return try {
-            LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE)
-            true
-        } catch (_: DateTimeParseException) {
-            false
-        }
+        val format = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false }
+        val position = ParsePosition(0)
+        return format.parse(value, position) != null && position.index == value.length
     }
 
     fun endDateOnOrAfterStart(startDate: String, endDate: String): Boolean {
-        return try {
-            !LocalDate.parse(endDate).isBefore(LocalDate.parse(startDate))
-        } catch (_: DateTimeParseException) {
-            false
-        }
+        if (!validDate(startDate) || !validDate(endDate)) return false
+        return parseDate(endDate) >= parseDate(startDate)
     }
 
     fun monthsBetween(startDate: String, endDate: String): Int {
-        return try {
-            ChronoUnit.MONTHS.between(LocalDate.parse(startDate), LocalDate.parse(endDate)).toInt()
-        } catch (_: DateTimeParseException) {
-            0
-        }
+        val start = parseDate(startDate) ?: return 0
+        val end = parseDate(endDate) ?: return 0
+        val years = end.get(Calendar.YEAR) - start.get(Calendar.YEAR)
+        val months = end.get(Calendar.MONTH) - start.get(Calendar.MONTH)
+        var result = years * 12 + months
+        if (end.get(Calendar.DAY_OF_MONTH) < start.get(Calendar.DAY_OF_MONTH)) result--
+        return result.coerceAtLeast(0)
+    }
+
+    private fun parseDate(value: String): Calendar? {
+        if (!validDate(value)) return null
+        val format = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false }
+        val date = format.parse(value) ?: return null
+        return Calendar.getInstance(Locale.US).apply { time = date }
     }
 }
