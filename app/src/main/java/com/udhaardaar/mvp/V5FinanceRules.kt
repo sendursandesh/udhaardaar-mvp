@@ -7,52 +7,25 @@ import java.util.Locale
 import kotlin.math.pow
 
 object V5FinanceRules {
-    data class CreditPlan(
-        val principal: Double,
-        val totalPayable: Double,
-        val totalInterest: Double,
-        val emi: Double
-    )
+    data class CreditPlan(val principal: Double, val totalPayable: Double, val totalInterest: Double, val emi: Double)
 
-    fun calculateCreditPlan(
-        principal: Double,
-        roiPercent: Double,
-        periodicity: String,
-        startDate: String,
-        endDate: String,
-        repaymentMethod: String
-    ): CreditPlan {
+    fun calculateCreditPlan(principal: Double, roiPercent: Double, periodicity: String, startDate: String, endDate: String, repaymentMethod: String): CreditPlan {
         require(principal > 0.0) { "Principal must be greater than zero" }
         require(roiPercent >= 0.0) { "ROI cannot be negative" }
         require(validDate(startDate) && validDate(endDate)) { "Dates must be in yyyy-MM-dd format" }
         require(endDateOnOrAfterStart(startDate, endDate)) { "End date cannot be before start date" }
-
         val periods = monthsBetween(startDate, endDate).coerceAtLeast(1)
-        val normalizedMethod = repaymentMethod.trim().lowercase(Locale.ROOT)
-        val ratePerMonth = roiPercent / 100.0 / 12.0
-        val totalPayable: Double
-        val emi: Double
-
-        if (normalizedMethod.contains("principal") && normalizedMethod.contains("interest")) {
-            val totalInterest = principal * (roiPercent / 100.0) * (periods / 12.0)
-            totalPayable = principal + totalInterest
-            emi = totalPayable / periods
+        val method = repaymentMethod.trim().lowercase(Locale.ROOT)
+        val monthlyRate = roiPercent / 100.0 / 12.0
+        val totalPayable = if (method.contains("principal") && method.contains("interest")) {
+            principal + principal * (roiPercent / 100.0) * (periods / 12.0)
+        } else if (monthlyRate == 0.0) {
+            principal
         } else {
-            totalPayable = if (ratePerMonth == 0.0) {
-                principal
-            } else {
-                val factor = (1 + ratePerMonth).pow(periods)
-                principal * ratePerMonth * factor / (factor - 1) * periods
-            }
-            emi = totalPayable / periods
+            val factor = (1 + monthlyRate).pow(periods)
+            principal * monthlyRate * factor / (factor - 1) * periods
         }
-
-        return CreditPlan(
-            principal = principal,
-            totalPayable = totalPayable,
-            totalInterest = (totalPayable - principal).coerceAtLeast(0.0),
-            emi = emi
-        )
+        return CreditPlan(principal, totalPayable, (totalPayable - principal).coerceAtLeast(0.0), totalPayable / periods)
     }
 
     fun validDate(value: String): Boolean {
@@ -63,24 +36,23 @@ object V5FinanceRules {
     }
 
     fun endDateOnOrAfterStart(startDate: String, endDate: String): Boolean {
-        if (!validDate(startDate) || !validDate(endDate)) return false
-        return parseDate(endDate) >= parseDate(startDate)
+        val start = parseDate(startDate) ?: return false
+        val end = parseDate(endDate) ?: return false
+        return !end.before(start)
     }
 
     fun monthsBetween(startDate: String, endDate: String): Int {
         val start = parseDate(startDate) ?: return 0
         val end = parseDate(endDate) ?: return 0
-        val years = end.get(Calendar.YEAR) - start.get(Calendar.YEAR)
-        val months = end.get(Calendar.MONTH) - start.get(Calendar.MONTH)
-        var result = years * 12 + months
+        var result = (end.get(Calendar.YEAR) - start.get(Calendar.YEAR)) * 12 + end.get(Calendar.MONTH) - start.get(Calendar.MONTH)
         if (end.get(Calendar.DAY_OF_MONTH) < start.get(Calendar.DAY_OF_MONTH)) result--
         return result.coerceAtLeast(0)
     }
 
-    private fun parseDate(value: String): Calendar? {
-        if (!validDate(value)) return null
+    private fun parseDate(value: String): java.util.Date? {
+        if (!Regex("^\\d{4}-\\d{2}-\\d{2}$").matches(value)) return null
         val format = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false }
-        val date = format.parse(value) ?: return null
-        return Calendar.getInstance(Locale.US).apply { time = date }
+        val position = ParsePosition(0)
+        return format.parse(value, position)?.takeIf { position.index == value.length }
     }
 }
