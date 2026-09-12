@@ -56,15 +56,19 @@ object V5FinanceRules {
     fun endDateOnOrAfterStart(startDate: String, endDate: String): Boolean {
         val start = parseDate(startDate) ?: return false
         val end = parseDate(endDate) ?: return false
-        return !end.after(start).not() || end.timeInMillis >= start.timeInMillis
+        return end.timeInMillis >= start.timeInMillis
     }
 
     fun monthsBetween(startDate: String, endDate: String): Int {
-        val start = parseDate(startDate) ?: return 0
-        val end = parseDate(endDate) ?: return 0
-        var result = (end.get(Calendar.YEAR) - start.get(Calendar.YEAR)) * 12 +
-            end.get(Calendar.MONTH) - start.get(Calendar.MONTH)
-        if (end.get(Calendar.DAY_OF_MONTH) < start.get(Calendar.DAY_OF_MONTH)) result--
+        if (!validDate(startDate) || !validDate(endDate)) return 0
+        val startYear = startDate.substring(0, 4).toInt()
+        val startMonth = startDate.substring(5, 7).toInt()
+        val startDay = startDate.substring(8, 10).toInt()
+        val endYear = endDate.substring(0, 4).toInt()
+        val endMonth = endDate.substring(5, 7).toInt()
+        val endDay = endDate.substring(8, 10).toInt()
+        var result = (endYear - startYear) * 12 + (endMonth - startMonth)
+        if (endDay < startDay) result--
         return result.coerceAtLeast(0)
     }
 
