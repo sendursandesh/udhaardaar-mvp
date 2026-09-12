@@ -50,7 +50,7 @@ jobs:
           grep -q 'CREDIT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'REPAYMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'DOCUMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          test "$(grep -o "versionName '[^']*'" app/build.gradle | head -1)" = "versionName '6.2'"
+          grep -q "versionName '6.2'" app/build.gradle
       - name: APK integrity
         shell: bash
         run: |
