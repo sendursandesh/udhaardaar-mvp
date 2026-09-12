@@ -1,0 +1,88 @@
+name: ArthSaathi V6 Master QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact committed source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Gradle 8.10.2
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
+
+      - name: Verify source is clean and contains no CI repair scripts
+        run: |
+          set -e
+          test -z "$(git status --porcelain)"
+          if grep -RniE 'Repair QR scanner|sed -i|cat > app/src|perl -pi|python.*write' .github/workflows; then
+            echo 'ERROR: CI source mutation detected.'
+            exit 1
+          fi
+
+      - name: Unit and regression tests
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Assemble debug APK
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Release QA gates
+        run: |
+          set -e
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$apk"
+          test "$(stat -c%s "$apk")" -gt 10000000
+          unzip -t "$apk" >/dev/null
+
+          # Product/version identity gates
+          grep -q 'applicationId.*com.udhaardaar.mvp' app/build.gradle
+          grep -q "versionCode 61" app/build.gradle
+          grep -q "versionName '6.1.0'" app/build.gradle
+          grep -q 'ARTHSAATHI' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q 'Your Money. Your Records. Your Rights.' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+
+          # Validation and financial rules
+          grep -q 'verhoeffValid' app/src/main/java/com/udhaardaar/mvp/V5DomainModels.kt
+          grep -q 'gstChecksumValid' app/src/main/java/com/udhaardaar/mvp/V5DomainModels.kt
+          grep -q 'ArthSaathiFinancialRules' app/src/main/java/com/udhaardaar/mvp/ArthSaathiFinancialRules.kt
+
+          # Core workflow contracts
+          grep -q 'sourceQr' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
+          grep -q 'markBorrowerConsent' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
+          grep -q 'COUNTERPARTY_OTP_PENDING' app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
+          grep -q 'COUNTERPARTY_OTP_CONSENTED_AND_REPAYMENT_APPLIED' app/src/main/java/com/udhaardaar/mvp/V5RepaymentService.kt
+
+          # All ArthSaathi V6 modules must remain discoverable
+          for token in 'QR KHATA' 'INSURANCE & BENEFITS' 'WILL & LEGACY' 'LEGAL ASSISTANCE' 'AI FINANCIAL ADVISOR' 'ASSET VAULT' 'CHARGECHECK' 'TTMM' 'INHERITANCE & CLAIM' 'INFORMAL CREDIT' 'REPAYMENT CENTRE'; do
+            grep -Rqi "$token" app/src/main/java/com/udhaardaar/mvp || { echo "Missing module token: $token"; exit 1; }
+          done
+
+          echo "MASTER QA PASSED for commit $(git rev-parse HEAD)"
+
+      - name: Upload verified APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArthSaathi-V6.1.0-Master-QA-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
