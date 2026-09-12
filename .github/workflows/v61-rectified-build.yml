@@ -42,15 +42,15 @@ jobs:
           set -e
           test -f app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
           test -f app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
-          grep -q 'LanguageManager.HI' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
-          grep -q 'हिन्दी' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
-          grep -q 'V62HomeActivity' app/src/main/AndroidManifest.xml
-          grep -q 'V61RectifiedActivity' app/src/main/AndroidManifest.xml
-          grep -q 'No such user found' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q 'CREDIT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q 'REPAYMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q 'DOCUMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q "versionName '6.2'" app/build.gradle
+          grep -Fq 'LanguageManager.HI' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
+          grep -Fq 'हिन्दी' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
+          grep -Fq 'V62HomeActivity' app/src/main/AndroidManifest.xml
+          grep -Fq 'V61RectifiedActivity' app/src/main/AndroidManifest.xml
+          grep -Fq 'No such user found' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
+          grep -Fq 'CREDIT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
+          grep -Fq 'REPAYMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
+          grep -Fq 'DOCUMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
+          grep -Fq "versionName '6.2'" app/build.gradle
       - name: APK integrity
         shell: bash
         run: |
