@@ -8,16 +8,13 @@ object LanguageManager {
     private const val KEY = "preferred_language"
     const val EN = "en"
     const val HI = "hi"
-
     fun get(context: Context): String = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, EN) ?: EN
     fun set(context: Context, language: String) { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY, language).apply() }
     fun isHindi(context: Context) = get(context) == HI
     fun locale(context: Context): Locale = if (isHindi(context)) Locale("hi", "IN") else Locale.ENGLISH
-
     fun t(context: Context, key: String): String = if (isHindi(context)) HI_TEXT[key] ?: EN_TEXT[key] ?: key else EN_TEXT[key] ?: key
-
     private val EN_TEXT = mapOf(
-        "app" to "ARTHSAATHI", "tagline" to "Your Money • Your Records • Your Rights",
+        "app" to "ARTHSAATHI", "tagline" to "Your Asset. Your Record. Your Right.",
         "home" to "Home", "credit" to "Credit", "vault" to "Vault", "repay" to "Repayments", "services" to "Services", "profile" to "Profile",
         "good_morning" to "Good Morning", "good_afternoon" to "Good Afternoon", "good_evening" to "Good Evening", "good_night" to "Good Night",
         "overview" to "Your financial picture at a glance", "to_receive" to "TO RECEIVE", "to_pay" to "TO PAY", "assets" to "ASSETS", "liabilities" to "LIABILITIES",
@@ -37,7 +34,7 @@ object LanguageManager {
         "language_saved" to "Language updated", "selected" to "Selected", "more" to "More"
     )
     private val HI_TEXT = mapOf(
-        "app" to "अर्थसाथी", "tagline" to "आपका पैसा • आपके रिकॉर्ड • आपके अधिकार",
+        "app" to "अर्थसाथी", "tagline" to "आपकी संपत्ति • आपका रिकॉर्ड • आपका अधिकार",
         "home" to "होम", "credit" to "उधार", "vault" to "संपत्ति", "repay" to "भुगतान", "services" to "सेवाएँ", "profile" to "प्रोफ़ाइल",
         "good_morning" to "सुप्रभात", "good_afternoon" to "नमस्कार", "good_evening" to "शुभ संध्या", "good_night" to "शुभ रात्रि",
         "overview" to "आपकी वित्तीय स्थिति एक नज़र में", "to_receive" to "लेना है", "to_pay" to "देना है", "assets" to "संपत्ति", "liabilities" to "देयताएँ",
