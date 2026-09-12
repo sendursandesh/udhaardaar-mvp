@@ -49,7 +49,7 @@ jobs:
           grep -Fq 'No such user found' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -Fq 'CREDIT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -Fq 'REPAYMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -Fq 'DOCUMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
+          grep -Fq 'DPN / WILL' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -Fq "versionName '6.2'" app/build.gradle
       - name: APK integrity
         shell: bash
