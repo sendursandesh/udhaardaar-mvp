@@ -36,12 +36,13 @@ jobs:
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
       - name: Compile V6.2 APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: V6.2 UI and language gates
+      - name: V6.2 UI, branding and language gates
         shell: bash
         run: |
           set -e
           test -f app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
           test -f app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
+          test -f app/src/main/res/drawable/udhaardaar_logo.xml
           grep -Fq 'const val HI = "hi"' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
           grep -Fq 'HI_TEXT' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
           grep -Fq 'V62HomeActivity' app/src/main/AndroidManifest.xml
@@ -50,7 +51,14 @@ jobs:
           grep -Fq 'CREDIT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -Fq 'REPAYMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -Fq 'DPN / WILL' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -Fq "versionName '6.2'" app/build.gradle
+          grep -Fq 'Your Asset. Your Record. Your Right.' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
+          grep -Fq 'आपकी संपत्ति • आपका रिकॉर्ड • आपका अधिकार' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
+          grep -Fq '#0B5D43' app/src/main/res/drawable/udhaardaar_logo.xml
+          grep -Fq '#D7A51A' app/src/main/res/drawable/udhaardaar_logo.xml
+          ! grep -Fq 'ScrollView' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -Fq 'private fun bottom' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -Fq 'private fun servicesDialog' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -Fq 'versionName '\''6.2'\''' app/build.gradle
       - name: APK integrity
         shell: bash
         run: |
