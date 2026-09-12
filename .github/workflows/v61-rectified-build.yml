@@ -1,8 +1,8 @@
-name: ArthSaathi V6.1.1 Rectified APK
+name: ArthSaathi V6.1.2 Rectified APK
 
 on:
   push:
-    branches: [v6.1-rectified]
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -14,10 +14,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout V6.1 rectified source
+      - name: Checkout exact committed source
         uses: actions/checkout@v4
         with:
-          ref: v6.1-rectified
+          ref: main
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -34,7 +34,7 @@ jobs:
           echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
       - name: Unit tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
-      - name: Compile V6.1.1 APK
+      - name: Compile V6.1.2 APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
       - name: V6.1 rectification gates
         shell: bash
@@ -44,14 +44,12 @@ jobs:
           grep -q 'No such user found' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'CREDIT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'REPAYMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q 'merchantId' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'policyNumber' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'sumInsured' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q 'TTMM_MEMBER_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -q 'PENDING_VERIFICATION' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
+          grep -q 'DOCUMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'LOG OUT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
           grep -q 'V61RectifiedActivity' app/src/main/AndroidManifest.xml
-          test "$(grep -o "versionName '[^']*'" app/build.gradle | head -1)" = "versionName '6.1.1'"
+          test "$(grep -o "versionName '[^']*'" app/build.gradle | head -1)" = "versionName '6.1.2'"
       - name: APK integrity
         shell: bash
         run: |
@@ -61,11 +59,11 @@ jobs:
           unzip -t "$APK" >/dev/null
           test "$(stat -c%s "$APK")" -gt 10000
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.udhaardaar.mvp'"
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "versionName='6.1.1'"
-      - name: Upload V6.1.1 APK
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "versionName='6.1.2'"
+      - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
-          name: ArthSaathi-V6.1.1-Rectified-APK
+          name: ArthSaathi-V6.1.2-Rectified-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
