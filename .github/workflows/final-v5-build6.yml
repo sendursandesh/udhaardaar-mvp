@@ -20,17 +20,13 @@ jobs:
           wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/g.zip
           sudo unzip -q /tmp/g.zip -d /opt
           echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
-      - name: Repair compile blockers
+      - name: Prepare QR scanner source
         shell: bash
         run: |
           set -e
-          sed -i 's/return@button/return@setOnClickListener/g' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt || true
           python3 - <<'PY'
           from pathlib import Path
           p=Path('app/src/main/java/com/udhaardaar/mvp/QrCreditScannerActivity.kt')
-          s=p.read_text()
-          start=s.find('class QrCreditScannerActivity')
-          if start<0: raise SystemExit('QR class missing')
           q='''package com.udhaardaar.mvp
 import android.content.Intent
 import android.os.Bundle
