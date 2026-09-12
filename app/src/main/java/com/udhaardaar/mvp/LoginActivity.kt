@@ -54,7 +54,7 @@ class LoginActivity : AppCompatActivity() {
         }}
         d.show()
     }
-    private fun go(m:String){prefs.edit().putBoolean("logged_in",true).putString("current_mobile",m).apply();startActivity(Intent(this,ArthSaathiHomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish()}
+    private fun go(m:String){prefs.edit().putBoolean("logged_in",true).putString("current_mobile",m).apply();startActivity(Intent(this,V61RectifiedActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish()}
     private fun resetPin(x:String){
         val np=input("New 4–6 digit PIN",true).apply{inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD;filters=arrayOf(InputFilter.LengthFilter(6))}
         AlertDialog.Builder(this).setTitle("Set new PIN").setView(np).setPositiveButton("SAVE"){_,_->
