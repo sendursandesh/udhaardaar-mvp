@@ -1,4 +1,4 @@
-name: Clean V5 Final APK
+name: ArthSaathi V6 Final APK
 on:
   push:
     branches: [main]
@@ -49,23 +49,28 @@ class QrCreditScannerActivity : AppCompatActivity() {
           PY
       - name: Assemble APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: APK integrity and required-feature gate
+      - name: APK integrity and ArthSaathi V6 feature gate
         run: |
           set -e
           apk=app/build/outputs/apk/debug/app-debug.apk
           test -f "$apk"
           test "$(stat -c%s "$apk")" -gt 10000000
           unzip -t "$apk" >/dev/null
+          grep -q 'ARTHSAATHI' app/src/main/java/com/udhaardaar/mvp/ArthSaathiHomeActivity.kt
+          grep -q 'QR KHATA' app/src/main/java/com/udhaardaar/mvp/ArthSaathiHomeActivity.kt
+          grep -q 'INSURANCE' app/src/main/java/com/udhaardaar/mvp/ArthSaathiModulesActivity.kt
+          grep -q 'WILL' app/src/main/java/com/udhaardaar/mvp/ArthSaathiModulesActivity.kt
+          grep -q 'LEGAL' app/src/main/java/com/udhaardaar/mvp/ArthSaathiModulesActivity.kt
+          grep -q 'AI FINANCIAL' app/src/main/java/com/udhaardaar/mvp/ArthSaathiModulesActivity.kt
           grep -q 'SCAN QR' app/src/main/java/com/udhaardaar/mvp/V5InformalCreditActivity.kt
           grep -q 'sourceQr' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
           grep -q 'markBorrowerConsent' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
-          grep -q 'Rental' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q 'Asset Vault' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q 'Inheritance' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-          grep -q 'Legal Assistance' app/src/main/java/com/udhaardaar/mvp/V5HomeActivity.kt
-      - name: Upload final APK
+          grep -q 'Asset Vault' app/src/main/java/com/udhaardaar/mvp/ArthSaathiHomeActivity.kt
+          grep -q 'Inheritance' app/src/main/java/com/udhaardaar/mvp/ArthSaathiHomeActivity.kt
+          grep -q 'Legal Assistance' app/src/main/java/com/udhaardaar/mvp/ArthSaathiHomeActivity.kt
+      - name: Upload ArthSaathi V6 APK
         uses: actions/upload-artifact@v4
         with:
-          name: Udhaardaar-V5-Final-QA-APK
+          name: ArthSaathi-V6-Final-QA-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
