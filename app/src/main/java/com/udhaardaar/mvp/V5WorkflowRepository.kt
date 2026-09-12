@@ -5,12 +5,33 @@ import org.json.JSONObject
 
 class V5WorkflowRepository(context:Context){
  private val store=V5LocalStore(context)
- fun saveProfile(p:V5Profile)=store.replace("profiles",JSONObject().apply{put("id",p.id);put("type",p.type);put("name",p.name);put("mobile",p.mobile);put("pan",p.pan?:"");put("aadhaar",p.aadhaar?:"");put("gstin",p.gstin?:"");put("photoUri",p.photoUri?:"");put("city",p.city?:"");put("state",p.state?:"");put("pin",p.pin?:"");put("updatedAt",System.currentTimeMillis())})
+ fun saveProfile(p:V5Profile){
+  require(p.name.trim().length>=2)
+  require(V5Validation.mobile(p.mobile))
+  require(V5Validation.pan(p.pan.orEmpty())&&V5Validation.aadhaar(p.aadhaar.orEmpty())&&V5Validation.gstin(p.gstin.orEmpty())&&(p.pin.isNullOrBlank()||V5Validation.pin(p.pin!!)))
+  store.replace("profiles",JSONObject().apply{put("id",p.id);put("type",p.type);put("name",p.name.trim());put("mobile",p.mobile.trim());put("pan",p.pan?.trim()?.uppercase()?"");put("aadhaar",p.aadhaar?.filterNot{it.isWhitespace()}?"");put("gstin",p.gstin?.trim()?.uppercase()?"");put("photoUri",p.photoUri?"");put("city",p.city?"");put("state",p.state?"");put("pin",p.pin?"");put("updatedAt",System.currentTimeMillis())})
+ }
  fun saveGuarantor(g:V5GuarantorAndDocuments.GuarantorProfile)=store.replace("guarantors",JSONObject().apply{put("id",g.id);put("name",g.name);put("mobile",g.mobile);put("address",g.address);put("pan",g.pan?:"");put("aadhaar",g.aadhaar?:"");put("photoUri",g.photoUri?:"");put("relationship",g.relationship?:"");put("updatedAt",System.currentTimeMillis())})
  fun saveAsset(a:V5Asset)=store.replace("assets",JSONObject().apply{put("id",a.id);put("ownerProfileId",a.ownerProfileId);put("category",a.category);put("assetSubtype",a.assetSubtype);put("title",a.title);put("description",a.description);put("estimatedValue",a.estimatedValue?:JSONObject.NULL);put("institutionOrCounterparty",a.institutionOrCounterparty);put("accountOrReference",a.accountOrReference);put("acquisitionDate",a.acquisitionDate);put("maturityDate",a.maturityDate);put("location",a.location);put("ownership",a.ownership);put("encumbrance",a.encumbrance);put("outstandingLiability",a.outstandingLiability);put("policyOrCertificate",a.policyOrCertificate);put("nomineeProfileId",a.nomineeProfileId?:"");put("documents",a.proofDocumentIds.joinToString(","));put("notes",a.notes);put("updatedAt",System.currentTimeMillis())})
  fun saveClaim(c:V5Claim)=store.replace("claims",JSONObject().apply{put("id",c.id);put("assetId",c.assetId);put("claimantProfileId",c.claimantProfileId);put("relationship",c.relationship);put("status",c.status);put("legalProfessionalId",c.legalProfessionalId?:"");put("requiredDocuments",c.requiredDocumentIds.joinToString(","));put("updatedAt",System.currentTimeMillis())})
- fun saveCredit(id:String,borrower:String,type:String,direction:String,principal:Double,roi:Double,method:String,start:String,end:String,vendor:String="",invoice:String="",sourceQr:String="",consentId:String="",timestamp:Long=System.currentTimeMillis(),totalPayable:Double=principal){store.replace("credits",JSONObject().apply{put("id",id);put("borrower",borrower);put("type",type);put("direction",direction);put("principal",principal);put("roi",roi);put("method",method);put("start",start);put("end",end);put("vendor",vendor);put("invoice",invoice);put("sourceQr",sourceQr);put("consentId",consentId);put("status","ACTIVE");put("totalPayable",totalPayable);put("repaid",0.0);put("outstanding",totalPayable);put("createdAt",timestamp);put("updatedAt",timestamp)})}
+ fun saveCredit(id:String,borrower:String,type:String,direction:String,principal:Double,roi:Double,method:String,start:String,end:String,vendor:String="",invoice:String="",sourceQr:String="",consentId:String="",timestamp:Long=System.currentTimeMillis(),totalPayable:Double?=null){
+  require(id.isNotBlank()&&borrower.isNotBlank()&&principal>0)
+  require(roi in 0.0..100.0)
+  require(ArthSaathiFinancialRules.validDate(start)&&ArthSaathiFinancialRules.validDate(end))
+  require(end>=start)
+  val plan=ArthSaathiFinancialRules.plan(principal,roi,monthsBetween(start,end).coerceIn(1,240),method)
+  val total=totalPayable?:plan.totalPayable
+  require(total>=principal)
+  store.replace("credits",JSONObject().apply{put("id",id);put("borrower",borrower);put("type",type);put("direction",direction);put("principal",principal);put("roi",roi);put("roiDisplay","${roi}%");put("method",method);put("start",start);put("end",end);put("vendor",vendor);put("invoice",invoice);put("sourceQr",sourceQr);put("consentId",consentId);put("status","ACTIVE");put("totalPayable",total);put("emiAmount",plan.emi);put("interestAmount",plan.interest);put("instalments",plan.instalments);put("repaid",0.0);put("outstanding",total);put("createdAt",timestamp);put("updatedAt",timestamp)})
+ }
  fun markBorrowerConsent(creditId:String,consentId:String):Boolean{if(creditId.isBlank()||consentId.isBlank())return false;val c=store.find("credits",creditId)?:return false;c.put("scoreConsent","OTP_VERIFIED");c.put("scoreConsentEventId",consentId);c.put("scoreConsentAt",System.currentTimeMillis());c.put("updatedAt",System.currentTimeMillis());store.replace("credits",c);return true}
  fun appendAudit(entityId:String,event:String,actorId:String,details:String)=store.add("audit",JSONObject().apply{put("id","AUD-${System.currentTimeMillis()}");put("entityId",entityId);put("event",event);put("actorId",actorId);put("at",System.currentTimeMillis());put("details",details)})
  fun audit(entityId:String)=store.all("audit").filter{it.optString("entityId")==entityId}
+ private fun monthsBetween(start:String,end:String):Int{
+  val sdf=java.text.SimpleDateFormat("yyyy-MM-dd",java.util.Locale.US).apply{isLenient=false}
+  val a=sdf.parse(start)?:throw IllegalArgumentException("Invalid start date")
+  val b=sdf.parse(end)?:throw IllegalArgumentException("Invalid end date")
+  val ca=java.util.Calendar.getInstance().apply{time=a};val cb=java.util.Calendar.getInstance().apply{time=b}
+  return ((cb.get(java.util.Calendar.YEAR)-ca.get(java.util.Calendar.YEAR))*12+(cb.get(java.util.Calendar.MONTH)-ca.get(java.util.Calendar.MONTH))).coerceAtLeast(1)
+ }
 }
