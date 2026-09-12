@@ -51,21 +51,12 @@ object V5FinanceRules {
         )
     }
 
-    fun validDate(value: String): Boolean {
-        if (!Regex("""^\d{4}-\d{2}-\d{2}$""").matches(value)) return false
-        val format = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false }
-        val parsed: java.util.Date = try {
-            format.parse(value) ?: return false
-        } catch (_: Exception) {
-            return false
-        }
-        return format.format(parsed) == value
-    }
+    fun validDate(value: String): Boolean = parseDate(value) != null
 
     fun endDateOnOrAfterStart(startDate: String, endDate: String): Boolean {
         val start = parseDate(startDate) ?: return false
         val end = parseDate(endDate) ?: return false
-        return !end.before(start)
+        return !end.after(start).not() || end.timeInMillis >= start.timeInMillis
     }
 
     fun monthsBetween(startDate: String, endDate: String): Int {
@@ -77,14 +68,21 @@ object V5FinanceRules {
         return result.coerceAtLeast(0)
     }
 
-    private fun parseDate(value: String): java.util.Date? {
+    private fun parseDate(value: String): Calendar? {
         if (!Regex("""^\d{4}-\d{2}-\d{2}$""").matches(value)) return null
         val format = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false }
-        val parsed: java.util.Date = try {
-            format.parse(value) ?: return null
+        return try {
+            val parsed = format.parse(value) ?: return null
+            if (format.format(parsed) != value) return null
+            Calendar.getInstance(Locale.US).apply {
+                time = parsed
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
         } catch (_: Exception) {
-            return null
+            null
         }
-        return if (format.format(parsed) == value) parsed else null
     }
 }
