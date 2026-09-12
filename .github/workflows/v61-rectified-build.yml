@@ -3,6 +3,8 @@ name: ArthSaathi V6.1.1 Rectified APK
 on:
   push:
     branches: [v6.1-rectified]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
