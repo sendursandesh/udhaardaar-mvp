@@ -54,10 +54,12 @@ object V5FinanceRules {
     fun validDate(value: String): Boolean {
         if (!Regex("""^\d{4}-\d{2}-\d{2}$""").matches(value)) return false
         val format = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false }
-        return runCatching {
+        return try {
             val parsed = format.parse(value) ?: return false
             format.format(parsed) == value
-        }.getOrDefault(false)
+        } catch (_: Exception) {
+            false
+        }
     }
 
     fun endDateOnOrAfterStart(startDate: String, endDate: String): Boolean {
@@ -78,9 +80,11 @@ object V5FinanceRules {
     private fun parseDate(value: String): java.util.Date? {
         if (!Regex("""^\d{4}-\d{2}-\d{2}$""").matches(value)) return null
         val format = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false }
-        return runCatching {
+        return try {
             val parsed = format.parse(value) ?: return null
             if (format.format(parsed) == value) parsed else null
-        }.getOrNull()
+        } catch (_: Exception) {
+            null
+        }
     }
 }
