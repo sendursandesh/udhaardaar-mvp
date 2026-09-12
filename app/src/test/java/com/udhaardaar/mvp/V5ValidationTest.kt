@@ -9,7 +9,8 @@ class V5ValidationTest {
     @Test fun panRejectsArbitraryDigitsAndAcceptsValidStructure() {
         assertFalse(V5Validation.pan("123456789012"))
         assertFalse(V5Validation.pan("ABCDE12345"))
-        assertTrue(V5Validation.pan("ABCDE1234F"))
+        // Valid PAN structure: 4th character is a valid holder-type code.
+        assertTrue(V5Validation.pan("ABCP E1234F".replace(" ", "")))
         assertTrue(V5Validation.pan(""))
     }
 
