@@ -10,8 +10,8 @@ android {
         applicationId 'com.udhaardaar.mvp'
         minSdk 23
         targetSdk 35
-        versionCode 63
-        versionName '6.1.2'
+        versionCode 64
+        versionName '6.2'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = '17' }
