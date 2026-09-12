@@ -24,8 +24,7 @@ class V5ValidationTest {
         assertFalse(V5Validation.gstin("123"))
         assertFalse(V5Validation.gstin("20ABCDE1234F1Z1"))
         assertFalse(V5Validation.gstin("99ABCDE1234F1Z1A"))
-        // Check digit E is produced by the GSTIN checksum for this structural test value.
-        assertTrue(V5Validation.gstin("20ABCDE1234F1ZEE"))
+        assertTrue(V5Validation.gstin("20ABCDE1234F1ZE"))
         assertTrue(V5Validation.gstin(""))
     }
 
