@@ -37,6 +37,7 @@ jobs:
           set -e
           test -z "$(git status --porcelain)"
 
+      # Full Master QA: tests, APK build, integrity gates, artifact upload.
       - name: Unit and regression tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
 
