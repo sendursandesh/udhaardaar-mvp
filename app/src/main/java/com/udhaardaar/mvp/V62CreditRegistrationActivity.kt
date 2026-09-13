@@ -25,7 +25,6 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
     private val teal = Color.rgb(12, 171, 158)
     private val blue = Color.rgb(42, 103, 221)
     private val green = Color.rgb(18, 137, 91)
-    private val gold = Color.rgb(211, 161, 37)
     private val red = Color.rgb(193, 67, 72)
     private val muted = Color.rgb(92, 108, 124)
     private val bg = Color.rgb(246, 249, 252)
@@ -52,9 +51,8 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
     private fun button(label: String, action: () -> Unit) = Button(this).apply {
         text = label; setTextColor(Color.WHITE); setBackgroundColor(blue); setOnClickListener { action() }
     }
-    private fun add(v: android.view.View, top: Int = 8) {
-        root.addView(v, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) })
-    }
+    private fun add(v: android.view.View, top: Int = 8) { root.addView(v, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) }) }
+    private fun lp() = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,11 +73,9 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
 
     private fun stepBar(): LinearLayout {
         val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val labels = arrayOf("1 Profile", "2 Terms", "3 Guarantor", "4 Consent")
-        labels.forEachIndexed { i, label ->
-            val v = text(label, 10f, if (i + 1 <= step) teal else muted, i + 1 <= step)
-            v.gravity = Gravity.CENTER; v.setPadding(dp(3), dp(8), dp(3), dp(8))
-            v.background = card(if (i + 1 <= step) Color.rgb(235, 249, 247) else Color.WHITE)
+        arrayOf("1 Profile", "2 Terms", "3 Guarantor", "4 Consent").forEachIndexed { i, label ->
+            val active = i + 1 <= step; val v = text(label, 10f, if (active) teal else muted, active)
+            v.gravity = Gravity.CENTER; v.setPadding(dp(3), dp(8), dp(3), dp(8)); v.background = card(if (active) Color.rgb(235, 249, 247) else Color.WHITE)
             bar.addView(v, LinearLayout.LayoutParams(0, dp(40), 1f).apply { if (i > 0) leftMargin = dp(4) })
         }
         return bar
@@ -112,7 +108,7 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
         val search = field("Search name / mobile / PAN / Aadhaar / GSTIN / profile ID")
         val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(4), dp(4), dp(4), dp(4)) }
-        container.addView(search); container.addView(list, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+        container.addView(search); container.addView(list, lp())
         val dialog = AlertDialog.Builder(this).setTitle(title).setView(container).setNegativeButton("CANCEL", null).create()
         fun refresh() {
             list.removeAllViews(); val q = search.text.toString().trim().lowercase()
@@ -144,9 +140,9 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
     private fun createProfile(done: (JSONObject) -> Unit) {
         val name = field("Full name / business name *"); val mobile = field("Mobile number *"); val pan = field("PAN (optional)"); val aadhaar = field("Aadhaar (optional)"); val gst = field("GSTIN (optional)")
         val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(name); addView(mobile, lp()); addView(pan, lp()); addView(aadhaar, lp()); addView(gst, lp()) }
-        val d = AlertDialog.Builder(this).setTitle("Create registered profile").setView(form).setNegativeButton("CANCEL", null).setPositiveButton("SAVE + CONTINUE", null).create()
-        d.setOnShowListener {
-            d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        val dialog = AlertDialog.Builder(this).setTitle("Create registered profile").setView(form).setNegativeButton("CANCEL", null).setPositiveButton("SAVE + CONTINUE", null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val n = name.text.toString().trim(); val m = mobile.text.toString().trim(); val panV = pan.text.toString().trim().uppercase(); val gstV = gst.text.toString().trim().uppercase()
                 when {
                     n.length < 2 -> name.error = "Enter at least 2 characters"
@@ -156,23 +152,21 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
                     gstV.isNotBlank() && !Regex("[0-9]{2}[A-Z0-9]{13}").matches(gstV) -> gst.error = "Invalid GSTIN format"
                     else -> {
                         val p = JSONObject().apply { put("id", "USR-${System.currentTimeMillis()}"); put("name", n); put("mobile", m); put("pan", panV); put("aadhaar", aadhaar.text.toString().trim()); put("gstin", gstV); put("createdAt", System.currentTimeMillis()) }
-                        store.add("profiles", p); d.dismiss(); Toast.makeText(this, "Profile created — continuing credit registration", Toast.LENGTH_LONG).show(); done(p)
+                        store.add("profiles", p); dialog.dismiss(); Toast.makeText(this, "Profile created — continuing credit registration", Toast.LENGTH_LONG).show(); done(p)
                     }
                 }
             }
-        }; d.show()
+        }; dialog.show()
     }
 
-    private fun lp() = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) }
-
     private fun termsStep() {
-        add(tv("CREDIT TERMS", 11f, muted, true), 16)
+        add(text("CREDIT TERMS", 11f, muted, true), 16)
         val amount = field("Principal amount ₹ *"); val roi = field("Interest / ROI %"); val start = field("Start date — tap to select"); val end = field("End / due date — tap to select"); val emi = field("EMI amount ₹ (only for EMI method)"); val notes = field("Purpose / notes (optional)")
         val method = Spinner(this).apply { adapter = ArrayAdapter(this@V62CreditRegistrationActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("EMI", "Principal + Interest", "Bullet / single payment")) }
         val period = Spinner(this).apply { adapter = ArrayAdapter(this@V62CreditRegistrationActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("Monthly", "Quarterly", "Half-yearly", "Yearly", "One-time")) }
         datePicker(start); datePicker(end)
         add(labelled("Principal", amount)); add(labelled("ROI", roi)); add(labelled("Start", start)); add(labelled("End", end)); add(labelled("Repayment method", method)); add(labelled("Periodicity", period)); add(labelled("EMI", emi)); add(labelled("Notes", notes))
-        add(tv("LENDER  ${lender!!.optString("name")}  →  BORROWER  ${borrower!!.optString("name")}", 11f, teal, true), 12)
+        add(text("LENDER  ${lender!!.optString("name")}  →  BORROWER  ${borrower!!.optString("name")}", 11f, teal, true), 12)
         val back = button("← BACK") { step = 1; render() }
         val next = button("CONTINUE →") {
             val a = amount.text.toString().toDoubleOrNull(); val r = roi.text.toString().toDoubleOrNull() ?: 0.0; val e = emi.text.toString().toDoubleOrNull() ?: 0.0
@@ -188,7 +182,7 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
         add(twoButtons(back, next), 16)
     }
 
-    private fun labelled(title: String, view: android.view.View) = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(tv(title, 10f, muted, true)); addView(view, lp()) }
+    private fun labelled(title: String, view: android.view.View) = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(text(title, 10f, muted, true)); addView(view, lp()) }
     private fun twoButtons(first: Button, second: Button) = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; addView(first, LinearLayout.LayoutParams(0, dp(52), 1f).apply { rightMargin = dp(5) }); addView(second, LinearLayout.LayoutParams(0, dp(52), 1f).apply { leftMargin = dp(5) }) }
     private fun datePicker(target: EditText) {
         target.isFocusable = false
@@ -196,16 +190,15 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
     }
 
     private fun guarantorStep() {
-        add(tv("GUARANTOR & DOCUMENT", 11f, muted, true), 16)
-        add(tv("Optional guarantor. If selected, the profile is linked to the credit and included in consent review.", 11f, muted), 4)
+        add(text("GUARANTOR & DOCUMENT", 11f, muted, true), 16)
+        add(text("Optional guarantor. If selected, the profile is linked to the credit and included in consent review.", 11f, muted), 4)
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), dp(14), dp(14), dp(14)); background = card() }
         if (guarantor == null) {
-            box.addView(tv("No guarantor selected", 15f, navy, true))
-            val addG = Button(this).apply { text = "ADD GUARANTOR"; setOnClickListener { chooseProfile("Select guarantor") { guarantor = it; render() } }
-            }
+            box.addView(text("No guarantor selected", 15f, navy, true))
+            val addG = Button(this).apply { text = "ADD GUARANTOR"; setOnClickListener { chooseProfile("Select guarantor") { guarantor = it; render() } } }
             box.addView(addG, lp())
         } else {
-            box.addView(tv("${guarantor!!.optString("name")} • ${guarantor!!.optString("id")}", 15f, navy, true))
+            box.addView(text("${guarantor!!.optString("name")} • ${guarantor!!.optString("id")}", 15f, navy, true))
             box.addView(Button(this).apply { text = "REMOVE GUARANTOR"; setOnClickListener { guarantor = null; render() } }, lp())
         }
         add(box, 8)
@@ -218,11 +211,11 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
 
     private fun consentStep() {
         val amount = draft.getString("amount", "0") ?: "0"; val roi = draft.getString("roi", "0") ?: "0"; val start = draft.getString("start", "") ?: ""; val end = draft.getString("end", "") ?: ""; val method = draft.getString("method", "") ?: ""; val period = draft.getString("period", "") ?: ""; val doc = draft.getString("document", "") ?: ""
-        add(tv("FINAL REVIEW", 11f, muted, true), 16)
+        add(text("FINAL REVIEW", 11f, muted, true), 16)
         val review = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), dp(14), dp(14), dp(14)); background = card(Color.rgb(239, 249, 246)) }
-        review.addView(tv("₹$amount  •  $method  •  $period", 17f, navy, true)); review.addView(tv("ROI $roi%  •  $start → $end", 11f, muted), lp()); review.addView(tv("Lender: ${lender!!.optString("name")}\nBorrower: ${borrower!!.optString("name")}${guarantor?.let { "\nGuarantor: ${it.optString("name")}" } ?: ""}", 11f, navy), lp()); review.addView(tv("Document: ${doc.ifBlank { "Not specified" }}", 10f, muted), lp())
+        review.addView(text("₹$amount  •  $method  •  $period", 17f, navy, true)); review.addView(text("ROI $roi%  •  $start → $end", 11f, muted), lp()); review.addView(text("Lender: ${lender!!.optString("name")}\nBorrower: ${borrower!!.optString("name")}${guarantor?.let { "\nGuarantor: ${it.optString("name")}" } ?: ""}", 11f, navy), lp()); review.addView(text("Document: ${doc.ifBlank { "Not specified" }}", 10f, muted), lp())
         add(review, 8)
-        add(tv("Both lender and borrower consent are required. This APK uses a local demo OTP boundary; production SMS delivery must be connected before real-world use.", 10f, muted), 10)
+        add(text("Both lender and borrower consent are required. This APK uses a local demo OTP boundary; production SMS delivery must be connected before real-world use.", 10f, muted), 10)
         add(button("REQUEST CONSENT OTP") { requestConsent(amount, roi, start, end, method, period, doc) }, 16)
         add(button("← BACK TO GUARANTOR") { step = 3; render() }, 6)
     }
