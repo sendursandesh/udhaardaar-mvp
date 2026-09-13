@@ -5,9 +5,10 @@
         <item name="fontFamily">sans-serif</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowBackground">#F6F9FC</item>
+        <!-- Android 12+ always shows a system launch screen; keep it minimal so it never masquerades as the login page. -->
         <item name="android:windowSplashScreenBackground">#F6F9FC</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/udhaardaar_logo</item>
-        <item name="android:windowSplashScreenAnimationDuration">120</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>
+        <item name="android:windowSplashScreenAnimationDuration">1</item>
         <item name="android:statusBarColor">#F6F9FC</item>
         <item name="android:navigationBarColor">#F6F9FC</item>
         <item name="android:windowLightStatusBar">true</item>
