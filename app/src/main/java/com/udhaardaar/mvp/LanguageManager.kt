@@ -14,7 +14,7 @@ object LanguageManager {
     fun locale(context: Context): Locale = if (isHindi(context)) Locale("hi", "IN") else Locale.ENGLISH
     fun t(context: Context, key: String): String = if (isHindi(context)) HI_TEXT[key] ?: EN_TEXT[key] ?: key else EN_TEXT[key] ?: key
     private val EN_TEXT = mapOf(
-        "app" to "ARTHSAATHI", "tagline" to "Your Asset. Your Record. Your Right.",
+        "app" to "ARTHSAATHI", "tagline" to "Navigate Your Financial Journey", "pillars" to "Plan • Protect • Grow • Nominate",
         "home" to "Home", "credit" to "Credit", "vault" to "Vault", "repay" to "Repayments", "services" to "Services", "profile" to "Profile",
         "good_morning" to "Good Morning", "good_afternoon" to "Good Afternoon", "good_evening" to "Good Evening", "good_night" to "Good Night",
         "overview" to "Your financial picture at a glance", "to_receive" to "TO RECEIVE", "to_pay" to "TO PAY", "assets" to "ASSETS", "liabilities" to "LIABILITIES",
@@ -34,7 +34,7 @@ object LanguageManager {
         "language_saved" to "Language updated", "selected" to "Selected", "more" to "More"
     )
     private val HI_TEXT = mapOf(
-        "app" to "अर्थसाथी", "tagline" to "आपकी संपत्ति • आपका रिकॉर्ड • आपका अधिकार",
+        "app" to "अर्थसाथी", "tagline" to "आपकी वित्तीय यात्रा का साथी", "pillars" to "योजना • सुरक्षा • विकास • नामांकन",
         "home" to "होम", "credit" to "उधार", "vault" to "संपत्ति", "repay" to "भुगतान", "services" to "सेवाएँ", "profile" to "प्रोफ़ाइल",
         "good_morning" to "सुप्रभात", "good_afternoon" to "नमस्कार", "good_evening" to "शुभ संध्या", "good_night" to "शुभ रात्रि",
         "overview" to "आपकी वित्तीय स्थिति एक नज़र में", "to_receive" to "लेना है", "to_pay" to "देना है", "assets" to "संपत्ति", "liabilities" to "देयताएँ",

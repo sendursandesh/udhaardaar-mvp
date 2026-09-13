@@ -4,42 +4,19 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-
-    <!-- A-shaped protective frame. The complete tree/asset ecosystem stays inside the A. -->
-    <path
-        android:fillColor="#0A6248"
-        android:fillType="evenOdd"
-        android:pathData="M8,92 L36,22 Q42,9 54,7 Q66,9 72,22 L100,92 L82,92 L54,30 L26,92 Z M35,80 L54,39 L73,80 L65,80 L54,56 L43,80 Z" />
-
-    <!-- Central golden trunk / growth line -->
-    <path
-        android:fillColor="#D6A51A"
-        android:pathData="M51,32 L57,32 L57,77 L51,77 Z" />
-    <path
-        android:fillColor="#D6A51A"
-        android:pathData="M54,24 L60,31 L54,39 L48,31 Z" />
-
-    <!-- Asset nodes -->
-    <path
-        android:fillColor="#E7B52A"
-        android:pathData="M54,48 A6,6 0,1 0,54.1,48 Z" />
-    <path
-        android:fillColor="#E7B52A"
-        android:pathData="M54,75 A5,5 0,1 0,54.1,75 Z" />
-
-    <!-- Leaves / asset categories, all enclosed by the A -->
-    <path android:fillColor="#118260" android:pathData="M48,44 Q37,35 28,44 Q38,52 48,48 Z" />
-    <path android:fillColor="#118260" android:pathData="M60,44 Q71,35 80,44 Q70,52 60,48 Z" />
-    <path android:fillColor="#15906A" android:pathData="M48,57 Q36,48 27,58 Q38,66 48,61 Z" />
-    <path android:fillColor="#15906A" android:pathData="M60,57 Q72,48 81,58 Q70,66 60,61 Z" />
-    <path android:fillColor="#1B9A70" android:pathData="M49,70 Q39,63 31,71 Q40,77 49,74 Z" />
-    <path android:fillColor="#1B9A70" android:pathData="M59,70 Q69,63 77,71 Q68,77 59,74 Z" />
-
-    <!-- Ground / foundation -->
-    <path
-        android:fillColor="#D6A51A"
-        android:pathData="M18,91 Q54,76 90,91 Q54,86 18,91 Z" />
-    <path
-        android:fillColor="#F1C94C"
-        android:pathData="M29,89 L54,80 L79,89 L54,86 Z" />
+    <!-- ArthSaathi final journey mark: compass ring + A gateway + forward road + destination star -->
+    <path android:fillColor="#0FA89A" android:pathData="M54,9 A45,45 0,1 0,91,77 L82,72 A35,35 0,1 1,28,72 L19,77 A45,45 0,0 0,54,9 Z" />
+    <path android:fillColor="#2A67DD" android:pathData="M18,77 A45,45 0,0 1,19,31 L28,38 A35,35 0,0 0,27,69 Z" />
+    <!-- A / gateway -->
+    <path android:fillColor="#102D52" android:pathData="M28,84 L49,31 L54,20 L80,84 L68,84 L54,49 L41,84 Z" />
+    <!-- Journey road through the gateway -->
+    <path android:fillColor="#D3A125" android:pathData="M49,84 C48,72 49,60 53,51 C55,46 58,41 62,36 L68,47 C63,54 60,62 61,70 C61,76 64,80 67,84 Z" />
+    <path android:fillColor="#F1C85B" android:pathData="M56,84 C53,73 54,61 59,50 L62,55 C58,64 59,75 64,84 Z" />
+    <!-- Destination star -->
+    <path android:fillColor="#D3A125" android:pathData="M54,6 L57,13 L64,16 L57,19 L54,27 L51,19 L44,16 L51,13 Z" />
+    <!-- Route point -->
+    <path android:fillColor="#FFFFFF" android:pathData="M55,39 A4,4 0,1 0,55,47 A4,4 0,1 0,55,39 Z" />
+    <path android:fillColor="#102D52" android:pathData="M55,41 A2,2 0,1 0,55,45 A2,2 0,1 0,55,41 Z" />
+    <!-- Horizon -->
+    <path android:fillColor="#2A67DD" android:pathData="M18,88 Q54,80 90,88 Q54,85 18,88 Z" />
 </vector>
