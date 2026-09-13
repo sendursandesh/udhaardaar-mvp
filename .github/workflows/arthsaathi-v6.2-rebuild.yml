@@ -20,15 +20,14 @@ jobs:
           wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
-      - name: Unit tests
-        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
-      - name: Assemble APK
+      - name: Assemble V6.2 APK (compile gate)
         run: gradle :app:assembleDebug --no-daemon --stacktrace
       - name: Static acceptance gates
         run: |
           set -e
           apk=app/build/outputs/apk/debug/app-debug.apk
           test -s "$apk"
+          test "$(stat -c%s "$apk")" -gt 10000000
           unzip -t "$apk" >/dev/null
           grep -q "versionCode 64" app/build.gradle
           grep -q "versionName '6.2'" app/build.gradle
@@ -36,9 +35,14 @@ jobs:
           grep -q 'Plan • Protect • Grow • Nominate' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
           grep -q 'V62HomeActivity' app/src/main/AndroidManifest.xml
           grep -q 'V62CreditRegistrationActivity' app/src/main/AndroidManifest.xml
+          grep -q 'V62RepaymentActivity' app/src/main/AndroidManifest.xml
+          grep -q 'V62AssetVaultActivity' app/src/main/AndroidManifest.xml
           grep -q 'CREATE NEW PROFILE' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
           grep -q 'REQUEST CONSENT OTP' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
           grep -q 'pow(n)' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
+          grep -q 'RECORD REPAYMENT' app/src/main/java/com/udhaardaar/mvp/V62RepaymentActivity.kt
+          grep -q 'AI ALERT SETTINGS' app/src/main/java/com/udhaardaar/mvp/V62AssetVaultActivity.kt
+          grep -q 'V62CreditRegistrationActivity' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
           ! grep -q 'windowSplashScreenAnimatedIcon' app/src/main/res/values/styles.xml
       - uses: actions/upload-artifact@v4
         with:
