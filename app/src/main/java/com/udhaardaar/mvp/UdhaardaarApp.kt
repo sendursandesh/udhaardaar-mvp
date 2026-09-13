@@ -24,7 +24,9 @@ class UdhaardaarApp : Application() {
     private val muted = Color.rgb(96, 112, 128)
 
     override fun onCreate() {
-        super.onCreate(); migrateLegacyOwner()
+        super.onCreate()
+        // Do not block the launch window with legacy-database migration.
+        Thread { migrateLegacyOwner() }.start()
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityResumed(a: Activity) {
                 a.window.decorView.post {
