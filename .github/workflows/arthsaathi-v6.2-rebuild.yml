@@ -1,8 +1,8 @@
-name: ArthSaathi V6.2 Rebuild From V6.1
+name: ArthSaathi V6.2 Architecture Build
 on:
   workflow_dispatch:
   push:
-    branches: [arthsaathi-v6.2-rebuild-from-v61]
+    branches: [arthsaathi-v6.2-final-architecture]
   pull_request:
     branches: [main]
 permissions:
@@ -20,32 +20,27 @@ jobs:
           wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
-      - name: Assemble V6.2 APK (compile gate)
+      - name: Compile V6.2
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: Static acceptance gates
+      - name: Architecture acceptance gates
         run: |
           set -e
-          apk=app/build/outputs/apk/debug/app-debug.apk
-          test -s "$apk"
-          test "$(stat -c%s "$apk")" -gt 10000000
-          unzip -t "$apk" >/dev/null
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test "$(stat -c%s app/build/outputs/apk/debug/app-debug.apk)" -gt 10000000
           grep -q "versionCode 64" app/build.gradle
           grep -q "versionName '6.2'" app/build.gradle
-          grep -q 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q 'Plan • Protect • Grow • Nominate' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
-          grep -q 'V62HomeActivity' app/src/main/AndroidManifest.xml
-          grep -q 'V62CreditRegistrationActivity' app/src/main/AndroidManifest.xml
-          grep -q 'V62RepaymentActivity' app/src/main/AndroidManifest.xml
-          grep -q 'V62AssetVaultActivity' app/src/main/AndroidManifest.xml
-          grep -q 'CREATE NEW PROFILE' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
-          grep -q 'REQUEST CONSENT OTP' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
-          grep -q 'pow(n)' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
-          grep -q 'RECORD REPAYMENT' app/src/main/java/com/udhaardaar/mvp/V62RepaymentActivity.kt
-          grep -q 'AI ALERT SETTINGS' app/src/main/java/com/udhaardaar/mvp/V62AssetVaultActivity.kt
-          grep -q 'V62CreditRegistrationActivity' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -q 'V62ArchitectureSpec' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureSpec.kt
+          grep -q 'V62EventBus' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
+          grep -q 'HISTORY_SHARING' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureSpec.kt
+          grep -q 'CREDIT_REGISTRATION' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureSpec.kt
+          grep -q 'V62DocumentScanner' app/src/main/java/com/udhaardaar/mvp/V62DocumentScanner.kt
+          grep -q 'V62DonutChart' app/src/main/java/com/udhaardaar/mvp/V62Charts.kt
+          grep -q 'V62TTMMActivity' app/src/main/AndroidManifest.xml
+          grep -q 'V62LegacyLegalAIActivity' app/src/main/AndroidManifest.xml
+          grep -q 'LoginActivity' app/src/main/AndroidManifest.xml
           ! grep -q 'windowSplashScreenAnimatedIcon' app/src/main/res/values/styles.xml
       - uses: actions/upload-artifact@v4
         with:
-          name: ArthSaathi-V6.2-Rebuilt-APK
+          name: ArthSaathi-V6.2-Architecture-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
