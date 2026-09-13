@@ -44,7 +44,10 @@ jobs:
           grep -q 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
           grep -q 'Plan • Protect • Grow • Nominate' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
           grep -q 'R.drawable.udhaardaar_logo' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
-          grep -q 'SMART ACTIONS' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -q 'Quick access' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          ! grep -q 'SMART ACTIONS' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          ! grep -q 'ScrollView' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -q 'sans-serif' app/src/main/java/com/udhaardaar/mvp/UdhaardaarApp.kt
           grep -q 'V62CreditRegistrationActivity' app/src/main/AndroidManifest.xml
           grep -q 'CREATE NEW PROFILE' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
           grep -q 'REQUEST CONSENT OTP' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
