@@ -7,6 +7,8 @@
         <activity android:name=".LoginActivity" android:exported="true" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize|stateAlwaysHidden"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity>
         <activity android:name=".V62HomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V62CreditRegistrationActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".V62RepaymentActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".V62AssetVaultActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V61RectifiedActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ArthSaathiHomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ArthSaathiModulesActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
