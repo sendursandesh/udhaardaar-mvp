@@ -5,41 +5,27 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- A-shaped protective frame. The complete tree/asset ecosystem stays inside the A. -->
-    <path
-        android:fillColor="#0A6248"
-        android:fillType="evenOdd"
-        android:pathData="M8,92 L36,22 Q42,9 54,7 Q66,9 72,22 L100,92 L82,92 L54,30 L26,92 Z M35,80 L54,39 L73,80 L65,80 L54,56 L43,80 Z" />
+    <!-- Enclosing journey arc -->
+    <path android:fillColor="#18B7A4" android:pathData="M17,72 C10,56 17,34 35,22 C50,12 69,14 84,25 C96,34 101,49 96,64 L88,61 C91,48 85,36 74,29 C60,20 44,21 32,29 C18,38 14,55 24,68 Z" />
+    <path android:fillColor="#1765C0" android:pathData="M20,74 C11,58 17,38 30,28 L36,35 C25,44 22,57 29,68 Z" />
 
-    <!-- Central golden trunk / growth line -->
-    <path
-        android:fillColor="#D6A51A"
-        android:pathData="M51,32 L57,32 L57,77 L51,77 Z" />
-    <path
-        android:fillColor="#D6A51A"
-        android:pathData="M54,24 L60,31 L54,39 L48,31 Z" />
+    <!-- Stylised A / destination peak -->
+    <path android:fillColor="#163A68" android:fillType="evenOdd" android:pathData="M28,78 L48,25 L54,15 L80,78 L67,78 L54,43 L42,78 Z M45,65 L54,40 L63,65 Z" />
+    <path android:fillColor="#1BAF9F" android:pathData="M54,17 L62,33 L54,47 L47,33 Z" />
 
-    <!-- Asset nodes -->
-    <path
-        android:fillColor="#E7B52A"
-        android:pathData="M54,48 A6,6 0,1 0,54.1,48 Z" />
-    <path
-        android:fillColor="#E7B52A"
-        android:pathData="M54,75 A5,5 0,1 0,54.1,75 Z" />
+    <!-- Financial journey road -->
+    <path android:fillColor="#E2A52B" android:pathData="M49,78 C48,69 47,60 50,52 C51,48 54,43 58,39 L63,46 C58,52 56,59 57,66 C58,71 61,75 65,78 Z" />
+    <path android:fillColor="#F5C65A" android:pathData="M58,78 C54,68 53,58 58,48 L61,52 C57,61 59,70 65,78 Z" />
 
-    <!-- Leaves / asset categories, all enclosed by the A -->
-    <path android:fillColor="#118260" android:pathData="M48,44 Q37,35 28,44 Q38,52 48,48 Z" />
-    <path android:fillColor="#118260" android:pathData="M60,44 Q71,35 80,44 Q70,52 60,48 Z" />
-    <path android:fillColor="#15906A" android:pathData="M48,57 Q36,48 27,58 Q38,66 48,61 Z" />
-    <path android:fillColor="#15906A" android:pathData="M60,57 Q72,48 81,58 Q70,66 60,61 Z" />
-    <path android:fillColor="#1B9A70" android:pathData="M49,70 Q39,63 31,71 Q40,77 49,74 Z" />
-    <path android:fillColor="#1B9A70" android:pathData="M59,70 Q69,63 77,71 Q68,77 59,74 Z" />
+    <!-- Traveller -->
+    <path android:fillColor="#163A68" android:pathData="M52,46 A3.8,3.8 0,1 0,59.6,46 A3.8,3.8 0,1 0,52,46" />
+    <path android:fillColor="#163A68" android:pathData="M53,51 L58,51 L60,62 L51,62 Z" />
+    <path android:fillColor="#163A68" android:pathData="M52,61 L55,61 L52,72 L49,72 Z" />
+    <path android:fillColor="#163A68" android:pathData="M57,61 L60,61 L64,72 L61,72 Z" />
 
-    <!-- Ground / foundation -->
-    <path
-        android:fillColor="#D6A51A"
-        android:pathData="M18,91 Q54,76 90,91 Q54,86 18,91 Z" />
-    <path
-        android:fillColor="#F1C94C"
-        android:pathData="M29,89 L54,80 L79,89 L54,86 Z" />
+    <!-- North-star destination -->
+    <path android:fillColor="#D7A11E" android:pathData="M54,7 L57,13 L63,16 L57,19 L54,26 L51,19 L45,16 L51,13 Z" />
+
+    <!-- Foundation -->
+    <path android:fillColor="#1765C0" android:pathData="M19,82 Q54,70 89,82 Q54,77 19,82 Z" />
 </vector>
