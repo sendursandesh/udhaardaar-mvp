@@ -2,6 +2,8 @@ name: ArthSaathi V6.2 Brand Redesign Build
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
   push:
     branches: [arthsaathi-v6.2-brand-redesign]
 
@@ -45,7 +47,7 @@ jobs:
           grep -q 'SMART ACTIONS' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
           grep -q 'V62CreditRegistrationActivity' app/src/main/AndroidManifest.xml
           grep -q 'CREATE NEW PROFILE' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
-          grep -q 'CONSENT OTP' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
+          grep -q 'Consent OTP' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
       - name: Upload V6.2 APK
         uses: actions/upload-artifact@v4
         with:
