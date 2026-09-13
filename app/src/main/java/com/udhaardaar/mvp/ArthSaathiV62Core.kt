@@ -6,6 +6,7 @@ import org.json.JSONObject
 import java.util.UUID
 
 object ArthSaathiV62Core {
+    const val COUNTERPARTIES = "v62_counterparties"
     const val RELATIONSHIPS = "v62_relationships"
     const val REPAYMENTS = "v62_repayments"
     const val DOCUMENTS = "v62_documents"
