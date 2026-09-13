@@ -30,7 +30,7 @@ jobs:
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
       - name: Assemble V6.2 APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: Verify V6.2 branding
+      - name: Verify V6.2 APK and flows
         run: |
           set -e
           apk=app/build/outputs/apk/debug/app-debug.apk
@@ -40,9 +40,12 @@ jobs:
           grep -q "versionCode 64" app/build.gradle
           grep -q "versionName '6.2'" app/build.gradle
           grep -q 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q 'Plan  •  Protect  •  Grow  •  Nominate' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q 'Plan • Protect • Grow • Nominate' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
           grep -q 'R.drawable.udhaardaar_logo' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
-          grep -q 'Smart Actions\|SMART ACTIONS' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -q 'SMART ACTIONS' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -q 'V62CreditRegistrationActivity' app/src/main/AndroidManifest.xml
+          grep -q 'CREATE NEW PROFILE' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
+          grep -q 'CONSENT OTP' app/src/main/java/com/udhaardaar/mvp/V62CreditRegistrationActivity.kt
       - name: Upload V6.2 APK
         uses: actions/upload-artifact@v4
         with:
