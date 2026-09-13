@@ -32,6 +32,7 @@ object V62SmartChargeCheckReader {
         "PENALTY" to Regex("penal|penalty|default interest|late payment", RegexOption.IGNORE_CASE),
         "BOUNCE" to Regex("bounce|return charge|dishonou?r", RegexOption.IGNORE_CASE),
         "ANNUAL_RENEWAL" to Regex("annual fee|renewal fee|renewal charges", RegexOption.IGNORE_CASE),
+        "INTEREST" to Regex("interest|int\\.", RegexOption.IGNORE_CASE),
         "OTHER_CHARGE" to Regex("fee|charge|charges", RegexOption.IGNORE_CASE)
     )
 
@@ -60,7 +61,7 @@ object V62SmartChargeCheckReader {
             findings.add(Finding(category, line.take(180), amount, "SANCTIONED", line, pageOf(line)))
         }
         val unique = findings.distinctBy { "${it.category}|${it.amount}|${it.sourceText}" }
-        return Result(unique, "Found ${unique.size} sanctioned charge/fee candidates. Review each against the sanction document.")
+        return Result(unique, "Found ${unique.size} sanctioned charge/fee/interest candidates. Review each against the sanction document.")
     }
 
     fun readStatement(text: String): Result {
