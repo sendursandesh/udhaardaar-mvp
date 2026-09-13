@@ -15,8 +15,8 @@
     <!-- Destination star -->
     <path android:fillColor="#D3A125" android:pathData="M54,6 L57,13 L64,16 L57,19 L54,27 L51,19 L44,16 L51,13 Z" />
     <!-- Route point -->
-    <circle android:fillColor="#FFFFFF" android:cx="55" android:cy="43" android:r="3.5" />
-    <circle android:fillColor="#102D52" android:cx="55" android:cy="43" android:r="2" />
+    <path android:fillColor="#FFFFFF" android:pathData="M55,39 A4,4 0,1 0,55,47 A4,4 0,1 0,55,39 Z" />
+    <path android:fillColor="#102D52" android:pathData="M55,41 A2,2 0,1 0,55,45 A2,2 0,1 0,55,41 Z" />
     <!-- Horizon -->
     <path android:fillColor="#2A67DD" android:pathData="M18,88 Q54,80 90,88 Q54,85 18,88 Z" />
 </vector>
