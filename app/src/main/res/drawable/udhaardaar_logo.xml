@@ -4,24 +4,19 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-
-    <!-- Final ArthSaathi journey compass: direction + road + destination -->
-    <path android:fillColor="#18B7A4" android:pathData="M18,67 C12,51 19,34 34,24 C48,14 66,14 80,22 C93,29 99,43 97,57 L88,54 C89,44 84,34 75,29 C63,22 48,22 37,30 C26,38 22,50 27,62 Z" />
-    <path android:fillColor="#1765C0" android:pathData="M18,67 C12,51 19,34 34,24 L39,31 C28,39 23,51 27,62 Z" />
-
-    <!-- A-shaped destination gateway -->
-    <path android:fillColor="#163A68" android:pathData="M28,79 L48,28 L54,17 L80,79 L67,79 L54,45 L41,79 Z" />
-
-    <!-- Journey road running through the A -->
-    <path android:fillColor="#E2A52B" android:pathData="M50,79 C49,69 49,59 53,49 C55,44 58,39 61,35 L67,45 C62,51 59,59 60,67 C61,72 63,76 66,79 Z" />
-    <path android:fillColor="#F7D36A" android:pathData="M57,79 C54,69 54,58 59,48 L62,53 C58,62 60,71 65,79 Z" />
-
-    <!-- North-star destination -->
-    <path android:fillColor="#D7A11E" android:pathData="M54,7 L57,13 L64,16 L57,19 L54,26 L51,19 L44,16 L51,13 Z" />
-
+    <!-- ArthSaathi final journey mark: compass ring + A gateway + forward road + destination star -->
+    <path android:fillColor="#0FA89A" android:pathData="M54,9 A45,45 0,1 0,91,77 L82,72 A35,35 0,1 1,28,72 L19,77 A45,45 0,0 0,54,9 Z" />
+    <path android:fillColor="#2A67DD" android:pathData="M18,77 A45,45 0,0 1,19,31 L28,38 A35,35 0,0 0,27,69 Z" />
+    <!-- A / gateway -->
+    <path android:fillColor="#102D52" android:pathData="M28,84 L49,31 L54,20 L80,84 L68,84 L54,49 L41,84 Z" />
+    <!-- Journey road through the gateway -->
+    <path android:fillColor="#D3A125" android:pathData="M49,84 C48,72 49,60 53,51 C55,46 58,41 62,36 L68,47 C63,54 60,62 61,70 C61,76 64,80 67,84 Z" />
+    <path android:fillColor="#F1C85B" android:pathData="M56,84 C53,73 54,61 59,50 L62,55 C58,64 59,75 64,84 Z" />
+    <!-- Destination star -->
+    <path android:fillColor="#D3A125" android:pathData="M54,6 L57,13 L64,16 L57,19 L54,27 L51,19 L44,16 L51,13 Z" />
     <!-- Route point -->
-    <path android:fillColor="#163A68" android:pathData="M50,42 A5,5 0,1 0,60,42 A5,5 0,1 0,50,42" />
-
-    <!-- Clean foundation / road horizon -->
-    <path android:fillColor="#1765C0" android:pathData="M18,83 Q54,75 90,83 Q54,79 18,83 Z" />
+    <circle android:fillColor="#FFFFFF" android:cx="55" android:cy="43" android:r="3.5" />
+    <circle android:fillColor="#102D52" android:cx="55" android:cy="43" android:r="2" />
+    <!-- Horizon -->
+    <path android:fillColor="#2A67DD" android:pathData="M18,88 Q54,80 90,88 Q54,85 18,88 Z" />
 </vector>
