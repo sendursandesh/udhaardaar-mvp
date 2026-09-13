@@ -4,12 +4,12 @@
         <item name="android:fontFamily">sans-serif</item>
         <item name="fontFamily">sans-serif</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:windowBackground">#F6F8FB</item>
-        <item name="android:windowSplashScreenBackground">#F6F8FB</item>
+        <item name="android:windowBackground">#F6F9FC</item>
+        <item name="android:windowSplashScreenBackground">#F6F9FC</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/udhaardaar_logo</item>
-        <item name="android:windowSplashScreenAnimationDuration">350</item>
-        <item name="android:statusBarColor">#F6F8FB</item>
-        <item name="android:navigationBarColor">#F6F8FB</item>
+        <item name="android:windowSplashScreenAnimationDuration">120</item>
+        <item name="android:statusBarColor">#F6F9FC</item>
+        <item name="android:navigationBarColor">#F6F9FC</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
         <item name="colorAccent">#2663EB</item>
