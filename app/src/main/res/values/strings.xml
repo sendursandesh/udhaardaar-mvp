@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ArthSaathi</string>
-    <string name="app_description">Your Money. Your Records. Your Rights.</string>
+    <string name="app_description">Navigate Your Financial Journey</string>
+    <string name="brand_pillars">Plan • Protect • Grow • Nominate</string>
 </resources>
