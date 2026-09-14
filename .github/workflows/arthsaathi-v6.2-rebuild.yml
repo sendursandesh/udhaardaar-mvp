@@ -37,9 +37,9 @@ jobs:
           grep -q 'V62TTMMActivity' app/src/main/AndroidManifest.xml
           grep -q 'V62LegacyLegalAIActivity' app/src/main/AndroidManifest.xml
           grep -q 'LoginActivity' app/src/main/AndroidManifest.xml
-          grep -q 'QR_KHATA' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureSpec.kt
-          grep -q 'FORMAL_CREDIT' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureSpec.kt
-          grep -q 'CHARGECHECK' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureSpec.kt
+          grep -q 'QR_KHATA' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
+          grep -q 'FORMAL_CREDIT' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
+          grep -q 'CHARGECHECK' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
           grep -q 'ACCOUNTING_INTEGRATION' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Domain.kt
           grep -q 'FUNDING_MARKETPLACE' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Domain.kt
           grep -q 'TALLY' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Accounting.kt
