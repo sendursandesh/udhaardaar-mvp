@@ -29,7 +29,8 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
         setContentView(ScrollView(this).apply{isFillViewport=true;addView(root)})
         add(ArthSaathiV62Design.title(this,ArthSaathiV62Design.BRAND,ArthSaathiV62Design.TAGLINE),2)
         add(ArthSaathiV62Design.text(this,ArthSaathiV62Design.PILLARS,10f,ArthSaathiV62Design.GOLD,true),2)
-        val mobile=p.getString("current_mobile","")?:"";val name=p.getString("name_$mobile","User")?:"User"
+        val mobile=p.getString("current_mobile","") ?: ""
+        val name=p.getString("name_$mobile","User") ?: "User"
         val hour=java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);val greeting=when(hour){in 5..11->"Good Morning";in 12..16->"Good Afternoon";in 17..20->"Good Evening";else->"Good Night"}
         add(ArthSaathiV62Design.text(this,"$greeting, $name",21f,ArthSaathiV62Design.NAVY,true),13);add(ArthSaathiV62Design.text(this,"Your financial life, connected in one intelligent view.",12f,ArthSaathiV62Design.MUTED),3)
         val relationships=store.all(V62Store.RELATIONSHIPS).filter{it.optString("ownerUserId")==owner};val assets=store.all(V62Store.ASSETS).filter{it.optString("ownerUserId")==owner};val policies=store.all(V62Store.INSURANCE).filter{it.optString("ownerUserId")==owner};val expenses=store.all(V62Store.TTMM_EXPENSES).filter{it.optString("ownerUserId",owner)==owner}
