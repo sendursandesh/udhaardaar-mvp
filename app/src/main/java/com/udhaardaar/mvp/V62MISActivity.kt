@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.*
 import java.util.Locale
 
+/** Connected MIS surface: refreshes from the same V6.2 store and event stream as all modules. */
 class V62MISActivity : androidx.appcompat.app.AppCompatActivity() {
     private val s by lazy { V5LocalStore(this) }
     private val d by lazy { resources.displayMetrics.density }
@@ -14,44 +15,36 @@ class V62MISActivity : androidx.appcompat.app.AppCompatActivity() {
     private val Int.dp: Int get() = (this * d).toInt()
     private fun add(v: View, top: Int = 7) = ArthSaathiV62Design.add(root, v, top)
     private fun money(x: Double) = "₹${String.format(Locale.US, "%,.0f", x)}"
+    private val eventListener: (V62Event) -> Unit = { runOnUiThread { if (!isFinishing) render() } }
+
     override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
+    override fun onStart() { super.onStart(); V62EventBus.subscribe(eventListener) }
+    override fun onStop() { V62EventBus.unsubscribe(eventListener); super.onStop() }
     override fun onResume() { super.onResume(); if (!isFinishing) render() }
 
     private fun render() {
-        root.removeAllViews(); add(ArthSaathiV62Design.title(this, "MIS & Financial Intelligence", "See the complete connected financial picture"), 2)
-        add(ArthSaathiV62Design.text(this, "Connected financial intelligence across assets, repayments, insurance, charges, savings and informal credit.", 10f, ArthSaathiV62Design.MUTED), 5)
+        root.removeAllViews()
+        add(ArthSaathiV62Design.title(this, "MIS & Financial Intelligence", "See the complete connected financial picture"), 2)
+        add(ArthSaathiV62Design.text(this, "Live from the V6.2 source-of-truth records. Changes in assets, repayments, insurance, charges, savings and credit automatically refresh this view.", 10f, ArthSaathiV62Design.MUTED), 5)
         val m = V62MisEngine.metrics(this)
-        val a = s.all(V62Store.ASSETS)
-        val p = s.all(V62Store.INSURANCE)
-        val total = m.optDouble("assetValue")
-        val ret = m.optDouble("interestReceived")
-        val charges = m.optDouble("charges")
-        val saved = m.optDouble("appSavings")
-        val idle = m.optDouble("idleFunds")
-        val liabilities = m.optDouble("liabilities")
-        val exposure = m.optDouble("informalCreditExposure")
+        val a = s.all(V62Store.ASSETS); val p = s.all(V62Store.INSURANCE)
+        val total = m.optDouble("assetValue"); val ret = m.optDouble("interestReceived"); val charges = m.optDouble("charges")
+        val saved = m.optDouble("appSavings"); val idle = m.optDouble("idleFunds"); val liabilities = m.optDouble("liabilities"); val exposure = m.optDouble("informalCreditExposure")
         listOf("CURRENT ASSETS" to money(total), "INTEREST RECEIVED" to money(ret), "CHARGES" to money(charges), "APP SAVINGS" to money(saved), "IDLE FUNDS" to money(idle), "LIABILITIES" to money(liabilities), "INFORMAL CREDIT OUTSTANDING" to money(exposure)).forEach { metric(it.first, it.second) }
         add(ArthSaathiV62Design.section(this, "ASSET ALLOCATION"), 10)
         val current = a.filter { it.optBoolean("currentAsset", true) && it.optString("lifecycleStatus", "ACTIVE") !in setOf("SOLD", "TRANSFERRED", "GIFTED", "DISPOSED") }
         val g = current.groupBy { it.optString("type", "Other") }
-        if (g.isNotEmpty()) {
-            add(V62DonutChart(this, g.values.map { it.sumOf { q -> q.optDouble("value", 0.0) }.toFloat() }), 4)
-            g.entries.forEachIndexed { i, e -> row(e.key, money(e.value.sumOf { q -> q.optDouble("value", 0.0) }), "${e.value.size} current item(s)", i % 2 == 0) }
-        } else add(ArthSaathiV62Design.text(this, "No current assets recorded.", 11f, ArthSaathiV62Design.MUTED), 4)
-        add(ArthSaathiV62Design.section(this, "PERFORMANCE • RISK • OPPORTUNITY"), 14)
-        head("Metric", "Recorded", "Basis")
+        if (g.isNotEmpty()) { add(V62DonutChart(this, g.values.map { it.sumOf { q -> q.optDouble("value", 0.0) }.toFloat() }), 4); g.entries.forEachIndexed { i, e -> row(e.key, money(e.value.sumOf { q -> q.optDouble("value", 0.0) }), "${e.value.size} current item(s)", i % 2 == 0) } }
+        else add(ArthSaathiV62Design.text(this, "No current assets recorded.", 11f, ArthSaathiV62Design.MUTED), 4)
+        add(ArthSaathiV62Design.section(this, "PERFORMANCE • RISK • OPPORTUNITY"), 14); head("Metric", "Recorded", "Basis")
         row("Average current investment", if (current.isEmpty()) "₹0" else money(total / current.size), "Current assets", true)
         row("Risk tags", "${current.count { it.optString("risk").isNotBlank() }} / ${current.size}", "Asset records", false)
         row("Insurance policies", p.size.toString(), "Protection vault", true)
         val highestYield = current.mapNotNull { it.optDouble("yieldPercent", Double.NaN).takeUnless { x -> x.isNaN() } }.maxOrNull() ?: 0.0
         row("Estimated idle opportunity", money(idle * highestYield / 100), "Idle × highest recorded yield (${String.format(Locale.US, "%.2f", highestYield)}%)", false)
-        add(ArthSaathiV62Design.section(this, "RETURNS • CHARGES • SAVINGS"), 14)
-        head("Measure", "Amount", "Source")
-        row("Interest / returns", money(ret), "Repayments", true)
-        row("Charges", money(charges), "Connected records", false)
-        row("App savings", money(saved), "Savings ledger", true)
-        row("Historical asset value", money(m.optDouble("historicalAssetValue")), "Includes closed assets", false)
-        add(ArthSaathiV62Design.text(this, "Closed/sold assets remain historical but are excluded from current net-worth asset value. Opportunity-cost estimates are shown only against a recorded yield; no benchmark is invented.", 10f, ArthSaathiV62Design.MUTED), 14)
+        add(ArthSaathiV62Design.section(this, "RETURNS • CHARGES • SAVINGS"), 14); head("Measure", "Amount", "Source")
+        row("Interest / returns", money(ret), "Repayments", true); row("Charges", money(charges), "Connected records", false); row("App savings", money(saved), "Savings ledger", true); row("Historical asset value", money(m.optDouble("historicalAssetValue")), "Includes closed assets", false)
+        add(ArthSaathiV62Design.text(this, "Closed/sold assets remain historical but are excluded from current net-worth asset value. Opportunity-cost estimates use only a yield explicitly recorded on an asset.", 10f, ArthSaathiV62Design.MUTED), 14)
         add(ArthSaathiV62Design.button(this, "REFRESH INTELLIGENCE", ArthSaathiV62Design.TEAL) { render() }, 10)
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
     }
