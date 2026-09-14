@@ -3,6 +3,7 @@ package com.udhaardaar.mvp
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
+import android.view.View
 import android.widget.*
 import java.util.Locale
 
@@ -11,22 +12,50 @@ class V62MISActivity : androidx.appcompat.app.AppCompatActivity() {
     private val d by lazy { resources.displayMetrics.density }
     private val root by lazy { LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16.dp, 8.dp, 16.dp, 28.dp); setBackgroundColor(ArthSaathiV62Design.BG) } }
     private val Int.dp: Int get() = (this * d).toInt()
+    private fun add(v: View, top: Int = 7) = ArthSaathiV62Design.add(root, v, top)
     private fun money(x: Double) = "₹${String.format(Locale.US, "%,.0f", x)}"
     override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
     override fun onResume() { super.onResume(); if (!isFinishing) render() }
 
     private fun render() {
-        root.removeAllViews(); ArthSaathiV62Design.add(root, ArthSaathiV62Design.title(this, "MIS & Financial Intelligence", "See the complete connected financial picture"), 2)
-        val m = V62MisEngine.metrics(this); val a = s.all(V62Store.ASSETS); val r = s.all(V62Store.REPAYMENTS); val p = s.all(V62Store.INSURANCE); val total = m.optDouble("assetValue"); val ret = m.optDouble("interestReceived"); val charges = m.optDouble("charges"); val saved = m.optDouble("appSavings"); val idle = m.optDouble("idleFunds"); val liabilities = m.optDouble("liabilities"); val exposure = m.optDouble("informalCreditExposure")
+        root.removeAllViews(); add(ArthSaathiV62Design.title(this, "MIS & Financial Intelligence", "See the complete connected financial picture"), 2)
+        add(ArthSaathiV62Design.text(this, "Connected financial intelligence across assets, repayments, insurance, charges, savings and informal credit.", 10f, ArthSaathiV62Design.MUTED), 5)
+        val m = V62MisEngine.metrics(this)
+        val a = s.all(V62Store.ASSETS)
+        val p = s.all(V62Store.INSURANCE)
+        val total = m.optDouble("assetValue")
+        val ret = m.optDouble("interestReceived")
+        val charges = m.optDouble("charges")
+        val saved = m.optDouble("appSavings")
+        val idle = m.optDouble("idleFunds")
+        val liabilities = m.optDouble("liabilities")
+        val exposure = m.optDouble("informalCreditExposure")
         listOf("CURRENT ASSETS" to money(total), "INTEREST RECEIVED" to money(ret), "CHARGES" to money(charges), "APP SAVINGS" to money(saved), "IDLE FUNDS" to money(idle), "LIABILITIES" to money(liabilities), "INFORMAL CREDIT OUTSTANDING" to money(exposure)).forEach { metric(it.first, it.second) }
         add(ArthSaathiV62Design.section(this, "ASSET ALLOCATION"), 10)
-        val current = a.filter { it.optBoolean("currentAsset", true) && it.optString("lifecycleStatus", "ACTIVE") !in setOf("SOLD", "TRANSFERRED", "GIFTED", "DISPOSED") }; val g = current.groupBy { it.optString("type", "Other") }
-        if (g.isNotEmpty()) { add(V62DonutChart(this, g.values.map { it.sumOf { q -> q.optDouble("value", 0.0) }.toFloat() }), 4); g.entries.forEachIndexed { i, e -> row(e.key, money(e.value.sumOf { q -> q.optDouble("value", 0.0) }), "${e.value.size} current item(s)", i % 2 == 0) } } else add(ArthSaathiV62Design.text(this, "No current assets recorded.", 11f, ArthSaathiV62Design.MUTED), 4)
-        add(ArthSaathiV62Design.section(this, "PERFORMANCE • RISK • OPPORTUNITY"), 14); head("Metric", "Recorded", "Basis"); row("Average current investment", if (current.isEmpty()) "₹0" else money(total / current.size), "Current assets", true); row("Risk tags", "${current.count { it.optString("risk").isNotBlank() }} / ${current.size}", "Asset records", false); row("Insurance policies", p.size.toString(), "Protection vault", true); val highestYield = current.mapNotNull { it.optDouble("yieldPercent", Double.NaN).takeUnless { x -> x.isNaN() } }.maxOrNull() ?: 0.0; row("Estimated idle opportunity", money(idle * highestYield / 100), "Idle × highest recorded yield (${String.format(Locale.US,"%.2f",highestYield)}%)", false)
-        add(ArthSaathiV62Design.section(this, "RETURNS • CHARGES • SAVINGS"), 14); head("Measure", "Amount", "Source"); row("Interest / returns", money(ret), "Repayments", true); row("Charges", money(charges), "Connected records", false); row("App savings", money(saved), "Savings ledger", true); row("Historical asset value", money(m.optDouble("historicalAssetValue")), "Includes closed assets", false)
-        add(ArthSaathiV62Design.text(this, "Closed/sold assets remain historical but are excluded from current net-worth asset value. Opportunity-cost estimates are shown only against a recorded yield; no benchmark is invented.", 10f, ArthSaathiV62Design.MUTED), 14); add(ArthSaathiV62Design.button(this, "REFRESH INTELLIGENCE", ArthSaathiV62Design.TEAL) { render() }, 10); setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+        val current = a.filter { it.optBoolean("currentAsset", true) && it.optString("lifecycleStatus", "ACTIVE") !in setOf("SOLD", "TRANSFERRED", "GIFTED", "DISPOSED") }
+        val g = current.groupBy { it.optString("type", "Other") }
+        if (g.isNotEmpty()) {
+            add(V62DonutChart(this, g.values.map { it.sumOf { q -> q.optDouble("value", 0.0) }.toFloat() }), 4)
+            g.entries.forEachIndexed { i, e -> row(e.key, money(e.value.sumOf { q -> q.optDouble("value", 0.0) }), "${e.value.size} current item(s)", i % 2 == 0) }
+        } else add(ArthSaathiV62Design.text(this, "No current assets recorded.", 11f, ArthSaathiV62Design.MUTED), 4)
+        add(ArthSaathiV62Design.section(this, "PERFORMANCE • RISK • OPPORTUNITY"), 14)
+        head("Metric", "Recorded", "Basis")
+        row("Average current investment", if (current.isEmpty()) "₹0" else money(total / current.size), "Current assets", true)
+        row("Risk tags", "${current.count { it.optString("risk").isNotBlank() }} / ${current.size}", "Asset records", false)
+        row("Insurance policies", p.size.toString(), "Protection vault", true)
+        val highestYield = current.mapNotNull { it.optDouble("yieldPercent", Double.NaN).takeUnless { x -> x.isNaN() } }.maxOrNull() ?: 0.0
+        row("Estimated idle opportunity", money(idle * highestYield / 100), "Idle × highest recorded yield (${String.format(Locale.US, "%.2f", highestYield)}%)", false)
+        add(ArthSaathiV62Design.section(this, "RETURNS • CHARGES • SAVINGS"), 14)
+        head("Measure", "Amount", "Source")
+        row("Interest / returns", money(ret), "Repayments", true)
+        row("Charges", money(charges), "Connected records", false)
+        row("App savings", money(saved), "Savings ledger", true)
+        row("Historical asset value", money(m.optDouble("historicalAssetValue")), "Includes closed assets", false)
+        add(ArthSaathiV62Design.text(this, "Closed/sold assets remain historical but are excluded from current net-worth asset value. Opportunity-cost estimates are shown only against a recorded yield; no benchmark is invented.", 10f, ArthSaathiV62Design.MUTED), 14)
+        add(ArthSaathiV62Design.button(this, "REFRESH INTELLIGENCE", ArthSaathiV62Design.TEAL) { render() }, 10)
+        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
     }
-    private fun metric(k: String, v: String) { val b=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(12.dp,9.dp,12.dp,9.dp);background=ArthSaathiV62Design.card(Color.WHITE,14,d)};b.addView(ArthSaathiV62Design.text(this,k,9f,ArthSaathiV62Design.MUTED,true));b.addView(ArthSaathiV62Design.text(this,v,18f,ArthSaathiV62Design.NAVY,true));ArthSaathiV62Design.add(root,b,6) }
-    private fun head(a:String,b:String,c:String){val r=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;setPadding(8.dp,7.dp,8.dp,7.dp);background=ArthSaathiV62Design.card(0xffeef3f8.toInt(),10,d)};listOf(a,b,c).forEachIndexed{i,x->r.addView(ArthSaathiV62Design.text(this,x,9f,ArthSaathiV62Design.MUTED,true),LinearLayout.LayoutParams(0,-2,if(i==0)1.3f else 1f))};ArthSaathiV62Design.add(root,r,4)}
-    private fun row(a:String,b:String,c:String,even:Boolean){val r=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(8.dp,8.dp,8.dp,8.dp);background=ArthSaathiV62Design.card(if(even)Color.WHITE else 0xfff8fafc.toInt(),10,d)};listOf(a,b,c).forEachIndexed{i,x->r.addView(ArthSaathiV62Design.text(this,x,10f,ArthSaathiV62Design.NAVY,i==0),LinearLayout.LayoutParams(0,-2,if(i==0)1.3f else 1f))};ArthSaathiV62Design.add(root,r,2)}
+    private fun metric(k: String, v: String) { val b=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(12.dp,9.dp,12.dp,9.dp);background=ArthSaathiV62Design.card(Color.WHITE,14,d)};b.addView(ArthSaathiV62Design.text(this,k,9f,ArthSaathiV62Design.MUTED,true));b.addView(ArthSaathiV62Design.text(this,v,18f,ArthSaathiV62Design.NAVY,true));add(b,6) }
+    private fun head(a:String,b:String,c:String){val r=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;setPadding(8.dp,7.dp,8.dp,7.dp);background=ArthSaathiV62Design.card(0xffeef3f8.toInt(),10,d)};listOf(a,b,c).forEachIndexed{i,x->r.addView(ArthSaathiV62Design.text(this,x,9f,ArthSaathiV62Design.MUTED,true),LinearLayout.LayoutParams(0,-2,if(i==0)1.3f else 1f))};add(r,4)}
+    private fun row(a:String,b:String,c:String,even:Boolean){val r=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(8.dp,8.dp,8.dp,8.dp);background=ArthSaathiV62Design.card(if(even)Color.WHITE else 0xfff8fafc.toInt(),10,d)};listOf(a,b,c).forEachIndexed{i,x->r.addView(ArthSaathiV62Design.text(this,x,10f,ArthSaathiV62Design.NAVY,i==0),LinearLayout.LayoutParams(0,-2,if(i==0)1.3f else 1f))};add(r,2)}
 }
