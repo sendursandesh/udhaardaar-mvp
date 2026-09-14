@@ -27,7 +27,9 @@ class V62MISActivity : androidx.appcompat.app.AppCompatActivity() {
         add(ArthSaathiV62Design.title(this, "MIS & Financial Intelligence", "See the complete connected financial picture"), 2)
         add(ArthSaathiV62Design.text(this, "Live from the V6.2 source-of-truth records. Changes in assets, repayments, insurance, charges, savings and credit automatically refresh this view.", 10f, ArthSaathiV62Design.MUTED), 5)
         val m = V62MisEngine.metrics(this)
-        val a = s.all(V62Store.ASSETS); val p = s.all(V62Store.INSURANCE)
+        val owner = V62Integration.currentUserId(this)
+        val a = s.all(V62Store.ASSETS).filter { it.optString("ownerUserId", "") == owner }
+        val p = s.all(V62Store.INSURANCE).filter { it.optString("ownerUserId", "") == owner }
         val total = m.optDouble("assetValue"); val ret = m.optDouble("interestReceived"); val charges = m.optDouble("charges")
         val saved = m.optDouble("appSavings"); val idle = m.optDouble("idleFunds"); val liabilities = m.optDouble("liabilities"); val exposure = m.optDouble("informalCreditExposure")
         listOf("CURRENT ASSETS" to money(total), "INTEREST RECEIVED" to money(ret), "CHARGES" to money(charges), "APP SAVINGS" to money(saved), "IDLE FUNDS" to money(idle), "LIABILITIES" to money(liabilities), "INFORMAL CREDIT OUTSTANDING" to money(exposure)).forEach { metric(it.first, it.second) }
