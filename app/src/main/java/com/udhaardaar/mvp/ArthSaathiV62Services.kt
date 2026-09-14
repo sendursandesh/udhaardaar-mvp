@@ -13,7 +13,7 @@ object V62AddressService {
             @Suppress("DEPRECATION") val result=Geocoder(context,Locale.getDefault()).getFromLocation(location.latitude,location.longitude,1)?.firstOrNull()
             if(result!=null){line1=listOfNotNull(result.subThoroughfare,result.thoroughfare).joinToString(" ").trim();locality=result.subLocality.orEmpty();city=result.locality?:result.subAdminArea.orEmpty();district=result.subAdminArea.orEmpty();state=result.adminArea.orEmpty();pin=result.postalCode.orEmpty()}
         }
-        return ArthSaathiV62Domain.Address(line1,locality,city,district,state,pin,location.latitude,location.longitude,"LOCATION_SUGGESTION",false)
+        return ArthSaathiV62Domain.Address(line1=line1,locality=locality,city=city,district=district,state=state,pinCode=pin,latitude=location.latitude,longitude=location.longitude,source="LOCATION_SUGGESTION",userConfirmed=false)
     }
     fun mergePinSuggestion(current: ArthSaathiV62Domain.Address,city:String,district:String,state:String,postOffice:String="")=current.copy(city=city,district=district,state=state,locality=if(postOffice.isBlank())current.locality else postOffice,source="PIN_LOOKUP",userConfirmed=false)
 }
