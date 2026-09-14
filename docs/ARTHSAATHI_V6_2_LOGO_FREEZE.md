@@ -4,9 +4,9 @@
 
 The approved ArthSaathi logo is the repository vector resource:
 
-`app/src/main/res/drawable/udhaardaar_logo.xml`
+`app/src/main/res/drawable/arthsaathi_logo.xml`
 
-Current frozen Git blob SHA at the V6.2 design freeze: `ef73460fe590c78720abb671fcf4653f4a4666bd`.
+The app icon, round icon, login header and V6.2 module headers all use this canonical resource.
 
 Visual identity:
 - teal compass arc
@@ -18,7 +18,7 @@ Visual identity:
 - blue horizon
 
 Rules:
-1. Use this resource on the V6.2 login, home and module page headers.
+1. Use `@drawable/arthsaathi_logo` on the V6.2 login, home and module page headers.
 2. Use the same resource for application and round application icons.
 3. Do not replace it with a generic financial, banking, rupee, piggy-bank or newly generated symbol.
 4. A logo change is a separate design-version decision and must not occur silently during bug fixes or feature work.
