@@ -33,7 +33,7 @@ class V62RepaymentActivity : androidx.appcompat.app.AppCompatActivity() {
     private fun renderRelationship(j: JSONObject) {
         val outstanding = j.optDouble("outstanding", j.optDouble("amount", j.optDouble("principal", 0.0))).coerceAtLeast(0.0)
         val cp = store.find(V62Store.COUNTERPARTIES, j.optString("counterpartyId"))
-        val cpName = cp?.optString("name").orEmpty().ifBlank { "Registered party" }
+        val cpName = cp?.optString("name").orEmpty().ifBlank { j.optString("counterpartyName").ifBlank { "Registered party" } }
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(13), dp(11), dp(13), dp(11)); background = ArthSaathiV62Design.card() }
         box.addView(ArthSaathiV62Design.text(this, "${j.optString("type", "CREDIT")} • ${j.optString("ownerRole", "USER")}", 10f, ArthSaathiV62Design.TEAL, true))
         box.addView(ArthSaathiV62Design.text(this, cpName, 13f, ArthSaathiV62Design.NAVY, true))
