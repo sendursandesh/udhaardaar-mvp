@@ -8,8 +8,7 @@ import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
-import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 import kotlin.math.pow
 
 class V62CreditRegistrationActivity : AppCompatActivity() {
@@ -75,9 +74,7 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
             if (rows.isEmpty()) {
                 list.addView(ArthSaathiV62Design.button(this, "CREATE NEW COUNTERPARTY IN THIS CREDIT", ArthSaathiV62Design.TEAL) { dlg.dismiss(); createCounterparty() })
             } else rows.forEach { p ->
-                list.addView(ArthSaathiV62Design.button(this, "${p.optString("name")} • ${p.optString("mobile")}", ArthSaathiV62Design.NAVY) {
-                    dlg.dismiss(); selectCounterparty(p)
-                })
+                list.addView(ArthSaathiV62Design.button(this, "${p.optString("name")} • ${p.optString("mobile")}", ArthSaathiV62Design.NAVY) { dlg.dismiss(); selectCounterparty(p) })
             }
         }
         q.addTextChangedListener(object : android.text.TextWatcher {
@@ -93,7 +90,11 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
         relationshipId = V62Store.id("REL")
         draft.edit().clear().putString("relationshipId", relationshipId).putBoolean("historyConsentVerified", false).apply()
         store.add(V62Store.RELATIONSHIPS, JSONObject().apply {
-            put("id", relationshipId); put("ownerUserId", V62Integration.currentUserId(this@V62CreditRegistrationActivity)); put("counterpartyId", cp.optString("id")); put("status", "DRAFT"); put("type", "PERSONAL_CREDIT")
+            put("id", relationshipId)
+            put("ownerUserId", V62Integration.currentUserId(this@V62CreditRegistrationActivity))
+            put("counterpartyId", cp.optString("id"))
+            put("status", "DRAFT")
+            put("type", "PERSONAL_CREDIT")
             put("createdAt", System.currentTimeMillis())
         })
         render()
@@ -109,8 +110,7 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
         AlertDialog.Builder(this).setTitle("Create counterparty inside this credit").setView(w).setNegativeButton("CANCEL", null).setPositiveButton("CREATE") { _, _ ->
             if (relationshipId.isBlank()) relationshipId = V62Store.id("REL")
             val cp = V62Integration.createCounterparty(this, n.text.toString(), m.text.toString(), pan.text.toString(), aadhaar.text.toString(), gst.text.toString(), relationshipId)
-            if (cp == null) Toast.makeText(this, "Enter a valid name and Indian mobile number.", Toast.LENGTH_LONG).show()
-            else selectCounterparty(cp)
+            if (cp == null) Toast.makeText(this, "Enter a valid name and Indian mobile number.", Toast.LENGTH_LONG).show() else selectCounterparty(cp)
         }.show()
     }
 
@@ -169,7 +169,8 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
         amount.addTextChangedListener(tw); roi.addTextChangedListener(tw); start.addTextChangedListener(tw); end.addTextChangedListener(tw)
         add(ArthSaathiV62Design.button(this, "CONTINUE →", ArthSaathiV62Design.GREEN) {
             val p = amount.text.toString().replace(",", "").toDoubleOrNull()
-            if (p == null || p <= 0 || start.text.toString().let { parse(it) } == null || end.text.toString().let { parse(it) } == null || !parse(start.text.toString())!!.before(parse(end.text.toString())!!)) {
+            val sd = parse(start.text.toString()); val ed = parse(end.text.toString())
+            if (p == null || p <= 0 || sd == null || ed == null || !sd.before(ed)) {
                 Toast.makeText(this, "Enter valid amount and dates.", Toast.LENGTH_LONG).show(); return@button
             }
             draft.edit().putString("amount", amount.text.toString()).putString("roi", roi.text.toString()).putString("method", method.selectedItem.toString()).putString("period", period.selectedItem.toString()).putString("start", start.text.toString()).putString("end", end.text.toString()).putString("emi", emi.text.toString()).putString("type", type.selectedItem.toString()).apply()
@@ -191,8 +192,9 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
         add(ArthSaathiV62Design.button(this, "SCAN / ATTACH INVOICE OR EVIDENCE", ArthSaathiV62Design.TEAL) { pickDoc() }, 8)
         if (docUri.isNotBlank()) add(ArthSaathiV62Design.text(this, "Original retained: $docUri\nOCR text: ${if (invoiceText.isBlank()) "pending" else "available for review"}", 10f, ArthSaathiV62Design.GREEN, true), 6)
         add(ArthSaathiV62Design.button(this, "REVIEW PROMISSORY NOTE →", ArthSaathiV62Design.GREEN) {
+            val guarantorRequired = draft.getString("guarantorName", "").orEmpty().isNotBlank()
             if (docUri.isBlank()) Toast.makeText(this, "Attach supporting evidence first.", Toast.LENGTH_LONG).show()
-            else if (draft.getString("guarantorName", "").orEmpty().isNotBlank() && !draft.getBoolean("guarantorConsent", false)) Toast.makeText(this, "Guarantor acknowledgement is required.", Toast.LENGTH_LONG).show()
+            else if (guarantorRequired && !draft.getBoolean("guarantorConsent", false)) Toast.makeText(this, "Guarantor acknowledgement is required.", Toast.LENGTH_LONG).show()
             else { step = 4; render() }
         }, 12)
     }
@@ -200,7 +202,7 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
     private fun consent() {
         add(ArthSaathiV62Design.section(this, "4 • PROMISSORY NOTE & FINAL OTP"), 8)
         val cp = selected ?: run { Toast.makeText(this, "Counterparty missing.", Toast.LENGTH_SHORT).show(); return }
-        val note = "I promise to pay ${cp.optString("name")} an amount of ₹${draft.getString("amount", "")} under ${draft.getString("method", "")} terms.\n\nInterest: ${draft.getString("roi", "0")}%\nPeriodicity: ${draft.getString("period", "")}\nFinal date: ${draft.getString("end", "")}\nCalculated EMI: ${draft.getString("emi", "")}\nGuarantor: ${draft.getString("guarantorName", "None")}"
+        val note = "I promise to pay ${cp.optString("name")} an amount of ₹${draft.getString("amount", "").orEmpty()} under ${draft.getString("method", "").orEmpty()} terms.\n\nInterest: ${draft.getString("roi", "0").orEmpty()}%\nPeriodicity: ${draft.getString("period", "").orEmpty()}\nFinal date: ${draft.getString("end", "").orEmpty()}\nCalculated EMI: ${draft.getString("emi", "").orEmpty()}\nGuarantor: ${draft.getString("guarantorName", "None").orEmpty()}"
         add(ArthSaathiV62Design.text(this, "PROMISSORY NOTE\n\n$note", 13f, ArthSaathiV62Design.NAVY), 8)
         add(ArthSaathiV62Design.button(this, "REQUEST CONSENT OTP", ArthSaathiV62Design.TEAL) { registerAfterOtp(note) }, 10)
     }
@@ -211,22 +213,27 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
         val entry = input("Enter 6-digit OTP")
         val dlg = AlertDialog.Builder(this).setTitle("Registration consent OTP").setMessage("Review the promissory note before authorising registration.\n\nDemo OTP: $otp").setView(entry).setNegativeButton("CANCEL", null).setPositiveButton("VERIFY & REGISTER", null).create()
         dlg.setOnShowListener { dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            if (entry.text.toString() == otp.toString()) {
-                dlg.dismiss(); V62Integration.recordConsent(this, cp.optString("id"), relationshipId, "CREDIT_REGISTRATION", true); register(note, cp)
-            } else entry.error = "Invalid OTP"
+            if (entry.text.toString() == otp.toString()) { dlg.dismiss(); V62Integration.recordConsent(this, cp.optString("id"), relationshipId, "CREDIT_REGISTRATION", true); register(note, cp) }
+            else entry.error = "Invalid OTP"
         } }
         dlg.show()
     }
 
     private fun register(note: String, cp: JSONObject) {
-        val principal = draft.getString("amount", "0").toDoubleOrNull() ?: 0.0
+        val principal = draft.getString("amount", "0").orEmpty().toDoubleOrNull() ?: 0.0
+        val creditType = draft.getString("type", "").orEmpty()
         val rel = JSONObject().apply {
             put("id", relationshipId); put("ownerUserId", V62Integration.currentUserId(this@V62CreditRegistrationActivity)); put("counterpartyId", cp.optString("id"))
-            put("ownerRole", "USER"); put("counterpartyRole", "BORROWER"); put("type", when { draft.getString("type", "").contains("Trade") -> "TRADE_CREDIT"; draft.getString("type", "").contains("Rental") -> "RENTAL"; else -> "PERSONAL_CREDIT" })
-            put("principal", principal); put("amount", principal); put("roiPercent", draft.getString("roi", "0").toDoubleOrNull() ?: 0.0); put("roi", draft.getString("roi", "0").toDoubleOrNull() ?: 0.0)
-            put("repaymentMode", draft.getString("method", "EMI")); put("method", draft.getString("method", "EMI")); put("periodicity", draft.getString("period", "Monthly")); put("period", draft.getString("period", "Monthly"))
-            put("startDate", draft.getString("start", "")); put("start", draft.getString("start", "")); put("endDate", draft.getString("end", "")); put("end", draft.getString("end", "")); put("emi", draft.getString("emi", "0").toDoubleOrNull() ?: 0.0)
-            put("guarantorName", draft.getString("guarantorName", "")); put("guarantorMobile", draft.getString("guarantorMobile", "")); put("supportingDocumentId", documentId); put("supportingDocumentUri", docUri); put("invoiceOcrText", invoiceText.take(12000))
+            put("ownerRole", "USER"); put("counterpartyRole", "BORROWER")
+            put("type", when { creditType.contains("Trade") -> "TRADE_CREDIT"; creditType.contains("Rental") -> "RENTAL"; else -> "PERSONAL_CREDIT" })
+            put("principal", principal); put("amount", principal)
+            put("roiPercent", draft.getString("roi", "0").orEmpty().toDoubleOrNull() ?: 0.0); put("roi", draft.getString("roi", "0").orEmpty().toDoubleOrNull() ?: 0.0)
+            put("repaymentMode", draft.getString("method", "EMI").orEmpty()); put("method", draft.getString("method", "EMI").orEmpty())
+            put("periodicity", draft.getString("period", "Monthly").orEmpty()); put("period", draft.getString("period", "Monthly").orEmpty())
+            put("startDate", draft.getString("start", "").orEmpty()); put("start", draft.getString("start", "").orEmpty()); put("endDate", draft.getString("end", "").orEmpty()); put("end", draft.getString("end", "").orEmpty())
+            put("emi", draft.getString("emi", "0").orEmpty().toDoubleOrNull() ?: 0.0)
+            put("guarantorName", draft.getString("guarantorName", "").orEmpty()); put("guarantorMobile", draft.getString("guarantorMobile", "").orEmpty())
+            put("supportingDocumentId", documentId); put("supportingDocumentUri", docUri); put("invoiceOcrText", invoiceText.take(12000))
             put("promissoryNote", note); put("historyConsent", "VERIFIED"); put("registrationConsent", "VERIFIED"); put("outstanding", principal); put("status", "ACTIVE"); put("createdAt", System.currentTimeMillis())
         }
         store.replace(V62Store.RELATIONSHIPS, rel)
@@ -244,11 +251,12 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
         super.onActivityResult(r, c, data)
         if (r == 77 && c == Activity.RESULT_OK && data?.data != null) {
             val uri = data.data!!
-            val retained = V62Documents.retain(this, uri, if (draft.getString("type", "").orEmpty().contains("Trade")) "INVOICE" else "CREDIT")
-            documentId = retained.optString("id"); docUri = retained.optString("uri").ifBlank { uri.toString() }
-            V62DocumentScanner.scan(this, uri, { text -> invoiceText = text; runOnUiThread { render() } }, { runOnUiThread { Toast.makeText(this, "OCR unavailable; document retained for manual review.", Toast.LENGTH_LONG).show(); render() } })
+            val retained = runCatching { ArthSaathiV62Core.saveDocument(this, uri, "CREDIT_SUPPORTING") }.getOrNull()
+            docUri = retained?.optString("uri").orEmpty().ifBlank { uri.toString() }
+            documentId = retained?.optString("id").orEmpty()
+            V62DocumentScanner.scan(this, uri, { text -> invoiceText = text; runOnUiThread { render() } }, { e -> runOnUiThread { Toast.makeText(this, "OCR failed: ${e.message}", Toast.LENGTH_LONG).show(); render() } })
         }
     }
 
-    private fun parse(s: String): Date? = runCatching { SimpleDateFormat("dd/MM/yyyy", Locale.US).apply { isLenient = false }.parse(s) }.getOrNull()
+    private fun parse(s: String) = runCatching { java.text.SimpleDateFormat("dd/MM/yyyy", Locale.US).apply { isLenient = false }.parse(s) }.getOrNull()
 }
