@@ -78,11 +78,11 @@ class V62ChargeCheckActivity : androidx.appcompat.app.AppCompatActivity() {
 
     private fun saveResult(rows: JSONArray) {
         val id = V62Store.id("CC")
-        val record = JSONObject().apply { put("id", id); put("ownerUserId", V62Integration.currentUserId(this)); put("sanctionDocument", sanctionUri); put("statementDocument", statementUri); put("sanctionText", sanctionText.take(20000)); put("statementText", statementText.take(20000)); put("lineItems", rows); put("status", "USER_CONFIRMED"); put("createdAt", System.currentTimeMillis()) }
-        V62Store.add(this, V62Store.CHARGECHECK, record)
+        val record = JSONObject().apply { put("id", id); put("ownerUserId", V62Integration.currentUserId(this@V62ChargeCheckActivity)); put("sanctionDocument", sanctionUri); put("statementDocument", statementUri); put("sanctionText", sanctionText.take(20000)); put("statementText", statementText.take(20000)); put("lineItems", rows); put("status", "USER_CONFIRMED"); put("createdAt", System.currentTimeMillis()) }
+        V62Store.add(this@V62ChargeCheckActivity, V62Store.CHARGECHECK, record)
         V62EventBus.publish(V62Event(V62Events.CHARGECHECK_CHANGED, id))
         val variance = (0 until rows.length()).sumOf { rows.optJSONObject(it)?.optDouble("variance", 0.0) ?: 0.0 }
-        if (variance > 0) V62Integration.addAlert(this, "CHARGECHECK_VARIANCE", "ChargeCheck found confirmed excess/variance of ₹${money(variance)} for review.", id, "ACTION")
+        if (variance > 0) V62Integration.addAlert(this@V62ChargeCheckActivity, "CHARGECHECK_VARIANCE", "ChargeCheck found confirmed excess/variance of ₹${money(variance)} for review.", id, "ACTION")
         Toast.makeText(this, "ChargeCheck saved with evidence and extracted line items.", Toast.LENGTH_LONG).show()
     }
 
