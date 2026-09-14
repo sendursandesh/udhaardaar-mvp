@@ -10,7 +10,7 @@ object V62EventBus {
     fun publish(event: V62Event) { listeners.forEach { listener -> runCatching { listener(event) } } }
 }
 
-/** Canonical event names; every persisted cross-module change uses one of these. */
+/** Canonical event names; persisted cross-module changes use these names. */
 object V62Events {
     const val PROFILE_CHANGED = "PROFILE_CHANGED"
     const val FAMILY_CHANGED = "FAMILY_CHANGED"
@@ -22,6 +22,7 @@ object V62Events {
     const val LIABILITY_CHANGED = "LIABILITY_CHANGED"
     const val POLICY_CHANGED = "POLICY_CHANGED"
     const val TTMM_EXPENSE_CHANGED = "TTMM_EXPENSE_CHANGED"
+    const val SAVINGS_CHANGED = "SAVINGS_CHANGED"
     const val CONSENT_CHANGED = "CONSENT_CHANGED"
     const val NOMINEE_CHANGED = "NOMINEE_CHANGED"
     const val CLAIM_CHANGED = "CLAIM_CHANGED"
