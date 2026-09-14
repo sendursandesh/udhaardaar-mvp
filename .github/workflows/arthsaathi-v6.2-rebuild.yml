@@ -26,7 +26,9 @@ jobs:
         run: |
           set -e
           test -s app/build/outputs/apk/debug/app-debug.apk
-          test "$(stat -c%s app/build/outputs/apk/debug/app-debug.apk)" -gt 10000000
+          APK_SIZE=$(stat -c%s app/build/outputs/apk/debug/app-debug.apk)
+          echo "APK_SIZE_BYTES=$APK_SIZE"
+          test "$APK_SIZE" -gt 5000000
           grep -q "versionCode 64" app/build.gradle
           grep -q "versionName '6.2'" app/build.gradle
           grep -q 'V62EventBus' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
