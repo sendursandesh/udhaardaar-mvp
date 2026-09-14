@@ -1,6 +1,7 @@
 package com.udhaardaar.mvp
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -65,7 +66,7 @@ class V62AssetVaultActivity : androidx.appcompat.app.AppCompatActivity() {
             }
             m.forEach { (k, e) -> o.put(k, e.text.toString().trim()) }
             s.add(ArthSaathiV62Core.ASSETS, o); savedAssetId = id
-            V62EventBus.publish(V62Event.ASSET_CHANGED)
+            V62EventBus.publish(V62Event(V62Events.ASSET_CHANGED, id))
             Toast.makeText(this, "Vault record saved.", Toast.LENGTH_SHORT).show()
             showLifecycleActions(id)
         }, 12)
