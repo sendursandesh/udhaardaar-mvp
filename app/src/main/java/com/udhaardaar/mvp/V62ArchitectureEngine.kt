@@ -41,13 +41,16 @@ object V62Relationships {
 
 object V62MisEngine {
     fun metrics(c:Context):JSONObject {
-        val a=V62Store.all(c,V62Store.ASSETS); val r=V62Store.all(c,V62Store.REPAYMENTS); val s=V62Store.all(c,V62Store.SAVINGS); val rel=V62Store.all(c,V62Store.RELATIONSHIPS)
+        val allAssets=V62Store.all(c,V62Store.ASSETS)
+        val currentAssets=allAssets.filter { it.optBoolean("currentAsset", true) && it.optString("lifecycleStatus", "ACTIVE") !in setOf("SOLD","TRANSFERRED","GIFTED","DISPOSED") }
+        val r=V62Store.all(c,V62Store.REPAYMENTS); val s=V62Store.all(c,V62Store.SAVINGS); val rel=V62Store.all(c,V62Store.RELATIONSHIPS)
         return JSONObject().apply {
-            put("assetValue",a.sumOf{it.optDouble("value",0.0)})
+            put("assetValue",currentAssets.sumOf{it.optDouble("value",0.0)})
+            put("historicalAssetValue",allAssets.sumOf{it.optDouble("value",0.0)})
             put("interestReceived",r.sumOf{it.optDouble("interest",0.0)})
-            put("charges",a.sumOf{it.optDouble("charges",0.0)}+r.sumOf{it.optDouble("charges",0.0)})
+            put("charges",currentAssets.sumOf{it.optDouble("charges",0.0)}+r.sumOf{it.optDouble("charges",0.0)})
             put("appSavings",s.sumOf{it.optDouble("amount",0.0)})
-            put("idleFunds",a.filter{it.optBoolean("idle",false)}.sumOf{it.optDouble("value",0.0)})
+            put("idleFunds",currentAssets.filter{it.optBoolean("idle",false)}.sumOf{it.optDouble("value",0.0)})
             put("activeRelationships",rel.count{it.optString("status")!="CLOSED"})
         }
     }
