@@ -4,8 +4,7 @@ import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Asset Vault lifecycle: acquire -> hold -> pledge/encumber -> sell/release -> close.
- * Historical records are retained; lifecycle actions never delete an asset. */
+/** Asset Vault lifecycle: acquire -> hold -> pledge/encumber -> sell/release -> close. */
 object V62AssetLifecycle {
     const val ACTIVE = "ACTIVE"
     const val PLEDGED = "PLEDGED"
@@ -21,7 +20,7 @@ object V62AssetLifecycle {
 
     fun sell(c: Context, assetId: String, saleDate: String, saleValue: Double,
              buyerName: String, paymentStatus: String, saleDocumentId: String = ""): Boolean =
-        update(c, assetId, SOLD) { o ->
+        update(c, assetId, SOLD, false) { o ->
             o.put("saleDate", saleDate)
             o.put("saleValue", saleValue)
             o.put("buyerName", buyerName.trim())
@@ -29,9 +28,10 @@ object V62AssetLifecycle {
             if (saleDocumentId.isNotBlank()) o.put("saleDocumentId", saleDocumentId)
         }
 
+    /** Releases a charge/encumbrance; ownership continues, so the asset remains current. */
     fun release(c: Context, assetId: String, releaseDate: String, reason: String,
                 releasedFrom: String, chargeReference: String, releaseDocumentId: String = ""): Boolean =
-        update(c, assetId, RELEASED) { o ->
+        update(c, assetId, RELEASED, true) { o ->
             o.put("releaseDate", releaseDate)
             o.put("releaseReason", reason.trim())
             o.put("releasedFrom", releasedFrom.trim())
@@ -39,7 +39,8 @@ object V62AssetLifecycle {
             if (releaseDocumentId.isNotBlank()) o.put("releaseDocumentId", releaseDocumentId)
         }
 
-    private fun update(c: Context, assetId: String, newStatus: String, mutate: (JSONObject) -> Unit): Boolean {
+    private fun update(c: Context, assetId: String, newStatus: String, remainsCurrent: Boolean,
+                       mutate: (JSONObject) -> Unit): Boolean {
         val store = V62Store.store(c)
         val asset = store.find(V62Store.ASSETS, assetId) ?: return false
         val oldStatus = status(asset)
@@ -52,7 +53,7 @@ object V62AssetLifecycle {
         })
         asset.put("lifecycleStatus", newStatus)
         asset.put("lifecycleHistory", history)
-        asset.put("currentAsset", false)
+        asset.put("currentAsset", remainsCurrent)
         mutate(asset)
         store.replace(V62Store.ASSETS, asset)
         V62EventBus.publish(V62Event.ASSET_CHANGED)
