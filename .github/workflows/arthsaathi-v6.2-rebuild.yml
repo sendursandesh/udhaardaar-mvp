@@ -32,11 +32,15 @@ jobs:
           grep -q "versionCode 64" app/build.gradle
           grep -q "versionName '6.2'" app/build.gradle
           grep -q 'V62EventBus' app/src/main/java/com/udhaardaar/mvp/V62EventBus.kt
+          grep -q 'SAVINGS_CHANGED' app/src/main/java/com/udhaardaar/mvp/V62EventBus.kt
+          grep -q 'V62ModuleRegistry' app/src/main/java/com/udhaardaar/mvp/V62ModuleRegistry.kt
           grep -q 'V62DocumentScanner' app/src/main/java/com/udhaardaar/mvp/V62DocumentScanner.kt
           grep -q 'V62DonutChart' app/src/main/java/com/udhaardaar/mvp/V62Charts.kt
           grep -q 'V62TTMMActivity' app/src/main/AndroidManifest.xml
           grep -q 'V62LegacyLegalAIActivity' app/src/main/AndroidManifest.xml
           grep -q 'LoginActivity' app/src/main/AndroidManifest.xml
+          grep -q 'arthsaathi_logo' app/src/main/AndroidManifest.xml
+          grep -q 'Theme.ArthSaathi' app/src/main/res/values/styles.xml
           grep -q 'QR_KHATA' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
           grep -q 'FORMAL_CREDIT' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
           grep -q 'CHARGECHECK' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
