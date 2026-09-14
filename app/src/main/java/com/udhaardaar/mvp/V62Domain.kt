@@ -106,4 +106,4 @@ data class V62TtmmExpense(
     val createdAt: Long = System.currentTimeMillis()
 )
 
-data class V62Event(val type: String, val entityId: String, val occurredAt: Long = System.currentTimeMillis())
+// Canonical V6.2 event model lives in V62Event.kt so every module shares one contract.
