@@ -50,16 +50,19 @@ class V62RepaymentActivity : androidx.appcompat.app.AppCompatActivity() {
         ArthSaathiV62Design.add(root, box, 7)
     }
 
-    private fun record(j: JSONObject, max: Double) {
-        val amount = ArthSaathiV62Design.input(this, "Total amount paid ₹ (max ${money(max)})")
-        val interest = ArthSaathiV62Design.input(this, "Interest component ₹ (optional)")
+    private fun record(j: JSONObject, outstanding: Double) {
+        val amount = ArthSaathiV62Design.input(this, "Total amount paid ₹")
+        val interest = ArthSaathiV62Design.input(this, "Interest component ₹ (included in total, optional)")
         val date = ArthSaathiV62Design.input(this, "Payment date YYYY-MM-DD")
         val w = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(amount); addView(interest); addView(date, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) }) }
-        AlertDialog.Builder(this).setTitle("Repayment consent").setMessage("The payment will be recorded against this relationship. Verify the consent OTP before the ledger is updated.").setView(w).setNegativeButton("CANCEL", null).setPositiveButton("REQUEST OTP") { _, _ ->
+        AlertDialog.Builder(this).setTitle("Repayment consent").setMessage("The total payment may include interest. Only the principal component reduces outstanding. Verify the consent OTP before the ledger is updated.").setView(w).setNegativeButton("CANCEL", null).setPositiveButton("REQUEST OTP") { _, _ ->
             val paid = amount.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
             val interestValue = interest.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
             val paymentDate = date.text.toString().trim()
-            if (paid <= 0 || paid > max || interestValue < 0 || interestValue > paid || !validDate(paymentDate)) Toast.makeText(this, "Enter a valid amount, interest and date.", Toast.LENGTH_LONG).show() else otp(j, paid, interestValue, paymentDate)
+            val principalPaid = paid - interestValue
+            if (paid <= 0 || interestValue < 0 || interestValue > paid || principalPaid > outstanding || !validDate(paymentDate)) {
+                Toast.makeText(this, "Enter a valid total, interest and date. Principal component cannot exceed outstanding.", Toast.LENGTH_LONG).show()
+            } else otp(j, paid, interestValue, paymentDate)
         }.show()
     }
 
@@ -74,8 +77,8 @@ class V62RepaymentActivity : androidx.appcompat.app.AppCompatActivity() {
                 val current = V62Integration.currentUserId(this@V62RepaymentActivity)
                 if (!isParty(j, current)) { Toast.makeText(this, "This relationship is not authorised for your account.", Toast.LENGTH_LONG).show(); return@setOnClickListener }
                 val before = j.optDouble("outstanding", j.optDouble("amount", j.optDouble("principal", 0.0))).coerceAtLeast(0.0)
-                if (paid > before) { Toast.makeText(this, "Outstanding amount changed. Please retry.", Toast.LENGTH_LONG).show(); render(); return@setOnClickListener }
                 val principalPaid = paid - interest
+                if (principalPaid > before) { Toast.makeText(this, "Outstanding amount changed. Please retry.", Toast.LENGTH_LONG).show(); render(); return@setOnClickListener }
                 val after = (before - principalPaid).coerceAtLeast(0.0)
                 j.put("outstanding", after); j.put("lastRepaymentAmount", paid); j.put("lastRepaymentPrincipal", principalPaid); j.put("lastRepaymentInterest", interest); j.put("lastRepaymentDate", date); j.put("consentStatus", "OTP_VERIFIED")
                 if (after <= 0.0) j.put("status", "CLOSED")
