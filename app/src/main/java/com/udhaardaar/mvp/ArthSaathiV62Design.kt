@@ -9,7 +9,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.*
 
-/** Shared V6.2 visual system. Keeps every module visually consistent with ArthSaathi. */
+/** Canonical ArthSaathi V6.2 visual system used by every modern module screen. */
 object ArthSaathiV62Design {
     val NAVY = Color.rgb(14, 38, 70)
     val TEAL = Color.rgb(12, 155, 145)
@@ -34,15 +34,14 @@ object ArthSaathiV62Design {
     fun dp(v: Int, d: Float) = (v * d).toInt()
     private fun density(c: Context) = c.resources.displayMetrics.density
 
-    fun text(c: Context, s: String, size: Float = 14f, color: Int = NAVY, bold: Boolean = false) =
-        TextView(c).apply {
-            text = s
-            textSize = size
-            setTextColor(color)
-            includeFontPadding = false
-            typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
-            letterSpacing = if (size <= 11f) .03f else 0f
-        }
+    fun text(c: Context, s: String, size: Float = 14f, color: Int = NAVY, bold: Boolean = false) = TextView(c).apply {
+        text = s
+        textSize = size
+        setTextColor(color)
+        includeFontPadding = false
+        typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
+        letterSpacing = if (size <= 11f) .025f else 0f
+    }
 
     fun card(fill: Int = WHITE, radius: Int = 18, d: Float = 1f) = GradientDrawable().apply {
         setColor(fill)
@@ -55,49 +54,51 @@ object ArthSaathiV62Design {
         cornerRadius = dp(radius, d).toFloat()
     }
 
-    fun button(c: Context, s: String, color: Int = BLUE, click: () -> Unit) =
-        Button(c).apply {
-            text = s
-            textSize = 13f
-            setTextColor(WHITE)
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            isAllCaps = false
-            minHeight = dp(50, density(c))
-            stateListAnimator = null
-            elevation = dp(1, density(c)).toFloat()
-            background = card(color, 15, density(c))
-            backgroundTintList = ColorStateList.valueOf(color)
-            setPadding(dp(16, density(c)), 0, dp(16, density(c)), 0)
-            setOnClickListener { click() }
-        }
+    fun button(c: Context, s: String, color: Int = BLUE, click: () -> Unit) = Button(c).apply {
+        text = s
+        textSize = 13f
+        setTextColor(WHITE)
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        isAllCaps = false
+        minHeight = dp(50, density(c))
+        minimumHeight = dp(50, density(c))
+        stateListAnimator = null
+        elevation = dp(2, density(c)).toFloat()
+        background = card(color, 15, density(c))
+        backgroundTintList = ColorStateList.valueOf(color)
+        setPadding(dp(16, density(c)), 0, dp(16, density(c)), 0)
+        setOnClickListener { click() }
+    }
 
+    /** Branded module header: logo, module name, product tagline and consistent hierarchy. */
     fun title(c: Context, name: String, subtitle: String): LinearLayout {
         val d = density(c)
-        val h = LinearLayout(c).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(4, d), dp(6, d), dp(4, d), dp(4, d))
+        val outer = LinearLayout(c).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14, d), dp(12, d), dp(14, d), dp(12, d))
+            background = card(WHITE, 20, d)
+            elevation = dp(2, d).toFloat()
         }
-        h.addView(ImageView(c).apply {
+        val row = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        row.addView(ImageView(c).apply {
             setImageResource(com.udhaardaar.mvp.R.drawable.arthsaathi_logo)
             scaleType = ImageView.ScaleType.CENTER_INSIDE
-            contentDescription = "ArthSaathi journey logo"
-        }, LinearLayout.LayoutParams(dp(50, d), dp(50, d)))
-        val b = LinearLayout(c).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(10, d), 0, 0, 0)
-        }
-        b.addView(text(c, name, 21f, NAVY, true))
-        b.addView(text(c, subtitle, 10f, TEAL, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4, d) })
-        h.addView(b, LinearLayout.LayoutParams(0, -2, 1f))
-        return h
+            contentDescription = "ArthSaathi logo"
+        }, LinearLayout.LayoutParams(dp(58, d), dp(58, d)))
+        val copy = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12, d), 0, 0, 0) }
+        copy.addView(text(c, name, 20f, NAVY, true))
+        copy.addView(text(c, subtitle, 10.5f, TEAL, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5, d) })
+        row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
+        outer.addView(row)
+        outer.addView(text(c, PILLARS, 9.5f, GOLD, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8, d) })
+        return outer
     }
 
     fun pageHeader(c: Context, eyebrow: String, name: String, subtitle: String): LinearLayout {
         val d = density(c)
         val box = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16, d), dp(14, d), dp(16, d), dp(14, d))
+            setPadding(dp(17, d), dp(15, d), dp(17, d), dp(15, d))
             background = card(PALE_BLUE, 18, d)
         }
         box.addView(text(c, eyebrow.uppercase(), 9.5f, TEAL, true))
@@ -106,9 +107,9 @@ object ArthSaathiV62Design {
         return box
     }
 
-    fun section(c: Context, s: String) = text(c, s, 11f, MUTED, true).apply {
-        setPadding(0, dp(14, density(c)), 0, dp(5, density(c)))
-        letterSpacing = .08f
+    fun section(c: Context, s: String) = text(c, s.uppercase(), 10.5f, MUTED, true).apply {
+        setPadding(0, dp(15, density(c)), 0, dp(6, density(c)))
+        letterSpacing = .075f
     }
 
     fun input(c: Context, hint: String) = EditText(c).apply {
@@ -145,7 +146,7 @@ object ArthSaathiV62Design {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(15, d), dp(14, d), dp(14, d), dp(13, d))
             background = card(WHITE, 18, d)
-            elevation = dp(1, d).toFloat()
+            elevation = dp(2, d).toFloat()
             setOnClickListener { click() }
             addView(TextView(c).apply {
                 text = number
