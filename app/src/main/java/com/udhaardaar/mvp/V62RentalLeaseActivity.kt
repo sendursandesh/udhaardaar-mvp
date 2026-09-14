@@ -31,12 +31,16 @@ class V62RentalLeaseActivity : androidx.appcompat.app.AppCompatActivity() {
         root.removeAllViews(); ArthSaathiV62Design.add(root, ArthSaathiV62Design.title(this, "Verify Lease Terms", "Document proposal → your confirmation"), 2)
         val edits = linkedMapOf<String, EditText>(); fields.forEach { k -> val e = ArthSaathiV62Design.input(this, k); extracted.firstOrNull { it.name == k }?.let { e.setText(it.value) }; edits[k] = e; ArthSaathiV62Design.add(root, e, 4) }
         ArthSaathiV62Design.add(root, ArthSaathiV62Design.button(this, "SAVE VERIFIED AGREEMENT", ArthSaathiV62Design.GREEN) {
+            val owner = V62Integration.currentUserId(this@V62RentalLeaseActivity)
             val id = V62Store.id("LEASE")
-            val o = JSONObject().apply { put("id", id); put("ownerUserId", V62Integration.currentUserId(this@V62RentalLeaseActivity)); put("side", "USER"); put("documentId", doc.optString("id")); put("verifiedAt", System.currentTimeMillis()); put("status", "ACTIVE") }
+            val lessor = edits["Lessor / Landlord"]?.text.toString().trim()
+            val lessee = edits["Lessee / Tenant"]?.text.toString().trim()
+            val counterpartyName = listOf("Lessor / Landlord" to lessor, "Lessee / Tenant" to lessee).filter { it.second.isNotBlank() }.joinToString(" • ") { "${it.first}: ${it.second}" }
+            val o = JSONObject().apply { put("id", id); put("ownerUserId", owner); put("side", "USER"); put("counterpartyName", counterpartyName); put("documentId", doc.optString("id")); put("verifiedAt", System.currentTimeMillis()); put("status", "ACTIVE") }
             edits.forEach { (k, e) -> o.put(k, e.text.toString().trim()) }
             s.add(V62Store.RENTALS, o)
             val relId = V62Store.id("REL")
-            s.add(V62Store.RELATIONSHIPS, JSONObject().apply { put("id", relId); put("ownerUserId", V62Integration.currentUserId(this@V62RentalLeaseActivity)); put("type", "RENTAL"); put("rentalId", id); put("status", "ACTIVE"); put("outstanding", 0.0); put("createdAt", System.currentTimeMillis()) })
+            s.add(V62Store.RELATIONSHIPS, JSONObject().apply { put("id", relId); put("ownerUserId", owner); put("type", "RENTAL"); put("rentalId", id); put("counterpartyName", counterpartyName); put("status", "ACTIVE"); put("outstanding", 0.0); put("createdAt", System.currentTimeMillis()) })
             V62EventBus.publish(V62Event(V62Events.RELATIONSHIP_CHANGED, relId))
             val rentDue = edits["Rent due date"]?.text.toString().trim(); val end = edits["Lease end date"]?.text.toString().trim()
             if (rentDue.isNotBlank()) V62Integration.addAlert(this, "RENT_DUE", "Rent due date: $rentDue", id, "ACTION")
