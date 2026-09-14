@@ -20,22 +20,15 @@ class V62RepaymentActivity : androidx.appcompat.app.AppCompatActivity() {
     private fun render() {
         root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(28)); setBackgroundColor(ArthSaathiV62Design.BG) }
         ArthSaathiV62Design.add(root, ArthSaathiV62Design.title(this, "Repayment Centre", "Record • Reconcile • Update"), 2)
-        ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, "Record a payment only against a registered relationship. OTP consent is completed before the ledger changes.", 10f, ArthSaathiV62Design.MUTED), 8)
+        ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, "Record a payment only against a registered relationship owned by this account. OTP consent is completed before the ledger changes.", 10f, ArthSaathiV62Design.MUTED), 8)
         val current = V62Integration.currentUserId(this)
-        val rows = store.all(V62Store.RELATIONSHIPS).filter { j ->
-            j.optString("status") != "CLOSED" && isParty(j, current)
-        }
+        val rows = store.all(V62Store.RELATIONSHIPS).filter { j -> j.optString("status") != "CLOSED" && isParty(j, current) }
         if (rows.isEmpty()) ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, "No active repayment relationships for this account.", 13f, ArthSaathiV62Design.NAVY, true), 12)
         else rows.forEach { renderRelationship(it) }
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
     }
 
-    private fun isParty(j: JSONObject, current: String): Boolean {
-        if (current.isBlank()) return false
-        if (j.optString("ownerUserId") == current) return true
-        val cp = store.find(V62Store.COUNTERPARTIES, j.optString("counterpartyId"))
-        return cp?.optString("mobile") == current
-    }
+    private fun isParty(j: JSONObject, current: String): Boolean = current.isNotBlank() && j.optString("ownerUserId", "") == current
 
     private fun renderRelationship(j: JSONObject) {
         val outstanding = j.optDouble("outstanding", j.optDouble("amount", j.optDouble("principal", 0.0))).coerceAtLeast(0.0)
@@ -60,9 +53,8 @@ class V62RepaymentActivity : androidx.appcompat.app.AppCompatActivity() {
             val interestValue = interest.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
             val paymentDate = date.text.toString().trim()
             val principalPaid = paid - interestValue
-            if (paid <= 0 || interestValue < 0 || interestValue > paid || principalPaid > outstanding || !validDate(paymentDate)) {
-                Toast.makeText(this, "Enter a valid total, interest and date. Principal component cannot exceed outstanding.", Toast.LENGTH_LONG).show()
-            } else otp(j, paid, interestValue, paymentDate)
+            if (paid <= 0 || interestValue < 0 || interestValue > paid || principalPaid > outstanding || !validDate(paymentDate)) Toast.makeText(this, "Enter a valid total, interest and date. Principal component cannot exceed outstanding.", Toast.LENGTH_LONG).show()
+            else otp(j, paid, interestValue, paymentDate)
         }.show()
     }
 
@@ -84,7 +76,7 @@ class V62RepaymentActivity : androidx.appcompat.app.AppCompatActivity() {
                 if (after <= 0.0) j.put("status", "CLOSED")
                 store.replace(V62Store.RELATIONSHIPS, j)
                 val paymentId = V62Store.id("PAY")
-                store.add(V62Store.REPAYMENTS, JSONObject().apply { put("id", paymentId); put("relationshipId", j.optString("id")); put("counterpartyId", j.optString("counterpartyId")); put("amount", paid); put("principal", principalPaid); put("interest", interest); put("date", date); put("consentVerified", true); put("recordedBy", current); put("createdAt", System.currentTimeMillis()) })
+                store.add(V62Store.REPAYMENTS, JSONObject().apply { put("id", paymentId); put("relationshipId", j.optString("id")); put("counterpartyId", j.optString("counterpartyId")); put("amount", paid); put("principal", principalPaid); put("interest", interest); put("date", date); put("consentVerified", true); put("recordedBy", current); put("ownerUserId", current); put("createdAt", System.currentTimeMillis()) })
                 V62Integration.recordConsent(this@V62RepaymentActivity, j.optString("counterpartyId"), j.optString("id"), "REPAYMENT_CONFIRMATION", true)
                 V62EventBus.publish(V62Event(V62Events.REPAYMENT_CHANGED, paymentId)); V62EventBus.publish(V62Event(V62Events.RELATIONSHIP_CHANGED, j.optString("id")))
                 Toast.makeText(this, "Repayment recorded with consent.", Toast.LENGTH_LONG).show(); render()
