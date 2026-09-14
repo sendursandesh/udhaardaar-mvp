@@ -15,7 +15,7 @@ object ArthSaathiV62Core {
         if(saved<=0)return
         val id=id("SAVE")
         V62Store.add(context,V62Store.SAVINGS,JSONObject().apply{put("id",id);put("ownerUserId",V62Integration.currentUserId(context));put("source",source);put("amount",saved);put("note",note);put("date",System.currentTimeMillis())})
-        V62EventBus.publish(V62Event(V62Events.ALERT_CREATED,id,metadata=mapOf("category" to "SAVINGS")))
+        V62EventBus.publish(V62Event(V62Events.SAVINGS_CHANGED,id,metadata=mapOf("source" to source)))
     }
 }
 interface ArthSaathiDocumentIntelligence{fun classify(category:String,extractedText:String):String;fun extract(category:String,extractedText:String):JSONObject}
