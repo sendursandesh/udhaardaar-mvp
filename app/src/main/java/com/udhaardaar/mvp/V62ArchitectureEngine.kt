@@ -20,7 +20,13 @@ object V62Relationships {
 
 object V62MisEngine {
     fun metrics(c: Context): JSONObject {
-        val allAssets = V62Store.all(c, V62Store.ASSETS); val currentAssets = allAssets.filter { it.optBoolean("currentAsset", true) && it.optString("lifecycleStatus", "ACTIVE") !in setOf("SOLD", "TRANSFERRED", "GIFTED", "DISPOSED") }; val repayments = V62Store.all(c, V62Store.REPAYMENTS); val savings = V62Store.all(c, V62Store.SAVINGS); val rel = V62Store.all(c, V62Store.RELATIONSHIPS); val liabilities = V62Store.all(c, V62Store.LIABILITIES)
+        val owner = V62Integration.currentUserId(c)
+        val allAssets = V62Store.all(c, V62Store.ASSETS).filter { it.optString("ownerUserId", "") == owner }
+        val currentAssets = allAssets.filter { it.optBoolean("currentAsset", true) && it.optString("lifecycleStatus", "ACTIVE") !in setOf("SOLD", "TRANSFERRED", "GIFTED", "DISPOSED") }
+        val repayments = V62Store.all(c, V62Store.REPAYMENTS).filter { it.optString("recordedBy", it.optString("ownerUserId", "")) == owner }
+        val savings = V62Store.all(c, V62Store.SAVINGS).filter { it.optString("ownerUserId", "") == owner }
+        val rel = V62Store.all(c, V62Store.RELATIONSHIPS).filter { it.optString("ownerUserId", "") == owner }
+        val liabilities = V62Store.all(c, V62Store.LIABILITIES).filter { it.optString("ownerUserId", "") == owner }
         return JSONObject().apply { put("assetValue", currentAssets.sumOf { it.optDouble("value", 0.0) }); put("historicalAssetValue", allAssets.sumOf { it.optDouble("value", 0.0) }); put("interestReceived", repayments.sumOf { it.optDouble("interest", 0.0) }); put("charges", currentAssets.sumOf { it.optDouble("charges", 0.0) } + repayments.sumOf { it.optDouble("charges", 0.0) }); put("appSavings", savings.sumOf { it.optDouble("amount", 0.0) }); put("idleFunds", currentAssets.filter { it.optBoolean("idle", false) }.sumOf { it.optDouble("value", 0.0) }); put("activeRelationships", rel.count { it.optString("status") != "CLOSED" }); put("liabilities", liabilities.sumOf { it.optDouble("outstanding", 0.0) }); put("informalCreditExposure", rel.filter { it.optString("status") != "CLOSED" }.sumOf { it.optDouble("outstanding", it.optDouble("amount", 0.0)) }) }
     }
 }
