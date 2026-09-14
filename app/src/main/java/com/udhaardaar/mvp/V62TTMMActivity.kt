@@ -26,12 +26,9 @@ class V62TTMMActivity : androidx.appcompat.app.AppCompatActivity() {
         add(ArthSaathiV62Design.section(this, "GROUP MEMBERS"), 10)
         val name = ArthSaathiV62Design.input(this, "Member name / mobile")
         add(name, 4)
-        add(ArthSaathiV62Design.button(this, "ADD MEMBER", ArthSaathiV62Design.TEAL) {
-            if (name.text.isNotBlank()) { members.add(name.text.toString().trim()); saveGroup(); name.setText(""); render() }
-        }, 4)
+        add(ArthSaathiV62Design.button(this, "ADD MEMBER", ArthSaathiV62Design.TEAL) { if (name.text.isNotBlank()) { members.add(name.text.toString().trim()); saveGroup(); name.setText(""); render() } }, 4)
         members.forEachIndexed { i, m -> add(ArthSaathiV62Design.text(this, "${i+1}. $m", 12f, ArthSaathiV62Design.NAVY, true), 2) }
         if (members.size < 2) add(ArthSaathiV62Design.text(this, "Add at least two members to enable shared expense calculation.", 10f, ArthSaathiV62Design.MUTED), 6)
-
         add(ArthSaathiV62Design.section(this, "SHARED EXPENSE"), 10)
         val desc = ArthSaathiV62Design.input(this, "Expense description")
         val amt = ArthSaathiV62Design.input(this, "Amount ₹")
@@ -40,11 +37,9 @@ class V62TTMMActivity : androidx.appcompat.app.AppCompatActivity() {
         val allocation = ArthSaathiV62Design.input(this, "Custom / % / shares values in member order, comma separated")
         listOf(desc, amt, payer, split, allocation).forEach { add(it, 4) }
         add(ArthSaathiV62Design.button(this, "RECORD EXPENSE & CALCULATE BALANCES", ArthSaathiV62Design.BLUE) { record(desc.text.toString(), amt.text.toString(), payer.text.toString(), split.selectedItem.toString(), allocation.text.toString()) }, 8)
-
         add(ArthSaathiV62Design.section(this, "CURRENT BALANCES"), 12)
         balances().forEach { (m, v) -> add(ArthSaathiV62Design.text(this, "$m: ${if (v >= 0) "gets back" else "owes"} ₹${"%.2f".format(Locale.US, kotlin.math.abs(v))}", 11f, ArthSaathiV62Design.NAVY, true), 3) }
         add(ArthSaathiV62Design.button(this, "RECORD SETTLEMENT", ArthSaathiV62Design.GREEN) { settlementDialog() }, 8)
-
         add(ArthSaathiV62Design.section(this, "RECENT EXPENSES"), 12)
         s.all(V62Store.TTMM_EXPENSES).filter { groupId.isBlank() || it.optString("groupId") == groupId }.takeLast(15).reversed().forEach { add(ArthSaathiV62Design.text(this, "${it.optString("description")} • ₹${"%.2f".format(Locale.US, it.optDouble("amount"))}\nPayer: ${it.optString("payer")} • ${it.optString("splitMethod")}\n${it.optString("balanceSummary")}", 10f, ArthSaathiV62Design.NAVY), 4) }
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
@@ -59,11 +54,24 @@ class V62TTMMActivity : androidx.appcompat.app.AppCompatActivity() {
         val a = amount.replace(",", "").toDoubleOrNull() ?: 0.0
         if (desc.isBlank() || a <= 0 || members.size < 2 || payer.trim() !in members) { Toast.makeText(this, "Enter description, valid amount, at least 2 members and an exact payer name.", Toast.LENGTH_LONG).show(); return }
         saveGroup()
-        val allocations = when (method) {
+        val allocations: List<Double> = when (method) {
             "Equal split" -> List(members.size) { a / members.size }
-            "Custom amounts" -> parseValues(raw, members.size).also { if (it == null || kotlin.math.abs(it.sum() - a) > 0.01) { Toast.makeText(this, "Custom amounts must total the expense.", Toast.LENGTH_LONG).show(); return }; }
-            "Percentage split" -> parseValues(raw, members.size).also { if (it == null || kotlin.math.abs(it.sum() - 100.0) > 0.01) { Toast.makeText(this, "Percentages must total 100%.", Toast.LENGTH_LONG).show(); return } }.map { a * it / 100.0 }
-            else -> { val shares = parseValues(raw, members.size); if (shares == null || shares.sum() <= 0) { Toast.makeText(this, "Enter positive share units for every member.", Toast.LENGTH_LONG).show(); return }; val total = shares.sum(); shares.map { a * it / total } }
+            "Custom amounts" -> {
+                val values = parseValues(raw, members.size)
+                if (values == null || kotlin.math.abs(values.sum() - a) > 0.01) { Toast.makeText(this, "Custom amounts must total the expense.", Toast.LENGTH_LONG).show(); return }
+                values
+            }
+            "Percentage split" -> {
+                val values = parseValues(raw, members.size)
+                if (values == null || kotlin.math.abs(values.sum() - 100.0) > 0.01) { Toast.makeText(this, "Percentages must total 100%.", Toast.LENGTH_LONG).show(); return }
+                values.map { a * it / 100.0 }
+            }
+            else -> {
+                val shares = parseValues(raw, members.size)
+                if (shares == null || shares.sum() <= 0) { Toast.makeText(this, "Enter positive share units for every member.", Toast.LENGTH_LONG).show(); return }
+                val total = shares.sum()
+                shares.map { a * it / total }
+            }
         }
         val balance = members.mapIndexed { i, m -> m to (if (m == payer.trim()) a else 0.0) - allocations[i] }.toMap()
         val summary = balance.entries.joinToString("; ") { "${it.key}: ${if (it.value >= 0) "+" else "-"}₹${"%.2f".format(Locale.US, kotlin.math.abs(it.value))}" }
