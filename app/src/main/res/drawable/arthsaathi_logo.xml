@@ -4,15 +4,20 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- ArthSaathi: financial journey, direction and destination mark. -->
-    <path android:fillColor="#0C9B91" android:fillType="evenOdd" android:pathData="M54,5 A49,49 0,1 0,54,103 A49,49 0,1 0,54,5 M54,14 A40,40 0,1 1,54,94 A40,40 0,1 1,54,14" />
-    <path android:fillColor="#2C67DA" android:pathData="M17,75 A40,40 0,0 1,29,31 L37,39 A29,29 0,0 0,28,69 Z" />
-    <path android:fillColor="#16A596" android:pathData="M91,75 A40,40 0,0 0,79,31 L71,39 A29,29 0,0 1,80,69 Z" />
-    <path android:fillColor="#0E2646" android:pathData="M27,86 L48,30 L54,18 L81,86 L68,86 L54,48 L40,86 Z" />
-    <path android:fillColor="#D0A02A" android:pathData="M50,86 C49,72 50,59 55,49 C58,43 61,37 66,31 L72,44 C66,51 62,60 62,70 C62,77 65,82 68,86 Z" />
-    <path android:fillColor="#F2C74E" android:pathData="M55,86 C53,73 54,61 59,51 L63,57 C59,66 60,77 64,86 Z" />
-    <path android:fillColor="#D0A02A" android:pathData="M54,5 L57,13 L65,16 L57,19 L54,28 L51,19 L43,16 L51,13 Z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M55,37 A5,5 0,1 0,55,47 A5,5 0,1 0,55,37 Z" />
-    <path android:fillColor="#2C67DA" android:pathData="M55,40 A2,2 0,1 0,55,44 A2,2 0,1 0,55,40 Z" />
-    <path android:fillColor="#2C67DA" android:pathData="M18,91 Q54,82 90,91 Q54,87 18,91 Z" />
+    <!-- ArthSaathi approved visual language: compass/route + A gateway + gold journey + destination star. -->
+    <path android:fillColor="#0E2646" android:pathData="M54,4 A50,50 0,1 0,54,104 A50,50 0,1 0,54,4 M54,11 A43,43 0,1 1,54,97 A43,43 0,1 1,54,11" />
+    <path android:fillColor="#2C67DA" android:pathData="M18,73 C20,48 34,29 54,20 L58,29 C43,36 32,51 29,70 Z" />
+    <path android:fillColor="#0C9B91" android:pathData="M90,73 C88,48 74,29 54,20 L50,29 C65,36 76,51 79,70 Z" />
+    <!-- Strong A gateway. -->
+    <path android:fillColor="#0E2646" android:pathData="M24,88 L47,29 L54,16 L84,88 L69,88 L54,50 L39,88 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M46,66 L62,66 L66,76 L42,76 Z" />
+    <!-- Financial journey road rising toward the destination. -->
+    <path android:fillColor="#D0A02A" android:pathData="M48,88 C47,76 49,63 54,52 C59,41 65,33 72,26 L78,39 C71,47 66,56 64,65 C62,74 65,82 69,88 Z" />
+    <path android:fillColor="#F2C74E" android:pathData="M54,88 C52,75 54,64 58,55 C61,48 65,42 69,37 L72,45 C67,52 64,59 63,67 C62,76 65,83 67,88 Z" />
+    <!-- Destination star. -->
+    <path android:fillColor="#D0A02A" android:pathData="M54,5 L57,12 L64,15 L57,18 L54,26 L51,18 L44,15 L51,12 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M54,38 A6,6 0,1 0,54,50 A6,6 0,1 0,54,38 Z" />
+    <path android:fillColor="#2C67DA" android:pathData="M54,41 A3,3 0,1 0,54,47 A3,3 0,1 0,54,41 Z" />
+    <!-- Horizon / destination baseline. -->
+    <path android:fillColor="#2C67DA" android:pathData="M17,93 Q54,84 91,93 Q54,89 17,93 Z" />
 </vector>
