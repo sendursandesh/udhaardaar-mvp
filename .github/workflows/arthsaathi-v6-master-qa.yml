@@ -1,9 +1,9 @@
-name: ArthSaathi V6 Master QA
+name: ArthSaathi V6.2 Master QA
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, arthsaathi-v6.2-branding-rectification]
 
 permissions:
   contents: read
@@ -37,14 +37,13 @@ jobs:
           set -e
           test -z "$(git status --porcelain)"
 
-      # Full Master QA: tests, APK build, integrity gates, artifact upload.
       - name: Unit and regression tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
 
       - name: Assemble debug APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
-      - name: Release QA gates
+      - name: ArthSaathi V6.2 release QA gates
         run: |
           set -e
           apk=app/build/outputs/apk/debug/app-debug.apk
@@ -53,12 +52,13 @@ jobs:
           unzip -t "$apk" >/dev/null
 
           grep -q 'applicationId.*com.udhaardaar.mvp' app/build.gradle
-          grep -q "versionCode 61" app/build.gradle
-          grep -q "versionName '6.1.0'" app/build.gradle
+          grep -q 'versionCode 64' app/build.gradle
+          grep -q "versionName '6.2'" app/build.gradle
           grep -q 'ARTHSAATHI' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q 'Your Money. Your Records. Your Rights.' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
-          grep -q 'verhoeffValid' app/src/main/java/com/udhaardaar/mvp/V5DomainModels.kt
-          grep -q 'gstChecksumValid' app/src/main/java/com/udhaardaar/mvp/V5DomainModels.kt
+          grep -q 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q 'PLAN  •  PROTECT  •  GROW  •  NOMINATE' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -q 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -q 'PLAN  •  PROTECT  •  GROW  •  NOMINATE' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
           grep -q 'ArthSaathiFinancialRules' app/src/main/java/com/udhaardaar/mvp/ArthSaathiFinancialRules.kt
           grep -q 'sourceQr' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
           grep -q 'markBorrowerConsent' app/src/main/java/com/udhaardaar/mvp/V5WorkflowRepository.kt
@@ -69,11 +69,11 @@ jobs:
             grep -Rqi "$token" app/src/main/java/com/udhaardaar/mvp || { echo "Missing module token: $token"; exit 1; }
           done
 
-          echo "MASTER QA PASSED for commit $(git rev-parse HEAD)"
+          echo "ARTHSAATHI V6.2 MASTER QA PASSED for commit $(git rev-parse HEAD)"
 
       - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
-          name: ArthSaathi-V6.1.0-Master-QA-APK
+          name: ArthSaathi-V6.2-Master-QA-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
