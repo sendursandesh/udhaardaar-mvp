@@ -15,6 +15,14 @@ jobs:
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: '17'}
       - uses: android-actions/setup-android@v3
+        continue-on-error: true
+      - name: Prepare Android SDK paths
+        run: |
+          if [ -d "/usr/local/lib/android/sdk" ]; then
+            echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+            echo "/usr/local/lib/android/sdk/platform-tools" >> "$GITHUB_PATH"
+            echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          fi
       - name: Install Gradle
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
