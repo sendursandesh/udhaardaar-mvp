@@ -49,19 +49,22 @@ object ArthSaathiV62Design {
         cornerRadius = dp(radius, d).toFloat()
     }
 
+    /** Premium dark hero with a subtle navy-to-blue visual transition. */
     fun hero(fill: Int = NAVY, radius: Int = 22, d: Float = 1f) = GradientDrawable().apply {
-        setColor(fill)
+        colors = intArrayOf(fill, BLUE)
+        orientation = GradientDrawable.Orientation.TL_BR
         cornerRadius = dp(radius, d).toFloat()
     }
 
+    /** Consistent rounded action control with strong touch target and restrained elevation. */
     fun button(c: Context, s: String, color: Int = BLUE, click: () -> Unit) = Button(c).apply {
         text = s
         textSize = 13f
         setTextColor(WHITE)
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         isAllCaps = false
-        minHeight = dp(50, density(c))
-        minimumHeight = dp(50, density(c))
+        minHeight = dp(48, density(c))
+        minimumHeight = dp(48, density(c))
         stateListAnimator = null
         elevation = dp(2, density(c)).toFloat()
         background = card(color, 15, density(c))
@@ -70,27 +73,29 @@ object ArthSaathiV62Design {
         setOnClickListener { click() }
     }
 
-    /** Branded module header: logo, module name, product tagline and consistent hierarchy. */
+    /** Branded module header: journey mark, module identity and product promise. */
     fun title(c: Context, name: String, subtitle: String): LinearLayout {
         val d = density(c)
         val outer = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14, d), dp(12, d), dp(14, d), dp(12, d))
-            background = card(WHITE, 20, d)
+            background = card(PALE_BLUE, 20, d)
             elevation = dp(2, d).toFloat()
         }
         val row = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         row.addView(ImageView(c).apply {
             setImageResource(com.udhaardaar.mvp.R.drawable.arthsaathi_logo)
             scaleType = ImageView.ScaleType.CENTER_INSIDE
-            contentDescription = "ArthSaathi logo"
-        }, LinearLayout.LayoutParams(dp(58, d), dp(58, d)))
+            contentDescription = "ArthSaathi — Navigate Your Financial Journey"
+        }, LinearLayout.LayoutParams(dp(62, d), dp(62, d)))
         val copy = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12, d), 0, 0, 0) }
-        copy.addView(text(c, name, 20f, NAVY, true))
-        copy.addView(text(c, subtitle, 10.5f, TEAL, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5, d) })
+        copy.addView(text(c, BRAND, 12f, TEAL, true))
+        copy.addView(text(c, name, 20f, NAVY, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3, d) })
+        copy.addView(text(c, subtitle, 10.5f, MUTED), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4, d) })
         row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
         outer.addView(row)
-        outer.addView(text(c, PILLARS, 9.5f, GOLD, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8, d) })
+        outer.addView(text(c, TAGLINE, 9.5f, BLUE, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8, d) })
+        outer.addView(text(c, PILLARS, 9.5f, GOLD, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3, d) })
         return outer
     }
 
