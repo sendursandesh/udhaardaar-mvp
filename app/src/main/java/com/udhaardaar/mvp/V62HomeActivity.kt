@@ -12,9 +12,9 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 
-/** ArthSaathi V6.2: compact, card-based, rural-friendly command centre. */
+/** ArthSaathi V6.2: premium, compact command centre with the finalized journey brand. */
 class V62HomeActivity : AppCompatActivity() {
-    private val navy=Color.rgb(18,48,76); private val green=Color.rgb(16,111,72); private val gold=Color.rgb(205,157,28)
+    private val navy=Color.rgb(18,48,76); private val green=Color.rgb(16,111,72); private val gold=Color.rgb(214,165,26)
     private val teal=Color.rgb(0,145,135); private val blue=Color.rgb(38,99,235); private val red=Color.rgb(190,65,65)
     private val bg=Color.rgb(246,249,252); private val muted=Color.rgb(92,108,124); private val border=Color.rgb(220,228,236)
     private val prefs by lazy{getSharedPreferences("udhaardaar_accounts",MODE_PRIVATE)}; private val photoRequest=6201
@@ -33,8 +33,13 @@ class V62HomeActivity : AppCompatActivity() {
         val header=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(10),dp(8),dp(8),dp(8));background=card()}
         val logo=ImageView(this).apply{setImageResource(R.drawable.udhaardaar_logo);scaleType=ImageView.ScaleType.CENTER_INSIDE;contentDescription="ArthSaathi logo";setOnClickListener{pickPhoto()}}
         prefs.getString("photo_$m",null)?.let{runCatching{logo.setImageURI(Uri.parse(it))}}
-        header.addView(logo,LinearLayout.LayoutParams(dp(54),dp(54)))
-        val hb=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};hb.addView(text(LanguageManager.t(this,"app"),22f,navy,true));hb.addView(text(LanguageManager.t(this,"tagline"),10f,teal,true));hb.addView(text(name,11f,muted,true));header.addView(hb,LinearLayout.LayoutParams(0,-2,1f).apply{leftMargin=dp(10)})
+        header.addView(logo,LinearLayout.LayoutParams(dp(58),dp(58)))
+        val hb=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
+        hb.addView(text("ARTHSAATHI",22f,navy,true))
+        hb.addView(text("Navigate Your Financial Journey",11f,teal,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(1)})
+        hb.addView(text("PLAN  •  PROTECT  •  GROW  •  NOMINATE",8.5f,gold,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(2)})
+        hb.addView(text(name,10f,muted,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(3)})
+        header.addView(hb,LinearLayout.LayoutParams(0,-2,1f).apply{leftMargin=dp(10)})
         header.addView(text(if(lang==LanguageManager.HI)"हि" else "EN",12f,blue,true).apply{gravity=Gravity.CENTER;background=card();setOnClickListener{languageDialog()}},LinearLayout.LayoutParams(dp(42),dp(42)))
         root.addView(header)
         val hour=java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);val greet=when(hour){in 5..11->"good_morning";in 12..16->"good_afternoon";in 17..20->"good_evening";else->"good_night"};root.addView(text("${LanguageManager.t(this,greet)}, $name",18f,navy,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
