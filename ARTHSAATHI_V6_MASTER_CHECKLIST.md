@@ -1,7 +1,8 @@
-# ArthSaathi V6 Master Product Checklist
+# ArthSaathi V6.2 Master Product Checklist
 
 Brand: ArthSaathi
-Tagline: Your Money. Your Records. Your Rights.
+Primary tagline: Navigate Your Financial Journey
+Brand promise: PLAN • PROTECT • GROW • NOMINATE
 
 ## 10 product modules
 
@@ -97,7 +98,9 @@ Tagline: Your Money. Your Records. Your Rights.
 
 ## Cross-module requirements
 
-- unified ArthSaathi branding and tree-style A logo
+- unified ArthSaathi branding and finalized journey-style A logo
+- primary tagline: Navigate Your Financial Journey
+- brand promise: PLAN • PROTECT • GROW • NOMINATE
 - responsive portrait UI
 - keyboard-safe adjustResize behaviour
 - scroll-safe long forms
@@ -119,4 +122,4 @@ Tagline: Your Money. Your Records. Your Rights.
 - all ten module entry points open
 - all module save/view flows work without crashes
 - existing V5 credit/repayment/asset/claim/ChargeCheck workflows remain reachable
-- fresh APK produced from main
+- fresh ArthSaathi V6.2 APK produced from main
