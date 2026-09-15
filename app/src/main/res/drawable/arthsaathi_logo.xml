@@ -4,15 +4,16 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- ArthSaathi: financial journey, direction and destination mark. -->
-    <path android:fillColor="#0C9B91" android:fillType="evenOdd" android:pathData="M54,5 A49,49 0,1 0,54,103 A49,49 0,1 0,54,5 M54,14 A40,40 0,1 1,54,94 A40,40 0,1 1,54,14" />
-    <path android:fillColor="#2C67DA" android:pathData="M17,75 A40,40 0,0 1,29,31 L37,39 A29,29 0,0 0,28,69 Z" />
-    <path android:fillColor="#16A596" android:pathData="M91,75 A40,40 0,0 0,79,31 L71,39 A29,29 0,0 1,80,69 Z" />
-    <path android:fillColor="#0E2646" android:pathData="M27,86 L48,30 L54,18 L81,86 L68,86 L54,48 L40,86 Z" />
-    <path android:fillColor="#D0A02A" android:pathData="M50,86 C49,72 50,59 55,49 C58,43 61,37 66,31 L72,44 C66,51 62,60 62,70 C62,77 65,82 68,86 Z" />
-    <path android:fillColor="#F2C74E" android:pathData="M55,86 C53,73 54,61 59,51 L63,57 C59,66 60,77 64,86 Z" />
-    <path android:fillColor="#D0A02A" android:pathData="M54,5 L57,13 L65,16 L57,19 L54,28 L51,19 L43,16 L51,13 Z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M55,37 A5,5 0,1 0,55,47 A5,5 0,1 0,55,37 Z" />
-    <path android:fillColor="#2C67DA" android:pathData="M55,40 A2,2 0,1 0,55,44 A2,2 0,1 0,55,40 Z" />
-    <path android:fillColor="#2C67DA" android:pathData="M18,91 Q54,82 90,91 Q54,87 18,91 Z" />
+    <!-- Premium ArthSaathi journey mark: compass, route, gateway and destination star. -->
+    <path android:fillColor="#FFFFFF" android:pathData="M54,4 A50,50 0,1 0,54,104 A50,50 0,1 0,54,4 Z" />
+    <path android:fillColor="#008F87" android:fillType="evenOdd" android:pathData="M54,7 A47,47 0,1 0,54,101 A47,47 0,1 0,54,7 M54,15 A39,39 0,1 1,54,93 A39,39 0,1 1,54,15 Z" />
+    <path android:fillColor="#2A65D6" android:pathData="M17,73 C17,52 28,34 46,25 L50,34 C36,42 28,56 27,72 Z" />
+    <path android:fillColor="#D3A12B" android:pathData="M78,27 C87,38 92,51 92,66 C92,72 91,78 89,83 L80,80 C82,75 83,70 83,65 C83,52 78,41 70,33 Z" />
+    <path android:fillColor="#0C2340" android:pathData="M27,87 L49,29 L54,16 L81,87 L68,87 L54,48 L40,87 Z" />
+    <path android:fillColor="#008F87" android:pathData="M39,87 C43,78 47,68 54,57 C61,45 68,37 76,30 L81,38 C72,46 65,55 60,66 C57,73 56,80 57,87 Z" />
+    <path android:fillColor="#F2C84B" android:pathData="M52,87 C51,75 54,64 60,53 C64,46 68,40 73,35 L77,43 C69,51 64,60 62,69 C61,76 63,82 66,87 Z" />
+    <path android:fillColor="#D3A12B" android:pathData="M54,7 L57,15 L65,18 L57,21 L54,29 L51,21 L43,18 L51,15 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M54,36 A6,6 0,1 0,54,48 A6,6 0,1 0,54,36 Z" />
+    <path android:fillColor="#2A65D6" android:pathData="M54,40 A2,2 0,1 0,54,44 A2,2 0,1 0,54,40 Z" />
+    <path android:fillColor="#2A65D6" android:pathData="M18,92 Q54,82 90,92 Q54,88 18,92 Z" />
 </vector>
