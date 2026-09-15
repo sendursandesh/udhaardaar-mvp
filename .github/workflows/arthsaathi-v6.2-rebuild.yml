@@ -2,7 +2,7 @@ name: ArthSaathi V6.2 Architecture Build
 on:
   workflow_dispatch:
   push:
-    branches: [arthsaathi-v6.2-final-architecture-copy]
+    branches: [arthsaathi-v6.2-final-architecture-copy, arthsaathi-v6.2-final-qa-build]
   pull_request:
     branches: [main]
 permissions:
