@@ -11,7 +11,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import kotlin.random.Random
 
-/** V6.2 secure entry: mobile number + OTP; no name/PIN-based login route. */
+/** V6.2 secure entry: approved ArthSaathi gold visual + mobile number + OTP. */
 class LoginActivity : AppCompatActivity() {
     private val prefs by lazy { getSharedPreferences("udhaardaar_accounts", MODE_PRIVATE) }
     private val d get() = resources.displayMetrics.density
@@ -46,7 +46,7 @@ class LoginActivity : AppCompatActivity() {
         add(r, ArthSaathiV62Design.pageHeader(this, "SECURE ACCESS", "Welcome back", "Enter your registered mobile number and verify with OTP."), 16)
         val m = input("10-digit registered mobile number")
         add(r, m, 14)
-        add(r, button("SEND OTP", ArthSaathiV62Design.BLUE) {
+        add(r, button("SEND OTP", ArthSaathiV62Design.GOLD_DEEP) {
             val x = m.text.toString()
             if (validMobile(x)) otp("Secure login OTP", x) { go(x) }
             else Toast.makeText(this, "Enter a valid 10-digit Indian mobile number", Toast.LENGTH_LONG).show()
@@ -60,7 +60,6 @@ class LoginActivity : AppCompatActivity() {
             setPadding(0, dp(14), 0, dp(14))
             setOnClickListener { language() }
         }, 8)
-    
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(r) })
     }
 
@@ -71,7 +70,7 @@ class LoginActivity : AppCompatActivity() {
         val n = ArthSaathiV62Design.input(this, "Full name")
         val m = input("10-digit mobile number")
         add(r, n, 14); add(r, m)
-        add(r, button("VERIFY MOBILE + CREATE ACCOUNT", ArthSaathiV62Design.TEAL) {
+        add(r, button("VERIFY MOBILE + CREATE ACCOUNT", ArthSaathiV62Design.GOLD_DEEP) {
             val x = m.text.toString()
             if (n.text.trim().length >= 2 && validMobile(x)) otp("Verify mobile", x) {
                 prefs.edit().putString("name_$x", n.text.toString().trim()).putBoolean("logged_in", true).putString("current_mobile", x).apply()
@@ -84,7 +83,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun validMobile(x: String) = x.matches(Regex("[6-9][0-9]{9}"))
 
-    /** Demo OTP keeps QA deterministic; a production SMS provider is a replaceable delivery boundary. */
+    /** Demo OTP keeps QA deterministic; a production SMS provider remains a replaceable delivery boundary. */
     private fun otp(title: String, mobile: String, done: () -> Unit) {
         val code = (100000 + Random.nextInt(900000)).toString()
         val e = ArthSaathiV62Design.input(this, "Enter 6-digit OTP").apply {
