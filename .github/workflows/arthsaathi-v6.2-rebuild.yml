@@ -2,7 +2,7 @@ name: ArthSaathi V6.2 Architecture Build
 on:
   workflow_dispatch:
   push:
-    branches: [arthsaathi-v6.2-final-architecture-copy]
+    branches: [arthsaathi-v6.2-final-golden-c480, arthsaathi-v6.2-locked-final-baseline]
   pull_request:
     branches: [main]
 permissions:
@@ -20,9 +20,11 @@ jobs:
           wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
+      - name: Unit tests
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
       - name: Compile V6.2
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: Master architecture gates
+      - name: Master architecture and integrity gates
         run: |
           set -e
           apk=app/build/outputs/apk/debug/app-debug.apk
@@ -55,6 +57,10 @@ jobs:
           grep -q 'SAP' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Accounting.kt
           grep -q 'V62AddressService' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Services.kt
           grep -q 'RECORD KHATA ENTRY — CONSENT + OTP' app/src/main/java/com/udhaardaar/mvp/V62ExtendedModulesActivity.kt
+          grep -q 'FUNDING / LENDING REQUEST' app/src/main/java/com/udhaardaar/mvp/V62ExtendedModulesActivity.kt
+          grep -q 'LIABILITY VAULT' app/src/main/java/com/udhaardaar/mvp/V62ExtendedModulesActivity.kt
+          grep -q 'GOVERNMENT SCHEMES & BENEFITS' app/src/main/java/com/udhaardaar/mvp/V62ExtendedModulesActivity.kt
+          grep -q 'REPORTS & STATEMENTS' app/src/main/java/com/udhaardaar/mvp/V62ExtendedModulesActivity.kt
           ! grep -q 'windowSplashScreenAnimatedIcon' app/src/main/res/values/styles.xml
       - uses: actions/upload-artifact@v4
         with:
