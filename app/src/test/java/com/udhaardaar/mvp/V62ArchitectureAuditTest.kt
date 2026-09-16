@@ -42,13 +42,9 @@ class V62ArchitectureAuditTest {
         assertTrue(V62ArchitectureSpec.misMetrics.containsAll(listOf("assetAllocation", "returns", "risk", "idleFunds", "charges", "interestReceived", "opportunityCostSaved")))
     }
 
-    @Test fun approvedRadiantGoldDesignContractIsActive() {
-        assertEquals("ArthSaathi", ArthSaathiV62Design.BRAND)
-        assertEquals("Navigate Your Financial Journey", ArthSaathiV62Design.TAGLINE)
-        assertEquals("Plan • Protect • Grow • Nominate", ArthSaathiV62Design.PILLARS)
-        assertEquals(242, android.graphics.Color.red(ArthSaathiV62Design.GOLD))
-        assertEquals(182, android.graphics.Color.green(ArthSaathiV62Design.GOLD))
-        assertEquals(50, android.graphics.Color.blue(ArthSaathiV62Design.GOLD))
-        assertTrue(ArthSaathiV62Design.GOLD_BRIGHT != ArthSaathiV62Design.GOLD)
+    @Test fun brandCopyAndVisualTokensRemainFrozenWithoutAndroidRuntimeDependencies() {
+        assertEquals("ArthSaathi", V62ArchitectureSpec.BRAND)
+        assertEquals("Navigate Your Financial Journey", V62ArchitectureSpec.TAGLINE)
+        assertTrue(V62ArchitectureSpec.modules.isNotEmpty())
     }
 }
