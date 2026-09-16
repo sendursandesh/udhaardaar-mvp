@@ -14,7 +14,10 @@ object ArthSaathiV62Design {
     val NAVY = Color.rgb(14, 38, 70)
     val TEAL = Color.rgb(12, 155, 145)
     val BLUE = Color.rgb(44, 103, 218)
-    val GOLD = Color.rgb(208, 160, 42)
+    /** Approved radiant/shining-gold treatment; geometry/layout remains unchanged. */
+    val GOLD = Color.rgb(242, 182, 50)
+    val GOLD_DEEP = Color.rgb(216, 148, 8)
+    val GOLD_BRIGHT = Color.rgb(255, 226, 138)
     val GREEN = Color.rgb(24, 139, 94)
     val RED = Color.rgb(190, 68, 76)
     val BG = Color.rgb(246, 249, 252)
@@ -23,7 +26,7 @@ object ArthSaathiV62Design {
     val BORDER = Color.rgb(220, 228, 236)
     val PALE_TEAL = Color.rgb(235, 248, 246)
     val PALE_BLUE = Color.rgb(238, 244, 255)
-    val PALE_GOLD = Color.rgb(252, 247, 232)
+    val PALE_GOLD = Color.rgb(255, 248, 226)
     val PALE_RED = Color.rgb(253, 240, 241)
 
     const val BRAND = "ArthSaathi"
