@@ -10,7 +10,7 @@
 The V6.2 UI follows the approved premium fintech direction:
 - Light premium background with strong navy typography.
 - Teal and blue primary actions.
-- Gold used as a restrained journey/highlight accent.
+- **Radiant/shining gold** used for the approved journey/brand highlight.
 - Rounded premium cards, grouped sections and generous spacing.
 - Every normal V6.2 page uses the common ArthSaathi shell: canonical logo, page title, contextual subtitle, grouped content cards/inputs, primary action and Back/Home path.
 - Keyboard-safe forms and scrollable content are mandatory.
@@ -20,13 +20,13 @@ The V6.2 UI follows the approved premium fintech direction:
 
 The canonical frozen resource is `@drawable/arthsaathi_logo`, located at `app/src/main/res/drawable/arthsaathi_logo.xml`.
 
-Visual concept: **teal compass arc + blue route + navy A/gateway + gold journey road + gold north star + route point + blue horizon.**
+Visual concept: **radiant-gold compass ring + blue route arcs + navy A/gateway + radiant-gold journey road + highlighted destination star + route point + blue horizon.** Geometry and button/page structure remain unchanged from the approved V6.2 journey design.
 
 The same resource is used by the application icon, round icon, login and V6.2 page headers. Any future logo change requires a separate design-version decision.
 
 ## 2. Frozen primary page journey
 
-1. Login / Welcome — ArthSaathi branding, tagline and secure entry.
+1. Login / Welcome — ArthSaathi branding, tagline and secure mobile + OTP entry.
 2. Home / Financial Dashboard — financial snapshot plus connected module tiles.
 3. Financial Centre — Formal Credit, Funding/Lending, ChargeCheck, QR Udhaar Khata and supporting identity/data modules.
 4. Register Financial Relationship — Search/Create Counterparty → History Consent → Credit Details → Repayment Terms → Evidence → Promissory Note → Registration Consent OTP → Relationship created.
