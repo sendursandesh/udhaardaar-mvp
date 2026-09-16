@@ -7,7 +7,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.*
 
-/** ArthSaathi V6.2 premium command centre. */
+/** ArthSaathi V6.2 premium command centre, aligned to the approved gold/navy journey design. */
 class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
     private val d get() = resources.displayMetrics.density
     private fun dp(v:Int)=(v*d).toInt()
@@ -35,7 +35,6 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
         val relationships=store.all(V62Store.RELATIONSHIPS).filter{it.optString("ownerUserId")==owner}
         val assets=store.all(V62Store.ASSETS).filter{it.optString("ownerUserId")==owner}
         val policies=store.all(V62Store.INSURANCE).filter{it.optString("ownerUserId")==owner}
-        val expenses=store.all(V62Store.TTMM_EXPENSES).filter{it.optString("ownerUserId",owner)==owner}
         val hero=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(18),dp(17),dp(18),dp(17));background=ArthSaathiV62Design.hero(ArthSaathiV62Design.NAVY,22,d)}
         hero.addView(ArthSaathiV62Design.text(this,"FINANCIAL COMMAND CENTRE",10f,ArthSaathiV62Design.GOLD,true))
         hero.addView(ArthSaathiV62Design.text(this,"Plan smarter. Protect what matters.\nGrow with clarity.",18f,Color.WHITE,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
@@ -43,19 +42,19 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
         add(hero,12)
         val stats=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
         stats.addView(ArthSaathiV62Design.statCard(this,"Relationships",relationships.size.toString(),ArthSaathiV62Design.BLUE),LinearLayout.LayoutParams(0,dp(78),1f).apply{rightMargin=dp(4)})
-        stats.addView(ArthSaathiV62Design.statCard(this,"Assets",assets.count{it.optBoolean("currentAsset",true)}.toString(),ArthSaathiV62Design.TEAL),LinearLayout.LayoutParams(0,dp(78),1f).apply{leftMargin=dp(4);rightMargin=dp(4)})
-        stats.addView(ArthSaathiV62Design.statCard(this,"Policies",policies.size.toString(),ArthSaathiV62Design.GREEN),LinearLayout.LayoutParams(0,dp(78),1f).apply{leftMargin=dp(4)})
+        stats.addView(ArthSaathiV62Design.statCard(this,"Assets",assets.count{it.optBoolean("currentAsset",true)}.toString(),ArthSaathiV62Design.GOLD_DEEP),LinearLayout.LayoutParams(0,dp(78),1f).apply{leftMargin=dp(4);rightMargin=dp(4)})
+        stats.addView(ArthSaathiV62Design.statCard(this,"Policies",policies.size.toString(),ArthSaathiV62Design.TEAL),LinearLayout.LayoutParams(0,dp(78),1f).apply{leftMargin=dp(4)})
         add(stats,9)
         add(ArthSaathiV62Design.section(this,"YOUR FINANCIAL JOURNEY"),10)
-        row(module("01","Credit & Udhaar","Lend • borrow • trade",ArthSaathiV62Design.BLUE){open(V62CreditRegistrationActivity::class.java)},module("02","Credit Intelligence","Score • exposure • behaviour",ArthSaathiV62Design.TEAL){open(V62CreditIntelligenceActivity::class.java)})
-        row(module("03","Repayment Centre","Schedule • collect • history",ArthSaathiV62Design.GREEN){open(V62RepaymentActivity::class.java)},module("04","Asset Vault","Property • bank • lifecycle",ArthSaathiV62Design.TEAL){open(V62AssetVaultActivity::class.java)})
-        row(module("05","Insurance & Protection","Policies • verify • alerts",ArthSaathiV62Design.GREEN){open(V62InsuranceActivity::class.java)},module("06","Rental / Lease","Landlord • tenant • dues",ArthSaathiV62Design.GOLD){open(V62RentalLeaseActivity::class.java)})
-        row(module("07","TTMM Shared Money","Group money • settle",ArthSaathiV62Design.BLUE){open(V62TTMMActivity::class.java)},module("08","MIS & Analytics","Charts • tables • risk",ArthSaathiV62Design.TEAL){open(V62MISActivity::class.java)})
+        row(module("01","Credit & Udhaar","Lend • borrow • trade",ArthSaathiV62Design.GOLD_DEEP){open(V62CreditRegistrationActivity::class.java)},module("02","Credit Intelligence","Score • exposure • behaviour",ArthSaathiV62Design.TEAL){open(V62CreditIntelligenceActivity::class.java)})
+        row(module("03","Repayment Centre","Schedule • collect • history",ArthSaathiV62Design.GOLD_DEEP){open(V62RepaymentActivity::class.java)},module("04","Asset Vault","Property • bank • lifecycle",ArthSaathiV62Design.GOLD){open(V62AssetVaultActivity::class.java)})
+        row(module("05","Insurance & Protection","Policies • verify • alerts",ArthSaathiV62Design.TEAL){open(V62InsuranceActivity::class.java)},module("06","Rental / Lease","Landlord • tenant • dues",ArthSaathiV62Design.GOLD_DEEP){open(V62RentalLeaseActivity::class.java)})
+        row(module("07","TTMM Shared Money","Group money • settle",ArthSaathiV62Design.GOLD_DEEP){open(V62TTMMActivity::class.java)},module("08","MIS & Analytics","Charts • tables • risk",ArthSaathiV62Design.TEAL){open(V62MISActivity::class.java)})
         add(ArthSaathiV62Design.section(this,"PROTECT • LEGACY • ASSIST"),10)
-        row(module("09","Legacy • Legal • AI","Will • claims • advice",ArthSaathiV62Design.RED){open(V62LegacyLegalAIActivity::class.java)},module("10","Financial Centre","Formal • QR • ChargeCheck • funding",ArthSaathiV62Design.GOLD){open(V62ExtendedModulesActivity::class.java)})
-        val advisor=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(15),dp(14),dp(15),dp(14));background=ArthSaathiV62Design.card(ArthSaathiV62Design.PALE_TEAL,18,d)}
-        advisor.addView(ArthSaathiV62Design.text(this,"✦",25f,ArthSaathiV62Design.TEAL,true),LinearLayout.LayoutParams(dp(34),dp(48)))
-        val copy=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};copy.addView(ArthSaathiV62Design.text(this,"AI FINANCIAL ADVISOR",10f,ArthSaathiV62Design.TEAL,true));copy.addView(ArthSaathiV62Design.text(this,"Connected suggestions from your recorded financial data.",11f,ArthSaathiV62Design.NAVY),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(4)});advisor.addView(copy,LinearLayout.LayoutParams(0,-2,1f).apply{leftMargin=dp(7)});add(advisor,12)
-        add(ArthSaathiV62Design.button(this,"OPEN FINANCIAL CENTRE",ArthSaathiV62Design.NAVY){open(V62ExtendedModulesActivity::class.java)},9)
+        row(module("09","Legacy • Legal • AI","Will • claims • advice",ArthSaathiV62Design.GOLD_DEEP){open(V62LegacyLegalAIActivity::class.java)},module("10","Financial Centre","Formal • QR • ChargeCheck • funding",ArthSaathiV62Design.GOLD){open(V62ExtendedModulesActivity::class.java)})
+        val advisor=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(15),dp(14),dp(15),dp(14));background=ArthSaathiV62Design.card(ArthSaathiV62Design.PALE_GOLD,18,d)}
+        advisor.addView(ArthSaathiV62Design.text(this,"✦",25f,ArthSaathiV62Design.GOLD_DEEP,true),LinearLayout.LayoutParams(dp(34),dp(48)))
+        val copy=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};copy.addView(ArthSaathiV62Design.text(this,"AI FINANCIAL ADVISOR",10f,ArthSaathiV62Design.GOLD_DARK,true));copy.addView(ArthSaathiV62Design.text(this,"Connected suggestions from your recorded financial data.",11f,ArthSaathiV62Design.NAVY),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(4)});advisor.addView(copy,LinearLayout.LayoutParams(0,-2,1f).apply{leftMargin=dp(7)});add(advisor,12)
+        add(ArthSaathiV62Design.button(this,"OPEN FINANCIAL CENTRE",ArthSaathiV62Design.GOLD_DEEP){open(V62ExtendedModulesActivity::class.java)},9)
     }
 }
