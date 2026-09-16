@@ -11,23 +11,23 @@ import android.view.Gravity
 import android.view.View
 import android.widget.*
 
-/** Canonical ArthSaathi V6.2 visual system used by every modern module screen. */
+/** Canonical ArthSaathi V6.2 visual system. The approved logo/structure is shared by every modern module. */
 object ArthSaathiV62Design {
     val NAVY = Color.rgb(14, 38, 70)
     val TEAL = Color.rgb(12, 155, 145)
     val BLUE = Color.rgb(44, 103, 218)
-    /** Approved radiant/shining-gold treatment; geometry/layout remains unchanged. */
     val GOLD = Color.rgb(242, 182, 50)
     val GOLD_DEEP = Color.rgb(216, 148, 8)
     val GOLD_BRIGHT = Color.rgb(255, 226, 138)
+    val GOLD_DARK = Color.rgb(169, 109, 0)
     val GREEN = Color.rgb(24, 139, 94)
     val RED = Color.rgb(190, 68, 76)
-    val BG = Color.rgb(246, 249, 252)
+    val BG = Color.rgb(255, 248, 231)
     val WHITE = Color.WHITE
     val MUTED = Color.rgb(92, 108, 124)
-    val BORDER = Color.rgb(220, 228, 236)
+    val BORDER = Color.rgb(224, 213, 185)
     val PALE_TEAL = Color.rgb(235, 248, 246)
-    val PALE_BLUE = Color.rgb(238, 244, 255)
+    val PALE_BLUE = Color.rgb(246, 241, 221)
     val PALE_GOLD = Color.rgb(255, 248, 226)
     val PALE_RED = Color.rgb(253, 240, 241)
 
@@ -44,8 +44,8 @@ object ArthSaathiV62Design {
         textSize = size
         setTextColor(color)
         includeFontPadding = false
-        typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
-        letterSpacing = if (size <= 11f) .025f else 0f
+        typeface = Typeface.create("cursive", if (bold) Typeface.BOLD else Typeface.NORMAL)
+        letterSpacing = if (size <= 11f) .02f else 0f
     }
 
     fun card(fill: Int = WHITE, radius: Int = 18, d: Float = 1f) = GradientDrawable().apply {
@@ -59,23 +59,27 @@ object ArthSaathiV62Design {
         cornerRadius = dp(radius, d).toFloat()
     }
 
-    fun button(c: Context, s: String, color: Int = BLUE, click: () -> Unit) = Button(c).apply {
+    /** Premium gold CTA used by the approved ArthSaathi visual language. */
+    fun button(c: Context, s: String, color: Int = GOLD_DEEP, click: () -> Unit) = Button(c).apply {
         text = s
-        textSize = 13f
-        setTextColor(WHITE)
-        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        textSize = 14f
+        setTextColor(if (color == GOLD || color == GOLD_DEEP) NAVY else WHITE)
+        typeface = Typeface.create("cursive", Typeface.BOLD)
         isAllCaps = false
         minHeight = dp(50, density(c))
         minimumHeight = dp(50, density(c))
         stateListAnimator = null
         elevation = dp(2, density(c)).toFloat()
-        background = card(color, 15, density(c))
-        backgroundTintList = ColorStateList.valueOf(color)
+        background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(color, if (color == GOLD_DEEP) GOLD else color)).apply {
+            cornerRadius = dp(15, density(c)).toFloat()
+            setStroke(dp(1, density(c)), if (color == GOLD || color == GOLD_DEEP) GOLD_DARK else BORDER)
+        }
+        backgroundTintList = null
         setPadding(dp(16, density(c)), 0, dp(16, density(c)), 0)
         setOnClickListener { click() }
     }
 
-    /** Branded module header: logo, module name, product tagline and consistent hierarchy. */
+    /** Branded module header: exact approved logo, product tagline and four pillars. */
     fun title(c: Context, name: String, subtitle: String): LinearLayout {
         val d = density(c)
         val outer = LinearLayout(c).apply {
@@ -88,14 +92,14 @@ object ArthSaathiV62Design {
         row.addView(ImageView(c).apply {
             setImageResource(com.udhaardaar.mvp.R.drawable.arthsaathi_logo)
             scaleType = ImageView.ScaleType.CENTER_INSIDE
-            contentDescription = "ArthSaathi logo"
-        }, LinearLayout.LayoutParams(dp(58, d), dp(58, d)))
+            contentDescription = "ArthSaathi approved logo"
+        }, LinearLayout.LayoutParams(dp(68, d), dp(68, d)))
         val copy = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12, d), 0, 0, 0) }
-        copy.addView(text(c, name, 20f, NAVY, true))
+        copy.addView(text(c, name, 21f, NAVY, true))
         copy.addView(text(c, subtitle, 10.5f, TEAL, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5, d) })
         row.addView(copy, LinearLayout.LayoutParams(0, -2, 1f))
         outer.addView(row)
-        outer.addView(text(c, PILLARS, 9.5f, GOLD, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8, d) })
+        outer.addView(text(c, PILLARS, 10f, GOLD, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8, d) })
         return outer
     }
 
@@ -112,7 +116,7 @@ object ArthSaathiV62Design {
         return box
     }
 
-    fun section(c: Context, s: String) = text(c, s.uppercase(), 10.5f, MUTED, true).apply {
+    fun section(c: Context, s: String) = text(c, s.uppercase(), 10.5f, NAVY, true).apply {
         setPadding(0, dp(15, density(c)), 0, dp(6, density(c)))
         letterSpacing = .075f
     }
@@ -169,7 +173,7 @@ object ArthSaathiV62Design {
                 text = number
                 textSize = 10f
                 setTextColor(accent)
-                typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+                typeface = Typeface.create("cursive", Typeface.BOLD)
             })
             addView(text(c, title, 15f, NAVY, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7, d) })
             addView(text(c, description, 10f, MUTED), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4, d) })
