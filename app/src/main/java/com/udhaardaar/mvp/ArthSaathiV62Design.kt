@@ -5,6 +5,8 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.text.InputFilter
+import android.text.InputType
 import android.view.Gravity
 import android.view.View
 import android.widget.*
@@ -115,6 +117,7 @@ object ArthSaathiV62Design {
         letterSpacing = .075f
     }
 
+    /** Common field styling plus deterministic length/type guards for critical identifiers. */
     fun input(c: Context, hint: String) = EditText(c).apply {
         this.hint = hint
         textSize = 15f
@@ -124,6 +127,17 @@ object ArthSaathiV62Design {
         minHeight = dp(52, density(c))
         setPadding(dp(14, density(c)), dp(8, density(c)), dp(14, density(c)), dp(8, density(c)))
         background = card(WHITE, 14, density(c))
+        val h = hint.lowercase()
+        when {
+            h.contains("mobile") -> { inputType = InputType.TYPE_CLASS_PHONE; filters = arrayOf(InputFilter.LengthFilter(10)) }
+            h.contains("aadhaar") -> { inputType = InputType.TYPE_CLASS_NUMBER; filters = arrayOf(InputFilter.LengthFilter(12)) }
+            h.contains("gstin") -> { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS; filters = arrayOf(InputFilter.LengthFilter(15)) }
+            h.contains("pan") -> { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS; filters = arrayOf(InputFilter.LengthFilter(10)) }
+            h.contains("pin code") || h.contains("pincode") || h == "pin" -> { inputType = InputType.TYPE_CLASS_NUMBER; filters = arrayOf(InputFilter.LengthFilter(6)) }
+            h.contains("otp") -> { inputType = InputType.TYPE_CLASS_NUMBER; filters = arrayOf(InputFilter.LengthFilter(6)) }
+            h.contains("email") -> { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS; filters = arrayOf(InputFilter.LengthFilter(120)) }
+            else -> filters = arrayOf(InputFilter.LengthFilter(160))
+        }
     }
 
     fun add(root: LinearLayout, v: View, top: Int = 7) {
