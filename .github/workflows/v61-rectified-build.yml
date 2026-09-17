@@ -29,7 +29,14 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 12266719
-          packages: 'platform-tools'
+
+      - name: Install required Android SDK packages
+        shell: bash
+        run: |
+          set -e
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install Gradle 8.10.2
         shell: bash
@@ -45,21 +52,28 @@ jobs:
       - name: Compile V6.2 APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
-      - name: V6.2 UI and branding gates
+      - name: V6.2 UI, module and branding gates
         shell: bash
         run: |
           set -e
           test -f app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
           test -f app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          test -f app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
           test -f app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
           test -f app/src/main/res/drawable/arthsaathi_logo.xml
           grep -Fq 'ArthSaathi' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
           grep -Fq 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          grep -Fq 'Plan • Protect • Grow • Nominate' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
           grep -Fq 'brandWordmark' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
           grep -Fq 'bottomNav' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
           grep -Fq 'arthsaathi_logo' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
           grep -Fq 'arthsaathi_logo' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -Fq 'v62_advocates' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
+          grep -Fq 'AI Portfolio Review' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
           grep -Fq 'versionName \'6.2\'' app/build.gradle
+          for token in 'V62CreditRegistrationActivity' 'V62RepaymentActivity' 'V62AssetVaultActivity' 'V62InsuranceActivity' 'V62TTMMActivity' 'V62MISActivity' 'V62ChargeCheckActivity' 'V62ExtendedModulesActivity' 'QrCreditScannerActivity'; do
+            grep -Fq "$token" app/src/main/AndroidManifest.xml
+          done
 
       - name: APK integrity
         shell: bash
@@ -68,7 +82,7 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
           unzip -t "$APK" >/dev/null
-          test "$(stat -c%s "$APK")" -gt 10000
+          test "$(stat -c%s "$APK")" -gt 10000000
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.udhaardaar.mvp'"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "versionName='6.2'"
 
