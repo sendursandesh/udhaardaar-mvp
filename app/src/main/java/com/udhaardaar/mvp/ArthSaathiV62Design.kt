@@ -39,12 +39,13 @@ object ArthSaathiV62Design {
     fun dp(v: Int, d: Float) = (v * d).toInt()
     private fun density(c: Context) = c.resources.displayMetrics.density
 
+    // Controlled Android system sans-serif typography: consistent, professional and deterministic across devices.
     fun text(c: Context, s: String, size: Float = 14f, color: Int = NAVY, bold: Boolean = false) = TextView(c).apply {
         text = s
         textSize = size
         setTextColor(color)
         includeFontPadding = false
-        typeface = Typeface.create("cursive", if (bold) Typeface.BOLD else Typeface.NORMAL)
+        typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
         letterSpacing = if (size <= 11f) .02f else 0f
     }
 
@@ -64,7 +65,7 @@ object ArthSaathiV62Design {
         text = s
         textSize = 14f
         setTextColor(if (color == GOLD || color == GOLD_DEEP) NAVY else WHITE)
-        typeface = Typeface.create("cursive", Typeface.BOLD)
+        typeface = Typeface.create("sans-serif", Typeface.BOLD)
         isAllCaps = false
         minHeight = dp(50, density(c))
         minimumHeight = dp(50, density(c))
@@ -173,7 +174,7 @@ object ArthSaathiV62Design {
                 text = number
                 textSize = 10f
                 setTextColor(accent)
-                typeface = Typeface.create("cursive", Typeface.BOLD)
+                typeface = Typeface.create("sans-serif", Typeface.BOLD)
             })
             addView(text(c, title, 15f, NAVY, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7, d) })
             addView(text(c, description, 10f, MUTED), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4, d) })
