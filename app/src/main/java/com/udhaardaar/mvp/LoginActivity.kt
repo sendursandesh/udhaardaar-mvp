@@ -65,7 +65,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun showRegister() {
         val r = shell()
-        add(r, ArthSaathiV62Design.title(this, ArthSaathiV62Design.BRAND, "Create a verified financial profile"), 0)
+        add(r, ArthSaathiV62Design.title(this, ArthSaathiV62Design.BRAND, ArthSaathiV62Design.TAGLINE), 0)
         add(r, ArthSaathiV62Design.pageHeader(this, "NEW PROFILE", "Create your account", "One verified profile for your V6.2 financial records."), 14)
         val n = ArthSaathiV62Design.input(this, "Full name")
         val m = input("10-digit mobile number")
