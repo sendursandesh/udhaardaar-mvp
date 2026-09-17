@@ -1,4 +1,5 @@
 name: ArthSaathi V6.2 Architecture Build
+# Golden design verification build: logo, palette and controlled typography are release-gated.
 on:
   workflow_dispatch:
   push:
