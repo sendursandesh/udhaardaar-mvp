@@ -15,7 +15,6 @@
         android:alwaysRetainTaskState="true"
         android:theme="@style/Theme.ArthSaathi">
 
-        <!-- ArthSaathi V6.2 is the only user-facing application flow. -->
         <activity android:name=".LoginActivity" android:exported="true" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -35,6 +34,10 @@
         <activity android:name=".V62MISActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V62LegacyLegalAIActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".QrCreditScannerActivity" android:exported="false" android:screenOrientation="portrait" />
+
+        <!-- Legacy compatibility routes. They immediately hand off to the registered V6.2 screens. -->
+        <activity android:name=".ArthSaathiHomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ArthSaathiModulesActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
 
         <receiver android:name=".ReminderReceiver" android:exported="false" />
         <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">
