@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Udhaardaar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.ArthSaathi" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:fontFamily">sans-serif</item>
         <item name="fontFamily">sans-serif</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:windowBackground">#F6F8FB</item>
-        <item name="android:windowSplashScreenBackground">#F6F8FB</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/udhaardaar_logo</item>
-        <item name="android:windowSplashScreenAnimationDuration">350</item>
-        <item name="android:statusBarColor">#F6F8FB</item>
-        <item name="android:navigationBarColor">#F6F8FB</item>
+        <item name="android:windowBackground">#FFF8E7</item>
+        <item name="android:statusBarColor">#FFF8E7</item>
+        <item name="android:navigationBarColor">#FFF8E7</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <item name="colorAccent">#2663EB</item>
-        <item name="colorPrimary">#2663EB</item>
-        <item name="colorPrimaryVariant">#1D4ED8</item>
-        <item name="colorSecondary">#009187</item>
+        <item name="colorAccent">#D89408</item>
+        <item name="colorPrimary">#D89408</item>
+        <item name="colorPrimaryVariant">#A96D00</item>
+        <item name="colorSecondary">#0C9B91</item>
     </style>
+    <!-- Compatibility alias for legacy screens during V6.2 migration. -->
+    <style name="Theme.Udhaardaar" parent="Theme.ArthSaathi" />
 </resources>
