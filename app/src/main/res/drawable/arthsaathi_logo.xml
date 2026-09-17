@@ -1,24 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <!-- ArthSaathi approved radiant-gold journey mark: same compass/A/road/star structure, upgraded to the finalized shining-gold treatment. -->
-    <path android:fillColor="#F2B632" android:fillType="evenOdd" android:pathData="M54,5 A49,49 0,1 0,54,103 A49,49 0,1 0,54,5 M54,14 A40,40 0,1 1,54,94 A40,40 0,1 1,54,14" />
-    <path android:fillColor="#174B83" android:pathData="M17,75 A40,40 0,0 1,29,31 L37,39 A29,29 0,0 0,28,69 Z" />
-    <path android:fillColor="#102D52" android:pathData="M91,75 A40,40 0,0 0,79,31 L71,39 A29,29 0,0 1,80,69 Z" />
-    <!-- Strong A-shaped gateway -->
-    <path android:fillColor="#102D52" android:pathData="M27,86 L48,30 L54,18 L81,86 L68,86 L54,48 L40,86 Z" />
-    <!-- Final radiant-gold journey road -->
-    <path android:fillColor="#D89408" android:pathData="M50,86 C49,72 50,59 55,49 C58,43 61,37 66,31 L72,44 C66,51 62,60 62,70 C62,77 65,82 68,86 Z" />
-    <path android:fillColor="#FFE28A" android:pathData="M55,86 C53,73 54,61 59,51 L63,57 C59,66 60,77 64,86 Z" />
-    <!-- Destination star -->
-    <path android:fillColor="#FFD34E" android:pathData="M54,5 L57,13 L65,16 L57,19 L54,28 L51,19 L43,16 L51,13 Z" />
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Master ArthSaathi mark: radiant gold compass, navy A and blue/gold financial journey. -->
+    <path android:fillColor="#F2B632" android:fillType="evenOdd" android:pathData="M54,3 A51,51 0,1 0,54,105 A51,51 0,1 0,54,3 M54,11 A43,43 0,1 1,54,97 A43,43 0,1 1,54,11" />
+    <path android:fillColor="#174B83" android:pathData="M18,77 C17,59 23,43 36,31 L43,38 C33,49 29,61 30,74 Z" />
+    <path android:fillColor="#174B83" android:pathData="M90,77 C91,59 85,43 72,31 L65,38 C75,49 79,61 78,74 Z" />
+    <path android:fillColor="#102D52" android:pathData="M26,88 L47,31 L54,16 L82,88 L68,88 L54,50 L40,88 Z" />
+    <path android:fillColor="#D89408" android:pathData="M51,88 C50,73 51,60 56,49 C60,41 64,35 69,29 L75,43 C68,51 64,60 64,70 C64,78 67,84 70,88 Z" />
+    <path android:fillColor="#FFE28A" android:pathData="M55,88 C53,75 54,63 59,52 L63,59 C60,68 60,78 64,88 Z" />
+    <path android:fillColor="#FFD34E" android:pathData="M54,4 L57,13 L66,16 L57,20 L54,29 L51,20 L42,16 L51,13 Z" />
     <path android:fillColor="#FFF1AE" android:pathData="M54,8 L56,14 L62,16 L56,18 L54,24 L52,18 L46,16 L52,14 Z" />
-    <!-- Journey point -->
-    <path android:fillColor="#FFFFFF" android:pathData="M55,37 A5,5 0,1 0,55,47 A5,5 0,1 0,55,37 Z" />
-    <path android:fillColor="#F2B632" android:pathData="M55,40 A2,2 0,1 0,55,44 A2,2 0,1 0,55,40 Z" />
-    <!-- Blue horizon retained from the approved composition -->
-    <path android:fillColor="#174B83" android:pathData="M18,91 Q54,82 90,91 Q54,87 18,91 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M55,36 A6,6 0,1 0,55,48 A6,6 0,1 0,55,36 Z" />
+    <path android:fillColor="#F2B632" android:pathData="M55,40 A2.5,2.5 0,1 0,55,45 A2.5,2.5 0,1 0,55,40 Z" />
+    <path android:fillColor="#174B83" android:pathData="M17,93 Q54,84 91,93 Q54,89 17,93 Z" />
 </vector>
