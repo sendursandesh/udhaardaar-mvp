@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.ArthSaathi" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="android:fontFamily">cursive</item>
-        <item name="fontFamily">cursive</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowBackground">#FFF8E7</item>
         <item name="android:statusBarColor">#FFF8E7</item>
