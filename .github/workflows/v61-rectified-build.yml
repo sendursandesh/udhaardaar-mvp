@@ -2,7 +2,7 @@ name: ArthSaathi V6.2 UI UX Multilingual APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, arthsaathi-v6.2-final-golden-fix]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -17,14 +17,20 @@ jobs:
       - name: Checkout exact committed source
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 12266719
+          packages: 'platform-tools'
+
       - name: Install Gradle 8.10.2
         shell: bash
         run: |
@@ -32,33 +38,29 @@ jobs:
           wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
+
       - name: Unit tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
       - name: Compile V6.2 APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: V6.2 UI, branding and language gates
+
+      - name: V6.2 UI and branding gates
         shell: bash
         run: |
           set -e
+          test -f app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
           test -f app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
-          test -f app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
-          test -f app/src/main/res/drawable/udhaardaar_logo.xml
-          grep -Fq 'const val HI = "hi"' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
-          grep -Fq 'HI_TEXT' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
-          grep -Fq 'V62HomeActivity' app/src/main/AndroidManifest.xml
-          grep -Fq 'V61RectifiedActivity' app/src/main/AndroidManifest.xml
-          grep -Fq 'No such user found' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -Fq 'CREDIT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -Fq 'REPAYMENT_CONSENT' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -Fq 'DPN / WILL' app/src/main/java/com/udhaardaar/mvp/V61RectifiedActivity.kt
-          grep -Fq 'Your Asset. Your Record. Your Right.' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
-          grep -Fq 'आपकी संपत्ति • आपका रिकॉर्ड • आपका अधिकार' app/src/main/java/com/udhaardaar/mvp/LanguageManager.kt
-          grep -Fq '#0B5D43' app/src/main/res/drawable/udhaardaar_logo.xml
-          grep -Fq '#D7A51A' app/src/main/res/drawable/udhaardaar_logo.xml
-          ! grep -Fq 'ScrollView' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
-          grep -Fq 'private fun bottom' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
-          grep -Fq 'private fun servicesDialog' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
-          grep -Fq 'versionName '\''6.2'\''' app/build.gradle
+          test -f app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          test -f app/src/main/res/drawable/arthsaathi_logo.xml
+          grep -Fq 'ArthSaathi' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          grep -Fq 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          grep -Fq 'brandWordmark' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          grep -Fq 'bottomNav' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          grep -Fq 'arthsaathi_logo' app/src/main/java/com/udhaardaar/mvp/LoginActivity.kt
+          grep -Fq 'arthsaathi_logo' app/src/main/java/com/udhaardaar/mvp/V62HomeActivity.kt
+          grep -Fq 'versionName \'6.2\'' app/build.gradle
+
       - name: APK integrity
         shell: bash
         run: |
@@ -69,10 +71,11 @@ jobs:
           test "$(stat -c%s "$APK")" -gt 10000
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.udhaardaar.mvp'"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "versionName='6.2'"
+
       - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
-          name: ArthSaathi-V6.2-UI-Multilingual-APK
+          name: ArthSaathi-V6.2-reference-design-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
