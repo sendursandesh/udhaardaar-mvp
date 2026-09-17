@@ -9,6 +9,7 @@ import android.view.Gravity
 import android.view.WindowManager
 import android.widget.*
 import android.graphics.drawable.GradientDrawable
+import androidx.appcompat.app.AppCompatActivity
 import kotlin.random.Random
 
 /** V6.2 secure entry styled to the supplied ArthSaathi reference. */
@@ -46,8 +47,8 @@ class LoginActivity : AppCompatActivity() {
             contentDescription = "ArthSaathi logo"
         }
         r.addView(logo, LinearLayout.LayoutParams(dp(108), dp(108)).apply { topMargin = dp(2) })
-        r.addView(ArthSaathiV62Design.brandWordmark(this, 28f), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(0) })
-        r.addView(ArthSaathiV62Design.text(this, ArthSaathiV62Design.TAGLINE, 10f, ArthSaathiV62Design.NAVY), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(2) })
+        r.addView(ArthSaathiV62Design.brandWordmark(this, 28f), LinearLayout.LayoutParams(-1, -2))
+        r.addView(ArthSaathiV62Design.text(this, ArthSaathiV62Design.TAGLINE, 10f, ArthSaathiV62Design.NAVY).apply { gravity = Gravity.CENTER }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(2) })
     }
 
     private fun modeTabs(r: LinearLayout) {
@@ -125,12 +126,19 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun language() {
-        AlertDialog.Builder(this).setTitle("Language / भाषा").setItems(arrayOf("English", "हिन्दी")) { _, w ->
-            LanguageManager.set(this, if (w == 1) LanguageManager.HI else LanguageManager.EN)
-            showLogin()
+        val options = arrayOf("English", "हिन्दी")
+        AlertDialog.Builder(this).setTitle("Language / भाषा").setItems(options) { _, which ->
+            Toast.makeText(this, if (which == 0) "English selected" else "हिन्दी selected", Toast.LENGTH_SHORT).show()
         }.show()
     }
 
-    private fun go(m: String) { prefs.edit().putBoolean("logged_in", true).putString("current_mobile", m).apply(); openHome() }
-    private fun openHome() { startActivity(Intent(this, V62HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)); finish() }
+    private fun go(mobile: String) {
+        prefs.edit().putBoolean("logged_in", true).putString("current_mobile", mobile).apply()
+        openHome()
+    }
+
+    private fun openHome() {
+        startActivity(Intent(this, V62HomeActivity::class.java))
+        finish()
+    }
 }
