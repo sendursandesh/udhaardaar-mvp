@@ -22,8 +22,8 @@ class V62TTMMActivity : androidx.appcompat.app.AppCompatActivity() {
 
     private fun render() {
         root.removeAllViews()
-        add(ArthSaathiV62Design.title(this, "TTMM", "Together Today • Money Managed"), 2)
-        add(ArthSaathiV62Design.text(this, "Create a group, record shared expenses using equal/custom/percentage/shares splits, see net balances and record settlements. Every change is retained in this account's V6.2 ledger.", 10f, ArthSaathiV62Design.MUTED), 8)
+        add(ArthSaathiV62Design.title(this, "Together • Share & Settle", "TTMM • Group money made simple"), 2)
+        add(ArthSaathiV62Design.text(this, "Record a group expense even when one person pays ₹5,000 first. Track each member's share, later partial/full contributions, remaining dues and final settlement. Every entry stays linked to the group ledger and MIS.", 10f, ArthSaathiV62Design.MUTED), 8)
         add(ArthSaathiV62Design.section(this, "GROUP MEMBERS"), 10)
         val name = ArthSaathiV62Design.input(this, "Member name / mobile")
         add(name, 4)
@@ -38,7 +38,11 @@ class V62TTMMActivity : androidx.appcompat.app.AppCompatActivity() {
         add(ArthSaathiV62Design.button(this, "RECORD EXPENSE & CALCULATE BALANCES", ArthSaathiV62Design.BLUE) { record(desc.text.toString(), amt.text.toString(), payer.text.toString(), split.selectedItem.toString(), allocation.text.toString()) }, 8)
         add(ArthSaathiV62Design.section(this, "CURRENT BALANCES"), 12)
         balances().forEach { (m, v) -> add(ArthSaathiV62Design.text(this, "$m: ${if (v >= 0) "gets back" else "owes"} ₹${"%.2f".format(Locale.US, kotlin.math.abs(v))}", 11f, ArthSaathiV62Design.NAVY, true), 3) }
-        add(ArthSaathiV62Design.button(this, "RECORD SETTLEMENT", ArthSaathiV62Design.GREEN) { settlementDialog() }, 8)
+        add(ArthSaathiV62Design.button(this, "RECORD MEMBER CONTRIBUTION", ArthSaathiV62Design.GREEN) { contributionDialog() }, 8)
+add(ArthSaathiV62Design.button(this, "RECORD GENERAL SETTLEMENT", ArthSaathiV62Design.TEAL) { settlementDialog() }, 5)
+add(ArthSaathiV62Design.section(this, "OPEN CONTRIBUTIONS / DUES"), 12)
+openDues().forEach { d -> add(ArthSaathiV62Design.text(this, "${d.optString("member")} owes ${d.optString("to")} ₹${"%.2f".format(Locale.US, d.optDouble("due"))}\n${d.optString("description")} • Expense ₹${"%.2f".format(Locale.US, d.optDouble("expenseAmount"))}", 10f, ArthSaathiV62Design.NAVY), 4) }
+if (openDues().isEmpty()) add(ArthSaathiV62Design.text(this, "No open member contributions for this group.", 10f, ArthSaathiV62Design.MUTED), 4)
         add(ArthSaathiV62Design.section(this, "RECENT EXPENSES"), 12)
         s.all(V62Store.TTMM_EXPENSES).filter { it.optString("ownerUserId", "") == owner && (groupId.isBlank() || it.optString("groupId") == groupId) }.takeLast(15).reversed().forEach { add(ArthSaathiV62Design.text(this, "${it.optString("description")} • ₹${"%.2f".format(Locale.US, it.optDouble("amount"))}\nPayer: ${it.optString("payer")} • ${it.optString("splitMethod")}\n${it.optString("balanceSummary")}", 10f, ArthSaathiV62Design.NAVY), 4) }
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
@@ -68,6 +72,30 @@ class V62TTMMActivity : androidx.appcompat.app.AppCompatActivity() {
 
     private fun parseValues(raw: String, n: Int): List<Double>? = runCatching { raw.split(",").map { it.trim().toDouble() }.takeIf { it.size == n && it.all { x -> x >= 0 } } }.getOrNull()
 
+    private fun expenseDue(e: JSONObject, member: String): Double {
+        val ms = e.optString("members").split("|")
+        val idx = ms.indexOf(member)
+        if (idx < 0) return 0.0
+        val allocation = e.optJSONArray("allocations")?.optDouble(idx, 0.0) ?: 0.0
+        if (member == e.optString("payer")) return 0.0
+        val contributed = s.all(V62Store.TTMM_CONTRIBUTIONS).filter {
+            it.optString("ownerUserId") == owner && it.optString("expenseId") == e.optString("id") && it.optString("from") == member && it.optString("status", "RECORDED") == "RECORDED"
+        }.sumOf { it.optDouble("amount", 0.0) }
+        return (allocation - contributed).coerceAtLeast(0.0)
+    }
+
+    private fun openDues(): List<JSONObject> {
+        val out = mutableListOf<JSONObject>()
+        s.all(V62Store.TTMM_EXPENSES).filter { it.optString("ownerUserId") == owner && (groupId.isBlank() || it.optString("groupId") == groupId) && it.optString("status", "OPEN") != "CLOSED" }.forEach { e ->
+            val payer = e.optString("payer")
+            e.optString("members").split("|").filter { it.isNotBlank() && it != payer }.forEach { m ->
+                val due = expenseDue(e, m)
+                if (due > 0.01) out += JSONObject().apply { put("expenseId", e.optString("id")); put("description", e.optString("description")); put("expenseAmount", e.optDouble("amount")); put("member", m); put("to", payer); put("due", due) }
+            }
+        }
+        return out
+    }
+
     private fun balances(): Map<String, Double> {
         val out = members.associateWith { 0.0 }.toMutableMap()
         s.all(V62Store.TTMM_EXPENSES).filter { it.optString("ownerUserId", "") == owner && (groupId.isBlank() || it.optString("groupId") == groupId) }.forEach { e ->
@@ -75,8 +103,27 @@ class V62TTMMActivity : androidx.appcompat.app.AppCompatActivity() {
             ms.forEachIndexed { i, m -> out[m] = (out[m] ?: 0.0) - al.optDouble(i, 0.0) }
             val payer = e.optString("payer"); out[payer] = (out[payer] ?: 0.0) + e.optDouble("amount", 0.0)
         }
+        s.all(V62Store.TTMM_CONTRIBUTIONS).filter { it.optString("ownerUserId", "") == owner && (groupId.isBlank() || it.optString("groupId") == groupId) && it.optString("status", "RECORDED") == "RECORDED" }.forEach { x -> out[x.optString("from")] = (out[x.optString("from")] ?: 0.0) + x.optDouble("amount", 0.0); out[x.optString("to")] = (out[x.optString("to")] ?: 0.0) - x.optDouble("amount", 0.0) }
         s.all(V62Store.TTMM_SETTLEMENTS).filter { it.optString("ownerUserId", "") == owner && (groupId.isBlank() || it.optString("groupId") == groupId) }.forEach { x -> out[x.optString("from")] = (out[x.optString("from")] ?: 0.0) + x.optDouble("amount", 0.0); out[x.optString("to")] = (out[x.optString("to")] ?: 0.0) - x.optDouble("amount", 0.0) }
         return out
+    }
+
+    private fun contributionDialog() {
+        val dues = openDues()
+        if (dues.isEmpty()) { Toast.makeText(this, "There are no open member contributions.", Toast.LENGTH_SHORT).show(); return }
+        val labels = dues.map { "${it.optString("member")} → ${it.optString("to")} • ${it.optString("description")} • due ₹${"%.2f".format(Locale.US, it.optDouble("due"))}" }
+        val selector = Spinner(this).apply { adapter = ArrayAdapter(this@V62TTMMActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
+        val amount = ArthSaathiV62Design.input(this, "Contribution amount ₹")
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(selector); addView(amount) }
+        AlertDialog.Builder(this).setTitle("Member contribution").setView(box).setNegativeButton("CANCEL", null).setPositiveButton("RECORD") { _, _ ->
+            val d = dues.getOrNull(selector.selectedItemPosition) ?: return@setPositiveButton
+            val a = amount.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+            val due = d.optDouble("due")
+            if (a <= 0 || a > due + 0.01) { Toast.makeText(this, "Contribution must be positive and cannot exceed the remaining share.", Toast.LENGTH_LONG).show(); return@setPositiveButton }
+            saveGroup(); val id = V62Store.id("CON")
+            s.add(V62Store.TTMM_CONTRIBUTIONS, JSONObject().apply { put("id", id); put("ownerUserId", owner); put("groupId", groupId); put("expenseId", d.optString("expenseId")); put("description", d.optString("description")); put("from", d.optString("member")); put("to", d.optString("to")); put("amount", a); put("status", "RECORDED"); put("createdAt", System.currentTimeMillis()) })
+            V62EventBus.publish(V62Event(V62Events.TTMM_CONTRIBUTION_CHANGED, id)); render()
+        }.show()
     }
 
     private fun settlementDialog() {
