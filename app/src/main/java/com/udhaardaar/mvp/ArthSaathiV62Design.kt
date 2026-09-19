@@ -19,7 +19,7 @@ object ArthSaathiV62Design {
     val GOLD_BRIGHT=Color.rgb(255,226,138); val GOLD_DARK=Color.rgb(169,109,0); val GREEN=Color.rgb(24,139,94)
     val RED=Color.rgb(190,68,76); val BG=Color.rgb(255,248,231); val WHITE=Color.WHITE
     val MUTED=Color.rgb(92,108,124); val BORDER=Color.rgb(224,213,185); val PALE_BLUE=Color.rgb(246,241,221); val PALE_GOLD=Color.rgb(255,248,226)
-    const val BRAND="ArthSaathi"; const val TAGLINE="Navigate Your Financial Journey"; const val PILLARS="Plan • Protect • Grow • Nominate"; const val LOGO_RESOURCE="@drawable/arthsaathi_logo"
+    const val BRAND="ArthSaathi"; const val TAGLINE="Navigate Your Financial Journey"; const val PILLARS="Plan • Protect • Grow • Nominate"; const val OWNERSHIP_TAGLINE="Your Asset. Your Record. Your Right."; const val OWNERSHIP_TAGS="OWN • RECORD • PROTECT • CLAIM"; const val LOGO_RESOURCE="@drawable/arthsaathi_logo"
     private fun density(c:Context)=c.resources.displayMetrics.density
     fun dp(v:Int,d:Float)=(v*d).toInt()
 
@@ -40,7 +40,7 @@ object ArthSaathiV62Design {
     fun title(c:Context,name:String,subtitle:String):LinearLayout {
         val d=density(c); val box=LinearLayout(c); box.orientation=LinearLayout.VERTICAL; box.gravity=Gravity.CENTER_HORIZONTAL; box.setPadding(dp(10,d),dp(7,d),dp(10,d),dp(9,d)); box.background=card(); box.elevation=dp(2,d).toFloat()
         val logo=ImageView(c);logo.setImageResource(com.udhaardaar.mvp.R.drawable.arthsaathi_logo);logo.scaleType=ImageView.ScaleType.CENTER_INSIDE;logo.contentDescription="ArthSaathi logo";box.addView(logo,LinearLayout.LayoutParams(dp(62,d),dp(62,d)))
-        box.addView(brandWordmark(c,22f),LinearLayout.LayoutParams(-1,-2));box.addView(text(c,subtitle,10f,NAVY),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(3,d)});box.addView(text(c,PILLARS,9.5f,GOLD_DARK,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5,d)})
+        box.addView(brandWordmark(c,22f),LinearLayout.LayoutParams(-1,-2));box.addView(text(c,subtitle,10f,NAVY),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(3,d)});box.addView(text(c,OWNERSHIP_TAGLINE,9.5f,NAVY,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(4,d)});box.addView(text(c,OWNERSHIP_TAGS,8.5f,TEAL,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(3,d)});box.addView(text(c,PILLARS,9.5f,GOLD_DARK,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5,d)})
         return box
     }
     fun pageHeader(c:Context,eyebrow:String,name:String,subtitle:String):LinearLayout {
