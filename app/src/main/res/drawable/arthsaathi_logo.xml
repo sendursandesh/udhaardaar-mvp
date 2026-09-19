@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Master ArthSaathi mark: radiant gold compass, navy A and blue/gold financial journey. -->
+    <path android:fillColor="#F2B632" android:fillType="evenOdd" android:pathData="M54,3 A51,51 0,1 0,54,105 A51,51 0,1 0,54,3 M54,11 A43,43 0,1 1,54,97 A43,43 0,1 1,54,11" />
+    <path android:fillColor="#174B83" android:pathData="M18,77 C17,59 23,43 36,31 L43,38 C33,49 29,61 30,74 Z" />
+    <path android:fillColor="#174B83" android:pathData="M90,77 C91,59 85,43 72,31 L65,38 C75,49 79,61 78,74 Z" />
+    <path android:fillColor="#102D52" android:pathData="M26,88 L47,31 L54,16 L82,88 L68,88 L54,50 L40,88 Z" />
+    <path android:fillColor="#D89408" android:pathData="M51,88 C50,73 51,60 56,49 C60,41 64,35 69,29 L75,43 C68,51 64,60 64,70 C64,78 67,84 70,88 Z" />
+    <path android:fillColor="#FFE28A" android:pathData="M55,88 C53,75 54,63 59,52 L63,59 C60,68 60,78 64,88 Z" />
+    <path android:fillColor="#FFD34E" android:pathData="M54,4 L57,13 L66,16 L57,20 L54,29 L51,20 L42,16 L51,13 Z" />
+    <path android:fillColor="#FFF1AE" android:pathData="M54,8 L56,14 L62,16 L56,18 L54,24 L52,18 L46,16 L52,14 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M55,36 A6,6 0,1 0,55,48 A6,6 0,1 0,55,36 Z" />
+    <path android:fillColor="#F2B632" android:pathData="M55,40 A2.5,2.5 0,1 0,55,45 A2.5,2.5 0,1 0,55,40 Z" />
+    <path android:fillColor="#174B83" android:pathData="M17,93 Q54,84 91,93 Q54,89 17,93 Z" />
+</vector>
