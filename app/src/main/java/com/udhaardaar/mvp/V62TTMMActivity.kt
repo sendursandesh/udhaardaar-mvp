@@ -39,7 +39,7 @@ class V62TTMMActivity : androidx.appcompat.app.AppCompatActivity() {
         add(ArthSaathiV62Design.section(this, "CURRENT BALANCES"), 12)
         balances().forEach { (m, v) -> add(ArthSaathiV62Design.text(this, "$m: ${if (v >= 0) "gets back" else "owes"} ₹${"%.2f".format(Locale.US, kotlin.math.abs(v))}", 11f, ArthSaathiV62Design.NAVY, true), 3) }
         add(ArthSaathiV62Design.button(this, "RECORD MEMBER CONTRIBUTION", ArthSaathiV62Design.GREEN) { contributionDialog() }, 8)
-add(ArthSaathiV62Design.button(this, "RECORD GENERAL SETTLEMENT", ArthSaathiV62Design.TEAL) { settlementDialog() }, 5)
+add(ArthSaathiV62Design.button(this, "SETTLE A GROUP DUE", ArthSaathiV62Design.TEAL) { settlementDialog() }, 5)
 add(ArthSaathiV62Design.section(this, "OPEN CONTRIBUTIONS / DUES"), 12)
 openDues().forEach { d -> add(ArthSaathiV62Design.text(this, "${d.optString("member")} owes ${d.optString("to")} ₹${"%.2f".format(Locale.US, d.optDouble("due"))}\n${d.optString("description")} • Expense ₹${"%.2f".format(Locale.US, d.optDouble("expenseAmount"))}", 10f, ArthSaathiV62Design.NAVY), 4) }
 if (openDues().isEmpty()) add(ArthSaathiV62Design.text(this, "No open member contributions for this group.", 10f, ArthSaathiV62Design.MUTED), 4)
@@ -79,9 +79,14 @@ if (openDues().isEmpty()) add(ArthSaathiV62Design.text(this, "No open member con
         val allocation = e.optJSONArray("allocations")?.optDouble(idx, 0.0) ?: 0.0
         if (member == e.optString("payer")) return 0.0
         val contributed = s.all(V62Store.TTMM_CONTRIBUTIONS).filter {
-            it.optString("ownerUserId") == owner && it.optString("expenseId") == e.optString("id") && it.optString("from") == member && it.optString("status", "RECORDED") == "RECORDED"
+            it.optString("ownerUserId") == owner && it.optString("expenseId") == e.optString("id") &&
+                it.optString("from") == member && it.optString("status", "RECORDED") == "RECORDED"
         }.sumOf { it.optDouble("amount", 0.0) }
-        return (allocation - contributed).coerceAtLeast(0.0)
+        val settled = s.all(V62Store.TTMM_SETTLEMENTS).filter {
+            it.optString("ownerUserId") == owner && it.optString("expenseId") == e.optString("id") &&
+                it.optString("from") == member && it.optString("status", "SETTLED") == "SETTLED"
+        }.sumOf { it.optDouble("amount", 0.0) }
+        return (allocation - contributed - settled).coerceAtLeast(0.0)
     }
 
     private fun openDues(): List<JSONObject> {
@@ -127,13 +132,27 @@ if (openDues().isEmpty()) add(ArthSaathiV62Design.text(this, "No open member con
     }
 
     private fun settlementDialog() {
-        if (members.size < 2) { Toast.makeText(this, "Add members first.", Toast.LENGTH_SHORT).show(); return }
-        val from = ArthSaathiV62Design.input(this, "Paid by / owing member"); val to = ArthSaathiV62Design.input(this, "Paid to / creditor member"); val amount = ArthSaathiV62Design.input(this, "Settlement amount ₹")
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(from); addView(to); addView(amount) }
-        AlertDialog.Builder(this).setTitle("Settlement").setView(box).setNegativeButton("CANCEL", null).setPositiveButton("SETTLE") { _, _ ->
-            val a = amount.text.toString().toDoubleOrNull() ?: 0.0
-            if (from.text.toString().trim() !in members || to.text.toString().trim() !in members || from.text.toString().trim() == to.text.toString().trim() || a <= 0) { Toast.makeText(this, "Enter valid different members and amount.", Toast.LENGTH_LONG).show(); return@setPositiveButton }
-            saveGroup(); val id = V62Store.id("SET"); s.add(V62Store.TTMM_SETTLEMENTS, JSONObject().apply { put("id", id); put("ownerUserId", owner); put("groupId", groupId); put("from", from.text.toString().trim()); put("to", to.text.toString().trim()); put("amount", a); put("status", "SETTLED"); put("createdAt", System.currentTimeMillis()) }); V62EventBus.publish(V62Event(V62Events.TTMM_EXPENSE_CHANGED, id)); render()
+        val dues = openDues()
+        if (dues.isEmpty()) { Toast.makeText(this, "There are no open group dues to settle.", Toast.LENGTH_SHORT).show(); return }
+        val labels = dues.map { "${it.optString("member")} → ${it.optString("to")} • ${it.optString("description")} • due ₹${"%.2f".format(Locale.US, it.optDouble("due"))}" }
+        val selector = Spinner(this).apply { adapter = ArrayAdapter(this@V62TTMMActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
+        val amount = ArthSaathiV62Design.input(this, "Settlement amount ₹")
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(selector); addView(amount) }
+        AlertDialog.Builder(this).setTitle("Settle a group due").setView(box).setNegativeButton("CANCEL", null).setPositiveButton("SETTLE") { _, _ ->
+            val due = dues.getOrNull(selector.selectedItemPosition) ?: return@setPositiveButton
+            val a = amount.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+            val remaining = due.optDouble("due")
+            if (a <= 0 || a > remaining + 0.01) {
+                Toast.makeText(this, "Settlement must be positive and cannot exceed the remaining share.", Toast.LENGTH_LONG).show(); return@setPositiveButton
+            }
+            saveGroup()
+            val id = V62Store.id("SET")
+            s.add(V62Store.TTMM_SETTLEMENTS, JSONObject().apply {
+                put("id", id); put("ownerUserId", owner); put("groupId", groupId); put("expenseId", due.optString("expenseId"))
+                put("description", due.optString("description")); put("from", due.optString("member")); put("to", due.optString("to"))
+                put("amount", a); put("status", "SETTLED"); put("createdAt", System.currentTimeMillis())
+            })
+            V62EventBus.publish(V62Event(V62Events.TTMM_EXPENSE_CHANGED, id)); render()
         }.show()
     }
 }
