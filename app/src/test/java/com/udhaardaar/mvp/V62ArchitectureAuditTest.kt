@@ -19,6 +19,7 @@ class V62ArchitectureAuditTest {
         assertTrue(V62ArchitectureSpec.modules.contains("Will / Nomination / Legacy"))
         assertTrue(V62ArchitectureSpec.modules.contains("Legal Assistance"))
         assertTrue(V62ArchitectureSpec.modules.contains("AI Financial Advisor"))
+        assertTrue(V62ArchitectureSpec.modules.contains("Group Contributions / Share & Settle"))
     }
 
     @Test fun primaryRoutesAreUniqueAndAllV62() {
@@ -31,7 +32,7 @@ class V62ArchitectureAuditTest {
 
     @Test fun consentAndEventContractsCoverProtectedCrossModuleChanges() {
         assertTrue(V62ArchitectureSpec.consentEvents.containsAll(listOf("HISTORY_SHARING", "CREDIT_REGISTRATION", "REPAYMENT_CONFIRMATION", "FUNDING_PROFILE_SHARING", "QR_KHATA_CONFIRMATION")))
-        assertTrue(V62ArchitectureSpec.eventFlow.containsAll(listOf("RELATIONSHIP_CHANGED", "REPAYMENT_CHANGED", "DOCUMENT_ADDED", "ASSET_CHANGED", "LIABILITY_CHANGED", "POLICY_CHANGED", "CONSENT_CHANGED", "NOMINEE_CHANGED", "CLAIM_CHANGED", "WILL_CHANGED", "CHARGECHECK_CHANGED", "FUNDING_REQUEST_CHANGED", "ALERT_CREATED")))
+        assertTrue(V62ArchitectureSpec.eventFlow.containsAll(listOf("RELATIONSHIP_CHANGED", "REPAYMENT_CHANGED", "DOCUMENT_ADDED", "ASSET_CHANGED", "LIABILITY_CHANGED", "POLICY_CHANGED", "TTMM_EXPENSE_CHANGED", "TTMM_CONTRIBUTION_CHANGED", "CONSENT_CHANGED", "NOMINEE_CHANGED", "CLAIM_CHANGED", "WILL_CHANGED", "CHARGECHECK_CHANGED", "FUNDING_REQUEST_CHANGED", "ALERT_CREATED")))
     }
 
     @Test fun financialAndIntegrationContractsArePresent() {
@@ -39,10 +40,10 @@ class V62ArchitectureAuditTest {
         assertTrue(V62ArchitectureSpec.accountingAdapters.containsAll(listOf("TALLY", "SAP", "GENERIC_REST_API", "CSV_IMPORT", "WEBHOOK")))
         assertTrue(V62ArchitectureSpec.tradeCreditFields.containsAll(listOf("invoiceNumber", "invoiceDate", "invoiceAmount", "dueDate", "outstandingAmount", "sourceSystem", "sourceRecordId")))
         assertTrue(V62ArchitectureSpec.chargeCheckFields.containsAll(listOf("sanctionedInterest", "actualInterest", "variance", "evidenceDocument")))
-        assertTrue(V62ArchitectureSpec.misMetrics.containsAll(listOf("assetAllocation", "returns", "risk", "idleFunds", "charges", "interestReceived", "opportunityCostSaved")))
+        assertTrue(V62ArchitectureSpec.misMetrics.containsAll(listOf("assetAllocation", "returns", "risk", "idleFunds", "charges", "interestReceived", "opportunityCostSaved", "completedBenefitValue", "completedRefundValue", "completedRecoveryValue", "valueGenerated")))
     }
 
-    @Test fun brandCopyAndVisualTokensRemainFrozenWithoutAndroidRuntimeDependencies() {
+    @Test fun ttmmAndMisContractsRemainConnected() {\n        assertTrue(V62ArchitectureSpec.endpoints.containsKey("ttmmContribution"))\n        assertEquals("ttmm/contribution/record", V62ArchitectureSpec.endpoints["ttmmContribution"])\n        assertTrue(V62Store.TTMM_CONTRIBUTIONS.startsWith("v62_"))\n    }\n\n    @Test fun brandCopyAndVisualTokensRemainFrozenWithoutAndroidRuntimeDependencies() {
         assertEquals("ArthSaathi", V62ArchitectureSpec.BRAND)
         assertEquals("Navigate Your Financial Journey", V62ArchitectureSpec.TAGLINE)
         assertTrue(V62ArchitectureSpec.modules.isNotEmpty())
