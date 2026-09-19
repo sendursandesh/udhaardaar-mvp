@@ -152,7 +152,7 @@ if (openDues().isEmpty()) add(ArthSaathiV62Design.text(this, "No open member con
                 put("description", due.optString("description")); put("from", due.optString("member")); put("to", due.optString("to"))
                 put("amount", a); put("status", "SETTLED"); put("createdAt", System.currentTimeMillis())
             })
-            V62EventBus.publish(V62Event(V62Events.TTMM_EXPENSE_CHANGED, id)); render()
+            V62EventBus.publish(V62Event(V62Events.TTMM_SETTLEMENT_CHANGED, id)); render()
         }.show()
     }
 }
