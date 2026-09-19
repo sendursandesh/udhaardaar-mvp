@@ -31,14 +31,28 @@ class V62MISActivity : androidx.appcompat.app.AppCompatActivity() {
         val a = s.all(V62Store.ASSETS).filter { it.optString("ownerUserId", "") == owner }
         val p = s.all(V62Store.INSURANCE).filter { it.optString("ownerUserId", "") == owner }
         val total = m.optDouble("assetValue"); val ret = m.optDouble("interestReceived"); val charges = m.optDouble("charges")
-        val saved = m.optDouble("appSavings"); val idle = m.optDouble("idleFunds"); val liabilities = m.optDouble("liabilities"); val exposure = m.optDouble("informalCreditExposure")
-        listOf("CURRENT ASSETS" to money(total), "INTEREST RECEIVED" to money(ret), "CHARGES" to money(charges), "APP SAVINGS" to money(saved), "IDLE FUNDS" to money(idle), "LIABILITIES" to money(liabilities), "INFORMAL CREDIT OUTSTANDING" to money(exposure)).forEach { metric(it.first, it.second) }
+        val saved = m.optDouble("appSavings"); val idle = m.optDouble("idleFunds"); val liabilities = m.optDouble("liabilities"); val exposure = m.optDouble("informalCreditExposure")\n        val benefitValue = m.optDouble("completedBenefitValue"); val refundValue = m.optDouble("completedRefundValue"); val recoveryValue = m.optDouble("completedRecoveryValue"); val valueGenerated = m.optDouble("valueGenerated"); val ttmmOutstanding = m.optDouble("ttmmOutstanding")
+        listOf("CURRENT ASSETS" to money(total), "INTEREST RECEIVED" to money(ret), "CHARGES" to money(charges), "APP SAVINGS" to money(saved), "IDLE FUNDS" to money(idle), "LIABILITIES" to money(liabilities), "INFORMAL CREDIT OUTSTANDING" to money(exposure), "TTMM OPEN DUES" to money(ttmmOutstanding)).forEach { metric(it.first, it.second) }
         add(ArthSaathiV62Design.section(this, "ASSET ALLOCATION"), 10)
         val current = a.filter { it.optBoolean("currentAsset", true) && it.optString("lifecycleStatus", "ACTIVE") !in setOf("SOLD", "TRANSFERRED", "GIFTED", "DISPOSED") }
         val g = current.groupBy { it.optString("type", "Other") }
         if (g.isNotEmpty()) { add(V62DonutChart(this, g.values.map { it.sumOf { q -> q.optDouble("value", 0.0) }.toFloat() }), 4); g.entries.forEachIndexed { i, e -> row(e.key, money(e.value.sumOf { q -> q.optDouble("value", 0.0) }), "${e.value.size} current item(s)", i % 2 == 0) } }
         else add(ArthSaathiV62Design.text(this, "No current assets recorded.", 11f, ArthSaathiV62Design.MUTED), 4)
-        add(ArthSaathiV62Design.section(this, "PERFORMANCE • RISK • OPPORTUNITY"), 14); head("Metric", "Recorded", "Basis")
+                add(ArthSaathiV62Design.section(this, "PORTFOLIO & FINANCIAL POSITION"), 14)
+        val mix = listOf(total.toFloat(), liabilities.toFloat(), exposure.toFloat(), ttmmOutstanding.toFloat()).map { kotlin.math.max(0f, it) }
+        if (mix.any { it > 0f }) {
+            add(V62DonutChart(this, mix), 4)
+            row("Assets", money(total), "Current portfolio", true)
+            row("Liabilities", money(liabilities), "Outstanding obligations", false)
+            row("Informal credit", money(exposure), "Open credit exposure", true)
+            row("Group dues", money(ttmmOutstanding), "TTMM open contributions", false)
+        } else add(ArthSaathiV62Design.text(this, "No portfolio values recorded yet.", 11f, ArthSaathiV62Design.MUTED), 4)
+        add(ArthSaathiV62Design.section(this, "COMPLETED BENEFITS • REFUNDS • RECOVERIES"), 14)
+        head("Value stream", "Completed", "Actual value generated")
+        row("Government / other benefits", money(benefitValue), "Successful records only", true)
+        row("Refunds recovered", money(refundValue), "Completed charge claims", false)
+        row("Claims / recoveries", money(recoveryValue), "Completed claim records", true)
+        row("TOTAL VALUE GENERATED", money(valueGenerated), "Benefits + refunds + recoveries", false)\n        add(ArthSaathiV62Design.section(this, "PERFORMANCE • RISK • OPPORTUNITY"), 14); head("Metric", "Recorded", "Basis")
         row("Average current investment", if (current.isEmpty()) "₹0" else money(total / current.size), "Current assets", true)
         row("Risk tags", "${current.count { it.optString("risk").isNotBlank() }} / ${current.size}", "Asset records", false)
         row("Insurance policies", p.size.toString(), "Protection vault", true)
@@ -47,7 +61,7 @@ class V62MISActivity : androidx.appcompat.app.AppCompatActivity() {
         add(ArthSaathiV62Design.section(this, "RETURNS • CHARGES • SAVINGS"), 14); head("Measure", "Amount", "Source")
         row("Interest / returns", money(ret), "Repayments", true); row("Charges", money(charges), "Connected records", false); row("App savings", money(saved), "Savings ledger", true); row("Historical asset value", money(m.optDouble("historicalAssetValue")), "Includes closed assets", false)
         add(ArthSaathiV62Design.text(this, "Closed/sold assets remain historical but are excluded from current net-worth asset value. Opportunity-cost estimates use only a yield explicitly recorded on an asset.", 10f, ArthSaathiV62Design.MUTED), 14)
-        add(ArthSaathiV62Design.button(this, "REFRESH INTELLIGENCE", ArthSaathiV62Design.TEAL) { render() }, 10)
+        add(ArthSaathiV62Design.text(this, "Value generated shows only successfully completed records; pending or rejected benefits, refunds and claims are excluded.", 10f, ArthSaathiV62Design.MUTED), 14)\n        add(ArthSaathiV62Design.button(this, "REFRESH INTELLIGENCE", ArthSaathiV62Design.TEAL) { render() }, 10)
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
     }
     private fun metric(k: String, v: String) { val b=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(12.dp,9.dp,12.dp,9.dp);background=ArthSaathiV62Design.card(Color.WHITE,14,d)};b.addView(ArthSaathiV62Design.text(this,k,9f,ArthSaathiV62Design.MUTED,true));b.addView(ArthSaathiV62Design.text(this,v,18f,ArthSaathiV62Design.NAVY,true));add(b,6) }
