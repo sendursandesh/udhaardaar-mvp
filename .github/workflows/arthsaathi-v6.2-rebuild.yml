@@ -3,7 +3,7 @@ name: ArthSaathi V6.2 Architecture Build
 on:
   workflow_dispatch:
   push:
-    branches: [arthsaathi-v6.2-final-golden-c480, arthsaathi-v6.2-final-golden-fix, arthsaathi-v6.2-locked-final-baseline]
+    branches: [arthsaathi-v6.2-final-golden-c480, arthsaathi-v6.2-final-golden-fix, arthsaathi-v6.2-locked-final-baseline, arthsaathi-v6.2-final-audit-fix]
   pull_request:
     branches: [main]
 permissions:
@@ -53,6 +53,10 @@ jobs:
           grep -q 'v62_advocates' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
           grep -q 'AI Portfolio Review' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
           grep -q 'Theme.ArthSaathi' app/src/main/res/values/styles.xml
+      - name: Unit tests (release gate)
+        timeout-minutes: 8
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
       - name: Upload compiled integrity-passed APK
         uses: actions/upload-artifact@v4
         with:
@@ -60,7 +64,3 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
-      - name: Unit tests (post-build regression check)
-        continue-on-error: true
-        timeout-minutes: 8
-        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
