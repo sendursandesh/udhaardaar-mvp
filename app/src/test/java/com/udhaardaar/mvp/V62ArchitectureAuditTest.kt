@@ -11,6 +11,9 @@ class V62ArchitectureAuditTest {
         assertEquals("6.2", V62ArchitectureSpec.VERSION)
         assertEquals("ArthSaathi", V62ArchitectureSpec.BRAND)
         assertEquals("Navigate Your Financial Journey", V62ArchitectureSpec.TAGLINE)
+        assertEquals("Your Asset. Your Record. Your Right.", V62ArchitectureSpec.OWNERSHIP_TAGLINE)
+        assertEquals("OWN • RECORD • PROTECT • CLAIM", V62ArchitectureSpec.OWNERSHIP_TAGS)
+        assertTrue(V62ArchitectureSpec.lockedUserDecisions.size >= 15)
         assertTrue(V62ArchitectureSpec.modules.size >= 32)
         assertTrue(V62ArchitectureSpec.modules.contains("QR Udhaar Khata"))
         assertTrue(V62ArchitectureSpec.modules.contains("Asset Vault"))
@@ -53,6 +56,10 @@ class V62ArchitectureAuditTest {
     @Test fun brandCopyAndVisualTokensRemainFrozenWithoutAndroidRuntimeDependencies() {
         assertEquals("ArthSaathi", V62ArchitectureSpec.BRAND)
         assertEquals("Navigate Your Financial Journey", V62ArchitectureSpec.TAGLINE)
+        assertEquals("Your Asset. Your Record. Your Right.", ArthSaathiV62Design.OWNERSHIP_TAGLINE)
+        assertEquals("OWN • RECORD • PROTECT • CLAIM", ArthSaathiV62Design.OWNERSHIP_TAGS)
+        assertTrue(V62ArchitectureSpec.lockedUserDecisions.any { it.contains("TTMM user-facing name") })
+        assertTrue(V62ArchitectureSpec.lockedUserDecisions.any { it.contains("MIS shows current portfolio") })
         assertTrue(V62ArchitectureSpec.modules.isNotEmpty())
     }
 }
