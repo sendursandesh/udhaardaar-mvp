@@ -43,7 +43,13 @@ class V62ArchitectureAuditTest {
         assertTrue(V62ArchitectureSpec.misMetrics.containsAll(listOf("assetAllocation", "returns", "risk", "idleFunds", "charges", "interestReceived", "opportunityCostSaved", "completedBenefitValue", "completedRefundValue", "completedRecoveryValue", "valueGenerated")))
     }
 
-    @Test fun ttmmAndMisContractsRemainConnected() {\n        assertTrue(V62ArchitectureSpec.endpoints.containsKey("ttmmContribution"))\n        assertEquals("ttmm/contribution/record", V62ArchitectureSpec.endpoints["ttmmContribution"])\n        assertTrue(V62Store.TTMM_CONTRIBUTIONS.startsWith("v62_"))\n    }\n\n    @Test fun brandCopyAndVisualTokensRemainFrozenWithoutAndroidRuntimeDependencies() {
+    @Test fun ttmmAndMisContractsRemainConnected() {
+        assertTrue(V62ArchitectureSpec.endpoints.containsKey("ttmmContribution"))
+        assertEquals("ttmm/contribution/record", V62ArchitectureSpec.endpoints["ttmmContribution"])
+        assertTrue(V62Store.TTMM_CONTRIBUTIONS.startsWith("v62_"))
+    }
+
+    @Test fun brandCopyAndVisualTokensRemainFrozenWithoutAndroidRuntimeDependencies() {
         assertEquals("ArthSaathi", V62ArchitectureSpec.BRAND)
         assertEquals("Navigate Your Financial Journey", V62ArchitectureSpec.TAGLINE)
         assertTrue(V62ArchitectureSpec.modules.isNotEmpty())
