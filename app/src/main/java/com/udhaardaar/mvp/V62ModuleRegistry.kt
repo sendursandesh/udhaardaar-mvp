@@ -16,7 +16,7 @@ object V62ModuleRegistry {
         Route("ASSET_VAULT", "Asset Vault", V62AssetVaultActivity::class.java),
         Route("INSURANCE", "Insurance & Protection", V62InsuranceActivity::class.java),
         Route("RENTAL", "Rental & Lease", V62RentalLeaseActivity::class.java),
-        Route("TTMM", "TTMM Shared Expenses", V62TTMMActivity::class.java),
+        Route("TTMM", "Together • Share & Settle", V62TTMMActivity::class.java),
         Route("MIS", "MIS & Analytics", V62MISActivity::class.java),
         Route("LEGACY", "Legacy, Legal & AI", V62LegacyLegalAIActivity::class.java),
         Route("FINANCIAL_CENTRE", "Financial Centre", V62ExtendedModulesActivity::class.java)
