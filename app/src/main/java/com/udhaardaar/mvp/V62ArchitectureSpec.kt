@@ -6,6 +6,8 @@ object V62ArchitectureSpec {
     const val BRAND = "ArthSaathi"
     const val TAGLINE = "Navigate Your Financial Journey"
     const val PILLARS = "Plan • Protect • Grow • Nominate"
+    const val OWNERSHIP_TAGLINE = "Your Asset. Your Record. Your Right."
+    const val OWNERSHIP_TAGS = "OWN • RECORD • PROTECT • CLAIM"
 
     val modules = listOf(
         "Home & Financial Dashboard", "Profile & Identity", "Family", "Contacts & People", "Address & Geolocation",
@@ -14,6 +16,26 @@ object V62ArchitectureSpec {
         "Insurance & Protection", "Government Schemes & Benefits", "Rental & Lease", "TTMM Shared Expenses", "Group Contributions / Share & Settle",
         "Document Vault & Intelligence", "MIS & Financial Analytics", "Reports & Statements", "Inheritance & Claim Assistance", "Will / Nomination / Legacy", "Legal Assistance",
         "AI Financial Advisor", "Alerts & Notifications", "Consent / OTP / Digital Confirmation", "Security & Account Management", "Integration / API Platform"
+    )
+    val lockedUserDecisions = listOf(
+        "Final brand: ArthSaathi; primary journey tagline: Navigate Your Financial Journey.",
+        "Ownership message retained: Your Asset. Your Record. Your Right.; OWN • RECORD • PROTECT • CLAIM.",
+        "Approved visual direction: compass/A-gateway/journey-road/star concept, blue-gold ArthSaathi wordmark, navy-blue-teal-gold premium theme, rounded cards and compact bottom navigation.",
+        "Profile photo is visible on the approved home/profile presentation.",
+        "Financial Command Centre is part of the core V6.2 proposition.",
+        "TTMM user-facing name: Together • Share & Settle; one member may pay first and others contribute later against the exact originating expense.",
+        "TTMM supports equal, custom-amount, percentage and shares/units allocation, partial/full contributions, remaining dues and expense-linked settlement.",
+        "MIS shows current portfolio and assets with actual numbers plus allocation/financial-position donut charts.",
+        "MIS completed-value reporting includes successfully completed benefits, refunds and claims/recoveries and the total value generated; pending/rejected records are excluded.",
+        "All V6.2 modules share the same source-of-truth store and event architecture; no isolated parallel module ledger.",
+        "Protected history, credit registration, repayment and sharing actions require the appropriate consent/OTP gates.",
+        "Credit registration supports personal/business, trade credit, rental/lease, guarantor, promissory note, repayment modes and digital documents.",
+        "Trade credit supports invoice capture/upload and source traceability; formal credit supports sanctioned-vs-actual ChargeCheck.",
+        "Asset Vault, Liability Vault, Insurance, Rental/Lease, Legacy/Nominee/Will/Claims, Legal Assistance, AI Advisor, Funding Marketplace and Financial Centre remain in scope.",
+        "QR Udhaar Khata is scan → identify counterparty → consent → ledger → repayment/open balance, never unrestricted history access.",
+        "Account/user isolation and auditability apply across every financial record.",
+        "No V5/V4/V3 navigation target remains in the V6.2 user flow.",
+        "Android UI must use the frozen ArthSaathi V6.2 design tokens rather than legacy Udhaardaar branding or mixed legacy fonts/palettes."
     )
     val roles = listOf("USER", "LENDER", "BORROWER", "SUPPLIER", "BUYER", "SELLER", "LANDLORD", "TENANT", "GUARANTOR", "FORMAL_LENDER", "FUNDING_PROVIDER")
     val relationshipTypes = listOf("PERSONAL_CREDIT", "TRADE_CREDIT", "RENTAL", "LEASE", "GUARANTEE", "FORMAL_LOAN", "FUNDING_REQUEST", "GROUP_EXPENSE")
