@@ -1,98 +1,48 @@
 package com.udhaardaar.mvp
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
 
-class V62AssetVaultActivity : androidx.appcompat.app.AppCompatActivity() {
-    private val s by lazy { V5LocalStore(this) }
-    private val d by lazy { resources.displayMetrics.density }
-    private val root by lazy { LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16.dp, 8.dp, 16.dp, 28.dp); setBackgroundColor(ArthSaathiV62Design.BG) } }
-    private val Int.dp: Int get() = (this * d).toInt()
-    private var doc = JSONObject()
-    private var kind = "PROPERTY_PAPER"
-    private var extracted = emptyList<V62DocumentIntelligence.Field>()
-    private var savedAssetId = ""
-    private val fields = listOf("Asset name / description", "Owner / account holder", "Property address / description", "Account number", "Bank / branch", "IFSC", "Registration / deed number", "Area", "Current value ₹", "Outstanding liability ₹", "Nominee", "Risk", "Yield %", "Idle / inactive", "Evidence notes")
-
-    override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
-
-    private fun render() {
-        root.removeAllViews()
-        ArthSaathiV62Design.add(root, ArthSaathiV62Design.title(this, "Asset & Liability Vault", "Capture • Verify • Protect"), 2)
-        ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, "Store the original document and turn it into structured, searchable financial data. AI extraction is review-first and never silently overwrites your records.", 10f, ArthSaathiV62Design.MUTED), 8)
-        val type = Spinner(this).apply {
-            adapter = ArrayAdapter(this@V62AssetVaultActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("Property paper", "Bank passbook", "Other asset evidence"))
-            onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-                override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
-                override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) { kind = when (pos) { 0 -> "PROPERTY_PAPER"; 1 -> "BANK_PASSBOOK"; else -> "OTHER" } }
-            }
-        }
-        ArthSaathiV62Design.add(root, type, 6)
-        ArthSaathiV62Design.add(root, ArthSaathiV62Design.button(this, "SCAN / ATTACH DOCUMENT", ArthSaathiV62Design.TEAL) { pick() }, 8)
-        ArthSaathiV62Design.add(root, ArthSaathiV62Design.button(this, "MANUAL ENTRY — ALL IMPORTANT FIELDS", ArthSaathiV62Design.BLUE) { showForm() }, 5)
-        if (extracted.isNotEmpty()) {
-            ArthSaathiV62Design.add(root, ArthSaathiV62Design.section(this, "CRITICAL DETAILS FOUND"), 10)
-            extracted.filter { it.critical }.forEach { ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, "⚠ ${it.name}: ${it.value}\n${it.reason} • ${(it.confidence * 100).toInt()}%", 11f, ArthSaathiV62Design.RED, true), 4) }
-        }
-        setContentView(ScrollView(this).apply { isFillViewport=true; addView(root) })
-    }
-
-    private fun pick() { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type="*/*"; putExtra(Intent.EXTRA_ALLOW_MULTIPLE,false); addCategory(Intent.CATEGORY_OPENABLE) },43) }
-
-    override fun onActivityResult(r:Int,c:Int,data:Intent?) {
-        super.onActivityResult(r,c,data)
-        if(r==43 && c==Activity.RESULT_OK && data?.data!=null){
-            doc=V62Documents.retain(this,data.data!!,kind)
-            V62DocumentScanner.scan(this,data.data!!,{text->extracted=V62DocumentIntelligence.analyse(kind,text);runOnUiThread{showForm()}},{runOnUiThread{Toast.makeText(this,"Reading failed; manual entry available.",Toast.LENGTH_LONG).show();showForm()}})
-        }
-    }
-
-    private fun showForm(){
-        root.removeAllViews()
-        ArthSaathiV62Design.add(root,ArthSaathiV62Design.title(this,"Verify Vault Record","Document proposal → your confirmation"),2)
-        val m=linkedMapOf<String,EditText>()
-        fields.forEach{k->val e=ArthSaathiV62Design.input(this,k);extracted.firstOrNull{it.name==k}?.let{e.setText(it.value)};m[k]=e;ArthSaathiV62Design.add(root,e,4)}
-        ArthSaathiV62Design.add(root,ArthSaathiV62Design.section(this,"ASSET LIFECYCLE"),10)
-        ArthSaathiV62Design.add(root,ArthSaathiV62Design.text(this,"Assets are never deleted. Sell or release actions close the current asset position while preserving its complete historical trail.",10f,ArthSaathiV62Design.MUTED),5)
-        ArthSaathiV62Design.add(root,ArthSaathiV62Design.button(this,"SAVE VERIFIED RECORD",ArthSaathiV62Design.GREEN){
-            val id=V62Store.id("AST")
-            val o=JSONObject().apply{
-                put("id",id);put("ownerUserId",V62Integration.currentUserId(this@V62AssetVaultActivity));put("type",kind);put("documentId",doc.optString("id"));put("value",m["Current value ₹"]?.text.toString().toDoubleOrNull()?:0.0);put("risk",m["Risk"]?.text.toString());put("yieldPercent",m["Yield %"]?.text.toString().toDoubleOrNull()?:0.0);put("idle",m["Idle / inactive"]?.text.toString().equals("true",true));put("nominee",m["Nominee"]?.text.toString());put("createdAt",System.currentTimeMillis());put("verified",true);put("lifecycleStatus",V62AssetLifecycle.ACTIVE);put("currentAsset",true)
-            }
-            m.forEach{(k,e)->o.put(k,e.text.toString().trim())}
-            s.add(ArthSaathiV62Core.ASSETS,o);savedAssetId=id
-            V62EventBus.publish(V62Event(V62Events.ASSET_CHANGED,id))
-            Toast.makeText(this,"Vault record saved.",Toast.LENGTH_SHORT).show();showLifecycleActions(id)
-        },12)
+class V62AssetVaultActivity:AppCompatActivity(){
+    private val s by lazy{V5LocalStore(this)}
+    private val d get()=resources.displayMetrics.density
+    private lateinit var root:LinearLayout
+    private var kind="PROPERTY"
+    private var docId=""
+    private var docUri=""
+    private val types=arrayOf("Property / Land","House / Building","Bank Account / Deposit","Mutual Fund","Shares / Securities","Insurance Policy","Gold / Jewellery","Vehicle","Loan Given to Others","Business / Partnership Interest","Pension / Retirement","Other Financial / Non-financial Asset")
+    private fun add(v:View,g:Int=6)=ArthSaathiV62Design.add(root,v,g)
+    private fun input(h:String)=ArthSaathiV62Design.input(this,h)
+    override fun onCreate(b:Bundle?){super.onCreate(b);render()}
+    private fun render(){
+        root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding((16*d).toInt(),(8*d).toInt(),(16*d).toInt(),(28*d).toInt());setBackgroundColor(ArthSaathiV62Design.BG)}
         setContentView(ScrollView(this).apply{isFillViewport=true;addView(root)})
+        add(ArthSaathiV62Design.title(this,"Asset Vault","Own • Record • Protect • Claim"),2)
+        add(ArthSaathiV62Design.text(this,"Select the actual asset class first. Each record feeds MIS automatically. Scanning is optional and never blocks manual entry.",11f,ArthSaathiV62Design.MUTED),7)
+        val type=Spinner(this).apply{adapter=ArrayAdapter(this@V62AssetVaultActivity,android.R.layout.simple_spinner_dropdown_item,types.toList());onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){};override fun onItemSelected(p:AdapterView<*>?,v:View?,pos:Int,id:Long){kind=types[pos]}}}
+        add(type,5)
+        add(ArthSaathiV62Design.button(this,"SCAN / ATTACH SUPPORTING DOCUMENT",ArthSaathiV62Design.TEAL){pick()},6)
+        add(ArthSaathiV62Design.button(this,"ENTER ASSET DETAILS",ArthSaathiV62Design.BLUE){form()},6)
+        add(ArthSaathiV62Design.section(this,"CURRENT ASSET RECORDS"),10)
+        val owner=V62Integration.currentUserId(this);val rows=s.all(V62Store.ASSETS).filter{it.optString("ownerUserId")==owner&&it.optString("lifecycleStatus","ACTIVE")=="ACTIVE"}
+        if(rows.isEmpty())add(ArthSaathiV62Design.text(this,"No current assets recorded.",12f,ArthSaathiV62Design.MUTED),5)
+        rows.take(20).forEach{add(ArthSaathiV62Design.text(this,"${it.optString("type")} • ${it.optString("Asset name / description")}\n₹${it.optDouble("value",0.0)}",12f,ArthSaathiV62Design.NAVY,true),4)}
     }
-
-    private fun showLifecycleActions(assetId:String){
-        root.removeAllViews();ArthSaathiV62Design.add(root,ArthSaathiV62Design.title(this,"Asset Lifecycle","Manage • Release • Sell"),2)
-        ArthSaathiV62Design.add(root,ArthSaathiV62Design.text(this,"Asset ID: $assetId\nStatus: ACTIVE\n\nChoose an action. Historical data remains preserved after the asset is closed.",11f,ArthSaathiV62Design.MUTED),10)
-        ArthSaathiV62Design.add(root,ArthSaathiV62Design.button(this,"SELL / TRANSFER OUT",ArthSaathiV62Design.BLUE){showSellDialog(assetId)},8)
-        ArthSaathiV62Design.add(root,ArthSaathiV62Design.button(this,"RELEASE CHARGE / ENCUMBRANCE",ArthSaathiV62Design.TEAL){showReleaseDialog(assetId)},8)
-        ArthSaathiV62Design.add(root,ArthSaathiV62Design.button(this,"DONE — KEEP AS ACTIVE",ArthSaathiV62Design.GREEN){finish()},8)
-        setContentView(ScrollView(this).apply{isFillViewport=true;addView(root)})
+    private fun form(){
+        root.removeAllViews();add(ArthSaathiV62Design.title(this,"Asset Vault","Enter and verify asset"),2)
+        val name=input("Asset name / description *");val owner=input("Owner / account holder");val id=input("Account / folio / registration / policy number");val value=input("Current value ₹ *");val liability=input("Outstanding liability ₹");val nominee=input("Nominee");val yield=input("Expected / recorded yield %");val risk=input("Risk / notes")
+        listOf(name,owner,id,value,liability,nominee,yield,risk).forEach{add(it,4)}
+        add(ArthSaathiV62Design.button(this,"SAVE ASSET",ArthSaathiV62Design.GREEN){
+            val v=value.text.toString().replace(",","").toDoubleOrNull()?:0.0;if(name.text.isBlank()||v<0){Toast.makeText(this,"Asset name and valid value are required.",Toast.LENGTH_LONG).show();return@button}
+            val idv=V62Store.id("AST");s.add(V62Store.ASSETS,JSONObject().apply{put("id",idv);put("ownerUserId",V62Integration.currentUserId(this@V62AssetVaultActivity));put("type",kind);put("Asset name / description",name.text.toString().trim());put("owner",owner.text.toString().trim());put("reference",id.text.toString().trim());put("value",v);put("outstandingLiability",liability.text.toString().replace(",","").toDoubleOrNull()?:0.0);put("nominee",nominee.text.toString().trim());put("yieldPercent",yield.text.toString().toDoubleOrNull()?:0.0);put("risk",risk.text.toString().trim());put("documentId",docId);put("documentUri",docUri);put("lifecycleStatus","ACTIVE");put("currentAsset",true);put("createdAt",System.currentTimeMillis())});V62EventBus.publish(V62Event(V62Events.ASSET_CHANGED,idv));Toast.makeText(this,"Asset saved and connected to MIS.",Toast.LENGTH_LONG).show();render()
+        },10)
+        add(ArthSaathiV62Design.button(this,"BACK",ArthSaathiV62Design.NAVY){render()},5)
     }
-
-    private fun showSellDialog(assetId:String){
-        val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(8.dp,4.dp,8.dp,4.dp)}
-        val date=ArthSaathiV62Design.input(this,"Sale date");val value=ArthSaathiV62Design.input(this,"Sale value ₹");val buyer=ArthSaathiV62Design.input(this,"Buyer name / entity")
-        val payment=Spinner(this).apply{adapter=ArrayAdapter(this@V62AssetVaultActivity,android.R.layout.simple_spinner_dropdown_item,arrayOf("Received","Partially received","Pending"))}
-        box.addView(date);box.addView(value);box.addView(buyer);box.addView(payment)
-        AlertDialog.Builder(this).setTitle("Sell Asset").setView(box).setPositiveButton("CONFIRM SALE"){_,_->val ok=V62AssetLifecycle.sell(this,assetId,date.text.toString().trim(),value.text.toString().toDoubleOrNull()?:0.0,buyer.text.toString(),payment.selectedItem.toString());Toast.makeText(this,if(ok)"Asset marked SOLD; history preserved." else "Sale could not be recorded.",Toast.LENGTH_LONG).show();if(ok)finish()}.setNegativeButton("CANCEL",null).show()
-    }
-
-    private fun showReleaseDialog(assetId:String){
-        val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(8.dp,4.dp,8.dp,4.dp)}
-        val date=ArthSaathiV62Design.input(this,"Release date");val reason=ArthSaathiV62Design.input(this,"Reason for release");val from=ArthSaathiV62Design.input(this,"Released from whom / entity");val reference=ArthSaathiV62Design.input(this,"Loan / charge reference")
-        box.addView(date);box.addView(reason);box.addView(from);box.addView(reference)
-        AlertDialog.Builder(this).setTitle("Release Charge / Encumbrance").setView(box).setPositiveButton("CONFIRM RELEASE"){_,_->val ok=V62AssetLifecycle.release(this,assetId,date.text.toString().trim(),reason.text.toString(),from.text.toString(),reference.text.toString());Toast.makeText(this,if(ok)"Charge released; lifecycle history preserved." else "Release could not be recorded.",Toast.LENGTH_LONG).show();if(ok)finish()}.setNegativeButton("CANCEL",null).show()
-    }
+    private fun pick(){startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="*/*";putExtra(Intent.EXTRA_ALLOW_MULTIPLE,false);addCategory(Intent.CATEGORY_OPENABLE)},43)}
+    override fun onActivityResult(r:Int,c:Int,data:Intent?){super.onActivityResult(r,c,data);if(r==43&&c==Activity.RESULT_OK&&data?.data!=null){val uri=data.data!!;val retained=runCatching{ArthSaathiV62Core.saveDocument(this,uri,"ASSET_SUPPORT")}.getOrNull();docId=retained?.optString("id").orEmpty();docUri=retained?.optString("uri").orEmpty().ifBlank{uri.toString()};Toast.makeText(this,"Document attached. You can continue with manual entry.",Toast.LENGTH_LONG).show();form()}}
 }
