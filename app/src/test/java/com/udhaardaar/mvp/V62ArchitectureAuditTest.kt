@@ -25,11 +25,21 @@ class V62ArchitectureAuditTest {
         assertTrue(V62ArchitectureSpec.modules.contains("Group Contributions / Share & Settle"))
     }
 
-    @Test fun primaryRoutesAreUniqueAndAllV62() {
-        val keys = V62ModuleRegistry.primaryRoutes.map { it.key }
+    @Test fun navigationHasOneOwnerPerModuleAndNoMenuDuplicates() {
+        val all = V62ModuleRegistry.routes
+        val keys = all.map { it.key }
         assertEquals(keys.size, keys.toSet().size)
-        assertEquals(10, keys.size)
-        assertTrue(keys.containsAll(listOf("CREDIT", "CREDIT_INTELLIGENCE", "REPAYMENT", "ASSET_VAULT", "INSURANCE", "RENTAL", "TTMM", "MIS", "LEGACY", "FINANCIAL_CENTRE")))
+
+        val home = V62ModuleRegistry.homeRoutes.map { it.key }
+        val more = V62ModuleRegistry.moreRoutes.map { it.key }
+        assertEquals(6, home.size)
+        assertTrue(home.containsAll(listOf("CREDIT","REPAYMENT","ASSET_VAULT","INSURANCE","MIS","LEGACY")))
+        assertEquals(home.size, home.toSet().size)
+        assertEquals(more.size, more.toSet().size)
+        assertTrue(home.intersect(more.toSet()).isEmpty())
+
+        assertTrue(V62ModuleRegistry.keysBySurface(V62ModuleRegistry.Surface.FLOW_ONLY)
+            .containsAll(listOf("LEGAL","AI","GUARANTOR")))
         assertFalse(keys.any { it.startsWith("V5") || it.startsWith("V4") || it.startsWith("V3") })
     }
 
