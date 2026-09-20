@@ -25,13 +25,12 @@ class V62LegacyLegalAIActivity : androidx.appcompat.app.AppCompatActivity() {
 
     private fun render() {
         root.removeAllViews()
-        add(ArthSaathiV62Design.title(this,"Legacy • Legal • AI","Protect today • Prepare tomorrow"),2)
+        add(ArthSaathiV62Design.title(this,"Legacy • Claims • Legal • AI","Protect today • Prepare tomorrow"),2)
         add(ArthSaathiV62Design.text(this,"Connected to the same financial core: assets → nominees → claims → legal support → intelligence.",10f,ArthSaathiV62Design.MUTED),8)
         serviceCard("WILL & NOMINATION","Versioned will drafts linked to selected assets and beneficiaries") { willDialog() }
         serviceCard("CLAIM ASSISTANCE","Create a claim case from policies, assets and retained documents") { claimDialog() }
         serviceCard("LEGAL ASSISTANCE","Find or register advocate/counsel profiles by matter, city, language and expertise") { advocateDialog() }
         serviceCard("AI FINANCIAL ADVISOR","Compare recorded investment yield with an alternative scenario and review switch/rebalance considerations") { aiDialog() }
-        serviceCard("ALERTS","Review renewal, due-date and ChargeCheck alerts") { alertsDialog() }
         scroll.post { scroll.scrollTo(0,0) }
     }
 
@@ -103,7 +102,5 @@ class V62LegacyLegalAIActivity : androidx.appcompat.app.AppCompatActivity() {
         }.show()
     }
 
-    private fun alertsDialog(){
-        val alerts=store.all(V62Store.ALERTS).takeLast(20).reversed();val msg=if(alerts.isEmpty())"No generated alerts yet." else alerts.joinToString("\n\n"){a->"${a.optString("severity")}: ${a.optString("message")}"};AlertDialog.Builder(this).setTitle("ArthSaathi Alerts").setMessage(msg).setPositiveButton("OK",null).show()
-    }
+
 }
