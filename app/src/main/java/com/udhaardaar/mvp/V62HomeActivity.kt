@@ -86,7 +86,7 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
             "Home" to {},
             "Profile" to {showProfile()},
             "Alerts" to {showAlerts()},
-            "More" to {open("FINANCIAL_CENTRE")}
+            "More" to { startActivity(Intent(this,V62ExtendedModulesActivity::class.java)) }
         )),10)
     }
     private fun showProfile() {
