@@ -59,17 +59,36 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
         hero.addView(ArthSaathiV62Design.button(this,"VIEW FINANCIAL INSIGHTS",ArthSaathiV62Design.GOLD_DEEP){open(V62MISActivity::class.java)},LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
         add(hero,8)
 
-        val row1=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
-        row1.addView(ArthSaathiV62Design.featureCard(this,"CR","Register\nCredit"){open(V62CreditRegistrationActivity::class.java)},LinearLayout.LayoutParams(0,dp(92),1f).apply{rightMargin=dp(4)})
-        row1.addView(ArthSaathiV62Design.featureCard(this,"RP","Repayment"){open(V62RepaymentActivity::class.java)},LinearLayout.LayoutParams(0,dp(92),1f).apply{leftMargin=dp(4);rightMargin=dp(4)})
-        row1.addView(ArthSaathiV62Design.featureCard(this,"AV","Asset Vault"){open(V62AssetVaultActivity::class.java)},LinearLayout.LayoutParams(0,dp(92),1f).apply{leftMargin=dp(4)})
-        add(row1,8)
-
-        val row2=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
-        row2.addView(ArthSaathiV62Design.featureCard(this,"PR","Protect"){open(V62InsuranceActivity::class.java)},LinearLayout.LayoutParams(0,dp(92),1f).apply{rightMargin=dp(4)})
-        row2.addView(ArthSaathiV62Design.featureCard(this,"LG","Legacy"){open(V62LegacyLegalAIActivity::class.java)},LinearLayout.LayoutParams(0,dp(92),1f).apply{leftMargin=dp(4);rightMargin=dp(4)})
-        row2.addView(ArthSaathiV62Design.featureCard(this,"LA","Legal\nAssistance"){open(V62LegacyLegalAIActivity::class.java)},LinearLayout.LayoutParams(0,dp(92),1f).apply{leftMargin=dp(4)})
-        add(row2,5)
+        // Main dashboard grid follows the saved design draft: 3 columns, compact icon tiles,
+        // and all nine primary actions visible without duplicating them elsewhere.
+        fun tileRow(items:List<Pair<String,()->Unit>>) {
+            val row=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
+            items.forEachIndexed { i, item ->
+                row.addView(
+                    ArthSaathiV62Design.featureCard(this,item.first.split("|")[0],item.first.split("|")[1],item.second),
+                    LinearLayout.LayoutParams(0,dp(92),1f).apply {
+                        if(i>0) leftMargin=dp(4)
+                        if(i<items.lastIndex) rightMargin=dp(4)
+                    }
+                )
+            }
+            add(row,6)
+        }
+        tileRow(listOf(
+            "CR|Register\nCredit" to {open(V62CreditRegistrationActivity::class.java)},
+            "RP|Repayment" to {open(V62RepaymentActivity::class.java)},
+            "AV|Asset Vault" to {open(V62AssetVaultActivity::class.java)}
+        ))
+        tileRow(listOf(
+            "PR|Protect" to {open(V62InsuranceActivity::class.java)},
+            "GR|Grow" to {open(V62ExtendedModulesActivity::class.java)},
+            "IN|Insurance" to {open(V62InsuranceActivity::class.java)}
+        ))
+        tileRow(listOf(
+            "LA|Legal &\nAssistance" to {open(V62LegacyLegalAIActivity::class.java)},
+            "TT|TTMM\nShare & Settle" to {open(V62TTMMActivity::class.java)},
+            "MI|MIS &\nInsights" to {open(V62MISActivity::class.java)}
+        ))
 
         val m=V62MisEngine.metrics(this)
         val snap=LinearLayout(this).apply{
