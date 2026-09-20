@@ -1,6 +1,7 @@
 package com.udhaardaar.mvp
 
 import android.content.Context
+import android.net.Uri
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -151,16 +152,20 @@ object ArthSaathiV62Design {
         bar.addView(text(c,module,18f,NAVY,true),LinearLayout.LayoutParams(0,dp(46,d),1f).apply{gravity=Gravity.CENTER_VERTICAL})
         val mobile=c.getSharedPreferences("udhaardaar_accounts",Context.MODE_PRIVATE).getString("current_mobile","").orEmpty()
         val user=c.getSharedPreferences("udhaardaar_accounts",Context.MODE_PRIVATE).getString("name_$mobile","User").orEmpty().ifBlank{"User"}
-        val avatar=TextView(c).apply{
-            text=user.trim().firstOrNull()?.uppercase() ?: "U"
-            textSize=12f
-            setTextColor(NAVY)
-            gravity=Gravity.CENTER
-            typeface=Typeface.DEFAULT_BOLD
+        val photoUri=c.getSharedPreferences("udhaardaar_accounts",Context.MODE_PRIVATE)
+            .let { p -> listOf("profile_photo_uri","user_photo_uri","photo_uri").firstNotNullOfOrNull { k -> p.getString(k,null)?.takeIf { it.isNotBlank() } } }
+        val avatar=ImageView(c).apply{
+            scaleType=ImageView.ScaleType.CENTER_CROP
+            contentDescription="$user profile photo"
             background=GradientDrawable().apply{
                 shape=GradientDrawable.OVAL
                 setColor(GOLD_BRIGHT)
                 setStroke(dp(1,d),GOLD)
+            }
+            if(photoUri!=null) runCatching { setImageURI(Uri.parse(photoUri)) }.onFailure { setImageResource(0) }
+            if(drawable==null) {
+                setImageDrawable(android.graphics.drawable.ColorDrawable(GOLD_BRIGHT))
+                val initials=TextView(c).apply{text=user.trim().firstOrNull()?.uppercase() ?: "U";textSize=12f;setTextColor(NAVY);gravity=Gravity.CENTER;typeface=Typeface.DEFAULT_BOLD}
             }
             setOnClickListener{onUser()}
         }
@@ -279,7 +284,7 @@ object ArthSaathiV62Design {
             }
         }
         box.addView(badge,LinearLayout.LayoutParams(dp(38,d),dp(38,d)))
-        val label=text(c,title,9.5f,NAVY,true)
+        val label=text(c,title,10.5f,NAVY,true)
         label.gravity=Gravity.CENTER
         box.addView(label,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5,d)})
         return box
@@ -315,7 +320,7 @@ object ArthSaathiV62Design {
         for((icon,key) in items){
             val tv=TextView(c).apply{
                 text="$icon\n$key"
-                textSize=8f
+                textSize=9.5f
                 setTextColor(if(key==selected) WHITE else GOLD_BRIGHT)
                 gravity=Gravity.CENTER
                 typeface=Typeface.create("sans-serif",if(key==selected)Typeface.BOLD else Typeface.NORMAL)
