@@ -43,7 +43,7 @@ jobs:
           echo "APK_SIZE_BYTES=$APK_SIZE"
           test "$APK_SIZE" -gt 10000000
           unzip -t "$apk" >/dev/null
-          grep -q "versionCode 64" app/build.gradle
+          grep -q "versionCode 65" app/build.gradle
           grep -q "versionName '6.2'" app/build.gradle
           echo "Checking V6.2 architecture source gates..."
           for token in V62EventBus SAVINGS_CHANGED QR_KHATA_CHANGED V62ModuleRegistry V62DocumentScanner V62DonutChart; do
