@@ -45,14 +45,22 @@ jobs:
           unzip -t "$apk" >/dev/null
           grep -q "versionCode 64" app/build.gradle
           grep -q "versionName '6.2'" app/build.gradle
-          for token in V62EventBus SAVINGS_CHANGED QR_KHATA_CHANGED V62ModuleRegistry V62DocumentScanner V62DonutChart; do grep -R -q --include="*.kt" "$token" app/src/main/java/com/udhaardaar/mvp || { echo "Missing $token"; exit 1; }; done
-          for token in V62TTMMActivity V62LegacyLegalAIActivity QrCreditScannerActivity LoginActivity; do grep -q "$token" app/src/main/AndroidManifest.xml || { echo "Missing $token"; exit 1; }; done
-          grep -q 'arthsaathi_logo' app/src/main/res/drawable/arthsaathi_logo.xml
-          grep -q 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
-          grep -q 'Plan • Protect • Grow • Nominate' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
-          grep -q 'v62_advocates' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
-          grep -q 'AI Portfolio Review' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
-          grep -q 'Theme.ArthSaathi' app/src/main/res/values/styles.xml
+          echo "Checking V6.2 architecture source gates..."
+          for token in V62EventBus SAVINGS_CHANGED QR_KHATA_CHANGED V62ModuleRegistry V62DocumentScanner V62DonutChart; do
+            grep -R -F -q --include="*.kt" "$token" app/src/main/java/com/udhaardaar/mvp || { echo "MISSING SOURCE TOKEN: $token"; exit 1; }
+            echo "PASS source: $token"
+          done
+          echo "Checking manifest activity gates..."
+          for token in V62TTMMActivity V62LegacyLegalAIActivity QrCreditScannerActivity LoginActivity; do
+            grep -F -q "$token" app/src/main/AndroidManifest.xml || { echo "MISSING MANIFEST TOKEN: $token"; exit 1; }
+            echo "PASS manifest: $token"
+          done
+          grep -F -q 'arthsaathi_logo' app/src/main/res/drawable/arthsaathi_logo.xml
+          grep -F -q 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          grep -F -q 'Plan • Protect • Grow • Nominate' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          grep -F -q 'v62_advocates' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
+          grep -F -q 'AI Portfolio Review' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
+          grep -F -q 'Theme.ArthSaathi' app/src/main/res/values/styles.xml
       - name: Unit tests (release gate)
         timeout-minutes: 8
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
