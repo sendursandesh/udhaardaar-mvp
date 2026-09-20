@@ -13,9 +13,16 @@ class V62RentalLeaseActivity : androidx.appcompat.app.AppCompatActivity() {
     private val Int.dp: Int get() = (this * d).toInt()
     private var doc = JSONObject()
     private var extracted = emptyList<V62DocumentIntelligence.Field>()
+    private lateinit var scroll: ScrollView
     private val fields = listOf("Lessor / Landlord", "Lessee / Tenant", "Property / premises description", "Monthly rent", "Security deposit", "Lease start date", "Lease end date", "Rent due date", "Escalation / revision", "Lock-in period", "Notice period", "Maintenance responsibility", "Utilities responsibility", "Late-payment terms", "Renewal terms", "Termination terms", "Special conditions")
 
-    override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        window.setSoftInputMode(16)
+        scroll = ScrollView(this).apply { isFillViewport = true; addView(root) }
+        setContentView(scroll)
+        render()
+    }
     private fun render() {
         root.removeAllViews()
         ArthSaathiV62Design.add(root, ArthSaathiV62Design.title(this, "Rental & Lease", "Read • Verify • Track"), 2)
@@ -23,7 +30,7 @@ class V62RentalLeaseActivity : androidx.appcompat.app.AppCompatActivity() {
         ArthSaathiV62Design.add(root, ArthSaathiV62Design.button(this, "SCAN LEASE DEED / RENT AGREEMENT", ArthSaathiV62Design.TEAL) { pick() }, 8)
         ArthSaathiV62Design.add(root, ArthSaathiV62Design.button(this, "MANUAL ENTRY — ALL CRITICAL TERMS", ArthSaathiV62Design.BLUE) { showForm() }, 5)
         if (extracted.isNotEmpty()) { ArthSaathiV62Design.add(root, ArthSaathiV62Design.section(this, "CRITICAL TERMS FLAGGED"), 10); extracted.filter { it.critical }.forEach { ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, "⚠ ${it.name}: ${it.value}\n${it.reason} • ${(it.confidence * 100).toInt()}% confidence", 11f, ArthSaathiV62Design.RED, true), 4) } }
-        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+        scroll.post { scroll.scrollTo(0,0) }
     }
     private fun pick() { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*"; putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false); addCategory(Intent.CATEGORY_OPENABLE) }, 42) }
     override fun onActivityResult(r: Int, c: Int, data: Intent?) { super.onActivityResult(r, c, data); if (r == 42 && c == Activity.RESULT_OK && data?.data != null) { doc = V62Documents.retain(this, data.data!!, "LEASE_DEED"); V62DocumentScanner.scan(this, data.data!!, { text -> extracted = V62DocumentIntelligence.analyse("LEASE_DEED", text); runOnUiThread { showForm() } }, { runOnUiThread { Toast.makeText(this, "Reading failed; manual verification available.", Toast.LENGTH_LONG).show(); showForm() } }) } }
