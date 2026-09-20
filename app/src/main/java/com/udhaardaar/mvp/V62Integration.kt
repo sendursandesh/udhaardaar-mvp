@@ -15,7 +15,7 @@ object V62Integration {
     }
 
     fun createCounterparty(c:Context,name:String,mobile:String,pan:String="",aadhaar:String="",gstin:String="",transactionContext:String):JSONObject? {
-        val n=name.trim(); val m=mobile.trim(); if(n.length<2||!m.matches(Regex("[6-9][0-9]{9}"))||transactionContext.isBlank())return null
+        val n=name.trim(); val m=mobile.trim(); if(n.length<2||!m.matches(Regex("[6-9][0-9]{9}")) )return null
         findCounterparties(c,m).firstOrNull()?.let{return it}
         val r=JSONObject().apply{put("id",V62Store.id("CP"));put("profileId",V62Store.id("PROFILE"));put("name",n);put("mobile",m);put("pan",pan.trim().uppercase(Locale.getDefault()));put("aadhaar",aadhaar.trim());put("gstin",gstin.trim().uppercase(Locale.getDefault()));put("transactionContext",transactionContext.trim());put("createdBy",currentUserId(c));put("createdAt",System.currentTimeMillis())}
         store(c).add(V62Store.COUNTERPARTIES,r);V62EventBus.publish(V62Event(V62Events.PROFILE_CHANGED,r.optString("id")));return r
