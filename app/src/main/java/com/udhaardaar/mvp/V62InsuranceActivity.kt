@@ -63,6 +63,6 @@ class V62InsuranceActivity : androidx.appcompat.app.AppCompatActivity() {
             if (maturity.isNotBlank()) V62Integration.addAlert(this, "INSURANCE_EXPIRY", "Insurance policy maturity/expiry: $maturity for policy ${map["Policy number"]?.text}", id, "ACTION")
             Toast.makeText(this, "Policy saved to Protection Vault.", Toast.LENGTH_SHORT).show(); finish()
         }, 12)
-        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+        scroll.post { scroll.scrollTo(0,0) }
     }
 }
