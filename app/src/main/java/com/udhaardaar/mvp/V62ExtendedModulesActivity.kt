@@ -23,7 +23,25 @@ class V62ExtendedModulesActivity : androidx.appcompat.app.AppCompatActivity() {
     private fun btn(s:String,c:Int=ArthSaathiV62Design.BLUE,go:()->Unit)=ArthSaathiV62Design.button(this,s,c,go)
     private fun add(v:android.view.View,t:Int=8)=ArthSaathiV62Design.add(root,v,t)
 
-    override fun onCreate(b:Bundle?){super.onCreate(b);window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);menu()}
+    override fun onCreate(b:Bundle?){
+        super.onCreate(b)
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        when(intent.getStringExtra("openSection")){
+            "FORMAL" -> formal()
+            "FUNDING" -> funding()
+            "CHARGECHECK" -> startActivity(Intent(this,V62ChargeCheckActivity::class.java))
+            "QR_KHATA" -> khata()
+            "TTMM" -> startActivity(Intent(this,V62TTMMActivity::class.java))
+            "CREDIT_INTELLIGENCE" -> startActivity(Intent(this,V62CreditIntelligenceActivity::class.java))
+            "LIABILITY" -> liability()
+            "PEOPLE" -> people()
+            "ADDRESS" -> address()
+            "BENEFITS" -> benefits()
+            "DOCUMENTS" -> documents()
+            "REPORTS" -> reports()
+            else -> menu()
+        }
+    }
 
     private fun shell(title:String,sub:String){
         root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(16),dp(12),dp(16),dp(90));setBackgroundColor(ArthSaathiV62Design.BG)}
@@ -48,42 +66,43 @@ class V62ExtendedModulesActivity : androidx.appcompat.app.AppCompatActivity() {
             add(r,5)
         }
 
-        add(ArthSaathiV62Design.section(this,"PLAN • RECORD • GROW"),8)
+        add(ArthSaathiV62Design.section(this,"RECORD • FINANCE • CHECK"),8)
         row(listOf(
-            "FC|Formal\nCredit" to {formal()},
-            "FU|Funding /\nLending" to {funding()},
-            "CC|ChargeCheck" to {startActivity(Intent(this,V62ChargeCheckActivity::class.java))}
+            "FC|Formal\nCredit" to {openSection("FORMAL")},
+            "FU|Funding /\nLending" to {openSection("FUNDING")},
+            "CC|ChargeCheck" to {openSection("CHARGECHECK")}
         ))
         row(listOf(
-            "QK|QR Udhaar\nKhata" to {startActivity(Intent(this,V62QRKhataActivity::class.java))},
-            "TT|Together •\nShare & Settle" to {startActivity(Intent(this,V62TTMMActivity::class.java))},
-            "MI|MIS &\nAnalytics" to {startActivity(Intent(this,V62MISActivity::class.java))}
-        ))
-
-        add(ArthSaathiV62Design.section(this,"PROTECT • PEOPLE • ASSETS"),10)
-        row(listOf(
-            "PR|Insurance &\nProtection" to {startActivity(Intent(this,V62InsuranceActivity::class.java))},
-            "AS|Asset\nVault" to {startActivity(Intent(this,V62AssetVaultActivity::class.java))},
-            "LI|Liability\nVault" to {liability()}
-        ))
-        row(listOf(
-            "PF|Profile • Family\n• Contacts" to {people()},
-            "AD|Address &\nLocation" to {address()},
-            "BE|Schemes &\nBenefits" to {benefits()}
+            "QK|QR Udhaar\nKhata" to {openSection("QR_KHATA")},
+            "TT|Together •\nShare & Settle" to {openSection("TTMM")},
+            "CI|Credit\nIntelligence" to {openSection("CREDIT_INTELLIGENCE")}
         ))
 
-        add(ArthSaathiV62Design.section(this,"NOMINATE • CLAIM • DOCUMENT"),10)
+        add(ArthSaathiV62Design.section(this,"PEOPLE • ASSETS • PROTECTION"),10)
         row(listOf(
-            "LG|Legacy • Legal\n& AI" to {startActivity(Intent(this,V62LegacyLegalAIActivity::class.java))},
-            "DC|Documents &\nNotes" to {documents()},
-            "RP|Reports &\nStatements" to {reports()}
+            "LI|Liability\nVault" to {openSection("LIABILITY")},
+            "PF|Profile • Family\n• Contacts" to {openSection("PEOPLE")},
+            "AD|Address &\nLocation" to {openSection("ADDRESS")}
         ))
         row(listOf(
-            "RE|Rental &\nLease" to {startActivity(Intent(this,V62RentalLeaseActivity::class.java))},
-            "CI|Credit\nIntelligence" to {startActivity(Intent(this,V62CreditIntelligenceActivity::class.java))},
+            "BE|Schemes &\nBenefits" to {openSection("BENEFITS")},
+            "RE|Rental &\nLease" to {openSection("RENTAL")},
+            "DC|Documents &\nNotes" to {openSection("DOCUMENTS")}
+        ))
+
+        add(ArthSaathiV62Design.section(this,"REPORT • SUPPORT • RETURN"),10)
+        row(listOf(
+            "RP|Reports &\nStatements" to {openSection("REPORTS")},
             "BK|Back to\nHome" to {finish()}
         ))
+        add(ArthSaathiV62Design.text(this,"Legacy, Legal Assistance and AI Financial Advisor are intentionally grouped in the single Legacy & Claims hub on Home. Protect and MIS are also single-owner Home modules.",11.5f,ArthSaathiV62Design.MUTED),8)
     }
+
+    private fun openSection(section:String) {
+        startActivity(Intent(this,V62ModuleRegistry.intent(this,"FINANCIAL_CENTRE")).apply { putExtra("openSection",section) })
+        finish()
+    }
+
     private fun formal(){
         shell("Formal Credit","Record offers and hand off to ChargeCheck")
         val p=input("Bank / NBFC / institution");val n=input("Loan product");val a=input("Principal amount ₹");val r=input("Annual interest %");val t=input("Tenure months");val pf=input("Processing + other charges ₹")
