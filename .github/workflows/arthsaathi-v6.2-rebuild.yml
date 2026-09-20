@@ -3,7 +3,7 @@ name: ArthSaathi V6.2 Architecture Build
 on:
   workflow_dispatch:
   push:
-    branches: [arthsaathi-v6.2-final-golden-c480, arthsaathi-v6.2-final-golden-fix, arthsaathi-v6.2-locked-final-baseline, arthsaathi-v6.2-architecture-contributions-mis]
+    branches: [arthsaathi-v6.2, arthsaathi-v6.2-final-golden-c480, arthsaathi-v6.2-final-golden-fix, arthsaathi-v6.2-locked-final-baseline, arthsaathi-v6.2-architecture-contributions-mis]
   pull_request:
     branches: [main]
 permissions:
@@ -45,7 +45,7 @@ jobs:
           unzip -t "$apk" >/dev/null
           grep -q "versionCode 64" app/build.gradle
           grep -q "versionName '6.2'" app/build.gradle
-          for token in V62EventBus SAVINGS_CHANGED QR_KHATA_CHANGED V62ModuleRegistry V62DocumentScanner V62DonutChart; do grep -q "$token" app/src/main/java/com/udhaardaar/mvp || { echo "Missing $token"; exit 1; }; done
+          for token in V62EventBus SAVINGS_CHANGED QR_KHATA_CHANGED V62ModuleRegistry V62DocumentScanner V62DonutChart; do grep -R -q --include="*.kt" "$token" app/src/main/java/com/udhaardaar/mvp || { echo "Missing $token"; exit 1; }; done
           for token in V62TTMMActivity V62LegacyLegalAIActivity QrCreditScannerActivity LoginActivity; do grep -q "$token" app/src/main/AndroidManifest.xml || { echo "Missing $token"; exit 1; }; done
           grep -q 'arthsaathi_logo' app/src/main/res/drawable/arthsaathi_logo.xml
           grep -q 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
