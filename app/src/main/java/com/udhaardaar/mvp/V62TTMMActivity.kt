@@ -14,6 +14,7 @@ class V62TTMMActivity : androidx.appcompat.app.AppCompatActivity() {
     private val owner get() = V62Integration.currentUserId(this)
     private val members = mutableListOf<String>()
     private var groupId = ""
+    private lateinit var scroll: ScrollView
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
