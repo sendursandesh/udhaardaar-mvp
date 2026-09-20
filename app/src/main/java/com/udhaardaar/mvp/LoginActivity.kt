@@ -66,6 +66,7 @@ class LoginActivity : AppCompatActivity() {
             Toast.makeText(this,"Google sign-in will be connected in the production identity layer.",Toast.LENGTH_SHORT).show()
         },LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
         r.addView(ArthSaathiV62Design.text(this,"By continuing you agree to our Terms & Privacy Policy.",9f,ArthSaathiV62Design.MUTED).apply{gravity=Gravity.CENTER},LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+        setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
     }
 
     private fun showNoAccount(mobile:String){
@@ -90,6 +91,7 @@ class LoginActivity : AppCompatActivity() {
             otp("Verify mobile and create account",x){prefs.edit().putString("name_$x",n.text.toString().trim()).putBoolean("logged_in",true).putString("current_mobile",x).apply();openHome()}
         },LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(9)})
         r.addView(button("BACK TO LOGIN",ArthSaathiV62Design.NAVY){showLogin()},LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
     }
 
     private fun validMobile(x:String)=x.matches(Regex("[6-9][0-9]{9}"))
