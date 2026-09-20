@@ -1,6 +1,7 @@
 package com.udhaardaar.mvp
 
 import android.content.Context
+import android.content.Intent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.espresso.Espresso.onView
@@ -63,6 +64,37 @@ class ArthSaathiV62SmokeTest {
                 scenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED)
                 scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
                 scenario.onActivity { requireNotNull(it.window?.decorView) { "Window missing after resume: ${activity.simpleName}" } }
+            }
+        }
+
+        // Audit every More route independently, not just the menu shell.
+        val moreSections = listOf(
+            "FORMAL","FUNDING","CHARGECHECK","QR_KHATA","TTMM",
+            "CREDIT_INTELLIGENCE","LIABILITY","PEOPLE","ADDRESS","BENEFITS",
+            "DOCUMENTS","REPORTS"
+        )
+        for (section in moreSections) {
+            ActivityScenario.launch<android.app.Activity>(
+                Intent(context, V62ExtendedModulesActivity::class.java).putExtra("openSection", section)
+            ).use { scenario ->
+                scenario.onActivity { requireNotNull(it.window?.decorView) { "More section failed: "+section } }
+                scenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED)
+                scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+            }
+        }
+
+        ActivityScenario.launch<android.app.Activity>(
+            Intent(context, V62RentalLeaseActivity::class.java)
+        ).use { scenario ->
+            scenario.onActivity { requireNotNull(it.window?.decorView) { "Rental route failed" } }
+        }
+
+        // Legal and AI are flow-only sub-routes inside the single Legacy hub.
+        for (section in listOf("LEGAL","AI")) {
+            ActivityScenario.launch<android.app.Activity>(
+                Intent(context, V62LegacyLegalAIActivity::class.java).putExtra("openSection", section)
+            ).use { scenario ->
+                scenario.onActivity { requireNotNull(it.window?.decorView) { "Legacy sub-route failed: "+section } }
             }
         }
     }
