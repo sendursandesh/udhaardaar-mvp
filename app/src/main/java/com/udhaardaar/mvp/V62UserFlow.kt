@@ -17,7 +17,7 @@ object V62UserFlow {
     }
     fun parseDate(value:String)=runCatching{SimpleDateFormat("dd/MM/yyyy",Locale.US).apply{isLenient=false}.parse(value)}.getOrNull()
     fun validPan(value:String)=value.uppercase(Locale.US).matches(Regex("[A-Z]{5}[0-9]{4}[A-Z]"))
-    fun validAadhaar(value:String)=value.matches(Regex("[0-9]{12}")) && value.toSet().size>1
+    fun validAadhaar(value:String):Boolean{ if(!value.matches(Regex("[0-9]{12}"))) return false; val d= arrayOf(intArrayOf(0,1,2,3,4,5,6,7,8,9),intArrayOf(1,2,3,4,0,6,7,8,9,5),intArrayOf(2,3,4,0,1,7,8,9,5,6),intArrayOf(4,0,1,2,3,8,9,5,6,7),intArrayOf(5,9,0,1,2,3,4,6,7,8),intArrayOf(6,5,9,0,1,2,3,4,8,7),intArrayOf(7,6,5,9,0,1,2,3,4,8),intArrayOf(8,7,6,5,9,0,1,2,3,4),intArrayOf(9,8,7,6,5,9,0,1,2,3),intArrayOf(0,9,8,7,6,5,4,3,2,1)); val p= arrayOf(intArrayOf(0,1,2,3,4,5,6,7,8,9),intArrayOf(1,5,7,6,2,8,3,0,9,4),intArrayOf(5,8,0,3,7,9,6,1,4,2),intArrayOf(8,9,1,6,0,4,3,5,2,7),intArrayOf(9,4,5,3,1,2,6,8,7,0),intArrayOf(4,2,8,6,5,7,3,9,0,1),intArrayOf(2,7,9,3,8,0,6,4,1,5),intArrayOf(7,0,4,6,9,1,3,2,5,8)); var csum=0; val digits=value.reversed().map{it-'0'}; for(i in digits.indices) csum=d[csum][p[i%8][digits[i]]]; return csum==0 }
     fun validGstin(value:String)=value.uppercase(Locale.US).matches(Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"))
     fun validMobile(value:String)=value.matches(Regex("[6-9][0-9]{9}"))
     fun monthsBetween(start:java.util.Date,end:java.util.Date):Int{
