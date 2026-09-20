@@ -26,7 +26,7 @@ The Home financial hero is informational; it is not a second MIS button.
 
 ### People • Assets • Protection
 - Liability Vault
-- Profile • Family • Contacts
+- Family • Contacts
 - Address & Location
 - Schemes & Benefits
 - Rental & Lease
