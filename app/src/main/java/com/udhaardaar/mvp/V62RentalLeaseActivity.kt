@@ -54,6 +54,6 @@ class V62RentalLeaseActivity : androidx.appcompat.app.AppCompatActivity() {
             if (end.isNotBlank()) V62Integration.addAlert(this, "LEASE_EXPIRY", "Lease end date: $end", id, "ACTION")
             Toast.makeText(this, "Lease/rental relationship saved.", Toast.LENGTH_SHORT).show(); finish()
         }, 10)
-        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+        scroll.post { scroll.scrollTo(0,0) }
     }
 }
