@@ -100,7 +100,11 @@ class V62ExtendedModulesActivity : androidx.appcompat.app.AppCompatActivity() {
     }
 
     private fun openSection(section:String) {
-        startActivity(Intent(this,V62ModuleRegistry.intent(this,"FINANCIAL_CENTRE")).apply { putExtra("openSection",section) })
+        if(section=="RENTAL") {
+            startActivity(Intent(this,V62RentalLeaseActivity::class.java))
+        } else {
+            startActivity(Intent(this,V62ExtendedModulesActivity::class.java).apply { putExtra("openSection",section) })
+        }
         finish()
     }
 
