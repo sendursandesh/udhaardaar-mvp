@@ -59,53 +59,28 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
         hero.addView(ArthSaathiV62Design.button(this,"VIEW FINANCIAL INSIGHTS",ArthSaathiV62Design.GOLD_DEEP){open(V62MISActivity::class.java)},LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
         add(hero,8)
 
-        // Main dashboard grid follows the saved design draft: 3 columns, compact icon tiles,
-        // and all nine primary actions visible without duplicating them elsewhere.
+        // Primary home actions match the approved design board: six actions only.
         fun tileRow(items:List<Pair<String,()->Unit>>) {
             val row=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
-            items.forEachIndexed { i, item ->
+            items.forEachIndexed { i,item ->
                 row.addView(
                     ArthSaathiV62Design.featureCard(this,item.first.split("|")[0],item.first.split("|")[1],item.second),
-                    LinearLayout.LayoutParams(0,dp(92),1f).apply {
-                        if(i>0) leftMargin=dp(4)
-                        if(i<items.lastIndex) rightMargin=dp(4)
-                    }
+                    LinearLayout.LayoutParams(0,dp(98),1f).apply { if(i>0) leftMargin=dp(5); if(i<items.lastIndex) rightMargin=dp(5) }
                 )
             }
-            add(row,6)
+            add(row,7)
         }
         tileRow(listOf(
-            "₹|Register\nCredit" to {open(V62CreditRegistrationActivity::class.java)},
+            "₹|Register Credit" to {open(V62CreditRegistrationActivity::class.java)},
             "↻|Repayment" to {open(V62RepaymentActivity::class.java)},
             "▣|Asset Vault" to {open(V62AssetVaultActivity::class.java)}
         ))
         tileRow(listOf(
             "◆|Protect" to {open(V62InsuranceActivity::class.java)},
-            "↗|Grow" to {open(V62ExtendedModulesActivity::class.java)},
-            "◉|Insurance" to {open(V62InsuranceActivity::class.java)}
+            "♙|Legacy" to {open(V62LegacyLegalAIActivity::class.java)},
+            "⚖|Legal Assistance" to {open(V62LegacyLegalAIActivity::class.java)}
         ))
-        tileRow(listOf(
-            "⚖|Legal &\nAssistance" to {open(V62LegacyLegalAIActivity::class.java)},
-            "⇄|TTMM\nShare & Settle" to {open(V62TTMMActivity::class.java)},
-            "▥|MIS &\nInsights" to {open(V62MISActivity::class.java)}
-        ))
-
-        val m=V62MisEngine.metrics(this)
-        val snap=LinearLayout(this).apply{
-            orientation=LinearLayout.VERTICAL;setPadding(dp(12),dp(9),dp(12),dp(9))
-            background=ArthSaathiV62Design.card(0xfffffbef.toInt(),15,d)
-            setOnClickListener{open(V62MISActivity::class.java)}
-        }
-        val st=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL}
-        st.addView(ArthSaathiV62Design.text(this,"Your Financial Snapshot",13f,ArthSaathiV62Design.NAVY,true),LinearLayout.LayoutParams(0,-2,1f))
-        st.addView(ArthSaathiV62Design.text(this,"View MIS ›",10f,ArthSaathiV62Design.GOLD_DARK,true))
-        snap.addView(st)
-        val nums=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
-        nums.addView(ArthSaathiV62Design.statCard(this,"Current Assets","₹ "+m.optDouble("assetValue").toLong(),ArthSaathiV62Design.GOLD_DARK),LinearLayout.LayoutParams(0,dp(70),1f).apply{rightMargin=dp(4)})
-        nums.addView(ArthSaathiV62Design.statCard(this,"Active Credits",""+m.optInt("activeRelationships"),ArthSaathiV62Design.BLUE),LinearLayout.LayoutParams(0,dp(70),1f).apply{leftMargin=dp(4);rightMargin=dp(4)})
-        nums.addView(ArthSaathiV62Design.statCard(this,"Liabilities","₹ "+m.optDouble("liabilities").toLong(),ArthSaathiV62Design.RED),LinearLayout.LayoutParams(0,dp(70),1f).apply{leftMargin=dp(4)})
-        snap.addView(nums,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
-        add(snap,8)
+        add(ArthSaathiV62Design.text(this,"All other services are organised inside More so the Home screen stays simple.",11.5f,ArthSaathiV62Design.MUTED),8)
 
         add(ArthSaathiV62Design.bottomNav(this,"Home",mapOf(
             "Home" to {},
