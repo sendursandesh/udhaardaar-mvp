@@ -48,7 +48,7 @@ class V62ArchitectureAuditTest {
         val sections = V62ModuleRegistry.moreRoutes.mapNotNull { it.section }
         assertEquals(
             setOf("FORMAL","FUNDING","CHARGECHECK","QR_KHATA","TTMM","CREDIT_INTELLIGENCE",
-                "LIABILITY","PEOPLE","ADDRESS","BENEFITS","DOCUMENTS","REPORTS"),
+                "LIABILITY","PEOPLE","ADDRESS","BENEFITS","DOCUMENTS","REPORTS","RENTAL"),
             sections.toSet()
         )
         assertEquals(sections.size, sections.toSet().size)
