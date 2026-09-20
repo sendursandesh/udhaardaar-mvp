@@ -79,7 +79,7 @@ class V62CreditRegistrationActivity:AppCompatActivity(){
         fun calc(){
             val p=amount.text.toString().replace(",","").toDoubleOrNull()?:0.0;val r=roi.text.toString().toDoubleOrNull()?:0.0;val n=months.text.toString().toIntOrNull()?:0;val sd=V62UserFlow.parseDate(start.text.toString())
             if(p<=0||n<=0||sd==null){end.setText("");emi.setText("");return}
-            val cal=Calendar.getInstance().apply{time=sd;add(Calendar.MONTH,n)};end.setText(String.format(Locale.US,"%02d/%02d/%04d",cal.get(Calendar.DAY_OF_MONTH),cal.get(Calendar.MONTH)+1,cal.get(Calendar.YEAR)))
+            val stepMonths=when(period.selectedItemPosition){1->3;2->6;3->12;else->1};val cal=Calendar.getInstance().apply{time=sd;add(Calendar.MONTH,stepMonths*n)};end.setText(String.format(Locale.US,"%02d/%02d/%04d",cal.get(Calendar.DAY_OF_MONTH),cal.get(Calendar.MONTH)+1,cal.get(Calendar.YEAR)))
             val freq=when(period.selectedItemPosition){0->12;1->4;2->2;3->1;else->12};val rate=r/100.0/freq;val pay=if(method.selectedItemPosition==2)p*(1+r/100.0*n/12.0) else if(rate==0.0)p/n else p*rate*(1+rate).pow(n)/((1+rate).pow(n)-1);emi.setText(String.format(Locale.US,"%.2f",pay))
         }
         val tw=object:android.text.TextWatcher{override fun beforeTextChanged(s:CharSequence?,a:Int,b:Int,c:Int){};override fun onTextChanged(s:CharSequence?,a:Int,b:Int,c:Int){calc()};override fun afterTextChanged(e:android.text.Editable?) {}}
