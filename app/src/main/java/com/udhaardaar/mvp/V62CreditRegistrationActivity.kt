@@ -45,10 +45,10 @@ class V62CreditRegistrationActivity:AppCompatActivity(){
         val q=input("Search by name / mobile / PAN / Aadhaar / GSTIN")
         val list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
         val wrap=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;addView(q);addView(list)}
-        val searchButton=ArthSaathiV62Design.button(this,"SEARCH",ArthSaathiV62Design.GOLD_DEEP){refresh()}
-        wrap.addView(searchButton,0)
         val dlg=AlertDialog.Builder(this).setTitle("Borrower search").setView(wrap).setNegativeButton("CANCEL",null).create()
         fun refresh(){list.removeAllViews();val rows=V62Integration.findCounterparties(this,q.text.toString()).take(15);if(rows.isEmpty())list.addView(ArthSaathiV62Design.button(this,"CREATE NEW BORROWER",ArthSaathiV62Design.TEAL){dlg.dismiss();createCounterparty()})else rows.forEach{p->list.addView(ArthSaathiV62Design.button(this,"${p.optString("name")} • ${p.optString("mobile")}",ArthSaathiV62Design.NAVY){dlg.dismiss();selectCounterparty(p)})}}
+        val searchButton=ArthSaathiV62Design.button(this,"SEARCH",ArthSaathiV62Design.GOLD_DEEP){refresh()}
+        wrap.addView(searchButton,0)
         q.addTextChangedListener(object:android.text.TextWatcher{override fun beforeTextChanged(s:CharSequence?,a:Int,b:Int,c:Int){};override fun onTextChanged(s:CharSequence?,a:Int,b:Int,c:Int){refresh()};override fun afterTextChanged(e:android.text.Editable?) {}});dlg.show();refresh()
     }
     private fun selectCounterparty(cp:JSONObject){selected=cp;relationshipId=V62Store.id("REL");draft.edit().clear().putString("relationshipId",relationshipId).putBoolean("historyConsentVerified",false).apply();store.add(V62Store.RELATIONSHIPS,JSONObject().apply{put("id",relationshipId);put("ownerUserId",V62Integration.currentUserId(this@V62CreditRegistrationActivity));put("counterpartyId",cp.optString("id"));put("status","DRAFT");put("type","PERSONAL_CREDIT")});render()}
