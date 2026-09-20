@@ -24,7 +24,7 @@ object ArthSaathiV62Design {
     fun dp(v:Int,d:Float)=(v*d).toInt()
 
     fun text(c:Context,s:String,size:Float=14f,color:Int=NAVY,bold:Boolean=false):TextView {
-        return TextView(c).apply { text=s; textSize=size; setTextColor(color); includeFontPadding=false; typeface=Typeface.create("sans-serif",if(bold)Typeface.BOLD else Typeface.NORMAL); letterSpacing=if(size<=11f).015f else 0f }
+        return TextView(c).apply { text=s; textSize=size; setTextColor(color); includeFontPadding=false; typeface=Typeface.create("cursive",if(bold)Typeface.BOLD else Typeface.NORMAL); letterSpacing=if(size<=11f).015f else 0f }
     }
     fun brandWordmark(c:Context,size:Float=25f):TextView {
         val view=text(c,BRAND,size,NAVY,true)
@@ -35,14 +35,25 @@ object ArthSaathiV62Design {
     fun hero(fill:Int=NAVY,radius:Int=22,d:Float=1f)=GradientDrawable().apply{setColor(fill);cornerRadius=dp(radius,d).toFloat()}
     fun button(c:Context,s:String,color:Int=GOLD_DEEP,click:()->Unit):Button {
         val d=density(c)
-        return Button(c).apply { text=s;textSize=14f;setTextColor(if(color==GOLD||color==GOLD_DEEP)NAVY else WHITE);typeface=Typeface.DEFAULT_BOLD;isAllCaps=false;minHeight=dp(50,d);minimumHeight=dp(50,d);stateListAnimator=null;elevation=dp(2,d).toFloat();background=GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,intArrayOf(color,if(color==GOLD_DEEP)GOLD else color)).apply{cornerRadius=dp(15,d).toFloat();setStroke(dp(1,d),if(color==GOLD||color==GOLD_DEEP)GOLD_DARK else BORDER)};setPadding(dp(16,d),0,dp(16,d),0);setOnClickListener{click()} }
+        return Button(c).apply { text=s;textSize=15f;setTextColor(if(color==GOLD||color==GOLD_DEEP)NAVY else WHITE);typeface=Typeface.DEFAULT_BOLD;isAllCaps=false;minHeight=dp(50,d);minimumHeight=dp(50,d);stateListAnimator=null;elevation=dp(2,d).toFloat();background=GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,intArrayOf(color,if(color==GOLD_DEEP)GOLD else color)).apply{cornerRadius=dp(15,d).toFloat();setStroke(dp(1,d),if(color==GOLD||color==GOLD_DEEP)GOLD_DARK else BORDER)};setPadding(dp(16,d),0,dp(16,d),0);setOnClickListener{click()} }
     }
     fun title(c:Context,name:String,subtitle:String):LinearLayout {
-        val d=density(c); val box=LinearLayout(c); box.orientation=LinearLayout.VERTICAL; box.gravity=Gravity.CENTER_HORIZONTAL; box.setPadding(dp(10,d),dp(7,d),dp(10,d),dp(9,d)); box.background=card(); box.elevation=dp(2,d).toFloat()
-        val logo=ImageView(c);logo.setImageResource(com.udhaardaar.mvp.R.drawable.arthsaathi_logo);logo.scaleType=ImageView.ScaleType.CENTER_INSIDE;logo.contentDescription="ArthSaathi logo";box.addView(logo,LinearLayout.LayoutParams(dp(62,d),dp(62,d)))
-        box.addView(brandWordmark(c,22f),LinearLayout.LayoutParams(-1,-2));box.addView(text(c,subtitle,10f,NAVY),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(3,d)});box.addView(text(c,OWNERSHIP_TAGLINE,9.5f,NAVY,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(4,d)});box.addView(text(c,OWNERSHIP_TAGS,8.5f,TEAL,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(3,d)});box.addView(text(c,PILLARS,9.5f,GOLD_DARK,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5,d)})
+        val d=density(c)
+        val box=LinearLayout(c).apply { orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER_HORIZONTAL; setPadding(dp(10,d),dp(7,d),dp(10,d),dp(9,d)); background=card(); elevation=dp(2,d).toFloat() }
+        val logo=ImageView(c).apply { setImageResource(com.udhaardaar.mvp.R.drawable.arthsaathi_logo); scaleType=ImageView.ScaleType.CENTER_INSIDE; contentDescription="ArthSaathi logo" }
+        box.addView(logo,LinearLayout.LayoutParams(dp(60,d),dp(60,d)))
+        box.addView(brandWordmark(c,23f),LinearLayout.LayoutParams(-1,-2))
+        box.addView(text(c,name,15f,NAVY,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5,d)})
+        box.addView(text(c,subtitle,11.5f,MUTED),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(2,d)})
+        val p=getUserPrefs(c); val mobile=p.getString("current_mobile","").orEmpty(); val user=p.getString("name_$mobile","User").orEmpty().ifBlank{"User"}
+        val strip=LinearLayout(c).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(8,d),dp(6,d),dp(8,d),dp(6,d));background=card(PALE_GOLD,12,d)}
+        val avatar=TextView(c).apply{text=user.trim().firstOrNull()?.uppercase() ?: "U";textSize=11f;setTextColor(NAVY);gravity=Gravity.CENTER;typeface=Typeface.DEFAULT_BOLD;background=GradientDrawable().apply{shape=GradientDrawable.OVAL;setColor(GOLD_BRIGHT);setStroke(dp(1,d),GOLD)}}
+        strip.addView(avatar,LinearLayout.LayoutParams(dp(32,d),dp(32,d)))
+        strip.addView(text(c,user,12f,NAVY,true),LinearLayout.LayoutParams(0,-2,1f).apply{leftMargin=dp(8,d)})
+        box.addView(strip,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7,d)})
         return box
     }
+    private fun getUserPrefs(c:Context)=c.getSharedPreferences("udhaardaar_accounts",Context.MODE_PRIVATE)
     fun pageHeader(c:Context,eyebrow:String,name:String,subtitle:String):LinearLayout {
         val d=density(c);val box=LinearLayout(c);box.orientation=LinearLayout.VERTICAL;box.setPadding(dp(15,d),dp(12,d),dp(15,d),dp(12,d));box.background=card(PALE_BLUE,18,d);box.addView(text(c,eyebrow.uppercase(),9.5f,TEAL,true));box.addView(text(c,name,22f,NAVY,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5,d)});box.addView(text(c,subtitle,11f,MUTED),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5,d)});return box
     }
