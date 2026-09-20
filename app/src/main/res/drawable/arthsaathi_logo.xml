@@ -5,7 +5,7 @@
     <!-- ArthSaathi master mark: open golden journey arc, navy A, golden road and star. -->
     <path android:fillColor="@android:color/transparent"
         android:strokeColor="#F2B632" android:strokeWidth="5"
-        android:strokeLineCap="ROUND"
+        android:strokeLineCap="round"
         android:pathData="M18,78 C8,48 23,19 53,12" />
     <path android:fillColor="@android:color/transparent"
         android:strokeColor="#F2B632" android:strokeWidth="5"
