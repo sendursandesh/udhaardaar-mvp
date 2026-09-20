@@ -17,7 +17,18 @@ class V62MISActivity : androidx.appcompat.app.AppCompatActivity() {
     private fun money(x: Double) = "₹${String.format(Locale.US, "%,.0f", x)}"
     private val eventListener: (V62Event) -> Unit = { runOnUiThread { if (!isFinishing) render() } }
 
-    override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
+    private lateinit var scroll: ScrollView
+
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        window.setSoftInputMode(16)
+        scroll = ScrollView(this).apply {
+            isFillViewport = true
+            addView(root)
+        }
+        setContentView(scroll)
+        render()
+    }
     override fun onStart() { super.onStart(); V62EventBus.subscribe(eventListener) }
     override fun onStop() { V62EventBus.unsubscribe(eventListener); super.onStop() }
     override fun onResume() { super.onResume(); if (!isFinishing) render() }
@@ -65,7 +76,7 @@ class V62MISActivity : androidx.appcompat.app.AppCompatActivity() {
         add(ArthSaathiV62Design.text(this, "Closed/sold assets remain historical but are excluded from current net-worth asset value. Opportunity-cost estimates use only a yield explicitly recorded on an asset.", 10f, ArthSaathiV62Design.MUTED), 14)
         add(ArthSaathiV62Design.text(this, "Value generated shows only successfully completed records; pending or rejected benefits, refunds and claims are excluded.", 10f, ArthSaathiV62Design.MUTED), 14)
         add(ArthSaathiV62Design.button(this, "REFRESH INTELLIGENCE", ArthSaathiV62Design.TEAL) { render() }, 10)
-        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+        scroll.post { scroll.scrollTo(0, 0) }
     }
     private fun metric(k: String, v: String) { val b=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(12.dp,9.dp,12.dp,9.dp);background=ArthSaathiV62Design.card(Color.WHITE,14,d)};b.addView(ArthSaathiV62Design.text(this,k,9f,ArthSaathiV62Design.MUTED,true));b.addView(ArthSaathiV62Design.text(this,v,18f,ArthSaathiV62Design.NAVY,true));add(b,6) }
     private fun head(a:String,b:String,c:String){val r=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;setPadding(8.dp,7.dp,8.dp,7.dp);background=ArthSaathiV62Design.card(0xffeef3f8.toInt(),10,d)};listOf(a,b,c).forEachIndexed{i,x->r.addView(ArthSaathiV62Design.text(this,x,9f,ArthSaathiV62Design.MUTED,true),LinearLayout.LayoutParams(0,-2,if(i==0)1.3f else 1f))};add(r,4)}
