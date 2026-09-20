@@ -66,14 +66,17 @@ jobs:
         timeout-minutes: 8
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
       - name: Android emulator smoke tests (release gate)
-        timeout-minutes: 15
+        timeout-minutes: 25
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           target: default
           arch: x86_64
           profile: pixel_2
-          script: gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
+          force-avd-creation: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          script: adb wait-for-device && adb shell getprop sys.boot_completed && gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
 
       - name: Upload compiled integrity-passed APK
         uses: actions/upload-artifact@v4
