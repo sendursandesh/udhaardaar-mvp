@@ -98,4 +98,25 @@ class ArthSaathiV62SmokeTest {
             }
         }
     }
+    @Test fun bottomUtilityNavigationDoesNotDuplicateModules() {
+        prefs.edit().putString("name_9876543210","Test User")
+            .putBoolean("logged_in",true).putString("current_mobile","9876543210").commit()
+        ActivityScenario.launch(V62HomeActivity::class.java).use {
+            onView(withText("Profile")).perform(androidx.test.espresso.action.ViewActions.click())
+            onView(withText("Profile & Identity")).check(
+                androidx.test.espresso.assertion.ViewAssertions.matches(
+                    androidx.test.espresso.matcher.ViewMatchers.isDisplayed()
+                )
+            )
+            androidx.test.espresso.Espresso.pressBack()
+            onView(withText("Alerts")).perform(androidx.test.espresso.action.ViewActions.click())
+            onView(withText("Alerts & Notifications")).check(
+                androidx.test.espresso.assertion.ViewAssertions.matches(
+                    androidx.test.espresso.matcher.ViewMatchers.isDisplayed()
+                )
+            )
+        }
+    }
+
+
 }
