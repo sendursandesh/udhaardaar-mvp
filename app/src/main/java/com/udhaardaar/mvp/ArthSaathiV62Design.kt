@@ -154,20 +154,24 @@ object ArthSaathiV62Design {
         val user=c.getSharedPreferences("udhaardaar_accounts",Context.MODE_PRIVATE).getString("name_$mobile","User").orEmpty().ifBlank{"User"}
         val photoUri=c.getSharedPreferences("udhaardaar_accounts",Context.MODE_PRIVATE)
             .let { p -> listOf("profile_photo_uri","user_photo_uri","photo_uri").firstNotNullOfOrNull { k -> p.getString(k,null)?.takeIf { it.isNotBlank() } } }
-        val avatar=ImageView(c).apply{
-            scaleType=ImageView.ScaleType.CENTER_CROP
-            contentDescription="$user profile photo"
-            background=GradientDrawable().apply{
-                shape=GradientDrawable.OVAL
-                setColor(GOLD_BRIGHT)
-                setStroke(dp(1,d),GOLD)
+        val avatar: View = if(photoUri!=null) {
+            ImageView(c).apply{
+                scaleType=ImageView.ScaleType.CENTER_CROP
+                contentDescription="$user profile photo"
+                background=GradientDrawable().apply{shape=GradientDrawable.OVAL;setColor(GOLD_BRIGHT);setStroke(dp(1,d),GOLD)}
+                runCatching { setImageURI(Uri.parse(photoUri)) }.onFailure { setImageResource(0) }
+                setOnClickListener{onUser()}
             }
-            if(photoUri!=null) runCatching { setImageURI(Uri.parse(photoUri)) }.onFailure { setImageResource(0) }
-            if(drawable==null) {
-                setImageDrawable(android.graphics.drawable.ColorDrawable(GOLD_BRIGHT))
-                val initials=TextView(c).apply{text=user.trim().firstOrNull()?.uppercase() ?: "U";textSize=12f;setTextColor(NAVY);gravity=Gravity.CENTER;typeface=Typeface.DEFAULT_BOLD}
+        } else {
+            TextView(c).apply{
+                text=user.trim().firstOrNull()?.uppercase() ?: "U"
+                textSize=12f
+                setTextColor(NAVY)
+                gravity=Gravity.CENTER
+                typeface=Typeface.DEFAULT_BOLD
+                background=GradientDrawable().apply{shape=GradientDrawable.OVAL;setColor(GOLD_BRIGHT);setStroke(dp(1,d),GOLD)}
+                setOnClickListener{onUser()}
             }
-            setOnClickListener{onUser()}
         }
         bar.addView(avatar,LinearLayout.LayoutParams(dp(36,d),dp(36,d)))
         return bar
