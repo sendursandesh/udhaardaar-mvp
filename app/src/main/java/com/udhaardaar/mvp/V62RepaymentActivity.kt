@@ -3,88 +3,58 @@ package com.udhaardaar.mvp
 import android.app.AlertDialog
 import android.os.Bundle
 import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import org.json.JSONArray
 import org.json.JSONObject
-import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 import kotlin.random.Random
 
-class V62RepaymentActivity : androidx.appcompat.app.AppCompatActivity() {
-    private val store by lazy { V5LocalStore(this) }
-    private val density by lazy { resources.displayMetrics.density }
-    private fun dp(v: Int) = (v * density).toInt()
-    private lateinit var root: LinearLayout
-
-    override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
-    override fun onResume() { super.onResume(); if (!isFinishing) render() }
-
-    private fun render() {
-        root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(28)); setBackgroundColor(ArthSaathiV62Design.BG) }
-        ArthSaathiV62Design.add(root, ArthSaathiV62Design.title(this, "Repayment Centre", "Record • Reconcile • Update"), 2)
-        ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, "Record a payment only against a registered relationship owned by this account. OTP consent is completed before the ledger changes.", 10f, ArthSaathiV62Design.MUTED), 8)
-        val current = V62Integration.currentUserId(this)
-        val rows = store.all(V62Store.RELATIONSHIPS).filter { j -> j.optString("status") != "CLOSED" && isParty(j, current) }
-        if (rows.isEmpty()) ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, "No active repayment relationships for this account.", 13f, ArthSaathiV62Design.NAVY, true), 12)
-        else rows.forEach { renderRelationship(it) }
-        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+class V62RepaymentActivity:AppCompatActivity(){
+    private val store by lazy{V5LocalStore(this)}
+    private val d get()=resources.displayMetrics.density
+    private lateinit var root:LinearLayout
+    private fun add(v:android.view.View,g:Int=7)=ArthSaathiV62Design.add(root,v,g)
+    override fun onCreate(b:Bundle?){super.onCreate(b);render()}
+    override fun onResume(){super.onResume();if(!isFinishing)render()}
+    private fun render(){
+        root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding((16*d).toInt(),(8*d).toInt(),(16*d).toInt(),(28*d).toInt());setBackgroundColor(ArthSaathiV62Design.BG)}
+        setContentView(ScrollView(this).apply{isFillViewport=true;addView(root)})
+        add(ArthSaathiV62Design.title(this,"Repayment Centre","Select schedule item • Part-pay • Consent"),2)
+        add(ArthSaathiV62Design.text(this,"Open a registered credit to see its actual agreed repayment schedule. Select the instalment being paid; part payment is allowed.",11f,ArthSaathiV62Design.MUTED),7)
+        val owner=V62Integration.currentUserId(this)
+        val rows=store.all(V62Store.RELATIONSHIPS).filter{it.optString("ownerUserId")==owner&&it.optString("status")!="CLOSED"}
+        if(rows.isEmpty())add(ArthSaathiV62Design.text(this,"No active credit relationships.",13f,ArthSaathiV62Design.NAVY,true),12)
+        rows.forEach{relationship(it)}
     }
-
-    private fun isParty(j: JSONObject, current: String): Boolean = current.isNotBlank() && j.optString("ownerUserId", "") == current
-
-    private fun renderRelationship(j: JSONObject) {
-        val outstanding = j.optDouble("outstanding", j.optDouble("amount", j.optDouble("principal", 0.0))).coerceAtLeast(0.0)
-        val cp = store.find(V62Store.COUNTERPARTIES, j.optString("counterpartyId"))
-        val cpName = cp?.optString("name").orEmpty().ifBlank { j.optString("counterpartyName").ifBlank { "Registered party" } }
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(13), dp(11), dp(13), dp(11)); background = ArthSaathiV62Design.card() }
-        box.addView(ArthSaathiV62Design.text(this, "${j.optString("type", "CREDIT")} • ${j.optString("ownerRole", "USER")}", 10f, ArthSaathiV62Design.TEAL, true))
-        box.addView(ArthSaathiV62Design.text(this, cpName, 13f, ArthSaathiV62Design.NAVY, true))
-        box.addView(ArthSaathiV62Design.text(this, "Principal ₹${money(j.optDouble("principal", j.optDouble("amount", 0.0)))} • Outstanding ₹${money(outstanding)}", 15f, ArthSaathiV62Design.NAVY, true))
-        box.addView(ArthSaathiV62Design.text(this, "${j.optString("repaymentMode", j.optString("method"))} • ${j.optString("periodicity", j.optString("period"))} • EMI ₹${money(j.optDouble("emi", 0.0))}", 10f, ArthSaathiV62Design.MUTED))
-        if (outstanding > 0) box.addView(ArthSaathiV62Design.button(this, "RECORD REPAYMENT — CONSENT + OTP", ArthSaathiV62Design.GREEN) { record(j, outstanding) })
-        ArthSaathiV62Design.add(root, box, 7)
+    private fun relationship(rel:JSONObject){
+        val cp=store.find(V62Store.COUNTERPARTIES,rel.optString("counterpartyId"));val name=cp?.optString("name").orEmpty().ifBlank{"Borrower"}
+        val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding((13*d).toInt(),(11*d).toInt(),(13*d).toInt(),(11*d).toInt());background=ArthSaathiV62Design.card()}
+        box.addView(ArthSaathiV62Design.text(this,name,15f,ArthSaathiV62Design.NAVY,true));box.addView(ArthSaathiV62Design.text(this,"Outstanding ₹${money(rel.optDouble("outstanding",rel.optDouble("principal",0.0)))} • ${rel.optString("repaymentMode","")}",11f,ArthSaathiV62Design.MUTED),LinearLayout.LayoutParams(-1,-2).apply{topMargin=4})
+        val schedule=runCatching{JSONArray(rel.optString("repaymentSchedule","[]"))}.getOrDefault(JSONArray())
+        if(schedule.length()==0){box.addView(ArthSaathiV62Design.text(this,"No schedule found. Use the registered terms to create a repayment schedule.",11f,ArthSaathiV62Design.RED),LinearLayout.LayoutParams(-1,-2).apply{topMargin=7});box.addView(ArthSaathiV62Design.button(this,"RECORD NON-EMI / BULLET PAYMENT",ArthSaathiV62Design.GREEN){recordBullet(rel)},LinearLayout.LayoutParams(-1,-2).apply{topMargin=7})}
+        for(i in 0 until schedule.length()){val item=schedule.optJSONObject(i)?:continue;if(item.optString("status")=="PAID")continue;val n=item.optInt("installment");val due=item.optDouble("dueAmount");val paid=item.optDouble("paidAmount");box.addView(ArthSaathiV62Design.button(this,"EMI $n • due ${item.optString("dueDate")} • ₹${money((due-paid).coerceAtLeast(0.0))}",ArthSaathiV62Design.BLUE){recordSchedulePayment(rel,i)},LinearLayout.LayoutParams(-1,-2).apply{topMargin=5})}
+        add(box,8)
     }
-
-    private fun record(j: JSONObject, outstanding: Double) {
-        val amount = ArthSaathiV62Design.input(this, "Total amount paid ₹")
-        val interest = ArthSaathiV62Design.input(this, "Interest component ₹ (included in total, optional)")
-        val date = ArthSaathiV62Design.input(this, "Payment date YYYY-MM-DD")
-        val w = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(amount); addView(interest); addView(date, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) }) }
-        AlertDialog.Builder(this).setTitle("Repayment consent").setMessage("The total payment may include interest. Only the principal component reduces outstanding. Verify the consent OTP before the ledger is updated.").setView(w).setNegativeButton("CANCEL", null).setPositiveButton("REQUEST OTP") { _, _ ->
-            val paid = amount.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
-            val interestValue = interest.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
-            val paymentDate = date.text.toString().trim()
-            val principalPaid = paid - interestValue
-            if (paid <= 0 || interestValue < 0 || interestValue > paid || principalPaid > outstanding || !validDate(paymentDate)) Toast.makeText(this, "Enter a valid total, interest and date. Principal component cannot exceed outstanding.", Toast.LENGTH_LONG).show()
-            else otp(j, paid, interestValue, paymentDate)
+    private fun recordSchedulePayment(rel:JSONObject,index:Int){
+        val schedule=runCatching{JSONArray(rel.optString("repaymentSchedule","[]"))}.getOrDefault(JSONArray());val item=schedule.optJSONObject(index)?:return;val due=(item.optDouble("dueAmount")-item.optDouble("paidAmount")).coerceAtLeast(0.0)
+        val amount=ArthSaathiV62Design.input(this,"Amount being paid ₹ (part payment allowed)");val date=ArthSaathiV62Design.input(this,"Payment date — tap calendar");date.isFocusable=false;date.setOnClickListener{V62UserFlow.pickDate(this,date)}
+        val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;addView(amount);addView(date,LinearLayout.LayoutParams(-1,-2).apply{topMargin=7})}
+        AlertDialog.Builder(this).setTitle("EMI ${item.optInt("installment")} payment").setMessage("Outstanding for this schedule item: ₹${money(due)}").setView(box).setNegativeButton("CANCEL",null).setPositiveButton("REQUEST OTP"){_,_->
+            val a=amount.text.toString().replace(",","").toDoubleOrNull()?:0.0;if(a<=0||a>due||V62UserFlow.parseDate(date.text.toString())==null){Toast.makeText(this,"Enter a valid payment amount and calendar date.",Toast.LENGTH_LONG).show()}else otpAndCommit(rel,index,a,date.text.toString())
         }.show()
     }
-
-    private fun otp(j: JSONObject, paid: Double, interest: Double, date: String) {
-        val code = (100000 + Random.nextInt(900000)).toString()
-        val entry = ArthSaathiV62Design.input(this, "Enter 6-digit OTP")
-        val dlg = AlertDialog.Builder(this).setTitle("Two-party consent OTP").setMessage("Demo OTP: $code").setView(entry).setNegativeButton("CANCEL", null).setPositiveButton("VERIFY", null).create()
-        dlg.setOnShowListener {
-            dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                if (entry.text.toString() != code) { entry.error = "Incorrect OTP"; return@setOnClickListener }
-                dlg.dismiss()
-                val current = V62Integration.currentUserId(this@V62RepaymentActivity)
-                if (!isParty(j, current)) { Toast.makeText(this, "This relationship is not authorised for your account.", Toast.LENGTH_LONG).show(); return@setOnClickListener }
-                val before = j.optDouble("outstanding", j.optDouble("amount", j.optDouble("principal", 0.0))).coerceAtLeast(0.0)
-                val principalPaid = paid - interest
-                if (principalPaid > before) { Toast.makeText(this, "Outstanding amount changed. Please retry.", Toast.LENGTH_LONG).show(); render(); return@setOnClickListener }
-                val after = (before - principalPaid).coerceAtLeast(0.0)
-                j.put("outstanding", after); j.put("lastRepaymentAmount", paid); j.put("lastRepaymentPrincipal", principalPaid); j.put("lastRepaymentInterest", interest); j.put("lastRepaymentDate", date); j.put("consentStatus", "OTP_VERIFIED")
-                if (after <= 0.0) j.put("status", "CLOSED")
-                store.replace(V62Store.RELATIONSHIPS, j)
-                val paymentId = V62Store.id("PAY")
-                store.add(V62Store.REPAYMENTS, JSONObject().apply { put("id", paymentId); put("relationshipId", j.optString("id")); put("counterpartyId", j.optString("counterpartyId")); put("amount", paid); put("principal", principalPaid); put("interest", interest); put("date", date); put("consentVerified", true); put("recordedBy", current); put("ownerUserId", current); put("createdAt", System.currentTimeMillis()) })
-                V62Integration.recordConsent(this@V62RepaymentActivity, j.optString("counterpartyId"), j.optString("id"), "REPAYMENT_CONFIRMATION", true)
-                V62EventBus.publish(V62Event(V62Events.REPAYMENT_CHANGED, paymentId)); V62EventBus.publish(V62Event(V62Events.RELATIONSHIP_CHANGED, j.optString("id")))
-                Toast.makeText(this, "Repayment recorded with consent.", Toast.LENGTH_LONG).show(); render()
-            }
-        }
-        dlg.show()
+    private fun recordBullet(rel:JSONObject){
+        val amount=ArthSaathiV62Design.input(this,"Payment amount ₹");val date=ArthSaathiV62Design.input(this,"Payment date — tap calendar");date.isFocusable=false;date.setOnClickListener{V62UserFlow.pickDate(this,date)}
+        val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;addView(amount);addView(date,LinearLayout.LayoutParams(-1,-2).apply{topMargin=7})}
+        AlertDialog.Builder(this).setTitle("Scheduled payment").setView(box).setNegativeButton("CANCEL",null).setPositiveButton("REQUEST OTP"){_,_->val a=amount.text.toString().replace(",","").toDoubleOrNull()?:0.0;if(a<=0||V62UserFlow.parseDate(date.text.toString())==null)Toast.makeText(this,"Enter amount and calendar date.",Toast.LENGTH_LONG).show()else otpAndCommitBullet(rel,a,date.text.toString())}.show()
     }
-
-    private fun money(v: Double) = String.format(Locale.US, "%.2f", v)
-    private fun validDate(value: String): Boolean = runCatching { SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { isLenient = false }.parse(value) != null }.getOrDefault(false)
+    private fun otpAndCommit(rel:JSONObject,index:Int,a:Double,date:String){
+        val code=(100000+Random.nextInt(900000)).toString();val e=ArthSaathiV62Design.input(this,"Enter 6-digit OTP");val dlg=AlertDialog.Builder(this).setTitle("Repayment consent").setMessage("Demo OTP: $code").setView(e).setNegativeButton("CANCEL",null).setPositiveButton("VERIFY",null).create();dlg.setOnShowListener{dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{if(e.text.toString()!=code){e.error="Incorrect OTP";return@setOnClickListener};dlg.dismiss();val schedule=JSONArray(rel.optString("repaymentSchedule","[]"));val item=schedule.optJSONObject(index)?:return@setOnClickListener;item.put("paidAmount",item.optDouble("paidAmount")+a);if(item.optDouble("paidAmount")>=item.optDouble("dueAmount")-0.01)item.put("status","PAID")else item.put("status","PART_PAID");item.put("lastPaymentDate",date);rel.put("repaymentSchedule",schedule.toString());recalculate(rel,a,date);save(rel)}};dlg.show()
+    }
+    private fun otpAndCommitBullet(rel:JSONObject,a:Double,date:String){
+        val code=(100000+Random.nextInt(900000)).toString();val e=ArthSaathiV62Design.input(this,"Enter 6-digit OTP");val dlg=AlertDialog.Builder(this).setTitle("Repayment consent").setMessage("Demo OTP: $code").setView(e).setNegativeButton("CANCEL",null).setPositiveButton("VERIFY",null).create();dlg.setOnShowListener{dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{if(e.text.toString()!=code){e.error="Incorrect OTP";return@setOnClickListener};dlg.dismiss();recalculate(rel,a,date);save(rel)}};dlg.show()
+    }
+    private fun recalculate(rel:JSONObject,a:Double,date:String){val before=rel.optDouble("outstanding",rel.optDouble("principal",0.0));rel.put("outstanding",(before-a).coerceAtLeast(0.0));rel.put("lastRepaymentAmount",a);rel.put("lastRepaymentDate",date);if(rel.optDouble("outstanding")<=0.01)rel.put("status","CLOSED")}
+    private fun save(rel:JSONObject){val owner=V62Integration.currentUserId(this);store.replace(V62Store.RELATIONSHIPS,rel);val id=V62Store.id("PAY");store.add(V62Store.REPAYMENTS,JSONObject().apply{put("id",id);put("relationshipId",rel.optString("id"));put("counterpartyId",rel.optString("counterpartyId"));put("amount",rel.optDouble("lastRepaymentAmount"));put("principal",rel.optDouble("lastRepaymentAmount"));put("interest",0.0);put("date",rel.optString("lastRepaymentDate"));put("consentVerified",true);put("recordedBy",owner);put("ownerUserId",owner);put("createdAt",System.currentTimeMillis())});V62Integration.recordConsent(this,rel.optString("counterpartyId"),rel.optString("id"),"REPAYMENT_CONFIRMATION",true);V62EventBus.publish(V62Event(V62Events.REPAYMENT_CHANGED,id));V62EventBus.publish(V62Event(V62Events.RELATIONSHIP_CHANGED,rel.optString("id")));Toast.makeText(this,"Repayment recorded; schedule and outstanding updated.",Toast.LENGTH_LONG).show();render()}
+    private fun money(v:Double)=String.format(Locale.US,"%.2f",v)
 }
