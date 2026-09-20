@@ -44,6 +44,7 @@ class V62ExtendedModulesActivity : androidx.appcompat.app.AppCompatActivity() {
         add(btn("LIABILITY VAULT",ArthSaathiV62Design.RED){liability()})
         add(btn("GOVERNMENT SCHEMES & BENEFITS",ArthSaathiV62Design.GREEN){benefits()})
         add(btn("REPORTS & STATEMENTS",ArthSaathiV62Design.NAVY){reports()})
+        add(btn("DOCUMENTS & EXECUTED NOTES",ArthSaathiV62Design.TEAL){documents()})
         add(btn("BACK TO HOME",ArthSaathiV62Design.NAVY){finish()})
     }
 
@@ -112,6 +113,18 @@ class V62ExtendedModulesActivity : androidx.appcompat.app.AppCompatActivity() {
     private fun liability(){shell("Liability Vault","Obligations included in financial snapshot");val n=input("Liability / loan name *");val l=input("Lender");val o=input("Outstanding ₹");val r=input("Interest %");val due=input("Next due date");listOf(n,l,o,r,due).forEach{add(it)};add(btn("SAVE LIABILITY",ArthSaathiV62Design.RED){val out=o.text.toString().replace(",","").toDoubleOrNull();if(n.text.isBlank()||out==null||out<0)Toast.makeText(this,"Name and valid outstanding are required",Toast.LENGTH_LONG).show()else{val id=V62Store.id("LIAB");store.add(V62Store.LIABILITIES,JSONObject().apply{put("id",id);put("ownerUserId",V62Integration.currentUserId(this@V62ExtendedModulesActivity));put("name",n.text.toString().trim());put("lender",l.text.toString().trim());put("outstanding",out);put("rate",r.text.toString());put("due",due.text.toString())});V62EventBus.publish(V62Event(V62Events.LIABILITY_CHANGED,id));if(due.text.isNotBlank())V62Integration.addAlert(this,"LIABILITY_DUE","Liability due date: ${due.text}",id,"ACTION");Toast.makeText(this,"Liability saved",Toast.LENGTH_SHORT).show()}});add(btn("BACK",ArthSaathiV62Design.NAVY){menu()})}
 
     private fun benefits(){shell("Government Schemes & Benefits","Eligibility records and reminders");val n=input("Scheme / benefit *");val p=input("Provider");val c=input("Eligibility / condition");listOf(n,p,c).forEach{add(it)};add(btn("SAVE BENEFIT & CONDITIONS",ArthSaathiV62Design.GREEN){if(n.text.isBlank())Toast.makeText(this,"Scheme name required",Toast.LENGTH_SHORT).show()else{val id=V62Store.id("BEN");store.add(V62Store.BENEFITS,JSONObject().apply{put("id",id);put("ownerUserId",V62Integration.currentUserId(this@V62ExtendedModulesActivity));put("name",n.text.toString().trim());put("provider",p.text.toString().trim());put("condition",c.text.toString().trim());put("acknowledged",true)});V62EventBus.publish(V62Event(V62Events.PROFILE_CHANGED,id));Toast.makeText(this,"Benefit saved",Toast.LENGTH_SHORT).show()}});add(btn("BACK",ArthSaathiV62Design.NAVY){menu()})}
+
+    private fun documents(){
+        shell("Documents & Executed Notes","Promissory notes • evidence • policies")
+        val owner=V62Integration.currentUserId(this)
+        val docs=store.all(V62Store.DOCUMENTS).filter{it.optString("ownerUserId")==owner}.sortedByDescending{it.optLong("createdAt")}
+        if(docs.isEmpty()) add(ArthSaathiV62Design.text(this,"No documents recorded yet.",12f,ArthSaathiV62Design.MUTED),10)
+        docs.forEach{d->
+            val type=d.optString("type","DOCUMENT"); val uri=d.optString("uri")
+            add(ArthSaathiV62Design.text(this,"$type\n$uri",11f,ArthSaathiV62Design.NAVY,true),5)
+        }
+        add(btn("BACK",ArthSaathiV62Design.NAVY){menu()})
+    }
 
     private fun reports(){shell("Reports & Statements","Connected V6.2 records");val counts=listOf("Relationships" to V62Store.RELATIONSHIPS,"Repayments" to V62Store.REPAYMENTS,"Assets" to V62Store.ASSETS,"Insurance" to V62Store.INSURANCE,"Rental / Lease" to V62Store.RENTALS,"TTMM expenses" to V62Store.TTMM_EXPENSES,"QR Khata" to V62Store.QR_KHATA,"Liabilities" to V62Store.LIABILITIES,"ChargeCheck" to V62Store.CHARGECHECK,"Funding requests" to V62Store.FUNDING_REQUESTS,"Documents" to V62Store.DOCUMENTS);add(ArthSaathiV62Design.text(this,counts.joinToString("\n"){(n,k)->"$n: ${store.all(k).size}"},15f,ArthSaathiV62Design.NAVY,true),10);add(btn("BACK",ArthSaathiV62Design.NAVY){menu()})}
 
