@@ -41,17 +41,28 @@ class ArthSaathiV62SmokeTest {
 
         val activities = listOf(
             V62HomeActivity::class.java,
-            V62MISActivity::class.java,
-            V62QRKhataActivity::class.java,
             V62CreditRegistrationActivity::class.java,
-            V62AssetVaultActivity::class.java,
             V62RepaymentActivity::class.java,
+            V62AssetVaultActivity::class.java,
+            V62InsuranceActivity::class.java,
+            V62RentalLeaseActivity::class.java,
+            V62TTMMActivity::class.java,
+            V62QRKhataActivity::class.java,
+            V62MISActivity::class.java,
+            V62CreditIntelligenceActivity::class.java,
+            V62ChargeCheckActivity::class.java,
+            V62LegacyLegalAIActivity::class.java,
             V62ExtendedModulesActivity::class.java
         )
 
         for (activity in activities) {
             ActivityScenario.launch(activity).use { scenario ->
-                scenario.onActivity { requireNotNull(it.window?.decorView) { "Window missing for module" } }
+                scenario.onActivity { requireNotNull(it.window?.decorView) { "Window missing for module: \${activity.simpleName}" } }
+                // Exercise resume/re-render paths because several V6.2 screens refresh their
+                // source-of-truth data from onResume/event callbacks.
+                scenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED)
+                scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+                scenario.onActivity { requireNotNull(it.window?.decorView) { "Window missing after resume: \${activity.simpleName}" } }
             }
         }
     }
