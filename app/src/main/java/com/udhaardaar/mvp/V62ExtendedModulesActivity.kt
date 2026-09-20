@@ -37,7 +37,7 @@ class V62ExtendedModulesActivity : androidx.appcompat.app.AppCompatActivity() {
         add(btn("FORMAL CREDIT & LOAN OFFERS"){formal()})
         add(btn("FUNDING / LENDING REQUEST",ArthSaathiV62Design.TEAL){funding()})
         add(btn("CHARGECHECK",ArthSaathiV62Design.GOLD){startActivity(Intent(this,V62ChargeCheckActivity::class.java))})
-        add(btn("QR UDHAR KHATA",ArthSaathiV62Design.GREEN){khata()})
+        add(btn("QR UDHAR KHATA",ArthSaathiV62Design.GREEN){startActivity(Intent(this,V62QRKhataActivity::class.java))})
         add(ArthSaathiV62Design.section(this,"PEOPLE, DATA & PROTECTION"),12)
         add(btn("PROFILE • FAMILY • CONTACTS"){people()})
         add(btn("ADDRESS & LOCATION",ArthSaathiV62Design.TEAL){address()})
