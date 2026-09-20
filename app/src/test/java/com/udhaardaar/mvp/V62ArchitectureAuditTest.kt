@@ -43,6 +43,21 @@ class V62ArchitectureAuditTest {
         assertFalse(keys.any { it.startsWith("V5") || it.startsWith("V4") || it.startsWith("V3") })
     }
 
+
+    @Test fun moreRouteSectionsAreAllImplementedAndUnique() {
+        val sections = V62ModuleRegistry.moreRoutes.mapNotNull { it.section }
+        assertEquals(
+            setOf("FORMAL","FUNDING","CHARGECHECK","QR_KHATA","TTMM","CREDIT_INTELLIGENCE",
+                "LIABILITY","PEOPLE","ADDRESS","BENEFITS","DOCUMENTS","REPORTS"),
+            sections.toSet()
+        )
+        assertEquals(sections.size, sections.toSet().size)
+        assertFalse(sections.contains("MIS"))
+        assertFalse(sections.contains("ASSET_VAULT"))
+        assertFalse(sections.contains("INSURANCE"))
+        assertFalse(sections.contains("LEGACY"))
+    }
+
     @Test fun consentAndEventContractsCoverProtectedCrossModuleChanges() {
         assertTrue(V62ArchitectureSpec.consentEvents.containsAll(listOf("HISTORY_SHARING", "CREDIT_REGISTRATION", "REPAYMENT_CONFIRMATION", "FUNDING_PROFILE_SHARING", "QR_KHATA_CONFIRMATION")))
         assertTrue(V62ArchitectureSpec.eventFlow.containsAll(listOf("RELATIONSHIP_CHANGED", "REPAYMENT_CHANGED", "DOCUMENT_ADDED", "ASSET_CHANGED", "LIABILITY_CHANGED", "POLICY_CHANGED", "TTMM_EXPENSE_CHANGED", "TTMM_CONTRIBUTION_CHANGED", "TTMM_SETTLEMENT_CHANGED", "CONSENT_CHANGED", "NOMINEE_CHANGED", "CLAIM_CHANGED", "WILL_CHANGED", "CHARGECHECK_CHANGED", "FUNDING_REQUEST_CHANGED", "ALERT_CREATED")))
