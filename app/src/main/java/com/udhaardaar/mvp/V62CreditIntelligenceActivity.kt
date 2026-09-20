@@ -10,9 +10,16 @@ class V62CreditIntelligenceActivity : androidx.appcompat.app.AppCompatActivity()
     private val s by lazy { V5LocalStore(this) }
     private val d get() = resources.displayMetrics.density
     private val root by lazy { LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding((16*d).toInt(), (8*d).toInt(), (16*d).toInt(), (28*d).toInt()); setBackgroundColor(ArthSaathiV62Design.BG) } }
+    private lateinit var scroll: ScrollView
     private val ownerId by lazy { V62Integration.currentUserId(this) }
 
-    override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        window.setSoftInputMode(16)
+        scroll = ScrollView(this).apply { isFillViewport = true; addView(root) }
+        setContentView(scroll)
+        render()
+    }
     override fun onResume() { super.onResume(); if (!isFinishing) render() }
 
     private fun add(v: android.view.View, gap: Int = 7) = ArthSaathiV62Design.add(root, v, gap)
@@ -61,7 +68,7 @@ class V62CreditIntelligenceActivity : androidx.appcompat.app.AppCompatActivity()
             add(card, 7)
         }
         add(ArthSaathiV62Design.button(this, "BACK", ArthSaathiV62Design.NAVY) { finish() }, 10)
-        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+        scroll.post { scroll.scrollTo(0,0) }
     }
 
     private fun explain(score: Int, exposure: Double, repaid: Double, overdue: Double): String = when {
