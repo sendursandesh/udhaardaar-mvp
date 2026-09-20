@@ -11,7 +11,7 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
     private fun dp(v:Int)=(v*d).toInt()
     private lateinit var root:LinearLayout
     private fun add(v:android.view.View,top:Int=7)=ArthSaathiV62Design.add(root,v,top)
-    private fun open(c:Class<*>)=startActivity(Intent(this,c))
+    private fun open(key:String)=startActivity(V62ModuleRegistry.intent(this,key))
     override fun onCreate(b:Bundle?){super.onCreate(b);render()}
     override fun onResume(){super.onResume();if(!isFinishing)render()}
 
@@ -56,7 +56,7 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
         hero.addView(ArthSaathiV62Design.text(this,"Plan Today",20f,ArthSaathiV62Design.WHITE,true))
         hero.addView(ArthSaathiV62Design.text(this,"For a Brighter Tomorrow",12f,ArthSaathiV62Design.GOLD_BRIGHT,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(2)})
         hero.addView(ArthSaathiV62Design.script(this,"Secure Wealth • Stronger Generations",11f,ArthSaathiV62Design.GOLD_BRIGHT),LinearLayout.LayoutParams(-1,-2).apply{gravity=Gravity.LEFT;topMargin=dp(5)})
-        hero.addView(ArthSaathiV62Design.button(this,"VIEW FINANCIAL INSIGHTS",ArthSaathiV62Design.GOLD_DEEP){open(V62MISActivity::class.java)},LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+        hero.addView(ArthSaathiV62Design.text(this,"Financial command centre • portfolio • assets • liabilities • value generated",11.5f,ArthSaathiV62Design.GOLD_BRIGHT),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
         add(hero,8)
 
         // Primary home actions match the approved design board: six actions only.
@@ -71,23 +71,22 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
             add(row,7)
         }
         tileRow(listOf(
-            "₹|Register Credit" to {open(V62CreditRegistrationActivity::class.java)},
-            "↻|Repayment" to {open(V62RepaymentActivity::class.java)},
-            "▣|Asset Vault" to {open(V62AssetVaultActivity::class.java)}
+            "₹|Register Credit" to {open("CREDIT")},
+            "↻|Repayment" to {open("REPAYMENT")},
+            "▣|Asset Vault" to {open("ASSET_VAULT")}
         ))
         tileRow(listOf(
-            "◆|Protect" to {open(V62InsuranceActivity::class.java)},
-            "♙|Legacy" to {open(V62LegacyLegalAIActivity::class.java)},
-            "⚖|Legal Assistance" to {open(V62LegacyLegalAIActivity::class.java)}
+            "◆|Protect" to {open("INSURANCE")},
+            "◉|MIS & Analytics" to {open("MIS")},
+            "♙|Legacy & Claims" to {open("LEGACY")}
         ))
         add(ArthSaathiV62Design.text(this,"All other services are organised inside More so the Home screen stays simple.",11.5f,ArthSaathiV62Design.MUTED),8)
 
         add(ArthSaathiV62Design.bottomNav(this,"Home",mapOf(
             "Home" to {},
-            "Credit" to {open(V62CreditRegistrationActivity::class.java)},
-            "Repay" to {open(V62RepaymentActivity::class.java)},
-            "Vault" to {open(V62AssetVaultActivity::class.java)},
-            "More" to {open(V62ExtendedModulesActivity::class.java)}
+            "Profile" to {showProfile()},
+            "Alerts" to {showAlerts()},
+            "More" to {open("FINANCIAL_CENTRE")}
         )),10)
     }
 }
