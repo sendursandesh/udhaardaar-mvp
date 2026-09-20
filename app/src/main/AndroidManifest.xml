@@ -31,6 +31,7 @@
         <activity android:name=".V62InsuranceActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V62RentalLeaseActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V62TTMMActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".V62QRKhataActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V62MISActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".V62LegacyLegalAIActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".QrCreditScannerActivity" android:exported="false" android:screenOrientation="portrait" />
