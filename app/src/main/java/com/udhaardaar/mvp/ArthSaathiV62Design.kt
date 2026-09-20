@@ -83,7 +83,7 @@ object ArthSaathiV62Design {
 
     /** Brand wordmark: clean, high-contrast, navy Arth + gold Saathi. */
     fun brandWordmark(c:Context,size:Float=25f):TextView {
-        val view=text(c,BRAND,size,NAVY,true)
+        val view=text(c,BRAND,size,NAVY,true).apply { typeface = Typeface.create("serif", Typeface.BOLD) }
         val ss=SpannableString(BRAND)
         ss.setSpan(ForegroundColorSpan(NAVY),0,4,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         ss.setSpan(ForegroundColorSpan(GOLD_DEEP),4,BRAND.length,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
