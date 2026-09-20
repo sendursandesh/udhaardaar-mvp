@@ -24,7 +24,13 @@ class V62LegacyLegalAIActivity : androidx.appcompat.app.AppCompatActivity() {
             else -> render()
         }
     }
-    override fun onResume() { super.onResume(); if (!isFinishing) render() }
+    override fun onResume() {
+        super.onResume()
+        if (isFinishing) return
+        // Legal/AI are flow-only deep links; do not rebuild the parent hub
+        // immediately after the requested dialog is opened.
+        if (intent.getStringExtra("openSection").isNullOrBlank()) render()
+    }
     private fun add(v: android.view.View, gap: Int = 8) = ArthSaathiV62Design.add(root,v,gap)
 
     private fun render() {
