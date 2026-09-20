@@ -13,9 +13,16 @@ class V62InsuranceActivity : androidx.appcompat.app.AppCompatActivity() {
     private val Int.dp: Int get() = (this * d).toInt()
     private var doc = JSONObject()
     private var extracted = emptyList<V62DocumentIntelligence.Field>()
+    private lateinit var scroll: ScrollView
     private val fields = listOf("Policy number", "Insurer", "Policy type", "Policyholder", "Insured person", "Premium / frequency", "Sum assured", "Start date", "End / maturity date", "Next premium due", "Nominee", "Status", "Exclusions / waiting period", "Riders / benefits", "Claim contact", "Loan / surrender value")
 
-    override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        window.setSoftInputMode(16)
+        scroll = ScrollView(this).apply { isFillViewport = true; addView(root) }
+        setContentView(scroll)
+        render()
+    }
     private fun render() {
         root.removeAllViews()
         ArthSaathiV62Design.add(root, ArthSaathiV62Design.title(this, "Insurance & Protection", "Read • Verify • Protect"), 2)
@@ -26,7 +33,7 @@ class V62InsuranceActivity : androidx.appcompat.app.AppCompatActivity() {
             ArthSaathiV62Design.add(root, ArthSaathiV62Design.section(this, "CRITICAL TERMS FLAGGED"), 10)
             extracted.filter { it.critical }.forEach { ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, "⚠ ${it.name}: ${it.value}\n${it.reason} • ${(it.confidence * 100).toInt()}% confidence", 11f, ArthSaathiV62Design.RED, true), 4) }
         }
-        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+        scroll.post { scroll.scrollTo(0,0) }
     }
 
     private fun pick() { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*"; putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false); addCategory(Intent.CATEGORY_OPENABLE) }, 41) }
