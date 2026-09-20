@@ -174,7 +174,7 @@ object ArthSaathiV62Design {
             gravity=Gravity.CENTER_HORIZONTAL
             setPadding(dp(8,d),dp(if(large) 4 else 0,d),dp(8,d),dp(4,d))
         }
-        box.addView(logo(c,if(large)118 else 82),LinearLayout.LayoutParams(dp(if(large)118 else 82),dp(if(large)118 else 82)))
+        box.addView(logo(c,if(large)118 else 82),LinearLayout.LayoutParams(dp(if(large)118 else 82,d),dp(if(large)118 else 82,d)))
         box.addView(brandWordmark(c,if(large)31f else 24f),LinearLayout.LayoutParams(-1,-2))
         box.addView(script(c,TAGLINE,if(large)12.5f else 10.5f,GOLD_DARK),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(2,d)})
         box.addView(text(c,PILLARS,if(large)10f else 9f,GOLD_DARK,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(4,d)})
