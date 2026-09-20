@@ -39,6 +39,7 @@ class V62ExtendedModulesActivity : androidx.appcompat.app.AppCompatActivity() {
             "BENEFITS" -> benefits()
             "DOCUMENTS" -> documents()
             "REPORTS" -> reports()
+            "RENTAL" -> startActivity(Intent(this,V62RentalLeaseActivity::class.java))
             else -> menu()
         }
     }
