@@ -57,12 +57,12 @@ class ArthSaathiV62SmokeTest {
 
         for (activity in activities) {
             ActivityScenario.launch(activity).use { scenario ->
-                scenario.onActivity { requireNotNull(it.window?.decorView) { "Window missing for module: \${activity.simpleName}" } }
+                scenario.onActivity { requireNotNull(it.window?.decorView) { "Window missing for module: ${activity.simpleName}" } }
                 // Exercise resume/re-render paths because several V6.2 screens refresh their
                 // source-of-truth data from onResume/event callbacks.
                 scenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED)
                 scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
-                scenario.onActivity { requireNotNull(it.window?.decorView) { "Window missing after resume: \${activity.simpleName}" } }
+                scenario.onActivity { requireNotNull(it.window?.decorView) { "Window missing after resume: ${activity.simpleName}" } }
             }
         }
     }
