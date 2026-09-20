@@ -3,7 +3,7 @@ name: ArthSaathi V6.2 Architecture Build
 on:
   workflow_dispatch:
   push:
-    branches: [arthsaathi-v6.2, arthsaathi-v6.2-final-golden-c480, arthsaathi-v6.2-final-golden-fix, arthsaathi-v6.2-locked-final-baseline, arthsaathi-v6.2-architecture-contributions-mis]
+    branches: [arthsaathi-v6.2, arthsaathi-v6.2-final-golden-c480, arthsaathi-v6.2-final-golden-fix, arthsaathi-v6.2-locked-final-baseline, arthsaathi-v6.2-architecture-contributions-mis, arthsaathi-v6.2-functional-rebuild-2026-09-20]
   pull_request:
     branches: [main]
 permissions:
