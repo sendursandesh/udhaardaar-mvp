@@ -71,7 +71,7 @@ class ArthSaathiV62SmokeTest {
         val moreSections = listOf(
             "FORMAL","FUNDING","CHARGECHECK","QR_KHATA","TTMM",
             "CREDIT_INTELLIGENCE","LIABILITY","PEOPLE","ADDRESS","BENEFITS",
-            "DOCUMENTS","REPORTS"
+            "DOCUMENTS","REPORTS","RENTAL"
         )
         for (section in moreSections) {
             ActivityScenario.launch<android.app.Activity>(
