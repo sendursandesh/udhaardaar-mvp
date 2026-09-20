@@ -18,7 +18,11 @@ class V62LegacyLegalAIActivity : androidx.appcompat.app.AppCompatActivity() {
         window.setSoftInputMode(16)
         scroll = ScrollView(this).apply { isFillViewport = true; addView(root) }
         setContentView(scroll)
-        render()
+        when(intent.getStringExtra("openSection")){
+            "LEGAL" -> advocateDialog()
+            "AI" -> aiDialog()
+            else -> render()
+        }
     }
     override fun onResume() { super.onResume(); if (!isFinishing) render() }
     private fun add(v: android.view.View, gap: Int = 8) = ArthSaathiV62Design.add(root,v,gap)
