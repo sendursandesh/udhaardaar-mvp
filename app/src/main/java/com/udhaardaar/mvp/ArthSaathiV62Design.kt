@@ -54,7 +54,7 @@ object ArthSaathiV62Design {
     fun text(c:Context,s:String,size:Float=14f,color:Int=NAVY,bold:Boolean=false):TextView {
         return TextView(c).apply {
             text=s
-            textSize=size
+            textSize=maxOf(size,13f)
             setTextColor(color)
             includeFontPadding=false
             typeface=Typeface.create("sans-serif",if(bold)Typeface.BOLD else Typeface.NORMAL)
@@ -86,7 +86,7 @@ object ArthSaathiV62Design {
 
     /** Brand wordmark: clean, high-contrast, navy Arth + gold Saathi. */
     fun brandWordmark(c:Context,size:Float=25f):TextView {
-        val view=text(c,BRAND,size,NAVY,true).apply { typeface = Typeface.create("serif", Typeface.BOLD) }
+        val view=text(c,BRAND,size,NAVY,true).apply { typeface = Typeface.create("sans-serif", Typeface.BOLD) }
         val ss=SpannableString(BRAND)
         ss.setSpan(ForegroundColorSpan(NAVY),0,4,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         ss.setSpan(ForegroundColorSpan(GOLD_DEEP),4,BRAND.length,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -112,7 +112,7 @@ object ArthSaathiV62Design {
         val primary=color==GOLD || color==GOLD_DEEP
         return Button(c).apply {
             text=s
-            textSize=13.5f
+            textSize=15.5f
             setTextColor(if(primary) NAVY else WHITE)
             typeface=Typeface.create("sans-serif",Typeface.BOLD)
             isAllCaps=false
@@ -165,7 +165,7 @@ object ArthSaathiV62Design {
         } else {
             TextView(c).apply{
                 text=user.trim().firstOrNull()?.uppercase() ?: "U"
-                textSize=12f
+                textSize=14f
                 setTextColor(NAVY)
                 gravity=Gravity.CENTER
                 typeface=Typeface.DEFAULT_BOLD
@@ -216,7 +216,7 @@ object ArthSaathiV62Design {
         return box
     }
 
-    fun section(c:Context,s:String)=text(c,s.uppercase(),10.5f,NAVY,true).apply{
+    fun section(c:Context,s:String)=text(c,s.uppercase(),12f,NAVY,true).apply{
         setPadding(0,dp(11,density(c)),0,dp(5,density(c)))
         letterSpacing=.07f
     }
@@ -225,11 +225,11 @@ object ArthSaathiV62Design {
         val d=density(c)
         val e=EditText(c)
         e.hint=hint
-        e.textSize=14.5f
+        e.textSize=16f
         e.setSingleLine(true)
         e.setTextColor(NAVY)
         e.setHintTextColor(MUTED)
-        e.minHeight=dp(48,d)
+        e.minHeight=dp(52,d)
         e.setPadding(dp(13,d),dp(7,d),dp(13,d),dp(7,d))
         e.background=card(WHITE,12,d)
         val h=hint.lowercase()
@@ -277,7 +277,7 @@ object ArthSaathiV62Design {
         }
         val badge=TextView(c).apply{
             text=icon
-            textSize=11f
+            textSize=13f
             setTextColor(NAVY)
             gravity=Gravity.CENTER
             typeface=Typeface.DEFAULT_BOLD
@@ -288,7 +288,7 @@ object ArthSaathiV62Design {
             }
         }
         box.addView(badge,LinearLayout.LayoutParams(dp(38,d),dp(38,d)))
-        val label=text(c,title,10.5f,NAVY,true)
+        val label=text(c,title,12.5f,NAVY,true)
         label.gravity=Gravity.CENTER
         box.addView(label,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5,d)})
         return box
@@ -324,7 +324,7 @@ object ArthSaathiV62Design {
         for((icon,key) in items){
             val tv=TextView(c).apply{
                 text="$icon\n$key"
-                textSize=9.5f
+                textSize=11f
                 setTextColor(if(key==selected) WHITE else GOLD_BRIGHT)
                 gravity=Gravity.CENTER
                 typeface=Typeface.create("sans-serif",if(key==selected)Typeface.BOLD else Typeface.NORMAL)
