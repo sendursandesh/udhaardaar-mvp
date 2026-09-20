@@ -89,4 +89,20 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
             "More" to {open("FINANCIAL_CENTRE")}
         )),10)
     }
+    private fun showProfile() {
+        val p=getSharedPreferences("udhaardaar_accounts",MODE_PRIVATE)
+        val mobile=p.getString("current_mobile","").orEmpty()
+        val name=p.getString("name_$mobile","User").orEmpty().ifBlank{"User"}
+        val msg="Name: "+name+"\nMobile: "+mobile+"\n\nYour identity and account controls are kept separate from financial modules."
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Profile & Identity").setMessage(msg).setPositiveButton("OK",null).show()
+    }
+
+    private fun showAlerts() {
+        val owner=V62Integration.currentUserId(this)
+        val store=V5LocalStore(this)
+        val alerts=store.all(V62Store.ALERTS).filter{it.optString("ownerUserId").isBlank() || it.optString("ownerUserId")==owner}.takeLast(20).reversed()
+        val msg=if(alerts.isEmpty()) "No active alerts." else alerts.joinToString("\n\n"){a -> a.optString("severity","INFO")+": "+a.optString("message")}
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Alerts & Notifications").setMessage(msg).setPositiveButton("OK",null).show()
+    }
+
 }
