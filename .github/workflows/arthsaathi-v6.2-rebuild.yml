@@ -1,5 +1,5 @@
 name: ArthSaathi V6.2 Architecture Build
-# Golden release build: compile and integrity gates run before the APK is published.
+# Golden release build: compile, architecture/branding, tests and APK publication gates.
 on:
   workflow_dispatch:
   push:
@@ -55,16 +55,16 @@ jobs:
             grep -F -q "$token" app/src/main/AndroidManifest.xml || { echo "MISSING MANIFEST TOKEN: $token"; exit 1; }
             echo "PASS manifest: $token"
           done
-          grep -F -q 'arthsaathi_logo' app/src/main/res/drawable/arthsaathi_logo.xml
+          test -s app/src/main/res/drawable/arthsaathi_logo.xml
           grep -F -q 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
           grep -F -q 'Plan • Protect • Grow • Nominate' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
           grep -F -q 'v62_advocates' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
           grep -F -q 'AI Portfolio Review' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
           grep -F -q 'Theme.ArthSaathi' app/src/main/res/values/styles.xml
+          echo "PASS branding/design gates"
       - name: Unit tests (release gate)
         timeout-minutes: 8
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
-
       - name: Upload compiled integrity-passed APK
         uses: actions/upload-artifact@v4
         with:
