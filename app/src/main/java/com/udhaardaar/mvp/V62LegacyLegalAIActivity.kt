@@ -18,18 +18,18 @@ class V62LegacyLegalAIActivity : androidx.appcompat.app.AppCompatActivity() {
         window.setSoftInputMode(16)
         scroll = ScrollView(this).apply { isFillViewport = true; addView(root) }
         setContentView(scroll)
+        render()
         when(intent.getStringExtra("openSection")){
-            "LEGAL" -> advocateDialog()
-            "AI" -> aiDialog()
-            else -> render()
+            "LEGAL" -> scroll.post { advocateDialog() }
+            "AI" -> scroll.post { aiDialog() }
         }
     }
     override fun onResume() {
         super.onResume()
         if (isFinishing) return
-        // Legal/AI are flow-only deep links; do not rebuild the parent hub
-        // immediately after the requested dialog is opened.
-        if (intent.getStringExtra("openSection").isNullOrBlank()) render()
+        // Re-rendering is safe after the parent hub is visible. Deep-link dialogs
+        // are opened after the hub is rendered, so dismissing them never leaves a blank screen.
+        render()
     }
     private fun add(v: android.view.View, gap: Int = 8) = ArthSaathiV62Design.add(root,v,gap)
 
