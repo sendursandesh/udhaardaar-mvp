@@ -15,7 +15,14 @@ class V62TTMMActivity : androidx.appcompat.app.AppCompatActivity() {
     private val members = mutableListOf<String>()
     private var groupId = ""
 
-    override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); loadGroup(); render() }
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        window.setSoftInputMode(16)
+        scroll = ScrollView(this).apply { isFillViewport = true; addView(root) }
+        setContentView(scroll)
+        loadGroup()
+        render()
+    }
     override fun onResume() { super.onResume(); if (!isFinishing) { loadGroup(); render() } }
     private fun loadGroup() { val g = s.all(V62Store.TTMM_GROUPS).filter { it.optString("ownerUserId", "") == owner }.lastOrNull(); if (g != null) { groupId = g.optString("id"); members.clear(); g.optString("members").split("|").filter { it.isNotBlank() }.forEach { members.add(it) } } }
     private fun add(v: android.view.View, gap: Int = 7) = ArthSaathiV62Design.add(root, v, gap)
@@ -45,7 +52,7 @@ openDues().forEach { d -> add(ArthSaathiV62Design.text(this, "${d.optString("mem
 if (openDues().isEmpty()) add(ArthSaathiV62Design.text(this, "No open member contributions for this group.", 10f, ArthSaathiV62Design.MUTED), 4)
         add(ArthSaathiV62Design.section(this, "RECENT EXPENSES"), 12)
         s.all(V62Store.TTMM_EXPENSES).filter { it.optString("ownerUserId", "") == owner && (groupId.isBlank() || it.optString("groupId") == groupId) }.takeLast(15).reversed().forEach { add(ArthSaathiV62Design.text(this, "${it.optString("description")} • ₹${"%.2f".format(Locale.US, it.optDouble("amount"))}\nPayer: ${it.optString("payer")} • ${it.optString("splitMethod")}\n${it.optString("balanceSummary")}", 10f, ArthSaathiV62Design.NAVY), 4) }
-        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+        scroll.post { scroll.scrollTo(0,0) }
     }
 
     private fun saveGroup() {
