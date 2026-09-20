@@ -75,19 +75,19 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
             add(row,6)
         }
         tileRow(listOf(
-            "CR|Register\nCredit" to {open(V62CreditRegistrationActivity::class.java)},
-            "RP|Repayment" to {open(V62RepaymentActivity::class.java)},
-            "AV|Asset Vault" to {open(V62AssetVaultActivity::class.java)}
+            "₹|Register\nCredit" to {open(V62CreditRegistrationActivity::class.java)},
+            "↻|Repayment" to {open(V62RepaymentActivity::class.java)},
+            "▣|Asset Vault" to {open(V62AssetVaultActivity::class.java)}
         ))
         tileRow(listOf(
-            "PR|Protect" to {open(V62InsuranceActivity::class.java)},
-            "GR|Grow" to {open(V62ExtendedModulesActivity::class.java)},
-            "IN|Insurance" to {open(V62InsuranceActivity::class.java)}
+            "◆|Protect" to {open(V62InsuranceActivity::class.java)},
+            "↗|Grow" to {open(V62ExtendedModulesActivity::class.java)},
+            "◉|Insurance" to {open(V62InsuranceActivity::class.java)}
         ))
         tileRow(listOf(
-            "LA|Legal &\nAssistance" to {open(V62LegacyLegalAIActivity::class.java)},
-            "TT|TTMM\nShare & Settle" to {open(V62TTMMActivity::class.java)},
-            "MI|MIS &\nInsights" to {open(V62MISActivity::class.java)}
+            "⚖|Legal &\nAssistance" to {open(V62LegacyLegalAIActivity::class.java)},
+            "⇄|TTMM\nShare & Settle" to {open(V62TTMMActivity::class.java)},
+            "▥|MIS &\nInsights" to {open(V62MISActivity::class.java)}
         ))
 
         val m=V62MisEngine.metrics(this)
