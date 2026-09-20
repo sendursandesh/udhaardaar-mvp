@@ -320,7 +320,7 @@ object ArthSaathiV62Design {
             }
             elevation=dp(7,d).toFloat()
         }
-        val items=listOf("HOME" to "Home","CR" to "Credit","RP" to "Repay","AV" to "Vault","MORE" to "More")
+        val items=listOf("HOME" to "Home","ME" to "Profile","!" to "Alerts","MORE" to "More")
         for((icon,key) in items){
             val tv=TextView(c).apply{
                 text="$icon\n$key"
