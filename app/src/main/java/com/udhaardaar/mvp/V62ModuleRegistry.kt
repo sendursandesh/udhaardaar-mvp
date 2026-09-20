@@ -43,7 +43,7 @@ object V62ModuleRegistry {
         Route("TTMM", "Together • Share & Settle", V62ExtendedModulesActivity::class.java, Surface.MORE, "TTMM"),
         Route("CREDIT_INTELLIGENCE", "Credit Intelligence", V62ExtendedModulesActivity::class.java, Surface.MORE, "CREDIT_INTELLIGENCE"),
         Route("LIABILITY_VAULT", "Liability Vault", V62ExtendedModulesActivity::class.java, Surface.MORE, "LIABILITY"),
-        Route("PEOPLE", "Profile • Family • Contacts", V62ExtendedModulesActivity::class.java, Surface.MORE, "PEOPLE"),
+        Route("PEOPLE", "Family • Contacts", V62ExtendedModulesActivity::class.java, Surface.MORE, "PEOPLE"),
         Route("ADDRESS", "Address & Location", V62ExtendedModulesActivity::class.java, Surface.MORE, "ADDRESS"),
         Route("BENEFITS", "Schemes & Benefits", V62ExtendedModulesActivity::class.java, Surface.MORE, "BENEFITS"),
         Route("DOCUMENTS", "Documents & Notes", V62ExtendedModulesActivity::class.java, Surface.MORE, "DOCUMENTS"),
