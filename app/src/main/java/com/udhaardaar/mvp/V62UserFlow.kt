@@ -38,7 +38,7 @@ object V62PromissoryNote {
         val word=File(dir,"PromissoryNote_$safe.doc").apply{writeText("<html><body><pre style=\"font-family:serif;font-size:14pt\">${body.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\n","<br/>")}</pre></body></html>")}
         val pdf=File(dir,"PromissoryNote_$safe.pdf")
         val doc=PdfDocument();val page=doc.startPage(PdfDocument.PageInfo.Builder(595,842,1).create());val canvas=page.canvas;val paint=android.graphics.Paint().apply{color=android.graphics.Color.BLACK;textSize=14f};var y=55f
-        body.split("\n").forEach{line->if(y>800f){doc.finishPage(page)}else{canvas.drawText(line.take(85),40f,y,paint);y+=20f}}
+        body.split("\n").forEach{line->if(y<=800f){canvas.drawText(line.take(85),40f,y,paint);y+=20f}}
         doc.finishPage(page);FileOutputStream(pdf).use{doc.writeTo(it)};doc.close();return Files(word,pdf)
     }
 }
