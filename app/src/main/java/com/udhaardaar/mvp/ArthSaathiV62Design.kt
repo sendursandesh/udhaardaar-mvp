@@ -42,6 +42,8 @@ object ArthSaathiV62Design {
     const val BRAND="ArthSaathi"
     const val TAGLINE="Navigate Your Financial Journey"
     const val PILLARS="Plan • Protect • Grow • Nominate"
+    const val OWNERSHIP_TAGLINE="Your Asset. Your Record. Your Right."
+    const val OWNERSHIP_TAGS="OWN • RECORD • PROTECT • CLAIM"
     const val LOGO_RESOURCE="@drawable/arthsaathi_logo"
 
     private fun density(c:Context)=c.resources.displayMetrics.density
