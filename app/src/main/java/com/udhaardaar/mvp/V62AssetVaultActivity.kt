@@ -34,7 +34,17 @@ class V62AssetVaultActivity:AppCompatActivity(){
         rows.take(20).forEach{add(ArthSaathiV62Design.text(this,"${it.optString("type")} • ${it.optString("Asset name / description")}\n₹${it.optDouble("value",0.0)}",12f,ArthSaathiV62Design.NAVY,true),4)}
     }
     private fun form(){
-        root.removeAllViews();add(ArthSaathiV62Design.title(this,"Asset Vault","Enter and verify asset"),2)
+        root.removeAllViews();add(ArthSaathiV62Design.title(this,"Asset Vault","Select type • Enter details • Link documents"),2)
+        add(ArthSaathiV62Design.section(this,"ASSET TYPE"),5)
+        val type=Spinner(this).apply{
+            adapter=ArrayAdapter(this@V62AssetVaultActivity,android.R.layout.simple_spinner_dropdown_item,types.toList())
+            setSelection(types.indexOf(kind).coerceAtLeast(0))
+            onItemSelectedListener=object:AdapterView.OnItemSelectedListener{
+                override fun onNothingSelected(p:AdapterView<*>?) {}
+                override fun onItemSelected(p:AdapterView<*>?,v:View?,pos:Int,id:Long){kind=types[pos]}
+            }
+        }
+        add(type,4)
         val name=input("Asset name / description *");val owner=input("Owner / account holder");val id=input("Account / folio / registration / policy number");val value=input("Current value ₹ *");val liability=input("Outstanding liability ₹");val nominee=input("Nominee");val yield=input("Expected / recorded yield %");val risk=input("Risk / notes")
         listOf(name,owner,id,value,liability,nominee,yield,risk).forEach{add(it,4)}
         add(ArthSaathiV62Design.button(this,"SAVE ASSET",ArthSaathiV62Design.GREEN){
