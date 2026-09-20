@@ -48,7 +48,7 @@ object V62ModuleRegistry {
         Route("BENEFITS", "Schemes & Benefits", V62ExtendedModulesActivity::class.java, Surface.MORE, "BENEFITS"),
         Route("DOCUMENTS", "Documents & Notes", V62ExtendedModulesActivity::class.java, Surface.MORE, "DOCUMENTS"),
         Route("REPORTS", "Reports & Statements", V62ExtendedModulesActivity::class.java, Surface.MORE, "REPORTS"),
-        Route("RENTAL", "Rental & Lease", V62RentalLeaseActivity::class.java, Surface.MORE),
+        Route("RENTAL", "Rental & Lease", V62RentalLeaseActivity::class.java, Surface.MORE, "RENTAL"),
 
         // Flow-only: intentionally reachable from related screens, not menu tiles.
         Route("LEGAL", "Legal Assistance", V62LegacyLegalAIActivity::class.java, Surface.FLOW_ONLY, "LEGAL"),
