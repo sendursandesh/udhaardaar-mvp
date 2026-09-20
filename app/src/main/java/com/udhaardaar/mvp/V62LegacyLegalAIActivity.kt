@@ -10,9 +10,16 @@ class V62LegacyLegalAIActivity : androidx.appcompat.app.AppCompatActivity() {
     private val store by lazy { V5LocalStore(this) }
     private val d by lazy { resources.displayMetrics.density }
     private val Int.dp: Int get() = (this * d).toInt()
+    private lateinit var scroll: ScrollView
     private val root by lazy { LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(16.dp,8.dp,16.dp,28.dp); setBackgroundColor(ArthSaathiV62Design.BG) } }
 
-    override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        window.setSoftInputMode(16)
+        scroll = ScrollView(this).apply { isFillViewport = true; addView(root) }
+        setContentView(scroll)
+        render()
+    }
     override fun onResume() { super.onResume(); if (!isFinishing) render() }
     private fun add(v: android.view.View, gap: Int = 8) = ArthSaathiV62Design.add(root,v,gap)
 
@@ -25,7 +32,7 @@ class V62LegacyLegalAIActivity : androidx.appcompat.app.AppCompatActivity() {
         serviceCard("LEGAL ASSISTANCE","Find or register advocate/counsel profiles by matter, city, language and expertise") { advocateDialog() }
         serviceCard("AI FINANCIAL ADVISOR","Compare recorded investment yield with an alternative scenario and review switch/rebalance considerations") { aiDialog() }
         serviceCard("ALERTS","Review renewal, due-date and ChargeCheck alerts") { alertsDialog() }
-        setContentView(ScrollView(this).apply { isFillViewport=true; addView(root) })
+        scroll.post { scroll.scrollTo(0,0) }
     }
 
     private fun serviceCard(title:String,subtitle:String,click:()->Unit) {
