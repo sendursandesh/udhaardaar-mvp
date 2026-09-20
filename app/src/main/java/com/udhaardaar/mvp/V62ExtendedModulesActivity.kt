@@ -32,22 +32,58 @@ class V62ExtendedModulesActivity : androidx.appcompat.app.AppCompatActivity() {
     }
 
     private fun menu(){
-        shell("Financial Centre","Connected V6.2 services")
-        add(ArthSaathiV62Design.section(this,"CREDIT & FUNDING"),10)
-        add(btn("FORMAL CREDIT & LOAN OFFERS"){formal()})
-        add(btn("FUNDING / LENDING REQUEST",ArthSaathiV62Design.TEAL){funding()})
-        add(btn("CHARGECHECK",ArthSaathiV62Design.GOLD){startActivity(Intent(this,V62ChargeCheckActivity::class.java))})
-        add(btn("QR UDHAR KHATA",ArthSaathiV62Design.GREEN){startActivity(Intent(this,V62QRKhataActivity::class.java))})
-        add(ArthSaathiV62Design.section(this,"PEOPLE, DATA & PROTECTION"),12)
-        add(btn("PROFILE • FAMILY • CONTACTS"){people()})
-        add(btn("ADDRESS & LOCATION",ArthSaathiV62Design.TEAL){address()})
-        add(btn("LIABILITY VAULT",ArthSaathiV62Design.RED){liability()})
-        add(btn("GOVERNMENT SCHEMES & BENEFITS",ArthSaathiV62Design.GREEN){benefits()})
-        add(btn("REPORTS & STATEMENTS",ArthSaathiV62Design.NAVY){reports()})
-        add(btn("DOCUMENTS & EXECUTED NOTES",ArthSaathiV62Design.TEAL){documents()})
-        add(btn("BACK TO HOME",ArthSaathiV62Design.NAVY){finish()})
-    }
+        shell("More • Financial Centre","All ArthSaathi services arranged as compact sub-folders")
+        fun row(items:List<Pair<String,()->Unit>>) {
+            val r=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
+            items.forEachIndexed { i,item ->
+                val parts=item.first.split("|",limit=2)
+                r.addView(
+                    ArthSaathiV62Design.featureCard(this,parts[0],parts[1],item.second),
+                    LinearLayout.LayoutParams(0,dp(88),1f).apply {
+                        if(i>0) leftMargin=dp(4)
+                        if(i<items.lastIndex) rightMargin=dp(4)
+                    }
+                )
+            }
+            add(r,5)
+        }
 
+        add(ArthSaathiV62Design.section(this,"PLAN • RECORD • GROW"),8)
+        row(listOf(
+            "FC|Formal\nCredit" to {formal()},
+            "FU|Funding /\nLending" to {funding()},
+            "CC|ChargeCheck" to {startActivity(Intent(this,V62ChargeCheckActivity::class.java))}
+        ))
+        row(listOf(
+            "QK|QR Udhaar\nKhata" to {startActivity(Intent(this,V62QRKhataActivity::class.java))},
+            "TT|Together •\nShare & Settle" to {startActivity(Intent(this,V62TTMMActivity::class.java))},
+            "MI|MIS &\nAnalytics" to {startActivity(Intent(this,V62MISActivity::class.java))}
+        ))
+
+        add(ArthSaathiV62Design.section(this,"PROTECT • PEOPLE • ASSETS"),10)
+        row(listOf(
+            "PR|Insurance &\nProtection" to {startActivity(Intent(this,V62InsuranceActivity::class.java))},
+            "AS|Asset\nVault" to {startActivity(Intent(this,V62AssetVaultActivity::class.java))},
+            "LI|Liability\nVault" to {liability()}
+        ))
+        row(listOf(
+            "PF|Profile • Family\n• Contacts" to {people()},
+            "AD|Address &\nLocation" to {address()},
+            "BE|Schemes &\nBenefits" to {benefits()}
+        ))
+
+        add(ArthSaathiV62Design.section(this,"NOMINATE • CLAIM • DOCUMENT"),10)
+        row(listOf(
+            "LG|Legacy • Legal\n& AI" to {startActivity(Intent(this,V62LegacyLegalAIActivity::class.java))},
+            "DC|Documents &\nNotes" to {documents()},
+            "RP|Reports &\nStatements" to {reports()}
+        ))
+        row(listOf(
+            "RE|Rental &\nLease" to {startActivity(Intent(this,V62RentalLeaseActivity::class.java))},
+            "CI|Credit\nIntelligence" to {startActivity(Intent(this,V62CreditIntelligenceActivity::class.java))},
+            "BK|Back to\nHome" to {finish()}
+        ))
+    }
     private fun formal(){
         shell("Formal Credit","Record offers and hand off to ChargeCheck")
         val p=input("Bank / NBFC / institution");val n=input("Loan product");val a=input("Principal amount ₹");val r=input("Annual interest %");val t=input("Tenure months");val pf=input("Processing + other charges ₹")
