@@ -1,0 +1,87 @@
+name: ArthSaathi V6.2 Architecture Build
+# Golden release build: compile, architecture/branding, tests and APK publication gates.
+on:
+  workflow_dispatch:
+  push:
+    branches: [arthsaathi-v6.2, arthsaathi-v6.2-final-golden-c480, arthsaathi-v6.2-final-golden-fix, arthsaathi-v6.2-locked-final-baseline, arthsaathi-v6.2-architecture-contributions-mis, arthsaathi-v6.2-functional-rebuild-2026-09-20]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install required Android SDK packages
+        shell: bash
+        run: |
+          set -e
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Install Gradle
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
+      - name: Compile V6.2 APK
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Master architecture, module and branding gates
+        run: |
+          set -e
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          APK_SIZE=$(stat -c%s "$apk")
+          echo "APK_SIZE_BYTES=$APK_SIZE"
+          test "$APK_SIZE" -gt 10000000
+          unzip -t "$apk" >/dev/null
+          grep -q "versionCode 65" app/build.gradle
+          grep -q "versionName '6.2'" app/build.gradle
+          echo "Checking V6.2 architecture source gates..."
+          for token in V62EventBus SAVINGS_CHANGED QR_KHATA_CHANGED V62ModuleRegistry V62DocumentScanner V62DonutChart; do
+            grep -R -F -q --include="*.kt" "$token" app/src/main/java/com/udhaardaar/mvp || { echo "MISSING SOURCE TOKEN: $token"; exit 1; }
+            echo "PASS source: $token"
+          done
+          echo "Checking manifest activity gates..."
+          for token in V62TTMMActivity V62LegacyLegalAIActivity QrCreditScannerActivity LoginActivity; do
+            grep -F -q "$token" app/src/main/AndroidManifest.xml || { echo "MISSING MANIFEST TOKEN: $token"; exit 1; }
+            echo "PASS manifest: $token"
+          done
+          test -s app/src/main/res/drawable/arthsaathi_logo.xml
+          grep -F -q 'Navigate Your Financial Journey' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          grep -F -q 'Plan • Protect • Grow • Nominate' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          grep -F -q 'v62_advocates' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
+          grep -F -q 'AI Portfolio Review' app/src/main/java/com/udhaardaar/mvp/V62LegacyLegalAIActivity.kt
+          grep -F -q 'Theme.ArthSaathi' app/src/main/res/values/styles.xml
+          echo "PASS branding/design gates"
+      - name: Unit tests (release gate)
+        timeout-minutes: 8
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+      - name: Android emulator smoke tests (release gate)
+        timeout-minutes: 25
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: default
+          arch: x86_64
+          profile: pixel_2
+          force-avd-creation: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          script: adb wait-for-device && adb shell getprop sys.boot_completed && gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
+
+      - name: Upload compiled integrity-passed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArthSaathi-V6.2-Golden-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
