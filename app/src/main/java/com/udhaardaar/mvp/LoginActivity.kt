@@ -34,8 +34,20 @@ class LoginActivity : AppCompatActivity() {
     private fun shell()=LinearLayout(this).apply{
         orientation=LinearLayout.VERTICAL
         gravity=Gravity.CENTER_HORIZONTAL
+        isFocusableInTouchMode=true
         setPadding(dp(20),dp(14),dp(20),dp(26))
         background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(0xffffe8a6.toInt(),ArthSaathiV62Design.BG,0xfffffdf7.toInt()))
+    }
+
+    private fun install(content:LinearLayout){
+        val scroll=ScrollView(this).apply{
+            isFillViewport=true
+            isFocusableInTouchMode=true
+            descendantFocusability=ScrollView.FOCUS_BEFORE_DESCENDANTS
+            addView(content)
+        }
+        setContentView(scroll)
+        scroll.post { if (hasWindowFocus()) scroll.requestFocus() }
     }
 
     private fun logoBlock(r:LinearLayout){ r.addView(ArthSaathiV62Design.masthead(this,true)) }
@@ -66,7 +78,7 @@ class LoginActivity : AppCompatActivity() {
             Toast.makeText(this,"Google sign-in will be connected in the production identity layer.",Toast.LENGTH_SHORT).show()
         },LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
         r.addView(ArthSaathiV62Design.text(this,"By continuing you agree to our Terms & Privacy Policy.",9f,ArthSaathiV62Design.MUTED).apply{gravity=Gravity.CENTER},LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
-        setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
+        install(r)
     }
 
     private fun showNoAccount(mobile:String){
