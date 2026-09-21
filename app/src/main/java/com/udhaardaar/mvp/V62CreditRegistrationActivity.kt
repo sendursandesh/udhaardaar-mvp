@@ -54,12 +54,25 @@ class V62CreditRegistrationActivity:AppCompatActivity(){
     private fun selectCounterparty(cp:JSONObject){selected=cp;relationshipId=V62Store.id("REL");draft.edit().clear().putString("relationshipId",relationshipId).putBoolean("historyConsentVerified",false).apply();store.add(V62Store.RELATIONSHIPS,JSONObject().apply{put("id",relationshipId);put("ownerUserId",V62Integration.currentUserId(this@V62CreditRegistrationActivity));put("counterpartyId",cp.optString("id"));put("status","DRAFT");put("type","PERSONAL_CREDIT")});render()}
     private fun createCounterparty(){
         val n=input("Name / business name *");val m=input("Mobile *");val pan=input("PAN (ABCDE1234F)");val aad=input("Aadhaar (12 digits)");val gst=input("GSTIN (15 characters)")
-        val w=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;addView(n);addView(m);addView(pan);addView(aad);addView(gst)}
-        AlertDialog.Builder(this).setTitle("Create borrower").setView(w).setNegativeButton("CANCEL",null).setPositiveButton("CREATE"){_,_->
-            val pv=pan.text.toString().trim().uppercase(Locale.US);val av=aad.text.toString().trim();val gv=gst.text.toString().trim().uppercase(Locale.US)
-            if(n.text.trim().length<2||!V62UserFlow.validMobile(m.text.toString())|| (pv.isNotBlank()&&!V62UserFlow.validPan(pv)) || (av.isNotBlank()&&!V62UserFlow.validAadhaar(av)) || (gv.isNotBlank()&&!V62UserFlow.validGstin(gv)))Toast.makeText(this,"Validate mobile, PAN, Aadhaar and GSTIN before creating the borrower.",Toast.LENGTH_LONG).show()
-            else{val cp=V62Integration.createCounterparty(this,n.text.toString(),m.text.toString(),pv,av,gv,relationshipId);if(cp==null)Toast.makeText(this,"Borrower could not be created.",Toast.LENGTH_LONG).show()else selectCounterparty(cp)}
-        }.show()
+        val w=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding((8*d).toInt(),0,(8*d).toInt(),0);addView(n);addView(m);addView(pan);addView(aad);addView(gst)}
+        val dlg=AlertDialog.Builder(this).setTitle("Create borrower").setView(w).setNegativeButton("CANCEL",null).create()
+        dlg.setButton(AlertDialog.BUTTON_POSITIVE,"CREATE",null as android.content.DialogInterface.OnClickListener?)
+        dlg.setOnShowListener{
+            dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{
+                val name=n.text.toString().trim();val mv=m.text.toString().trim();val pv=pan.text.toString().trim().uppercase(Locale.US);val av=aad.text.toString().trim();val gv=gst.text.toString().trim().uppercase(Locale.US)
+                var valid=true
+                if(name.length<2){n.error="Enter borrower name";valid=false}
+                if(!V62UserFlow.validMobile(mv)){m.error="Enter valid 10-digit mobile";valid=false}
+                if(pv.isNotBlank()&&!V62UserFlow.validPan(pv)){pan.error="Invalid PAN";valid=false}
+                if(av.isNotBlank()&&!V62UserFlow.validAadhaar(av)){aad.error="Invalid Aadhaar";valid=false}
+                if(gv.isNotBlank()&&!V62UserFlow.validGstin(gv)){gst.error="Invalid GSTIN";valid=false}
+                if(!valid)return@setOnClickListener
+                val cp=V62Integration.createCounterparty(this,name,mv,pv,av,gv,relationshipId)
+                if(cp==null){m.error="Borrower could not be created. Check the mobile number.";return@setOnClickListener}
+                dlg.dismiss();selectCounterparty(cp)
+            }
+        }
+        dlg.show()
     }
     private fun historyConsent(){val cp=selected?:return;val otp=(100000..999999).random();val e=input("Enter 6-digit OTP");val dlg=AlertDialog.Builder(this).setTitle("Borrower history consent").setMessage("Demo OTP: $otp").setView(e).setNegativeButton("DECLINE",null).setPositiveButton("VERIFY",null).create();dlg.setOnShowListener{dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{if(e.text.toString()!=otp.toString()){e.error="Incorrect OTP";return@setOnClickListener};dlg.dismiss();draft.edit().putBoolean("historyConsentVerified",true).apply();V62Integration.recordConsent(this,cp.optString("id"),relationshipId,"HISTORY_SHARING",true);render()}};dlg.show()}
     private fun historySummary(id:String):String{
