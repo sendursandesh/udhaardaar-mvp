@@ -95,7 +95,7 @@ class V7ModuleActivity : AppCompatActivity() {
 
     private fun grow(root: LinearLayout) {
         addGrid(root, listOf(
-            Triple("◉", "Portfolio", "Holdings, value, allocation and performance"),
+            Triple("◉", "Portfolio Intelligence", "Holdings, value, allocation and performance"),
             Triple("▥", "MIS Dashboard", "First-hand financial information from your records"),
             Triple("↔", "Opportunity Cost", "Compare current portfolio with alternatives"),
             Triple("⌁", "Market Data", "Timestamped external data with freshness"),
@@ -104,9 +104,9 @@ class V7ModuleActivity : AppCompatActivity() {
         ), listOf(
             { startActivity(Intent(this, V62MISActivity::class.java)) },
             { startActivity(Intent(this, V62MISActivity::class.java)) },
-            { Toast.makeText(this, "Portfolio comparison engine foundation is ready; execution remains outside this non-regulatory build.", Toast.LENGTH_LONG).show() },
-            { Toast.makeText(this, "Market-data connector will be attached to the portfolio engine.", Toast.LENGTH_LONG).show() },
-            { Toast.makeText(this, "Scenario analysis opens from Portfolio Intelligence.", Toast.LENGTH_LONG).show() },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "OPPORTUNITY")) },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "MARKET")) },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "OPPORTUNITY")) },
             { startActivity(Intent(this, V62MISActivity::class.java)) }
         ))
     }
@@ -124,8 +124,8 @@ class V7ModuleActivity : AppCompatActivity() {
             { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "DOCUMENTS")) },
             { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "PEOPLE")) },
             { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
-            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "ADDRESS")) },
-            { Toast.makeText(this, "Alerts are generated from financial events and due dates.", Toast.LENGTH_SHORT).show() }
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADDRESS")) },
+            { V7AlertEngine.evaluate(this); Toast.makeText(this, "Alerts evaluated from recorded events and due dates.", Toast.LENGTH_SHORT).show() }
         ))
     }
 
@@ -183,9 +183,9 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("◉", "AI Financial Advisor", "Ask about your recorded financial information")
         ), listOf(
             { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
-            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
-            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
-            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) }
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADVOCATE")) },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "CLAIM")) },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "AI")) }
         ))
     }
 
@@ -198,6 +198,7 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("AD", "Address & Location", "PIN and map-assisted capture"),
             Triple("DC", "Documents", "Central evidence vault"),
             Triple("RP", "Reports", "Statements and reports"),
+            Triple("💳", "Revenue & Payments", "Services, invoices and payment records"),
             Triple("BE", "Government Schemes", "Eligibility and benefit records"),
             Triple("RE", "Rental & Lease", "Lease relationships and documents"),
             Triple("💳", "Revenue & Payments", "Service pricing, invoice and payment layer")
