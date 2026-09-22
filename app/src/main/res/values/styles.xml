@@ -4,16 +4,15 @@
         <item name="android:fontFamily">sans-serif</item>
         <item name="fontFamily">sans-serif</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:windowBackground">#FFF8E7</item>
-        <item name="android:statusBarColor">#FFF8E7</item>
-        <item name="android:navigationBarColor">#FFF8E7</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
-        <item name="colorAccent">#D89408</item>
-        <item name="colorPrimary">#D89408</item>
+        <item name="android:windowBackground">#FFFaf6ea</item>
+        <item name="android:statusBarColor">#051830</item>
+        <item name="android:navigationBarColor">#051830</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorAccent">#F2B632</item>
+        <item name="colorPrimary">#F2B632</item>
         <item name="colorPrimaryVariant">#A96D00</item>
-        <item name="colorSecondary">#0C9B91</item>
+        <item name="colorSecondary">#179991</item>
     </style>
-    <!-- Compatibility alias for legacy screens during V6.2 migration. -->
     <style name="Theme.Udhaardaar" parent="Theme.ArthSaathi" />
 </resources>
