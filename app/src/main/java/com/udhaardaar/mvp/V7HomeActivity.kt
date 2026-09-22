@@ -74,10 +74,11 @@ class V7HomeActivity : AppCompatActivity() {
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
-        root.addView(ArthSaathiV7Design.section(this, "Your Financial Snapshot", "At a glance. In control. Always."),
+        val m = V7Core.metrics(this)
+        root.addView(ArthSaathiV7Design.section(this, "Your Financial Snapshot", "Live from your recorded ArthSaathi data. At a glance. In control. Always."),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
         val stats = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        listOf("₹ 25.40 L" to "Total Assets", "₹ 4.80 L" to "Active Credits", "₹ 8.55 L" to "Liabilities")
+        listOf("₹ %.2f".format(m.optDouble("assets")) to "Total Assets", m.optInt("activeCredits").toString() to "Active Credits", "₹ %.2f".format(m.optDouble("liabilities")) to "Liabilities")
             .forEachIndexed { i, pair ->
                 stats.addView(ArthSaathiV7Design.stat(this, pair.first, pair.second,
                     if (i == 1) ArthSaathiV7Design.GREEN else ArthSaathiV7Design.GOLD),
