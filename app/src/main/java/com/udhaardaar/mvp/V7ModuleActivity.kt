@@ -1,0 +1,215 @@
+package com.udhaardaar.mvp
+
+import android.content.Intent
+import android.graphics.Color
+import android.os.Bundle
+import android.view.Gravity
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+
+class V7ModuleActivity : AppCompatActivity() {
+    private val d get() = resources.displayMetrics.density
+    private fun dp(v: Int) = (v * d).toInt()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        render(intent.getStringExtra("module") ?: "MORE")
+    }
+
+    private fun render(key: String) {
+        val title = when (key) {
+            "PROTECT" -> "Protect"
+            "GROW" -> "Grow"
+            "ASSETS" -> "Assets"
+            "TTMM" -> "Together • Share & Settle"
+            "QR_KHATA" -> "QR Udhaar Khata"
+            "LEGAL" -> "Legal & AI"
+            "MORE" -> "More"
+            else -> key
+        }
+        val sub = when (key) {
+            "PROTECT" -> "Protect your family, documents, rights and future."
+            "GROW" -> "Understand your portfolio, performance and opportunity cost."
+            "ASSETS" -> "Record what you own, its value, evidence and protection."
+            "TTMM" -> "Share expenses clearly and settle with a record."
+            "QR_KHATA" -> "Identify a relationship, record the transaction and confirm consent."
+            "LEGAL" -> "Legal pathways, claims, professional connections and AI assistance."
+            else -> "All supporting ArthSaathi services, without duplicate menu ownership."
+        }
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(10), dp(7), dp(10), dp(22))
+            setBackgroundColor(ArthSaathiV7Design.CREAM)
+        }
+
+        val top = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = ArthSaathiV7Design.bg(this@V7ModuleActivity)
+            setPadding(dp(9), dp(7), dp(9), dp(9))
+        }
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        row.addView(ArthSaathiV7Design.text(this, "‹", 36f, Color.WHITE).apply {
+            setOnClickListener { finish() }
+        }, LinearLayout.LayoutParams(dp(40), dp(45)))
+        row.addView(ArthSaathiV7Design.brand(this, 23f, true), LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(row)
+        top.addView(ArthSaathiV7Design.text(this, title, 21f, Color.WHITE, true))
+        top.addView(ArthSaathiV7Design.text(this, sub, 10.5f, ArthSaathiV7Design.GOLD_PALE),
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
+        root.addView(top)
+
+        root.addView(ArthSaathiV7Design.section(this, title, sub), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+
+        when (key) {
+            "GROW" -> grow(root)
+            "PROTECT" -> protect(root)
+            "ASSETS" -> assets(root)
+            "TTMM" -> ttmm(root)
+            "QR_KHATA" -> qr(root)
+            "LEGAL" -> legal(root)
+            else -> more(root)
+        }
+
+        root.addView(ArthSaathiV7Design.goldButton(this, "Back to Financial Command Centre") { finish() },
+            LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(13) })
+        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+    }
+
+    private fun addGrid(root: LinearLayout, items: List<Triple<String, String, String>>, actions: List<() -> Unit>) {
+        var i = 0
+        while (i < items.size) {
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            for (j in 0..1) {
+                val index = i + j
+                if (index < items.size) {
+                    val t = items[index]
+                    row.addView(ArthSaathiV7Design.tile(this, t.first, t.second, t.third, actions[index]),
+                        LinearLayout.LayoutParams(0, dp(116), 1f).apply { if (j == 1) leftMargin = dp(5) })
+                }
+            }
+            root.addView(row, LinearLayout.LayoutParams(-1, dp(116)).apply { if (i > 0) topMargin = dp(5) })
+            i += 2
+        }
+    }
+
+    private fun grow(root: LinearLayout) {
+        addGrid(root, listOf(
+            Triple("◉", "Portfolio", "Holdings, value, allocation and performance"),
+            Triple("▥", "MIS Dashboard", "First-hand financial information from your records"),
+            Triple("↔", "Opportunity Cost", "Compare current portfolio with alternatives"),
+            Triple("⌁", "Market Data", "Timestamped external data with freshness"),
+            Triple("◌", "Scenarios", "Analyse before making a decision"),
+            Triple("▤", "Reports", "Statements and financial reports")
+        ), listOf(
+            { startActivity(Intent(this, V62MISActivity::class.java)) },
+            { startActivity(Intent(this, V62MISActivity::class.java)) },
+            { Toast.makeText(this, "Portfolio comparison engine foundation is ready; execution remains outside this non-regulatory build.", Toast.LENGTH_LONG).show() },
+            { Toast.makeText(this, "Market-data connector will be attached to the portfolio engine.", Toast.LENGTH_LONG).show() },
+            { Toast.makeText(this, "Scenario analysis opens from Portfolio Intelligence.", Toast.LENGTH_LONG).show() },
+            { startActivity(Intent(this, V62MISActivity::class.java)) }
+        ))
+    }
+
+    private fun protect(root: LinearLayout) {
+        addGrid(root, listOf(
+            Triple("☂", "Insurance", "Policies, renewal, nominee and claims"),
+            Triple("▣", "Documents", "Evidence, versions and expiry tracking"),
+            Triple("♡", "Family", "People, authorised access and legacy"),
+            Triple("✓", "Claims", "Ownership to claim closure"),
+            Triple("⌂", "Address", "PIN and location-assisted address records"),
+            Triple("!", "Alerts", "Due dates, renewals and document actions")
+        ), listOf(
+            { startActivity(Intent(this, V62InsuranceActivity::class.java)) },
+            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "DOCUMENTS")) },
+            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "PEOPLE")) },
+            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
+            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "ADDRESS")) },
+            { Toast.makeText(this, "Alerts are generated from financial events and due dates.", Toast.LENGTH_SHORT).show() }
+        ))
+    }
+
+    private fun assets(root: LinearLayout) {
+        addGrid(root, listOf(
+            Triple("▣", "Asset Vault", "Financial and non-financial assets"),
+            Triple("⌁", "Valuation", "Record value and update history"),
+            Triple("▤", "Evidence", "Link ownership documents"),
+            Triple("♡", "Nominee", "Link nominee information"),
+            Triple("↗", "Protection", "Connect insurance and safeguards"),
+            Triple("!", "Claims", "Prepare ownership and claim records")
+        ), listOf(
+            { startActivity(Intent(this, V62AssetVaultActivity::class.java)) },
+            { startActivity(Intent(this, V62AssetVaultActivity::class.java)) },
+            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "DOCUMENTS")) },
+            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
+            { startActivity(Intent(this, V62InsuranceActivity::class.java)) },
+            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) }
+        ))
+    }
+
+    private fun ttmm(root: LinearLayout) {
+        addGrid(root, listOf(
+            Triple("👥", "Together • Share", "Create a shared expense group"),
+            Triple("₹", "Contribute", "Record who paid and how much"),
+            Triple("↔", "Settle", "See pending settlements"),
+            Triple("▤", "History", "Keep a transparent record")
+        ), listOf(
+            { startActivity(Intent(this, V62TTMMActivity::class.java)) },
+            { startActivity(Intent(this, V62TTMMActivity::class.java)) },
+            { startActivity(Intent(this, V62TTMMActivity::class.java)) },
+            { startActivity(Intent(this, V62TTMMActivity::class.java)) }
+        ))
+    }
+
+    private fun qr(root: LinearLayout) {
+        addGrid(root, listOf(
+            Triple("▦", "Scan / Identify", "QR-based party and transaction capture"),
+            Triple("₹", "Record Khata", "Credit or repayment ledger entry"),
+            Triple("✓", "Consent", "OTP-confirmed mutation"),
+            Triple("↻", "Balance", "Outstanding updates from the ledger")
+        ), listOf(
+            { startActivity(Intent(this, QrCreditScannerActivity::class.java)) },
+            { startActivity(Intent(this, V62QRKhataActivity::class.java)) },
+            { startActivity(Intent(this, V62QRKhataActivity::class.java)) },
+            { startActivity(Intent(this, V62QRKhataActivity::class.java)) }
+        ))
+    }
+
+    private fun legal(root: LinearLayout) {
+        addGrid(root, listOf(
+            Triple("⚖", "Legal Assistance", "Issue, parties, timeline and evidence"),
+            Triple("♙", "Advocate Directory", "Search by city and practice domain"),
+            Triple("▤", "Claim Assistance", "Ownership, nominee/heir and documents"),
+            Triple("◉", "AI Financial Advisor", "Ask about your recorded financial information")
+        ), listOf(
+            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
+            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
+            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
+            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) }
+        ))
+    }
+
+    private fun more(root: LinearLayout) {
+        addGrid(root, listOf(
+            Triple("FC", "Formal Credit", "Record and monitor facilities"),
+            Triple("CC", "ChargeCheck", "Compare sanctioned and actual charges"),
+            Triple("LI", "Liability Vault", "Track loans and obligations"),
+            Triple("PF", "Family & Contacts", "People and relationships"),
+            Triple("AD", "Address & Location", "PIN and map-assisted capture"),
+            Triple("DC", "Documents", "Central evidence vault"),
+            Triple("RP", "Reports", "Statements and reports"),
+            Triple("BE", "Government Schemes", "Eligibility and benefit records"),
+            Triple("RE", "Rental & Lease", "Lease relationships and documents"),
+            Triple("💳", "Revenue & Payments", "Service pricing, invoice and payment layer")
+        ), listOf(
+            { openMore("FORMAL") }, { openMore("CHARGECHECK") }, { openMore("LIABILITY") },
+            { openMore("PEOPLE") }, { openMore("ADDRESS") }, { openMore("DOCUMENTS") },
+            { openMore("REPORTS") }, { openMore("BENEFITS") }, { openMore("RENTAL") },
+            { Toast.makeText(this, "Revenue & Payments engine is reserved as a cross-platform service layer in the V7 foundation.", Toast.LENGTH_LONG).show() }
+        ))
+    }
+
+    private fun openMore(section: String) {
+        startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", section))
+    }
+}
