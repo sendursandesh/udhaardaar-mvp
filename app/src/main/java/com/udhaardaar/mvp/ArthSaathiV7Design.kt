@@ -142,9 +142,11 @@ object ArthSaathiV7Design {
             }
             setPadding(dp(c, 4), dp(c, 2), dp(c, 4), dp(c, 2))
         }
+        // Single-owner navigation: each major journey has one logical home.
+        // Secondary functions belong inside their parent module, not as duplicate top-level buttons.
         val items = listOf(
-            "⌂" to "Home", "♜" to "Protect", "▥" to "Grow", "◉" to "Assets",
-            "👥" to "TTMM", "☂" to "Insurance", "▦" to "QR Khata", "▤" to "Legal & AI", "•••" to "More"
+            "⌂" to "Home", "▤" to "Record", "₹" to "Credit", "◉" to "Assets",
+            "▥" to "Grow", "♜" to "Protect", "⚖" to "Legal", "•••" to "More"
         )
         items.forEach { (icon, label) ->
             row.addView(navItem(c, icon, label) { actions[label]?.invoke() },
