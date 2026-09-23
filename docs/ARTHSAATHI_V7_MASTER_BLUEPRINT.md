@@ -224,3 +224,6 @@ Phase H: migration cleanup and legacy retirement
 Phase I: full regression QA and release build
 
 This blueprint is the architectural baseline for subsequent coding and QA on the V7 master branch.
+
+
+<!-- V7 Step 4 verification trigger: 2026-09-23 -->
