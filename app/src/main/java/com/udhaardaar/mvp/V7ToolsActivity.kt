@@ -18,10 +18,25 @@ class V7ToolsActivity : AppCompatActivity() {
         r.addView(h);return r
     }
     private fun render(tool:String){
-        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"MARKET"->market();"ADDRESS"->address();"REVENUE"->revenue();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();else->portfolio()}
+        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"MARKET"->market();"ADDRESS"->address();"REVENUE"->revenue();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();else->portfolio()}
         r.addView(ArthSaathiV7Design.goldButton(this,"Back"){finish()},LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(12)})
         setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
     }
+    private fun security():LinearLayout{
+        val r=shell("Security & Consent","Review consent records, audit history and the current protected session.")
+        val user=V7Core.user(this)
+        val consents=V7Core.all(this,V7Core.Keys.CONSENTS)
+        val audits=V7Core.all(this,V7Core.Keys.AUDIT)
+        r.addView(ArthSaathiV7Design.section(this,"Protection status","Actions that change shared financial records should carry consent and an audit trail."))
+        r.addView(ArthSaathiV7Design.text(this,"Current session: "+user,11f,ArthSaathiV7Design.NAVY,true))
+        r.addView(ArthSaathiV7Design.text(this,"Verified consents: "+consents.count{it.optBoolean("verified")&&!it.optBoolean("withdrawn")}+"\nAudit events: "+audits.size,11f,ArthSaathiV7Design.MUTED))
+        r.addView(ArthSaathiV7Design.outlineButton(this,"Record Test Consent"){
+            V7Core.consent(this,user,"USER_TEST","V7.0",true)
+            Toast.makeText(this,"Consent recorded and audited.",Toast.LENGTH_SHORT).show()
+        },LinearLayout.LayoutParams(-1,dp(46)).apply{topMargin=dp(9)})
+        return r
+    }
+
     private fun portfolio():LinearLayout{
         val r=shell("Portfolio Intelligence","See what you own, how it is performing and what alternatives may mean.")
         val name=input("Portfolio name");val risk=input("Risk profile (Conservative / Moderate / Growth)");val constitution=input("Portfolio constitution / allocation")
