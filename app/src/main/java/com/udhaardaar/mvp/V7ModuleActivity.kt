@@ -19,7 +19,7 @@ class V7ModuleActivity : AppCompatActivity() {
     private fun render(key: String) {
         val title = when (key) {
             "RECORD" -> "Record"
-            "CREDIT" -> "Credit & Money Relationships"
+            "CREDIT" -> "Credit & Money Relationships"\n            "REPAYMENT" -> "Repayment Centre"
             "PROTECT" -> "Protect"
             "GROW" -> "Grow"
             "ASSETS" -> "Assets"
@@ -31,7 +31,7 @@ class V7ModuleActivity : AppCompatActivity() {
         }
         val sub = when (key) {
             "RECORD" -> "Your identity, family, people, addresses and evidence in one connected record."
-            "CREDIT" -> "Informal, trade, formal and repayment relationships with consent and audit."
+            "CREDIT" -> "Informal, trade, formal and repayment relationships with consent and audit."\n            "REPAYMENT" -> "Chronological dues, repayments, consent and closure."
             "PROTECT" -> "Protect your family, documents, rights and future."
             "GROW" -> "Understand your portfolio, performance and opportunity cost."
             "ASSETS" -> "Record what you own, its value, evidence and protection."
@@ -67,7 +67,7 @@ class V7ModuleActivity : AppCompatActivity() {
 
         when (key) {
             "RECORD" -> record(root)
-            "CREDIT" -> credit(root)
+            "CREDIT" -> credit(root)\n            "REPAYMENT" -> repayment(root)
             "GROW" -> grow(root)
             "PROTECT" -> protect(root)
             "ASSETS" -> assets(root)
@@ -111,6 +111,13 @@ class V7ModuleActivity : AppCompatActivity() {
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADDRESS")) },
             { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "DOCUMENTS")) }
         ))
+    }
+
+    private fun repayment(root: LinearLayout) {
+        root.addView(ArthSaathiV7Design.section(this, "Repayment Centre", "Open the canonical repayment engine with chronological dues and consent-controlled updates."))
+        root.addView(ArthSaathiV7Design.goldButton(this, "Open Repayment Centre") {
+            startActivity(Intent(this, V62RepaymentActivity::class.java))
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
     }
 
     private fun credit(root: LinearLayout) {
