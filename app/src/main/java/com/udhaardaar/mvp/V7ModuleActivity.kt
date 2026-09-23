@@ -18,6 +18,8 @@ class V7ModuleActivity : AppCompatActivity() {
 
     private fun render(key: String) {
         val title = when (key) {
+            "RECORD" -> "Record"
+            "CREDIT" -> "Credit & Money Relationships"
             "PROTECT" -> "Protect"
             "GROW" -> "Grow"
             "ASSETS" -> "Assets"
@@ -28,6 +30,8 @@ class V7ModuleActivity : AppCompatActivity() {
             else -> key
         }
         val sub = when (key) {
+            "RECORD" -> "Your identity, family, people, addresses and evidence in one connected record."
+            "CREDIT" -> "Informal, trade, formal and repayment relationships with consent and audit."
             "PROTECT" -> "Protect your family, documents, rights and future."
             "GROW" -> "Understand your portfolio, performance and opportunity cost."
             "ASSETS" -> "Record what you own, its value, evidence and protection."
@@ -62,6 +66,8 @@ class V7ModuleActivity : AppCompatActivity() {
         root.addView(ArthSaathiV7Design.section(this, title, sub), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
 
         when (key) {
+            "RECORD" -> record(root)
+            "CREDIT" -> credit(root)
             "GROW" -> grow(root)
             "PROTECT" -> protect(root)
             "ASSETS" -> assets(root)
@@ -91,6 +97,38 @@ class V7ModuleActivity : AppCompatActivity() {
             root.addView(row, LinearLayout.LayoutParams(-1, dp(116)).apply { if (i > 0) topMargin = dp(5) })
             i += 2
         }
+    }
+
+    private fun record(root: LinearLayout) {
+        addGrid(root, listOf(
+            Triple("ID", "Profile & Identity", "Identity, contact and primary record"),
+            Triple("👥", "Family & Contacts", "People, relationships and authorised access"),
+            Triple("⌂", "Address & Location", "PIN-assisted and map-assisted addresses"),
+            Triple("▤", "Document Vault", "Evidence, versions, source and integrity")
+        ), listOf(
+            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "PEOPLE")) },
+            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "PEOPLE")) },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADDRESS")) },
+            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "DOCUMENTS")) }
+        ))
+    }
+
+    private fun credit(root: LinearLayout) {
+        addGrid(root, listOf(
+            Triple("₹", "Udhaardaar / Informal Credit", "Consent-led credit registration and tracking"),
+            Triple("▦", "QR Udhaar Khata", "Scan, identify, record and confirm"),
+            Triple("▤", "Trade Credit", "Invoice-backed payable / receivable records"),
+            Triple("FC", "Formal Credit", "Facilities, terms and outstanding"),
+            Triple("↻", "Repayment Centre", "Chronological dues, repayments and closure"),
+            Triple("♙", "Guarantor", "Linked guarantor and evidence records")
+        ), listOf(
+            { startActivity(Intent(this, V62CreditRegistrationActivity::class.java)) },
+            { startActivity(Intent(this, V62QRKhataActivity::class.java)) },
+            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "TRADE")) },
+            { startActivity(Intent(this, V62CreditIntelligenceActivity::class.java)) },
+            { startActivity(Intent(this, V62RepaymentActivity::class.java)) },
+            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "GUARANTOR")) }
+        ))
     }
 
     private fun grow(root: LinearLayout) {
@@ -191,22 +229,18 @@ class V7ModuleActivity : AppCompatActivity() {
 
     private fun more(root: LinearLayout) {
         addGrid(root, listOf(
-            Triple("FC", "Formal Credit", "Record and monitor facilities"),
             Triple("CC", "ChargeCheck", "Compare sanctioned and actual charges"),
             Triple("LI", "Liability Vault", "Track loans and obligations"),
-            Triple("PF", "Family & Contacts", "People and relationships"),
-            Triple("AD", "Address & Location", "PIN and map-assisted capture"),
-            Triple("DC", "Documents", "Central evidence vault"),
             Triple("RP", "Reports", "Statements and reports"),
             Triple("💳", "Revenue & Payments", "Services, invoices and payment records"),
             Triple("BE", "Government Schemes", "Eligibility and benefit records"),
             Triple("RE", "Rental & Lease", "Lease relationships and documents"),
-            Triple("💳", "Revenue & Payments", "Service pricing, invoice and payment layer")
+            Triple("⚙", "Security & Consent", "Consent, audit and protected sharing")
         ), listOf(
-            { openMore("FORMAL") }, { openMore("CHARGECHECK") }, { openMore("LIABILITY") },
-            { openMore("PEOPLE") }, { openMore("ADDRESS") }, { openMore("DOCUMENTS") },
-            { openMore("REPORTS") }, { openMore("BENEFITS") }, { openMore("RENTAL") },
-            { Toast.makeText(this, "Revenue & Payments engine is reserved as a cross-platform service layer in the V7 foundation.", Toast.LENGTH_LONG).show() }
+            { openMore("CHARGECHECK") }, { openMore("LIABILITY") },
+            { openMore("REPORTS") }, { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "REVENUE")) },
+            { openMore("BENEFITS") }, { openMore("RENTAL") },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "AI")) }
         ))
     }
 
