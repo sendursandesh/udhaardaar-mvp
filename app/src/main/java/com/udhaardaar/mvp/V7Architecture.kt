@@ -171,13 +171,6 @@ object V7Architecture {
      * behind the V7 repository contract while migration to relational storage
      * is performed and tested.
      */
-    class JsonRepository(
-        private val context: Context,
-        private val key: String,
-        private val entityId: (JSONObject) -> String = { it.optString("id") },
-        private val encode: (TBD) -> JSONObject = { error("Use JsonObjectRepository") }
-    )
-
     class JsonObjectRepository(
         private val context: Context,
         private val key: String
