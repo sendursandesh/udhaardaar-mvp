@@ -126,10 +126,13 @@ class V7HomeActivity : AppCompatActivity() {
     }
 
     private fun navActions(): Map<String, () -> Unit> = mapOf(
-        "Home" to {}, "Protect" to { open("INSURANCE") }, "Grow" to { openModule("GROW") },
-        "Assets" to { open("ASSET_VAULT") }, "TTMM" to { openModule("TTMM") },
-        "Insurance" to { open("INSURANCE") }, "QR Khata" to { openModule("QR_KHATA") },
-        "Legal & AI" to { open("LEGACY") },
+        "Home" to {},
+        "Record" to { openModule("RECORD") },
+        "Credit" to { openModule("CREDIT") },
+        "Assets" to { openModule("ASSETS") },
+        "Grow" to { openModule("GROW") },
+        "Protect" to { openModule("PROTECT") },
+        "Legal" to { openModule("LEGAL") },
         "More" to { startActivity(Intent(this, V7ModuleActivity::class.java).putExtra("module", "MORE")) }
     )
 
