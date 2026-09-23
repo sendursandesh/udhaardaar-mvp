@@ -223,7 +223,7 @@ class V7ModuleActivity : AppCompatActivity() {
             { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADVOCATE")) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "CLAIM")) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "AI")) }
+            { openMore("SECURITY") }
         ))
     }
 
