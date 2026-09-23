@@ -66,7 +66,8 @@ object V7Core {
         val payable=r.filter{it.optString("direction")=="PAYABLE"&&it.optString("status")!="CLOSED"}.sumOf{it.optDouble("outstanding",0.0)}
         return org.json.JSONObject().apply{
             put("assets",assets);put("invested",invested);put("portfolioValue",current);put("portfolioGain",current-invested)
-            put("liabilities",liabilities);put("netWorth",assets+current-liabilities);put("receivables",receivable);put("payables",payable)
+            // Portfolio holdings are financial assets; do not double-count them in net worth.
+            put("liabilities",liabilities);put("netWorth",assets+receivable-payable-liabilities);put("receivables",receivable);put("payables",payable)
             put("activeCredits",r.count{it.optString("status")!="CLOSED"});put("policies",pol.size);put("claimsPending",claims.count{it.optString("status") !in setOf("CLOSED","RESOLVED")})
             put("documents",docs.size);put("payments",p.sumOf{it.optDouble("amount",0.0)})
         }
@@ -93,9 +94,25 @@ object V7Records {
     fun relationship(c:Context,partyId:String,type:String,direction:String,amount:Double,roi:Double,repayment:String,purpose:String)=org.json.JSONObject().apply{
         put("id",V7Core.id("REL"));put("partyId",partyId);put("type",type);put("direction",direction);put("amount",amount);put("outstanding",amount);put("roiPercent",roi);put("repaymentStructure",repayment);put("purpose",purpose);put("status","ACTIVE");put("consentRequired",true)
     }.also{V7Core.add(c,V7Core.Keys.RELATIONSHIPS,it)}
-    fun repayment(c:Context,relationshipId:String,amount:Double,principal:Double,interest:Double,method:String,consentVerified:Boolean)=org.json.JSONObject().apply{
-        put("id",V7Core.id("REPAY"));put("relationshipId",relationshipId);put("amount",amount);put("principal",principal);put("interest",interest);put("method",method);put("consentVerified",consentVerified);put("timestamp",V7Core.now())
-    }.also{if(consentVerified)V7Core.add(c,V7Core.Keys.REPAYMENTS,it)}
+    fun repayment(c:Context,relationshipId:String,amount:Double,principal:Double,interest:Double,method:String,consentVerified:Boolean)=
+        org.json.JSONObject().apply{
+            put("id",V7Core.id("REPAY"));put("relationshipId",relationshipId);put("amount",amount)
+            put("principal",principal);put("interest",interest);put("method",method)
+            put("consentVerified",consentVerified);put("timestamp",V7Core.now())
+        }.also { repayment ->
+            if (!consentVerified) return@also
+            val relationship = V7Core.find(c,V7Core.Keys.RELATIONSHIPS,relationshipId)
+            if (relationship != null) {
+                val oldOutstanding = relationship.optDouble("outstanding",relationship.optDouble("amount",0.0))
+                val principalApplied = principal.coerceAtLeast(0.0).coerceAtMost(oldOutstanding)
+                val newOutstanding = (oldOutstanding-principalApplied).coerceAtLeast(0.0)
+                relationship.put("outstanding",newOutstanding)
+                relationship.put("lastRepaymentAt",V7Core.now())
+                relationship.put("status",if(newOutstanding<=0.005)"CLOSED" else "ACTIVE")
+                V7Core.replace(c,V7Core.Keys.RELATIONSHIPS,relationship)
+            }
+            V7Core.add(c,V7Core.Keys.REPAYMENTS,repayment)
+        }
 }
 
 object V7PortfolioEngine {
