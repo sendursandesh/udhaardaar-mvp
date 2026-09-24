@@ -11,7 +11,7 @@ object V7LegacyEventBridge {
     fun install() {
         if (subscription != null) return
         subscription = V7Architecture.Events.subscribe { event ->
-            val legacy = when (event.type) {
+            val legacy = when (event.event) {
                 V7Architecture.Event.PROFILE_CHANGED,
                 V7Architecture.Event.PERSON_CHANGED -> V62Events.PROFILE_CHANGED
                 V7Architecture.Event.RELATIONSHIP_CHANGED,
