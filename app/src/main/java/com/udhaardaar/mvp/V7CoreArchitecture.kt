@@ -59,7 +59,6 @@ object V7Core {
             Keys.FUNDING -> V7Architecture.Event.FUNDING_CHANGED
             Keys.ALERTS -> V7Architecture.Event.ALERT_CREATED
             Keys.REPAYMENTS -> V7Architecture.Event.REPAYMENT_CHANGED
-            Keys.FUNDING -> V7Architecture.Event.FUNDING_CHANGED
             else -> V7Architecture.Event.DOCUMENT_CHANGED
         }
         V7Architecture.Events.publish(V7Architecture.EventRecord(mapped,id,userId))
