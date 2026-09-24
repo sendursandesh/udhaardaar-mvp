@@ -167,9 +167,8 @@ object V7Architecture {
     }
 
     /**
-     * Transitional repository adapter. It deliberately isolates V5LocalStore
-     * behind the V7 repository contract while migration to relational storage
-     * is performed and tested.
+     * V7 repository adapter backed by the V7-owned encrypted store.
+     * Legacy storage is intentionally outside this repository boundary.
      */
     class JsonObjectRepository(
         private val context: Context,

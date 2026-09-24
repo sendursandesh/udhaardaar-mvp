@@ -30,7 +30,7 @@ object V7Core {
         .getString("current_mobile","")?.trim().orEmpty().ifBlank { "self" }
     fun id(prefix:String)= prefix + "-" + UUID.randomUUID()
     fun now()=System.currentTimeMillis()
-    fun store(c:Context)=V5LocalStore(c.applicationContext)
+    fun store(c:Context)=V7LocalStore(c.applicationContext)
     fun all(c:Context,key:String)=store(c).all(key)
     fun find(c:Context,key:String,id:String)=all(c,key).firstOrNull{it.optString("id")==id}
     fun add(c:Context,key:String,o:org.json.JSONObject){
@@ -46,6 +46,8 @@ object V7Core {
             Keys.PEOPLE -> V7Architecture.Event.PERSON_CHANGED
             Keys.RELATIONSHIPS -> V7Architecture.Event.RELATIONSHIP_CHANGED
             Keys.ADDRESSES -> V7Architecture.Event.ADDRESS_CHANGED
+            Keys.REPAYMENTS -> V7Architecture.Event.REPAYMENT_CHANGED
+            Keys.PAYMENTS -> V7Architecture.Event.REPAYMENT_CHANGED
             Keys.ASSETS -> V7Architecture.Event.ASSET_CHANGED
             Keys.LIABILITIES -> V7Architecture.Event.LIABILITY_CHANGED
             Keys.DOCUMENTS -> V7Architecture.Event.DOCUMENT_CHANGED
@@ -73,7 +75,8 @@ object V7Core {
         put("verified",verified);put("status",if(verified)"GRANTED" else "PENDING");put("createdAt",now());put("withdrawn",false)
     }.also{add(c,Keys.CONSENTS,it)}
     fun hasConsent(c:Context,subjectId:String,purpose:String)=all(c,Keys.CONSENTS).any{
-        it.optString("subjectId")==subjectId&&it.optString("purpose")==purpose&&it.optBoolean("verified")&&!it.optBoolean("withdrawn")
+        it.optString("subjectId")==subjectId&&it.optString("purpose")==purpose&&it.optBoolean("verified")&&
+            it.optString("status")=="GRANTED"&&!it.optBoolean("withdrawn")&&it.optLong("expiresAt",Long.MAX_VALUE)>now()
     }
     fun metrics(c:Context):org.json.JSONObject{
         val a=all(c,Keys.ASSETS);val h=all(c,Keys.HOLDINGS);val l=all(c,Keys.LIABILITIES);val r=all(c,Keys.RELATIONSHIPS)
@@ -120,8 +123,14 @@ object V7Records {
             put("principal",principal);put("interest",interest);put("method",method)
             put("consentVerified",consentVerified);put("timestamp",V7Core.now())
         }.also { repayment ->
-            if (!consentVerified) return@also
             val relationship = V7Core.find(c,V7Core.Keys.RELATIONSHIPS,relationshipId)
+            val consentRequired = relationship?.optBoolean("consentRequired", true) ?: true
+            val partyId = relationship?.optString("partyId").orEmpty()
+            val activeConsent = partyId.isNotBlank() &&
+                V7Core.hasConsent(c, partyId, "REPAYMENT_UPDATE")
+            if (!consentVerified || (consentRequired && !activeConsent)) {
+                return@also
+            }
             if (relationship != null) {
                 val oldOutstanding = relationship.optDouble("outstanding",relationship.optDouble("amount",0.0))
                 val principalApplied = principal.coerceAtLeast(0.0).coerceAtMost(oldOutstanding)

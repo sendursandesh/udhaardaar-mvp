@@ -1,9 +1,11 @@
-name: ArthSaathi V7 Visual Foundation Build
+name: ArthSaathi V7 Step 1-5 Rectification & Certification
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [arthsaathi-v7-master-build-2026-09-23]
   push:
-    branches: [arthsaathi-v7-visual-foundation-2026-09-22, arthsaathi-v7-master-build-2026-09-23]
+    branches: [arthsaathi-v7-visual-foundation-2026-09-22, arthsaathi-v7-master-build-2026-09-23, arthsaathi-v7-step1-5-rectification-2026-09-24]
 
 permissions:
   contents: read
@@ -50,6 +52,10 @@ jobs:
           grep -q "versionName '7.0'" app/build.gradle
           grep -q "V7HomeActivity" app/src/main/AndroidManifest.xml
           grep -q "V7ModuleActivity" app/src/main/AndroidManifest.xml
+          test -s app/src/main/java/com/udhaardaar/mvp/V7LocalStore.kt
+          ! grep -q "V5LocalStore" app/src/main/java/com/udhaardaar/mvp/V7CoreArchitecture.kt
+          ! grep -q "V62[A-Za-z].*Activity" app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt
+          grep -q "V7LegacyAdapter" app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt
           grep -q "Navigate Your Financial Journey" app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
           grep -q "Your Asset. Your Record. Your Right." app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
           grep -q "Plan • Protect • Grow • Nominate" app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
