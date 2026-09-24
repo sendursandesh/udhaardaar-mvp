@@ -43,7 +43,20 @@ object V7Core {
     }
     fun publish(entity:String,id:String){
         val mapped = when(entity) {
-            Keys.PEOPLE -> V7Architecture.Event.PERSON_CHANGED\n            Keys.RELATIONSHIPS -> V7Architecture.Event.RELATIONSHIP_CHANGED\n            Keys.ADDRESSES -> V7Architecture.Event.ADDRESS_CHANGED\n            Keys.ASSETS -> V7Architecture.Event.ASSET_CHANGED\n            Keys.LIABILITIES -> V7Architecture.Event.LIABILITY_CHANGED\n            Keys.DOCUMENTS -> V7Architecture.Event.DOCUMENT_CHANGED\n            Keys.CONSENTS -> V7Architecture.Event.CONSENT_GRANTED\n            Keys.POLICIES -> V7Architecture.Event.POLICY_CHANGED\n            Keys.CLAIMS -> V7Architecture.Event.CLAIM_CHANGED\n            Keys.NOMINEES, Keys.WILL -> V7Architecture.Event.NOMINEE_CHANGED\n            Keys.HOLDINGS -> V7Architecture.Event.HOLDING_CHANGED\n            Keys.FUNDING -> V7Architecture.Event.FUNDING_CHANGED\n            Keys.ALERTS -> V7Architecture.Event.ALERT_CREATED\n            else -> V7Architecture.Event.DOCUMENT_CHANGED\n        }
+            Keys.PEOPLE -> V7Architecture.Event.PERSON_CHANGED
+            Keys.RELATIONSHIPS -> V7Architecture.Event.RELATIONSHIP_CHANGED
+            Keys.ADDRESSES -> V7Architecture.Event.ADDRESS_CHANGED
+            Keys.ASSETS -> V7Architecture.Event.ASSET_CHANGED
+            Keys.LIABILITIES -> V7Architecture.Event.LIABILITY_CHANGED
+            Keys.DOCUMENTS -> V7Architecture.Event.DOCUMENT_CHANGED
+            Keys.CONSENTS -> V7Architecture.Event.CONSENT_GRANTED
+            Keys.POLICIES -> V7Architecture.Event.POLICY_CHANGED
+            Keys.CLAIMS -> V7Architecture.Event.CLAIM_CHANGED
+            Keys.NOMINEES, Keys.WILL -> V7Architecture.Event.NOMINEE_CHANGED
+            Keys.HOLDINGS -> V7Architecture.Event.HOLDING_CHANGED
+            Keys.FUNDING -> V7Architecture.Event.FUNDING_CHANGED
+            Keys.ALERTS -> V7Architecture.Event.ALERT_CREATED
+            else -> V7Architecture.Event.DOCUMENT_CHANGED\n        }
         V7Architecture.Events.publish(V7Architecture.EventRecord(mapped,id,user(c)))
     }
     fun audit(c:Context,action:String,entity:String,entityId:String,detail:String){
