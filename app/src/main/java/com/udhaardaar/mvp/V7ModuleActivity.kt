@@ -19,7 +19,8 @@ class V7ModuleActivity : AppCompatActivity() {
     private fun render(key: String) {
         val title = when (key) {
             "RECORD" -> "Record"
-            "CREDIT" -> "Credit & Money Relationships"\n            "REPAYMENT" -> "Repayment Centre"
+            "CREDIT" -> "Credit & Money Relationships"
+            "REPAYMENT" -> "Repayment Centre"
             "PROTECT" -> "Protect"
             "GROW" -> "Grow"
             "ASSETS" -> "Assets"
@@ -31,7 +32,8 @@ class V7ModuleActivity : AppCompatActivity() {
         }
         val sub = when (key) {
             "RECORD" -> "Your identity, family, people, addresses and evidence in one connected record."
-            "CREDIT" -> "Informal, trade, formal and repayment relationships with consent and audit."\n            "REPAYMENT" -> "Chronological dues, repayments, consent and closure."
+            "CREDIT" -> "Informal, trade, formal and repayment relationships with consent and audit."
+            "REPAYMENT" -> "Chronological dues, repayments, consent and closure."
             "PROTECT" -> "Protect your family, documents, rights and future."
             "GROW" -> "Understand your portfolio, performance and opportunity cost."
             "ASSETS" -> "Record what you own, its value, evidence and protection."
@@ -67,7 +69,8 @@ class V7ModuleActivity : AppCompatActivity() {
 
         when (key) {
             "RECORD" -> record(root)
-            "CREDIT" -> credit(root)\n            "REPAYMENT" -> repayment(root)
+            "CREDIT" -> credit(root)
+            "REPAYMENT" -> repayment(root)
             "GROW" -> grow(root)
             "PROTECT" -> protect(root)
             "ASSETS" -> assets(root)
