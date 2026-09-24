@@ -46,6 +46,9 @@ object V7Core {
             Keys.PEOPLE -> V7Architecture.Event.PERSON_CHANGED
             Keys.RELATIONSHIPS -> V7Architecture.Event.RELATIONSHIP_CHANGED
             Keys.ADDRESSES -> V7Architecture.Event.ADDRESS_CHANGED
+            Keys.RELATIONSHIPS -> V7Architecture.Event.RELATIONSHIP_CHANGED
+            Keys.REPAYMENTS -> V7Architecture.Event.REPAYMENT_CHANGED
+            Keys.PAYMENTS -> V7Architecture.Event.REPAYMENT_CHANGED
             Keys.ASSETS -> V7Architecture.Event.ASSET_CHANGED
             Keys.LIABILITIES -> V7Architecture.Event.LIABILITY_CHANGED
             Keys.DOCUMENTS -> V7Architecture.Event.DOCUMENT_CHANGED
