@@ -75,7 +75,8 @@ object V7Core {
         put("verified",verified);put("status",if(verified)"GRANTED" else "PENDING");put("createdAt",now());put("withdrawn",false)
     }.also{add(c,Keys.CONSENTS,it)}
     fun hasConsent(c:Context,subjectId:String,purpose:String)=all(c,Keys.CONSENTS).any{
-        it.optString("subjectId")==subjectId&&it.optString("purpose")==purpose&&it.optBoolean("verified")&&!it.optBoolean("withdrawn")
+        it.optString("subjectId")==subjectId&&it.optString("purpose")==purpose&&it.optBoolean("verified")&&
+            it.optString("status")=="GRANTED"&&!it.optBoolean("withdrawn")&&it.optLong("expiresAt",Long.MAX_VALUE)>now()
     }
     fun metrics(c:Context):org.json.JSONObject{
         val a=all(c,Keys.ASSETS);val h=all(c,Keys.HOLDINGS);val l=all(c,Keys.LIABILITIES);val r=all(c,Keys.RELATIONSHIPS)
