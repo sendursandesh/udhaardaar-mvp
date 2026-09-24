@@ -30,7 +30,7 @@ object V7Core {
         .getString("current_mobile","")?.trim().orEmpty().ifBlank { "self" }
     fun id(prefix:String)= prefix + "-" + UUID.randomUUID()
     fun now()=System.currentTimeMillis()
-    fun store(c:Context)=V5LocalStore(c.applicationContext)
+    fun store(c:Context)=V7LocalStore(c.applicationContext)
     fun all(c:Context,key:String)=store(c).all(key)
     fun find(c:Context,key:String,id:String)=all(c,key).firstOrNull{it.optString("id")==id}
     fun add(c:Context,key:String,o:org.json.JSONObject){
