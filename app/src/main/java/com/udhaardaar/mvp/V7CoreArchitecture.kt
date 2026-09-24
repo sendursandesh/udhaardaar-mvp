@@ -56,7 +56,8 @@ object V7Core {
             Keys.HOLDINGS -> V7Architecture.Event.HOLDING_CHANGED
             Keys.FUNDING -> V7Architecture.Event.FUNDING_CHANGED
             Keys.ALERTS -> V7Architecture.Event.ALERT_CREATED
-            else -> V7Architecture.Event.DOCUMENT_CHANGED\n        }
+            else -> V7Architecture.Event.DOCUMENT_CHANGED
+        }
         V7Architecture.Events.publish(V7Architecture.EventRecord(mapped,id,user(c)))
     }
     fun audit(c:Context,action:String,entity:String,entityId:String,detail:String){
