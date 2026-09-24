@@ -253,11 +253,15 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("RE", "Rental & Lease", "Lease relationships and documents"),
             Triple("⚙", "Security & Consent", "Consent, audit and protected sharing")
         ), listOf(
-            { openMore("CHARGECHECK") }, { openMore("LIABILITY") },
+            { openMore("CHARGECHECK") }, { openNative("LIABILITIES") },
             { openMore("REPORTS") }, { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "REVENUE")) },
             { openMore("BENEFITS") }, { openMore("RENTAL") },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "AI")) }
         ))
+    }
+
+    private fun openNative(module: String) {
+        startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", module))
     }
 
     private fun openMore(section: String) {
