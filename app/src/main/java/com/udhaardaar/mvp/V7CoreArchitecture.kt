@@ -123,8 +123,14 @@ object V7Records {
             put("principal",principal);put("interest",interest);put("method",method)
             put("consentVerified",consentVerified);put("timestamp",V7Core.now())
         }.also { repayment ->
-            if (!consentVerified) return@also
             val relationship = V7Core.find(c,V7Core.Keys.RELATIONSHIPS,relationshipId)
+            val consentRequired = relationship?.optBoolean("consentRequired", true) ?: true
+            val partyId = relationship?.optString("partyId").orEmpty()
+            val activeConsent = partyId.isNotBlank() &&
+                V7Core.hasConsent(c, partyId, "REPAYMENT_UPDATE")
+            if (!consentVerified || (consentRequired && !activeConsent)) {
+                return@also
+            }
             if (relationship != null) {
                 val oldOutstanding = relationship.optDouble("outstanding",relationship.optDouble("amount",0.0))
                 val principalApplied = principal.coerceAtLeast(0.0).coerceAtMost(oldOutstanding)
