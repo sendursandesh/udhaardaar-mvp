@@ -26,6 +26,7 @@ class UdhaardaarApp : Application() {
     override fun onCreate() {
         super.onCreate()
         migrateLegacyOwner()
+        V7LegacyEventBridge.install()
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityResumed(activity: Activity) {
                 activity.window.decorView.post {
