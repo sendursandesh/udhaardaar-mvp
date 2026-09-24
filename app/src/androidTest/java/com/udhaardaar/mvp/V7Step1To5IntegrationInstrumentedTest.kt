@@ -50,6 +50,24 @@ class V7Step1To5IntegrationInstrumentedTest {
         assertTrue(metrics.optInt("activeCredits") >= 1)
     }
 
+    @Test fun repaymentCannotMutateWithoutActiveConsent() {
+        val person = V7Records.person(context, "V7 Consent Guard QA", "9876543212")
+        val relationship = V7Records.relationship(
+            context, person.optString("id"), "INFORMAL_CREDIT",
+            "RECEIVABLE", 5000.0, 0.0, "PRINCIPAL_PLUS_INTEREST", "QA"
+        )
+        V7Records.repayment(
+            context, relationship.optString("id"), 1000.0, 1000.0, 0.0,
+            "CASH", true
+        )
+        val unchanged = V7Core.find(context, V7Core.Keys.RELATIONSHIPS, relationship.optString("id"))
+        assertEquals(5000.0, unchanged!!.optDouble("outstanding"), 0.005)
+        assertFalse(V7Core.all(context, V7Core.Keys.REPAYMENTS).any {
+            it.optString("relationshipId") == relationship.optString("id") &&
+                it.optDouble("amount") == 1000.0
+        })
+    }
+
     @Test fun expiredConsentIsNotActive() {
         val person = V7Records.person(context, "V7 Expiry QA", "9876543211")
         val service = V7Architecture.LocalConsentService(context)
