@@ -143,3 +143,129 @@ class V7HomeActivity : AppCompatActivity() {
     }
     private fun openModule(key: String) { startActivity(Intent(this, V7ModuleActivity::class.java).putExtra("module", key)) }
 }
+
+
+/** Shared V7 ArthSaathi visual system. */
+object ArthSaathiV7Design {
+    const val CREAM = 0xFFF7F2E8.toInt()
+    const val NAVY = 0xFF17324D.toInt()
+    const val NAVY_3 = 0xFF0E2235.toInt()
+    const val GOLD = 0xFFC79A3B.toInt()
+    const val GOLD_2 = 0xFFE4C77A.toInt()
+    const val GOLD_PALE = 0xFFF4E5B7.toInt()
+    const val GREEN = 0xFF2E7D5B.toInt()
+    const val MUTED = 0xFF66727C.toInt()
+    const val PROMISE = "Your Asset. Your Record. Your Right."
+    const val TAGLINE = "Navigate Your Financial Journey"
+
+    fun bg(c: android.content.Context) = GradientDrawable(
+        GradientDrawable.Orientation.TL_BR, intArrayOf(NAVY_3, NAVY)
+    ).apply { cornerRadius = 18f * c.resources.displayMetrics.density }
+
+    fun card(c: android.content.Context, color: Int, radius: Int) =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = radius * c.resources.displayMetrics.density
+            setStroke((c.resources.displayMetrics.density).toInt().coerceAtLeast(1), 0x18000000)
+        }
+
+    fun text(c: android.content.Context, value: String, size: Float, color: Int, bold: Boolean = false) =
+        TextView(c).apply {
+            text = value
+            textSize = size
+            setTextColor(color)
+            if (bold) typeface = Typeface.DEFAULT_BOLD
+        }
+
+    fun masthead(c: android.content.Context): TextView = text(
+        c, "ARTHSAATHI", 20f, Color.WHITE, true
+    ).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(8, 4, 8, 4) }
+
+    fun topNav(c: android.content.Context, actions: Map<String, () -> Unit>): HorizontalScrollView {
+        val row = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        actions.forEach { (label, action) ->
+            row.addView(Button(c).apply {
+                text = label
+                textSize = 10f
+                isAllCaps = false
+                setTextColor(Color.WHITE)
+                setOnClickListener { action() }
+                setPadding(8, 0, 8, 0)
+            }, LinearLayout.LayoutParams(-2, 54))
+        }
+        return HorizontalScrollView(c).apply { addView(row) }
+    }
+
+    fun section(c: android.content.Context, title: String, subtitle: String) =
+        LinearLayout(c).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(8, 10, 8, 7)
+            addView(text(c, title, 14f, NAVY, true))
+            addView(text(c, subtitle, 9f, MUTED))
+        }
+
+    fun stat(c: android.content.Context, value: String, label: String, accent: Int) =
+        LinearLayout(c).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            background = card(c, Color.WHITE, 12)
+            setPadding(5, 7, 5, 7)
+            addView(text(c, value, 13f, accent, true).apply { gravity = Gravity.CENTER })
+            addView(text(c, label, 8.5f, MUTED).apply { gravity = Gravity.CENTER })
+        }
+
+    fun tile(c: android.content.Context, icon: String, title: String, subtitle: String, action: () -> Unit) =
+        LinearLayout(c).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = card(c, Color.WHITE, 14)
+            setPadding(11, 9, 8, 9)
+            isClickable = true
+            setOnClickListener { action() }
+            addView(text(c, "$icon  $title", 13f, NAVY, true))
+            addView(text(c, subtitle, 9f, MUTED))
+        }
+}
+
+/** V7 logical module landing screen; module-specific legacy screens are opened from here. */
+class V7ModuleActivity : AppCompatActivity() {
+    private val d get() = resources.displayMetrics.density
+    private fun dp(v: Int) = (v * d).toInt()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val module = intent.getStringExtra("module").orEmpty()
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(18), dp(18), dp(18))
+            setBackgroundColor(ArthSaathiV7Design.CREAM)
+        }
+        root.addView(ArthSaathiV7Design.text(this, "ArthSaathi", 22f, ArthSaathiV7Design.NAVY, true))
+        root.addView(ArthSaathiV7Design.text(this, moduleTitle(module), 18f, ArthSaathiV7Design.GOLD, true),
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        root.addView(ArthSaathiV7Design.text(this, "This V7 journey is connected to the existing transaction engine. Choose an action below.", 11f, ArthSaathiV7Design.MUTED),
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+        when (module) {
+            "CREDIT" -> addAction(root, "Register Credit") { startActivity(Intent(this, RegisterCreditV3Activity::class.java)) }
+            "REPAYMENT" -> addAction(root, "Open Repayment Centre") { startActivity(Intent(this, RecordsActivity::class.java)) }
+            "RECORD" -> addAction(root, "Open Records") { startActivity(Intent(this, RecordsActivity::class.java)) }
+            "ASSETS" -> addAction(root, "Open Asset Records") { startActivity(Intent(this, RecordsActivity::class.java)) }
+            "GROW" -> addAction(root, "Open Financial Records") { startActivity(Intent(this, DashboardV3Activity::class.java)) }
+            else -> addAction(root, "Open Dashboard") { startActivity(Intent(this, DashboardV3Activity::class.java)) }
+        }
+        setContentView(ScrollView(this).apply { addView(root) })
+    }
+    private fun moduleTitle(m: String) = when (m) {
+        "CREDIT" -> "Credit & Relationships"
+        "REPAYMENT" -> "Repayment Centre"
+        "ASSETS" -> "Asset Vault"
+        "GROW" -> "Grow & Financial Intelligence"
+        "PROTECT" -> "Protection"
+        "LEGAL" -> "Legal & Claims"
+        else -> "More ArthSaathi Services"
+    }
+    private fun addAction(root: LinearLayout, label: String, action: () -> Unit) {
+        root.addView(Button(this).apply {
+            text = label; isAllCaps = false; setOnClickListener { action() }
+        }, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(16) })
+    }
+}
