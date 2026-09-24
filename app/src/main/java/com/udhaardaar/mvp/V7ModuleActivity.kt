@@ -255,6 +255,12 @@ class V7ModuleActivity : AppCompatActivity() {
     }
 
     private fun openMore(section: String) {
-        startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", section))
+        V7LegacyAdapter.open(this, when (section) {
+            "CHARGECHECK" -> V7LegacyAdapter.Route.CHARGECHECK
+            "LIABILITY" -> V7LegacyAdapter.Route.LIABILITY
+            "BENEFITS" -> V7LegacyAdapter.Route.BENEFITS
+            "RENTAL" -> V7LegacyAdapter.Route.RENTAL
+            else -> V7LegacyAdapter.Route.DOCUMENTS
+        })
     }
 }
