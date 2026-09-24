@@ -35,13 +35,13 @@ object V7Core {
     fun find(c:Context,key:String,id:String)=all(c,key).firstOrNull{it.optString("id")==id}
     fun add(c:Context,key:String,o:org.json.JSONObject){
         o.put("ownerUserId",user(c));o.put("updatedAt",now());store(c).add(key,o)
-        audit(c,"CREATE",key,o.optString("id"),"");publish(key,o.optString("id"))
+        audit(c,"CREATE",key,o.optString("id"),"");publish(key,o.optString("id"),user(c))
     }
     fun replace(c:Context,key:String,o:org.json.JSONObject){
         if(o.optString("ownerUserId").isBlank())o.put("ownerUserId",user(c))
-        o.put("updatedAt",now());store(c).replace(key,o);audit(c,"UPDATE",key,o.optString("id"),"");publish(key,o.optString("id"))
+        o.put("updatedAt",now());store(c).replace(key,o);audit(c,"UPDATE",key,o.optString("id"),"");publish(key,o.optString("id"),user(c))
     }
-    fun publish(entity:String,id:String){
+    fun publish(entity:String,id:String,userId:String){
         val mapped = when(entity) {
             Keys.PEOPLE -> V7Architecture.Event.PERSON_CHANGED
             Keys.RELATIONSHIPS -> V7Architecture.Event.RELATIONSHIP_CHANGED
@@ -58,7 +58,7 @@ object V7Core {
             Keys.ALERTS -> V7Architecture.Event.ALERT_CREATED
             else -> V7Architecture.Event.DOCUMENT_CHANGED
         }
-        V7Architecture.Events.publish(V7Architecture.EventRecord(mapped,id,user(c)))
+        V7Architecture.Events.publish(V7Architecture.EventRecord(mapped,id,userId))
     }
     fun audit(c:Context,action:String,entity:String,entityId:String,detail:String){
         store(c).add(Keys.AUDIT,org.json.JSONObject().apply{
