@@ -255,7 +255,6 @@ class V7ModuleActivity : AppCompatActivity() {
             "REPAYMENT" -> addAction(root, "Open Repayment Centre") { startActivity(Intent(this, V5RepaymentActivity::class.java)) }
             "RECORD" -> addAction(root, "Open Records") { startActivity(Intent(this, RecordsActivity::class.java)) }
             "ASSETS" -> addAction(root, "Open Asset / Document Centre") { startActivity(Intent(this, V5HomeActivity::class.java)) }
-            "GROW" -> addAction(root, "Open Financial Records") { startActivity(Intent(this, DashboardV3Activity::class.java)) }
             "GROW" -> addAction(root, "Open Financial Dashboard") { startActivity(Intent(this, DashboardV3Activity::class.java)) }
             "PROTECT" -> addAction(root, "Open Protection Centre") { startActivity(Intent(this, V5HomeActivity::class.java)) }
             "LEGAL" -> addAction(root, "Open Legal & Claims Centre") { startActivity(Intent(this, V5HomeActivity::class.java)) }
