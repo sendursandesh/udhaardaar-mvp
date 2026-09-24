@@ -36,3 +36,35 @@ object V7LegacyEventBridge {
         }
     }
 }
+
+
+/** Compatibility event vocabulary retained for the V6.2 migration boundary. */
+object V62Events {
+    const val PROFILE_CHANGED = "PROFILE_CHANGED"
+    const val RELATIONSHIP_CHANGED = "RELATIONSHIP_CHANGED"
+    const val ADDRESS_CHANGED = "ADDRESS_CHANGED"
+    const val REPAYMENT_CHANGED = "REPAYMENT_CHANGED"
+    const val DOCUMENT_ADDED = "DOCUMENT_ADDED"
+    const val CONSENT_CHANGED = "CONSENT_CHANGED"
+    const val ASSET_CHANGED = "ASSET_CHANGED"
+    const val LIABILITY_CHANGED = "LIABILITY_CHANGED"
+    const val POLICY_CHANGED = "POLICY_CHANGED"
+    const val CLAIM_CHANGED = "CLAIM_CHANGED"
+    const val NOMINEE_CHANGED = "NOMINEE_CHANGED"
+    const val SAVINGS_CHANGED = "SAVINGS_CHANGED"
+    const val FUNDING_REQUEST_CHANGED = "FUNDING_REQUEST_CHANGED"
+    const val ALERT_CREATED = "ALERT_CREATED"
+}
+
+data class V62Event(val type: String, val entityId: String, val timestamp: Long)
+
+object V62EventBus {
+    private val listeners = mutableListOf<(V62Event) -> Unit>()
+    @Synchronized fun subscribe(listener: (V62Event) -> Unit): AutoCloseable {
+        listeners.add(listener)
+        return AutoCloseable { synchronized(listeners) { listeners.remove(listener) } }
+    }
+    @Synchronized fun publish(event: V62Event) {
+        listeners.toList().forEach { it(event) }
+    }
+}
