@@ -109,17 +109,17 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("⌂", "Address & Location", "PIN-assisted and map-assisted addresses"),
             Triple("▤", "Document Vault", "Evidence, versions, source and integrity")
         ), listOf(
-            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "PEOPLE")) },
-            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "PEOPLE")) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.PEOPLE) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.PEOPLE) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADDRESS")) },
-            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "DOCUMENTS")) }
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.DOCUMENTS) }
         ))
     }
 
     private fun repayment(root: LinearLayout) {
         root.addView(ArthSaathiV7Design.section(this, "Repayment Centre", "Open the canonical repayment engine with chronological dues and consent-controlled updates."))
         root.addView(ArthSaathiV7Design.goldButton(this, "Open Repayment Centre") {
-            startActivity(Intent(this, V62RepaymentActivity::class.java))
+            V7LegacyAdapter.open(this, V7LegacyAdapter.Route.REPAYMENT)
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
     }
 
@@ -132,12 +132,12 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("↻", "Repayment Centre", "Chronological dues, repayments and closure"),
             Triple("♙", "Guarantor", "Linked guarantor and evidence records")
         ), listOf(
-            { startActivity(Intent(this, V62CreditRegistrationActivity::class.java)) },
-            { startActivity(Intent(this, V62QRKhataActivity::class.java)) },
-            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "TRADE")) },
-            { startActivity(Intent(this, V62CreditIntelligenceActivity::class.java)) },
-            { startActivity(Intent(this, V62RepaymentActivity::class.java)) },
-            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "GUARANTOR")) }
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.CREDIT) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TRADE) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.FORMAL_CREDIT) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.REPAYMENT) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.GUARANTOR) }
         ))
     }
 
@@ -150,12 +150,12 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("◌", "Scenarios", "Analyse before making a decision"),
             Triple("▤", "Reports", "Statements and financial reports")
         ), listOf(
-            { startActivity(Intent(this, V62MISActivity::class.java)) },
-            { startActivity(Intent(this, V62MISActivity::class.java)) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "OPPORTUNITY")) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "MARKET")) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "OPPORTUNITY")) },
-            { startActivity(Intent(this, V62MISActivity::class.java)) }
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) }
         ))
     }
 
@@ -168,10 +168,10 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("⌂", "Address", "PIN and location-assisted address records"),
             Triple("!", "Alerts", "Due dates, renewals and document actions")
         ), listOf(
-            { startActivity(Intent(this, V62InsuranceActivity::class.java)) },
-            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "DOCUMENTS")) },
-            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "PEOPLE")) },
-            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.INSURANCE) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.DOCUMENTS) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.PEOPLE) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.LEGAL) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADDRESS")) },
             { V7AlertEngine.evaluate(this); Toast.makeText(this, "Alerts evaluated from recorded events and due dates.", Toast.LENGTH_SHORT).show() }
         ))
@@ -186,12 +186,12 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("↗", "Protection", "Connect insurance and safeguards"),
             Triple("!", "Claims", "Prepare ownership and claim records")
         ), listOf(
-            { startActivity(Intent(this, V62AssetVaultActivity::class.java)) },
-            { startActivity(Intent(this, V62AssetVaultActivity::class.java)) },
-            { startActivity(Intent(this, V62ExtendedModulesActivity::class.java).putExtra("openSection", "DOCUMENTS")) },
-            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
-            { startActivity(Intent(this, V62InsuranceActivity::class.java)) },
-            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) }
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.ASSET_VAULT) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.ASSET_VAULT) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.DOCUMENTS) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.LEGAL) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.INSURANCE) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.LEGAL) }
         ))
     }
 
@@ -202,10 +202,10 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("↔", "Settle", "See pending settlements"),
             Triple("▤", "History", "Keep a transparent record")
         ), listOf(
-            { startActivity(Intent(this, V62TTMMActivity::class.java)) },
-            { startActivity(Intent(this, V62TTMMActivity::class.java)) },
-            { startActivity(Intent(this, V62TTMMActivity::class.java)) },
-            { startActivity(Intent(this, V62TTMMActivity::class.java)) }
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) }
         ))
     }
 
@@ -216,10 +216,10 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("✓", "Consent", "OTP-confirmed mutation"),
             Triple("↻", "Balance", "Outstanding updates from the ledger")
         ), listOf(
-            { startActivity(Intent(this, QrCreditScannerActivity::class.java)) },
-            { startActivity(Intent(this, V62QRKhataActivity::class.java)) },
-            { startActivity(Intent(this, V62QRKhataActivity::class.java)) },
-            { startActivity(Intent(this, V62QRKhataActivity::class.java)) }
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_SCANNER) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) }
         ))
     }
 
@@ -230,7 +230,7 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("▤", "Claim Assistance", "Ownership, nominee/heir and documents"),
             Triple("◉", "AI Financial Advisor", "Ask about your recorded financial information")
         ), listOf(
-            { startActivity(Intent(this, V62LegacyLegalAIActivity::class.java)) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.LEGAL) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADVOCATE")) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "CLAIM")) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "SECURITY")) }
