@@ -54,7 +54,15 @@ jobs:
           grep -q "V7ModuleActivity" app/src/main/AndroidManifest.xml
           test -s app/src/main/java/com/udhaardaar/mvp/V7LocalStore.kt
           test -s app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
+          test -s app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
           grep -q "enum class Ownership" app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
+          grep -q "V7NativeModuleActivity" app/src/main/AndroidManifest.xml
+          ! grep -q "V7LegacyAdapter" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7Records.person" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7Records.relationship" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7Records.repayment" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7Records.asset" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7Records.liability" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
           grep -q "native()" app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
           ! grep -q "V5LocalStore" app/src/main/java/com/udhaardaar/mvp/V7CoreArchitecture.kt
           ! grep -q "V62[A-Za-z].*Activity" app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt
