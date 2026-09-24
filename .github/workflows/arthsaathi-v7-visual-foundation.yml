@@ -2,6 +2,8 @@ name: ArthSaathi V7 Step 1-5 Rectification & Certification
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [arthsaathi-v7-step1-5-rectification-2026-09-24]
   push:
     branches: [arthsaathi-v7-visual-foundation-2026-09-22, arthsaathi-v7-master-build-2026-09-23, arthsaathi-v7-step1-5-rectification-2026-09-24]
 
