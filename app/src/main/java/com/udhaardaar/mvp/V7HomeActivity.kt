@@ -138,7 +138,13 @@ class V7HomeActivity : AppCompatActivity() {
 
     private fun open(key: String) {
         val module = when (key) {
-            "CREDIT" -> "CREDIT"\n            "REPAYMENT" -> "REPAYMENT"\n            "ASSET_VAULT" -> "ASSETS"\n            "INSURANCE" -> "PROTECT"\n            "LEGACY" -> "LEGAL"\n            else -> "MORE"\n        }
+            "CREDIT" -> "CREDIT"
+            "REPAYMENT" -> "REPAYMENT"
+            "ASSET_VAULT" -> "ASSETS"
+            "INSURANCE" -> "PROTECT"
+            "LEGACY" -> "LEGAL"
+            else -> "MORE"
+        }
         startActivity(Intent(this, V7ModuleActivity::class.java).putExtra("module", module))
     }
     private fun openModule(key: String) { startActivity(Intent(this, V7ModuleActivity::class.java).putExtra("module", key)) }
