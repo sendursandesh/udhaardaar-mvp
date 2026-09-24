@@ -59,7 +59,9 @@ object V7Core {
             else -> V7Architecture.Event.DOCUMENT_CHANGED
         }
         V7Architecture.Events.publish(V7Architecture.EventRecord(mapped,id,userPlaceholder()))
-    }\n\n    private fun userPlaceholder():String = "V7_CORE"
+    }
+
+    private fun userPlaceholder():String = "V7_CORE"
     fun audit(c:Context,action:String,entity:String,entityId:String,detail:String){
         store(c).add(Keys.AUDIT,org.json.JSONObject().apply{
             put("id",id("AUD"));put("ownerUserId",user(c));put("action",action);put("entity",entity)
