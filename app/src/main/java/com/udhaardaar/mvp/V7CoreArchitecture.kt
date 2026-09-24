@@ -196,3 +196,30 @@ object V7AlertEngine {
         V7Core.all(c,V7Core.Keys.POLICIES).filter{it.optString("renewalDate").isNotBlank()}.forEach{create(c,"INSURANCE_RENEWAL","Insurance renewal: "+it.optString("policyNumber"),it.optString("id"),"HIGH")}
     }
 }
+
+
+/** Canonical V7 event contract and in-process publisher. */
+object V7Architecture {
+    enum class Event {
+        PROFILE_CHANGED, PERSON_CHANGED, RELATIONSHIP_CHANGED, CREDIT_CREATED, CREDIT_CHANGED,
+        ADDRESS_CHANGED, REPAYMENT_CHANGED, DOCUMENT_CHANGED, CONSENT_GRANTED, CONSENT_REVOKED,
+        ASSET_CHANGED, LIABILITY_CHANGED, POLICY_CHANGED, CLAIM_CHANGED, NOMINEE_CHANGED,
+        HOLDING_CHANGED, FUNDING_CHANGED, ALERT_CREATED
+    }
+    data class EventRecord(
+        val event: Event,
+        val entityId: String,
+        val userId: String,
+        val timestamp: Long = System.currentTimeMillis()
+    )
+    object Events {
+        private val listeners = mutableListOf<(EventRecord) -> Unit>()
+        @Synchronized fun subscribe(listener: (EventRecord) -> Unit): AutoCloseable {
+            listeners.add(listener)
+            return AutoCloseable { synchronized(listeners) { listeners.remove(listener) } }
+        }
+        @Synchronized fun publish(record: EventRecord) {
+            listeners.toList().forEach { listener -> listener(record) }
+        }
+    }
+}
