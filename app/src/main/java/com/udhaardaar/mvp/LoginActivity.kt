@@ -248,7 +248,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun enter(m: String) {
         prefs.edit().putBoolean("logged_in", true).putString("current_mobile", m).apply()
-        startActivity(Intent(this, V5HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+        startActivity(Intent(this, V7HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
     }
 
     override fun onActivityResult(req: Int, result: Int, data: Intent?) {
