@@ -251,12 +251,15 @@ class V7ModuleActivity : AppCompatActivity() {
         root.addView(ArthSaathiV7Design.text(this, "This V7 journey is connected to the existing transaction engine. Choose an action below.", 11f, ArthSaathiV7Design.MUTED),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         when (module) {
-            "CREDIT" -> addAction(root, "Register Credit") { startActivity(Intent(this, RegisterCreditV3Activity::class.java)) }
-            "REPAYMENT" -> addAction(root, "Open Repayment Centre") { startActivity(Intent(this, RecordsActivity::class.java)) }
+            "CREDIT" -> addAction(root, "Register Credit") { startActivity(Intent(this, V5CreditRegistrationActivity::class.java)) }
+            "REPAYMENT" -> addAction(root, "Open Repayment Centre") { startActivity(Intent(this, V5RepaymentActivity::class.java)) }
             "RECORD" -> addAction(root, "Open Records") { startActivity(Intent(this, RecordsActivity::class.java)) }
-            "ASSETS" -> addAction(root, "Open Asset Records") { startActivity(Intent(this, RecordsActivity::class.java)) }
+            "ASSETS" -> addAction(root, "Open Asset / Document Centre") { startActivity(Intent(this, V5HomeActivity::class.java)) }
             "GROW" -> addAction(root, "Open Financial Records") { startActivity(Intent(this, DashboardV3Activity::class.java)) }
-            else -> addAction(root, "Open Dashboard") { startActivity(Intent(this, DashboardV3Activity::class.java)) }
+            "GROW" -> addAction(root, "Open Financial Dashboard") { startActivity(Intent(this, DashboardV3Activity::class.java)) }
+            "PROTECT" -> addAction(root, "Open Protection Centre") { startActivity(Intent(this, V5HomeActivity::class.java)) }
+            "LEGAL" -> addAction(root, "Open Legal & Claims Centre") { startActivity(Intent(this, V5HomeActivity::class.java)) }
+            else -> addAction(root, "Open V5 Services Centre") { startActivity(Intent(this, V5HomeActivity::class.java)) }
         }
         setContentView(ScrollView(this).apply { addView(root) })
     }
