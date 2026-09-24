@@ -23,7 +23,7 @@ object V7Core {
         const val INVOICES="v7_invoices"; const val PAYMENTS="v7_payments"; const val REVENUE="v7_revenue"
         const val SERVICES="v7_services"; const val PORTFOLIOS="v7_portfolios"; const val TTMM="v7_ttmm"
         const val QR="v7_qr"; const val TRADE="v7_trade"; const val FORMAL="v7_formal"; const val WILL="v7_will"
-        const val REPAYMENTS="v7_repayments"
+        const val REPAYMENTS="v7_repayments"; const val FUNDING="v7_funding"
     }
 
     fun user(c: Context) = c.getSharedPreferences("udhaardaar_accounts", Context.MODE_PRIVATE)
@@ -41,7 +41,25 @@ object V7Core {
         if(o.optString("ownerUserId").isBlank())o.put("ownerUserId",user(c))
         o.put("updatedAt",now());store(c).replace(key,o);audit(c,"UPDATE",key,o.optString("id"),"");publish(key,o.optString("id"))
     }
-    fun publish(entity:String,id:String){\n        val mapped = when(entity) {\n            Keys.PEOPLE -> V7Architecture.Event.PERSON_CHANGED\n            Keys.RELATIONSHIPS -> V7Architecture.Event.RELATIONSHIP_CHANGED\n            Keys.ADDRESSES -> V7Architecture.Event.ADDRESS_CHANGED\n            Keys.ASSETS -> V7Architecture.Event.ASSET_CHANGED\n            Keys.LIABILITIES -> V7Architecture.Event.LIABILITY_CHANGED\n            Keys.DOCUMENTS -> V7Architecture.Event.DOCUMENT_CHANGED\n            Keys.CONSENTS -> V7Architecture.Event.CONSENT_GRANTED\n            Keys.POLICIES -> V7Architecture.Event.POLICY_CHANGED\n            Keys.CLAIMS -> V7Architecture.Event.CLAIM_CHANGED\n            Keys.NOMINEES, Keys.WILL -> V7Architecture.Event.NOMINEE_CHANGED\n            Keys.HOLDINGS -> V7Architecture.Event.HOLDING_CHANGED\n            Keys.FUNDING -> V7Architecture.Event.FUNDING_CHANGED\n            Keys.ALERTS -> V7Architecture.Event.ALERT_CREATED\n            else -> V7Architecture.Event.DOCUMENT_CHANGED\n        }\n        V7Architecture.Events.publish(V7Architecture.EventRecord(mapped,id,userPlaceholder()))\n    }\n\n    private fun userPlaceholder():String = "V7_CORE"
+    fun publish(entity:String,id:String){
+        val mapped = when(entity) {
+            Keys.PEOPLE -> V7Architecture.Event.PERSON_CHANGED
+            Keys.RELATIONSHIPS -> V7Architecture.Event.RELATIONSHIP_CHANGED
+            Keys.ADDRESSES -> V7Architecture.Event.ADDRESS_CHANGED
+            Keys.ASSETS -> V7Architecture.Event.ASSET_CHANGED
+            Keys.LIABILITIES -> V7Architecture.Event.LIABILITY_CHANGED
+            Keys.DOCUMENTS -> V7Architecture.Event.DOCUMENT_CHANGED
+            Keys.CONSENTS -> V7Architecture.Event.CONSENT_GRANTED
+            Keys.POLICIES -> V7Architecture.Event.POLICY_CHANGED
+            Keys.CLAIMS -> V7Architecture.Event.CLAIM_CHANGED
+            Keys.NOMINEES, Keys.WILL -> V7Architecture.Event.NOMINEE_CHANGED
+            Keys.HOLDINGS -> V7Architecture.Event.HOLDING_CHANGED
+            Keys.FUNDING -> V7Architecture.Event.FUNDING_CHANGED
+            Keys.ALERTS -> V7Architecture.Event.ALERT_CREATED
+            else -> V7Architecture.Event.DOCUMENT_CHANGED
+        }
+        V7Architecture.Events.publish(V7Architecture.EventRecord(mapped,id,userPlaceholder()))
+    }\n\n    private fun userPlaceholder():String = "V7_CORE"
     fun audit(c:Context,action:String,entity:String,entityId:String,detail:String){
         store(c).add(Keys.AUDIT,org.json.JSONObject().apply{
             put("id",id("AUD"));put("ownerUserId",user(c));put("action",action);put("entity",entity)
