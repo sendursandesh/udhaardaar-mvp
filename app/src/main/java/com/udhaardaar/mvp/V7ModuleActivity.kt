@@ -17,6 +17,12 @@ class V7ModuleActivity : AppCompatActivity() {
     }
 
     private fun render(key: String) {
+        val ownership = V7MasterVisionRegistry.find(key)?.ownership
+        if (ownership == V7MasterVisionRegistry.Ownership.NATIVE) {
+            startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", key))
+            finish()
+            return
+        }
         val title = when (key) {
             "RECORD" -> "Record"
             "CREDIT" -> "Credit & Money Relationships"
