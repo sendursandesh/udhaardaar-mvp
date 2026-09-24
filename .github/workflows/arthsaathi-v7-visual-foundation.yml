@@ -1,4 +1,4 @@
-name: ArthSaathi V7 Visual Foundation Build
+name: ArthSaathi V7 Step 1-5 Rectification & Certification
 
 on:
   workflow_dispatch:
