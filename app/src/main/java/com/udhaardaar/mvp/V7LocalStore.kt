@@ -61,9 +61,13 @@ class V7LocalStore(context: Context) {
         return String(cipher.doFinal(raw.copyOfRange(12, raw.size)), StandardCharsets.UTF_8)
     }
 
-    private fun read(key: String): JSONArray =
-        runCatching { JSONArray(decrypt(prefs.getString(key, "[]") ?: "[]")) }
-            .getOrElse { JSONArray() }
+    private fun read(key: String): JSONArray {
+        check(!key.startsWith("v5_") && !key.startsWith("v62_")) {
+            "V7 store cannot read legacy namespace: $key"
+        }
+        val raw = prefs.getString(key, null) ?: return JSONArray()
+        return JSONArray(decrypt(raw))
+    }
 
     private fun write(key: String, values: JSONArray) {
         check(!key.startsWith("v5_") && !key.startsWith("v62_")) {
