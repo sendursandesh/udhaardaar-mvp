@@ -31,14 +31,16 @@ object V7Core {
     fun id(prefix:String)= prefix + "-" + UUID.randomUUID()
     fun now()=System.currentTimeMillis()
     fun store(c:Context)=V5LocalStore(c.applicationContext)
-    fun all(c:Context,key:String)=store(c).all(key)
+    fun all(c:Context,key:String)=store(c).all(key).filter { it.optString("ownerUserId").isBlank() || it.optString("ownerUserId")==user(c) }
     fun find(c:Context,key:String,id:String)=all(c,key).firstOrNull{it.optString("id")==id}
     fun add(c:Context,key:String,o:org.json.JSONObject){
         o.put("ownerUserId",user(c));o.put("updatedAt",now());store(c).add(key,o)
         audit(c,"CREATE",key,o.optString("id"),"");publish(key,o.optString("id"),user(c))
     }
     fun replace(c:Context,key:String,o:org.json.JSONObject){
-        if(o.optString("ownerUserId").isBlank())o.put("ownerUserId",user(c))
+        val owner=o.optString("ownerUserId")
+        if(owner.isNotBlank() && owner!=user(c)) return
+        if(owner.isBlank()) o.put("ownerUserId",user(c))
         o.put("updatedAt",now());store(c).replace(key,o);audit(c,"UPDATE",key,o.optString("id"),"");publish(key,o.optString("id"),user(c))
     }
     fun publish(entity:String,id:String,userId:String){
@@ -56,6 +58,8 @@ object V7Core {
             Keys.HOLDINGS -> V7Architecture.Event.HOLDING_CHANGED
             Keys.FUNDING -> V7Architecture.Event.FUNDING_CHANGED
             Keys.ALERTS -> V7Architecture.Event.ALERT_CREATED
+            Keys.REPAYMENTS -> V7Architecture.Event.REPAYMENT_CHANGED
+            Keys.FUNDING -> V7Architecture.Event.FUNDING_CHANGED
             else -> V7Architecture.Event.DOCUMENT_CHANGED
         }
         V7Architecture.Events.publish(V7Architecture.EventRecord(mapped,id,userId))
