@@ -54,7 +54,7 @@ object V7LegacyProjectionSync {
         var alerts: Int = 0
     )
 
-    private fun sourceId(o: JSONObject) = o.optString("id").ifBlank { return@sourceId "" }
+    private fun sourceId(o: JSONObject): String = o.optString("id")
 
     private fun upsert(c: Context, key: String, source: JSONObject, mapped: JSONObject): Boolean {
         val sid = sourceId(source)
