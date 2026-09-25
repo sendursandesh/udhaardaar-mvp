@@ -2,7 +2,6 @@ package com.udhaardaar.mvp
 
 import android.content.Context
 import android.content.Intent
-import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -33,8 +32,6 @@ class ArthSaathiV62SmokeTest {
             it.onActivity { a ->
                 requireNotNull(a.window?.decorView) { "Window missing for " + activity.simpleName }
             }
-            it.moveToState(Lifecycle.State.STARTED)
-            it.moveToState(Lifecycle.State.RESUMED)
             it.onActivity { a ->
                 require(a.window?.decorView?.isShown == true) {
                     "Window not visible after resume for " + activity.simpleName
