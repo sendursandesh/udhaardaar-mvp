@@ -69,11 +69,8 @@ class ArthSaathiV62SmokeTest {
     }
 
     @Test fun v7NavigationDoesNotDuplicateTopLevelModules() {
-        prefs.edit()
-            .putString("name_9876543210", "Test User")
-            .putBoolean("logged_in", true)
-            .putString("current_mobile", "9876543210")
-            .commit()
+        V7AccountStore.create(context, "Test User", testMobile)
+        V7AccountStore.login(context, testMobile)
 
         assertResumes(V7HomeActivity::class.java)
         ActivityScenario.launch(V7HomeActivity::class.java).use { scenario ->
