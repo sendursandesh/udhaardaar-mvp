@@ -117,9 +117,8 @@ jobs:
           script: |
             adb start-server
             adb wait-for-device
-            echo "Waiting for Android package service..."
-            sleep 15
-            while ! adb shell service check package 2>/dev/null | grep -q "found"; do sleep 2; done
+            echo "Waiting for Android package manager..."
+            for i in $(seq 1 30); do adb shell pm path android >/dev/null 2>&1 && break; sleep 2; done
             adb shell getprop sys.boot_completed
             adb shell pm path android
             gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
