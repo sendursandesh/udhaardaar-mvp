@@ -93,12 +93,13 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data
           disable-animations: true
           script: |
+            set -o pipefail
             adb start-server
             adb wait-for-device
             sleep 15
             adb shell getprop sys.boot_completed
             adb shell pm path android
-            gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
+            timeout --signal=TERM --kill-after=30s 10m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
 
       - name: Upload V7 APK
         uses: actions/upload-artifact@v4
