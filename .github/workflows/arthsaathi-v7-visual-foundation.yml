@@ -90,6 +90,7 @@ jobs:
           force-avd-creation: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data
           disable-animations: true
+          shell: bash
           script: |
             set -euo pipefail
             adb start-server
