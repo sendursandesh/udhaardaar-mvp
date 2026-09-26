@@ -3,19 +3,6 @@ set -euo pipefail
 adb wait-for-device
 test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1"
 adb shell pm path android
-run_test() {
-  local name="$1"; local class="$2"
-  echo "===== V7 REGRESSION: $name ====="
-  timeout 10m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace "-Pandroid.testInstrumentationRunnerArguments.class=$class"
-  echo "===== PASS: $name ====="
-}
-run_test "legacy login lifecycle" "com.udhaardaar.mvp.ArthSaathiV62SmokeTest#loginScreenActuallyRenders"
-run_test "legacy V7 home journeys lifecycle" "com.udhaardaar.mvp.ArthSaathiV62SmokeTest#v7HomeAndPrimaryJourneysDoNotCrash"
-run_test "legacy V7 navigation lifecycle" "com.udhaardaar.mvp.ArthSaathiV62SmokeTest#v7NavigationDoesNotDuplicateTopLevelModules"
-run_test "V7 broad functional/UI regression" "com.udhaardaar.mvp.V7BroadFunctionalUiRegressionInstrumentedTest"
-run_test "V7 master integration matrix" "com.udhaardaar.mvp.V7MasterIntegrationScenarioInstrumentedTest"
-run_test "V7 persistence boundary" "com.udhaardaar.mvp.V7PersistenceBoundaryInstrumentedTest"
-run_test "V7 secure account/session" "com.udhaardaar.mvp.V7SecureAccountInstrumentedTest"
-run_test "V7 Step 1-5 integration" "com.udhaardaar.mvp.V7Step1To5IntegrationInstrumentedTest"
-run_test "V7 Step 6 native migration" "com.udhaardaar.mvp.V7Step6NativeMigrationInstrumentedTest"
-echo "===== ALL V7 EMULATOR REGRESSION SUITES PASSED ====="
+echo "===== V7 FINAL REGRESSION: unified emulator suite ====="
+timeout 30m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace "-Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7FinalRegressionSuite"
+echo "===== ALL V7 EMULATOR REGRESSION TESTS PASSED ====="
