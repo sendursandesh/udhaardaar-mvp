@@ -12,6 +12,7 @@
         android:icon="@drawable/arthsaathi_logo"
         android:roundIcon="@drawable/arthsaathi_logo"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
         android:alwaysRetainTaskState="true"
         android:theme="@style/Theme.ArthSaathi">
 
