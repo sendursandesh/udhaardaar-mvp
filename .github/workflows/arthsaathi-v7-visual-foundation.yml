@@ -92,7 +92,7 @@ jobs:
           disable-animations: true
           shell: bash
           script: |
-            set -euo pipefail
+            set -eu
             adb start-server
             adb wait-for-device
             for i in $(seq 1 45); do
