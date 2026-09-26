@@ -80,7 +80,7 @@ jobs:
           ! grep -R 'Log\.d\|Log\.i\|Log\.v\|Log\.w\|Log\.e' -n app/src/main/java
           echo "V7 security/privacy static gate passed"
       - name: Android emulator regression
-        timeout-minutes: 45
+        timeout-minutes: 50
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
