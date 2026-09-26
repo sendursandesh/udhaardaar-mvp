@@ -84,3 +84,16 @@ class ArthSaathiV62SmokeTest {
         assertResumes(V7HomeActivity::class.java)
     }
 }
+
+
+@RunWith(org.junit.runners.Suite::class)
+@org.junit.runners.Suite.SuiteClasses(
+    ArthSaathiV62SmokeTest::class,
+    V7BroadFunctionalUiRegressionInstrumentedTest::class,
+    V7MasterIntegrationScenarioInstrumentedTest::class,
+    V7PersistenceBoundaryInstrumentedTest::class,
+    V7SecureAccountInstrumentedTest::class,
+    V7Step1To5IntegrationInstrumentedTest::class,
+    V7Step6NativeMigrationInstrumentedTest::class
+)
+class V7FinalRegressionSuite
