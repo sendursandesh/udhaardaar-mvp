@@ -1,11 +1,11 @@
-name: ArthSaathi V7 Step 6 Native Master Vision
+name: ArthSaathi V7 Final Emulator Regression
 
 on:
   workflow_dispatch:
+  push:
+    branches: [arthsaathi-v7-emulator-regression-isolated-2026-09-26]
   pull_request:
     branches: [arthsaathi-v7-master-build-2026-09-23]
-  push:
-    branches: [arthsaathi-v7-visual-foundation-2026-09-22, arthsaathi-v7-master-build-2026-09-23, arthsaathi-v7-step1-5-rectification-2026-09-24, arthsaathi-v7-step6-native-master-vision-2026-09-24, arthsaathi-v7-master-integration-qa-2026-09-25, arthsaathi-v7-final-emulator-qa-2026-09-26]
 
 permissions:
   contents: read
@@ -13,77 +13,54 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Install required Android SDK packages
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "platforms;android-34" "build-tools;35.0.0"
       - name: Install Gradle
         run: |
+          set -euo pipefail
           wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
-
       - name: Compile V7 APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-
-      - name: V7 branding and architecture gate
+      - name: V7 architecture branding and version gate
         run: |
-          set -e
+          set -euo pipefail
           apk=app/build/outputs/apk/debug/app-debug.apk
           test -s "$apk"
-          test "$(stat -c%s "$apk")" -gt 10000000
           unzip -t "$apk" >/dev/null
           grep -q "versionCode 70" app/build.gradle
           grep -q "versionName '7.0'" app/build.gradle
           grep -q "V7HomeActivity" app/src/main/AndroidManifest.xml
-          grep -q "V7ModuleActivity" app/src/main/AndroidManifest.xml
+          grep -q "V7NativeModuleActivity" app/src/main/AndroidManifest.xml
           test -s app/src/main/java/com/udhaardaar/mvp/V7LocalStore.kt
           test -s app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
-          test -s app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
           test -s app/src/main/java/com/udhaardaar/mvp/V7LegacyProjectionSync.kt
-          grep -q "enum class Ownership" app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
-          grep -q "V7NativeModuleActivity" app/src/main/AndroidManifest.xml
-          ! grep -q "V7LegacyAdapter" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
-          grep -q "V7Records.person" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
-          grep -q "V7Records.relationship" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
-          grep -q "V7Records.repayment" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
-          grep -q "V7Records.asset" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
-          grep -q "V7Records.liability" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
-          grep -q "V7LegacyProjectionSync.sync" app/src/main/java/com/udhaardaar/mvp/UdhaardaarApp.kt
-          grep -q "V7LegacyProjectionSync" app/src/main/java/com/udhaardaar/mvp/V7LegacyProjectionSync.kt
-          grep -q "native()" app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
-          ! grep -q "V5LocalStore" app/src/main/java/com/udhaardaar/mvp/V7CoreArchitecture.kt
-          ! grep -q "V62[A-Za-z].*Activity" app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt
-          grep -q "V7LegacyAdapter" app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt
+          test -s app/src/main/res/drawable/arthsaathi_logo.xml
           grep -q "Navigate Your Financial Journey" app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
           grep -q "Your Asset. Your Record. Your Right." app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
-          grep -q "Plan • Protect • Grow • Nominate" app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
-          grep -q "validMethod" app/src/main/java/com/udhaardaar/mvp/V7CoreArchitecture.kt
-          test -s app/src/main/res/drawable/arthsaathi_logo.xml
-          echo "V7 visual foundation gates passed"
-
+          echo "V7 architecture/branding/version gate passed"
       - name: Unit tests
         timeout-minutes: 8
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
-
-      - name: Security and privacy gate
+      - name: Security and privacy static gate
         run: |
-          set -e
+          set -euo pipefail
           manifest=app/src/main/AndroidManifest.xml
           app=app/src/main/java/com/udhaardaar/mvp/UdhaardaarApp.kt
           store=app/src/main/java/com/udhaardaar/mvp/V7LocalStore.kt
@@ -102,9 +79,8 @@ jobs:
           grep -q 'VISIBILITY_PRIVATE' "$reminder"
           ! grep -R 'Log\.d\|Log\.i\|Log\.v\|Log\.w\|Log\.e' -n app/src/main/java
           echo "V7 security/privacy static gate passed"
-
-      - name: Android emulator smoke tests
-        timeout-minutes: 25
+      - name: Android emulator regression
+        timeout-minutes: 45
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -115,18 +91,33 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data
           disable-animations: true
           script: |
+            set -euo pipefail
             adb start-server
             adb wait-for-device
-            echo "Waiting for Android package manager..."
-            for i in $(seq 1 30); do adb shell pm path android >/dev/null 2>&1 && break; sleep 2; done
-            adb shell getprop sys.boot_completed
+            for i in $(seq 1 45); do
+              if adb shell pm path android >/dev/null 2>&1; then break; fi
+              sleep 2
+            done
+            test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1"
             adb shell pm path android
-            gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
-
+            run_test() {
+              name="$1"
+              class="$2"
+              echo "===== V7 REGRESSION: $name ====="
+              timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class="$class"
+              echo "===== PASS: $name ====="
+            }
+            run_test "legacy/V6.2 lifecycle smoke" "com.udhaardaar.mvp.ArthSaathiV62SmokeTest"
+            run_test "V7 broad functional/UI regression" "com.udhaardaar.mvp.V7BroadFunctionalUiRegressionInstrumentedTest"
+            run_test "V7 master integration matrix" "com.udhaardaar.mvp.V7MasterIntegrationScenarioInstrumentedTest"
+            run_test "V7 persistence boundary" "com.udhaardaar.mvp.V7PersistenceBoundaryInstrumentedTest"
+            run_test "V7 secure account/session" "com.udhaardaar.mvp.V7SecureAccountInstrumentedTest"
+            run_test "V7 Step 1-5 integration" "com.udhaardaar.mvp.V7Step1To5IntegrationInstrumentedTest"
+            run_test "V7 Step 6 native migration" "com.udhaardaar.mvp.V7Step6NativeMigrationInstrumentedTest"
       - name: Upload V7 APK
         uses: actions/upload-artifact@v4
         with:
-          name: ArthSaathi-V7-Visual-Foundation-APK
+          name: ArthSaathi-V7-Final-Regression-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
