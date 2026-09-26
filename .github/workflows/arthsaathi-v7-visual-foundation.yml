@@ -117,19 +117,10 @@ jobs:
           script: |
             adb start-server
             adb wait-for-device
-            echo "Waiting for Android framework and package service..."
-            for i in $(seq 1 90); do
-              boot=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\\r')
-              pkg=$(adb shell service check package 2>/dev/null || true)
-              if [ "$boot" = "1" ] && echo "$pkg" | grep -q "found"; then
-                break
-              fi
-              sleep 2
-            done
-            boot=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\\r')
-            pkg=$(adb shell service check package 2>/dev/null || true)
-            test "$boot" = "1"
-            echo "$pkg" | grep -q "found"
+            echo "Waiting for Android package service..."
+            sleep 15
+            while ! adb shell service check package 2>/dev/null | grep -q "found"; do sleep 2; done
+            adb shell getprop sys.boot_completed
             adb shell pm path android
             gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
 
