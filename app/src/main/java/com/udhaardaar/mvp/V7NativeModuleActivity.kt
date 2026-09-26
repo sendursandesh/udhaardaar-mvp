@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import android.text.InputFilter
+import android.text.InputType
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
 
@@ -51,10 +53,11 @@ class V7NativeModuleActivity : AppCompatActivity() {
         return ScrollView(this).apply { isFillViewport = true; addView(root) }
     }
 
-    private fun field(hint: String, inputType: Int = android.text.InputType.TYPE_CLASS_TEXT): EditText =
+    private fun field(hint: String, inputType: Int = InputType.TYPE_CLASS_TEXT, maxLength: Int? = null): EditText =
         EditText(this).apply {
             this.hint = hint
             this.inputType = inputType
+            maxLength?.let { filters = arrayOf(InputFilter.LengthFilter(it)) }
             setSingleLine(true)
             setPadding(dp(10), 0, dp(10), 0)
             setTextColor(ArthSaathiV7Design.NAVY)
@@ -83,10 +86,10 @@ class V7NativeModuleActivity : AppCompatActivity() {
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         body.addView(ArthSaathiV7Design.section(this, "People & Identity", "V7-owned people records. No legacy storage."))
         val name = field("Full name")
-        val mobile = field("10-digit mobile", android.text.InputType.TYPE_CLASS_PHONE)
-        val pan = field("PAN (optional)")
-        val aadhaar = field("Aadhaar (optional)", android.text.InputType.TYPE_CLASS_NUMBER)
-        val gstin = field("GSTIN (optional)")
+        val mobile = field("10-digit mobile", InputType.TYPE_CLASS_PHONE, 10)
+        val pan = field("PAN (optional)", InputType.TYPE_CLASS_TEXT, 10)
+        val aadhaar = field("Aadhaar (optional)", InputType.TYPE_CLASS_NUMBER, 12)
+        val gstin = field("GSTIN (optional)", InputType.TYPE_CLASS_TEXT, 15)
         listOf(name, mobile, pan, aadhaar, gstin).forEach {
             body.addView(it, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
         }
@@ -134,7 +137,7 @@ class V7NativeModuleActivity : AppCompatActivity() {
         val spinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
         body.addView(spinner, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
         val amount = field("Amount", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
-        val roi = field("ROI %", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
+        val roi = field("ROI % (e.g. 12.00)", InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL)
         val purpose = field("Purpose")
         val repayment = field("Repayment structure (EMI / Principal + Interest)")
         listOf(amount, roi, purpose, repayment).forEach { body.addView(it, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) }) }
@@ -144,6 +147,7 @@ class V7NativeModuleActivity : AppCompatActivity() {
             if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
             val r = roi.text.toString().toDoubleOrNull() ?: 0.0
             if (r < 0.0 || r > 100.0) { roi.error = "ROI must be between 0 and 100%"; return@button }
+            if (roi.text.toString().contains(".") && roi.text.toString().substringAfter(".").length > 2) { roi.error = "ROI allows maximum 2 decimal places"; return@button }
             V7Records.relationship(this, people[spinner.selectedItemPosition].optString("id"),
                 "INFORMAL_CREDIT", "RECEIVABLE", a, r,
                 repayment.text.toString().ifBlank { "PRINCIPAL_PLUS_INTEREST" },
@@ -184,9 +188,12 @@ class V7NativeModuleActivity : AppCompatActivity() {
             if (rels.isEmpty()) { Toast.makeText(this, "No outstanding V7 relationship.", Toast.LENGTH_SHORT).show(); return@button }
             val a = amount.text.toString().toDoubleOrNull()
             if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
+            val selectedMethod = method.text.toString().trim().uppercase()
+            if (selectedMethod !in setOf("CASH", "UPI", "NEFT")) { method.error = "Use CASH, UPI or NEFT"; return@button }
             val rel = rels[spinner.selectedItemPosition]
             val before = rel.optDouble("outstanding")
-            V7Records.repayment(this, rel.optString("id"), a, a, 0.0, method.text.toString().ifBlank { "UPI" }, true)
+            if (a > before + 0.005) { amount.error = "Repayment cannot exceed outstanding"; return@button }
+            V7Records.repayment(this, rel.optString("id"), a, a, 0.0, selectedMethod, true)
             val after = V7Core.find(this, V7Core.Keys.RELATIONSHIPS, rel.optString("id"))?.optDouble("outstanding") ?: before
             if (after == before) {
                 Toast.makeText(this, "Not recorded: active OTP-verified consent is required.", Toast.LENGTH_LONG).show()
