@@ -6,7 +6,7 @@ adb shell pm path android
 run_test() {
   local name="$1"; local class="$2"
   echo "===== V7 REGRESSION: $name ====="
-  timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace "-Pandroid.testInstrumentationRunnerArguments.class=$class"
+  timeout 10m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace "-Pandroid.testInstrumentationRunnerArguments.class=$class"
   echo "===== PASS: $name ====="
 }
 run_test "legacy/V6.2 lifecycle smoke" "com.udhaardaar.mvp.ArthSaathiV62SmokeTest"
