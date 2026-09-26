@@ -94,8 +94,14 @@ class V7NativeModuleActivity : AppCompatActivity() {
             val n = name.text.toString().trim()
             val m = mobile.text.toString().trim()
             if (n.isBlank()) { name.error = "Name is required"; return@button }
-            if (m.length != 10 || !m.all(Char::isDigit)) { mobile.error = "Enter exactly 10 digits"; return@button }
-            V7Records.person(this, n, m, pan.text.toString(), aadhaar.text.toString(), gstin.text.toString())
+            if (m.length != 10 || !m.all(Char::isDigit) || !m.matches(Regex("[6-9][0-9]{9}"))) { mobile.error = "Enter a valid 10-digit mobile number"; return@button }
+            val panValue = pan.text.toString().trim().uppercase()
+            if (panValue.isNotBlank() && !panValue.matches(Regex("[A-Z]{5}[0-9]{4}[A-Z]"))) { pan.error = "Enter a valid PAN"; return@button }
+            val aadhaarValue = aadhaar.text.toString().trim()
+            if (aadhaarValue.isNotBlank() && !aadhaarValue.matches(Regex("[0-9]{12}"))) { aadhaar.error = "Enter a valid 12-digit Aadhaar"; return@button }
+            val gstinValue = gstin.text.toString().trim().uppercase()
+            if (gstinValue.isNotBlank() && !gstinValue.matches(Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"))) { gstin.error = "Enter a valid GSTIN"; return@button }
+            V7Records.person(this, n, m, panValue, aadhaarValue, gstinValue)
             Toast.makeText(this, "Person saved in V7-owned Record.", Toast.LENGTH_SHORT).show()
             renderRecordList(body)
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
@@ -137,6 +143,7 @@ class V7NativeModuleActivity : AppCompatActivity() {
             val a = amount.text.toString().toDoubleOrNull()
             if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
             val r = roi.text.toString().toDoubleOrNull() ?: 0.0
+            if (r < 0.0 || r > 100.0) { roi.error = "ROI must be between 0 and 100%"; return@button }
             V7Records.relationship(this, people[spinner.selectedItemPosition].optString("id"),
                 "INFORMAL_CREDIT", "RECEIVABLE", a, r,
                 repayment.text.toString().ifBlank { "PRINCIPAL_PLUS_INTEREST" },
@@ -252,8 +259,10 @@ class V7NativeModuleActivity : AppCompatActivity() {
             val a = amount.text.toString().toDoubleOrNull()
             val o = outstanding.text.toString().toDoubleOrNull()
             if (type.text.toString().isBlank()) { type.error = "Type is required"; return@button }
-            if (a == null || o == null || a < 0 || o < 0) { amount.error = "Enter valid amounts"; return@button }
-            V7Records.liability(this, V7Core.user(this), type.text.toString(), a, o, rate.text.toString().toDoubleOrNull() ?: 0.0)
+            if (a == null || o == null || a < 0 || o < 0 || o > a) { amount.error = "Enter valid amounts; outstanding cannot exceed original amount"; return@button }
+            val rateValue = rate.text.toString().toDoubleOrNull() ?: 0.0
+            if (rateValue < 0.0 || rateValue > 100.0) { rate.error = "Rate must be between 0 and 100%"; return@button }
+            V7Records.liability(this, V7Core.user(this), type.text.toString(), a, o, rateValue)
             Toast.makeText(this, "Liability saved in V7.", Toast.LENGTH_SHORT).show()
             renderLiabilityList(body)
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
