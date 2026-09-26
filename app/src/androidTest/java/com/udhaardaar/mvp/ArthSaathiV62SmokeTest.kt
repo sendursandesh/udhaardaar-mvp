@@ -48,11 +48,13 @@ class ArthSaathiV62SmokeTest {
         assertResumes(target, Intent(context, target).putExtra("module", module))
     }
 
-    @Test fun loginScreenActuallyRenders() {
+    @Test(timeout = 60000)
+    fun loginScreenActuallyRenders() {
         assertResumes(LoginActivity::class.java)
     }
 
-    @Test fun v7HomeAndPrimaryJourneysDoNotCrash() {
+    @Test(timeout = 180000)
+    fun v7HomeAndPrimaryJourneysDoNotCrash() {
         prefs.edit()
             .putString("name_9876543210", "Test User")
             .putBoolean("logged_in", true)
@@ -73,7 +75,8 @@ class ArthSaathiV62SmokeTest {
             }
     }
 
-    @Test fun v7NavigationDoesNotDuplicateTopLevelModules() {
+    @Test(timeout = 60000)
+    fun v7NavigationDoesNotDuplicateTopLevelModules() {
         prefs.edit()
             .putString("name_9876543210", "Test User")
             .putBoolean("logged_in", true)
