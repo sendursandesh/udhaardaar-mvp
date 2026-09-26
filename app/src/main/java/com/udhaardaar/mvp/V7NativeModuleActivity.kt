@@ -148,9 +148,14 @@ class V7NativeModuleActivity : AppCompatActivity() {
             val r = roi.text.toString().toDoubleOrNull() ?: 0.0
             if (r < 0.0 || r > 100.0) { roi.error = "ROI must be between 0 and 100%"; return@button }
             if (roi.text.toString().contains(".") && roi.text.toString().substringAfter(".").length > 2) { roi.error = "ROI allows maximum 2 decimal places"; return@button }
+            val structure = repayment.text.toString().trim().uppercase().replace(" ", "_")
+            val normalizedStructure = when (structure) {
+                "", "PRINCIPAL_PLUS_INTEREST", "PRINCIPAL_+_INTEREST" -> "PRINCIPAL_PLUS_INTEREST"
+                "EMI" -> "EMI"
+                else -> { repayment.error = "Choose EMI or Principal + Interest"; return@button }
+            }
             V7Records.relationship(this, people[spinner.selectedItemPosition].optString("id"),
-                "INFORMAL_CREDIT", "RECEIVABLE", a, r,
-                repayment.text.toString().ifBlank { "PRINCIPAL_PLUS_INTEREST" },
+                "INFORMAL_CREDIT", "RECEIVABLE", a, r, normalizedStructure,
                 purpose.text.toString())
             Toast.makeText(this, "Credit relationship saved in V7.", Toast.LENGTH_SHORT).show()
             renderRelationshipList(body)
