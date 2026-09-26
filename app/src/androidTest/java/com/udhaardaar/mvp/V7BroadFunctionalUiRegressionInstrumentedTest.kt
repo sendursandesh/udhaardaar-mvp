@@ -156,6 +156,10 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
                 edit(root, "ROI % (e.g. 12.00)").setText("12.50")
                 edit(root, "Repayment structure (EMI / Principal + Interest)").setText("something unexpected")
                 button(root, "Register Credit in V7").performClick()
+                assertEquals("Choose EMI or Principal + Interest", edit(root, "Repayment structure (EMI / Principal + Interest)").error)
+                assertFalse(V7Core.all(context, V7Core.Keys.RELATIONSHIPS).any { it.optString("partyId") == person.optString("id") && it.optDouble("amount") == 25000.0 })
+                edit(root, "Repayment structure (EMI / Principal + Interest)").setText("Principal + Interest")
+                button(root, "Register Credit in V7").performClick()
                 assertTrue(V7Core.all(context, V7Core.Keys.RELATIONSHIPS).any {
                     it.optString("partyId") == person.optString("id") &&
                     it.optString("repaymentMethod") == "PRINCIPAL_PLUS_INTEREST"
