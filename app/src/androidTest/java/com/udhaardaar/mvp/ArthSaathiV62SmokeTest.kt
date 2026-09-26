@@ -78,13 +78,9 @@ class ArthSaathiV62SmokeTest {
         V7AccountStore.create(context, "Test User", testMobile)
         V7AccountStore.login(context, testMobile)
 
+        // assertResumes already launches, resumes, verifies visibility, and closes
+        // the scenario. Avoid a second launch in the same test, which can leave
+        // the emulator lifecycle waiting indefinitely on CI.
         assertResumes(V7HomeActivity::class.java)
-        ActivityScenario.launch(V7HomeActivity::class.java).use { scenario ->
-            scenario.onActivity { a ->
-                val root = a.window?.decorView
-                requireNotNull(root) { "V7 home window missing" }
-                require(root.isShown) { "V7 home is not visible" }
-            }
-        }
     }
 }
