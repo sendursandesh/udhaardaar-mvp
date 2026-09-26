@@ -9,6 +9,7 @@ import android.text.InputFilter
 import android.text.InputType
 import android.view.Gravity
 import android.view.WindowManager
+import android.content.pm.ApplicationInfo
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 
@@ -104,7 +105,7 @@ class LoginActivity : AppCompatActivity() {
      * configured server/provider and must never expose the OTP in the UI.
      */
     private fun otp(title:String,mobile:String,done:()->Unit) {
-        if (!BuildConfig.DEBUG) {
+        if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) == 0) {
             AlertDialog.Builder(this).setTitle("Authentication service unavailable")
                 .setMessage("Production OTP authentication is not configured in this build. Login is blocked rather than falling back to a local/demo OTP.")
                 .setPositiveButton("OK",null).show()
