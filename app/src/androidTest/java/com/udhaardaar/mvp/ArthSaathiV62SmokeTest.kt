@@ -51,9 +51,17 @@ class ArthSaathiV62SmokeTest {
 
         val modules = listOf("RECORD", "CREDIT", "ASSETS", "GROW", "PROTECT", "LEGAL", "MORE")
         for (module in modules) {
+            // V7ModuleActivity is a routing shell. Native modules intentionally
+            // redirect to V7NativeModuleActivity and finish the shell, so the
+            // smoke test must assert the canonical destination rather than the
+            // transient router activity.
+            val destination = if (V7MasterVisionRegistry.find(module)?.ownership ==
+                V7MasterVisionRegistry.Ownership.NATIVE
+            ) V7NativeModuleActivity::class.java else V7ModuleActivity::class.java
+
             assertResumes(
-                V7ModuleActivity::class.java,
-                Intent(context, V7ModuleActivity::class.java).putExtra("module", module)
+                destination,
+                Intent(context, destination).putExtra("module", module)
             )
         }
 
