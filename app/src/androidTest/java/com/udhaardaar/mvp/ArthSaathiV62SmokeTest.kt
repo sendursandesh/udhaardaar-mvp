@@ -31,13 +31,21 @@ class ArthSaathiV62SmokeTest {
         scenario.use {
             it.onActivity { a ->
                 requireNotNull(a.window?.decorView) { "Window missing for " + activity.simpleName }
-            }
-            it.onActivity { a ->
                 require(a.window?.decorView?.isShown == true) {
                     "Window not visible after resume for " + activity.simpleName
                 }
             }
         }
+    }
+
+    private fun assertModuleResumes(module: String) {
+        val ownership = V7MasterVisionRegistry.find(module)?.ownership
+        val target = if (ownership == V7MasterVisionRegistry.Ownership.NATIVE) {
+            V7NativeModuleActivity::class.java
+        } else {
+            V7ModuleActivity::class.java
+        }
+        assertResumes(target, Intent(context, target).putExtra("module", module))
     }
 
     @Test fun loginScreenActuallyRenders() {
@@ -53,21 +61,16 @@ class ArthSaathiV62SmokeTest {
 
         assertResumes(V7HomeActivity::class.java)
 
-        val modules = listOf("RECORD", "CREDIT", "ASSETS", "GROW", "PROTECT", "LEGAL", "MORE")
-        for (module in modules) {
-            assertResumes(
-                V7ModuleActivity::class.java,
-                Intent(context, V7ModuleActivity::class.java).putExtra("module", module)
-            )
-        }
+        listOf("RECORD", "CREDIT", "ASSETS", "GROW", "PROTECT", "LEGAL", "MORE")
+            .forEach(::assertModuleResumes)
 
-        val tools = listOf("PORTFOLIO", "OPPORTUNITY", "MARKET", "ADDRESS", "REVENUE", "ADVOCATE", "CLAIM", "AI", "SECURITY")
-        for (tool in tools) {
-            assertResumes(
-                V7ToolsActivity::class.java,
-                Intent(context, V7ToolsActivity::class.java).putExtra("tool", tool)
-            )
-        }
+        listOf("PORTFOLIO", "OPPORTUNITY", "MARKET", "ADDRESS", "REVENUE", "ADVOCATE", "CLAIM", "AI", "SECURITY")
+            .forEach { tool ->
+                assertResumes(
+                    V7ToolsActivity::class.java,
+                    Intent(context, V7ToolsActivity::class.java).putExtra("tool", tool)
+                )
+            }
     }
 
     @Test fun v7NavigationDoesNotDuplicateTopLevelModules() {
