@@ -31,10 +31,8 @@ class ArthSaathiV62SmokeTest {
         else ActivityScenario.launch<android.app.Activity>(intent)
         scenario.use {
             it.onActivity { a ->
-                requireNotNull(a.window?.decorView) { "Window missing for " + activity.simpleName }
-            }
-            it.onActivity { a ->
-                require(a.window?.decorView?.isShown == true) {
+                val decor = requireNotNull(a.window?.decorView) { "Window missing for " + activity.simpleName }
+                require(decor.isShown) {
                     "Window not visible after resume for " + activity.simpleName
                 }
             }
