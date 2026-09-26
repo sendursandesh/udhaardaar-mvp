@@ -9,7 +9,9 @@ run_test() {
   timeout 10m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace "-Pandroid.testInstrumentationRunnerArguments.class=$class"
   echo "===== PASS: $name ====="
 }
-run_test "legacy/V6.2 lifecycle smoke" "com.udhaardaar.mvp.ArthSaathiV62SmokeTest"
+run_test "legacy login lifecycle" "com.udhaardaar.mvp.ArthSaathiV62SmokeTest#loginScreenActuallyRenders"
+run_test "legacy V7 home journeys lifecycle" "com.udhaardaar.mvp.ArthSaathiV62SmokeTest#v7HomeAndPrimaryJourneysDoNotCrash"
+run_test "legacy V7 navigation lifecycle" "com.udhaardaar.mvp.ArthSaathiV62SmokeTest#v7NavigationDoesNotDuplicateTopLevelModules"
 run_test "V7 broad functional/UI regression" "com.udhaardaar.mvp.V7BroadFunctionalUiRegressionInstrumentedTest"
 run_test "V7 master integration matrix" "com.udhaardaar.mvp.V7MasterIntegrationScenarioInstrumentedTest"
 run_test "V7 persistence boundary" "com.udhaardaar.mvp.V7PersistenceBoundaryInstrumentedTest"
