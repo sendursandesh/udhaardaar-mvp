@@ -11,7 +11,6 @@ import android.view.Gravity
 import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import kotlin.random.Random
 
 class LoginActivity : AppCompatActivity() {
     private val d get() = resources.displayMetrics.density
@@ -111,15 +110,14 @@ class LoginActivity : AppCompatActivity() {
                 .setPositiveButton("OK",null).show()
             return
         }
-        val code=(100000+Random.nextInt(900000)).toString()
+        val code="123456"
         val e=ArthSaathiV7Design.input(this,"Enter 6-digit OTP").apply { inputType=InputType.TYPE_CLASS_NUMBER; filters=arrayOf(InputFilter.LengthFilter(6)) }
         val dialog=AlertDialog.Builder(this).setTitle("$title (development)")
-            .setMessage("Development-only OTP is enabled in debug builds.")
+            .setMessage("Development-only OTP: 123456. This path is blocked from production builds.")
             .setView(e).setNegativeButton("CANCEL",null).setPositiveButton("VERIFY",null).create()
         dialog.setOnShowListener { dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { if(e.text.toString()==code){dialog.dismiss();done()}else e.error="Incorrect OTP" } }
         dialog.show()
         e.requestFocus()
-        e.tag = code
     }
 
     private fun openHome(){startActivity(Intent(this,V7HomeActivity::class.java));finish()}
