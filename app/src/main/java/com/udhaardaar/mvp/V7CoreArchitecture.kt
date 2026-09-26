@@ -26,8 +26,7 @@ object V7Core {
         const val REPAYMENTS="v7_repayments"; const val FUNDING="v7_funding"
     }
 
-    fun user(c: Context) = c.getSharedPreferences("udhaardaar_accounts", Context.MODE_PRIVATE)
-        .getString("current_mobile","")?.trim().orEmpty().ifBlank { "self" }
+    fun user(c: Context) = V7AccountStore.currentMobile(c)
     fun id(prefix:String)= prefix + "-" + UUID.randomUUID()
     fun now()=System.currentTimeMillis()
     fun store(c:Context)=V7LocalStore(c.applicationContext)
