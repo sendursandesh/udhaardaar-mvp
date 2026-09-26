@@ -77,10 +77,10 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
             scenario.onActivity { a ->
                 val root = a.window.decorView
                 edit(root, "Amount").setText("10000")
-                edit(root, "ROI %").setText("120")
+                edit(root, "ROI % (e.g. 12.00)").setText("120")
                 button(root, "Register Credit in V7").performClick()
-                assertEquals("ROI must be between 0 and 100%", edit(root, "ROI %").error)
-                edit(root, "ROI %").setText("12")
+                assertEquals("ROI must be between 0 and 100%", edit(root, "ROI % (e.g. 12.00)").error)
+                edit(root, "ROI % (e.g. 12.00)").setText("12")
                 edit(root, "Purpose").setText("UI QA")
                 edit(root, "Repayment structure (EMI / Principal + Interest)").setText("PRINCIPAL_PLUS_INTEREST")
                 button(root, "Register Credit in V7").performClick()
