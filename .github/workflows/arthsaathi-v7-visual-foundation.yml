@@ -91,7 +91,24 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data
           disable-animations: true
           shell: bash
-          script: bash -lc 'set -eu; adb start-server; adb wait-for-device; test "$(adb shell getprop sys.boot_completed | tr -d "\\r")" = "1"; adb shell pm path android; echo "===== V7 REGRESSION: legacy/V6.2 lifecycle smoke ====="; timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.ArthSaathiV62SmokeTest; echo "===== V7 REGRESSION: V7 broad functional/UI regression ====="; timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7BroadFunctionalUiRegressionInstrumentedTest; echo "===== V7 REGRESSION: V7 master integration matrix ====="; timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7MasterIntegrationScenarioInstrumentedTest; echo "===== V7 REGRESSION: V7 persistence boundary ====="; timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7PersistenceBoundaryInstrumentedTest; echo "===== V7 REGRESSION: V7 secure account/session ====="; timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7SecureAccountInstrumentedTest; echo "===== V7 REGRESSION: V7 Step 1-5 integration ====="; timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7Step1To5IntegrationInstrumentedTest; echo "===== V7 REGRESSION: V7 Step 6 native migration ====="; timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7Step6NativeMigrationInstrumentedTest; echo "===== ALL V7 EMULATOR REGRESSION SUITES PASSED ====="
+          script: |
+            adb wait-for-device
+            adb shell pm path android
+            echo "===== V7 REGRESSION: legacy/V6.2 lifecycle smoke ====="
+            timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.ArthSaathiV62SmokeTest
+            echo "===== V7 REGRESSION: V7 broad functional/UI regression ====="
+            timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7BroadFunctionalUiRegressionInstrumentedTest
+            echo "===== V7 REGRESSION: V7 master integration matrix ====="
+            timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7MasterIntegrationScenarioInstrumentedTest
+            echo "===== V7 REGRESSION: V7 persistence boundary ====="
+            timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7PersistenceBoundaryInstrumentedTest
+            echo "===== V7 REGRESSION: V7 secure account/session ====="
+            timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7SecureAccountInstrumentedTest
+            echo "===== V7 REGRESSION: V7 Step 1-5 integration ====="
+            timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7Step1To5IntegrationInstrumentedTest
+            echo "===== V7 REGRESSION: V7 Step 6 native migration ====="
+            timeout 6m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.udhaardaar.mvp.V7Step6NativeMigrationInstrumentedTest
+            echo "===== ALL V7 EMULATOR REGRESSION SUITES PASSED ====="
       - name: Upload V7 APK
         uses: actions/upload-artifact@v4
         with:
