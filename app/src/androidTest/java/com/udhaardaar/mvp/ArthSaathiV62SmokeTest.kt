@@ -13,16 +13,17 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ArthSaathiV62SmokeTest {
     private lateinit var context: Context
-    private lateinit var prefs: android.content.SharedPreferences
+    private val testMobile = "9876543210"
 
     @Before fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
-        prefs = context.getSharedPreferences("udhaardaar_accounts", Context.MODE_PRIVATE)
-        prefs.edit().clear().commit()
+        V7AccountStore.logout(context)
+        V7LocalStore(context).remove("v7_accounts", testMobile)
     }
 
     @After fun tearDown() {
-        prefs.edit().clear().commit()
+        V7AccountStore.logout(context)
+        V7LocalStore(context).remove("v7_accounts", testMobile)
     }
 
     private fun assertResumes(activity: Class<out android.app.Activity>, intent: Intent? = null) {
@@ -45,11 +46,8 @@ class ArthSaathiV62SmokeTest {
     }
 
     @Test fun v7HomeAndPrimaryJourneysDoNotCrash() {
-        prefs.edit()
-            .putString("name_9876543210", "Test User")
-            .putBoolean("logged_in", true)
-            .putString("current_mobile", "9876543210")
-            .commit()
+        V7AccountStore.create(context, "Test User", testMobile)
+        V7AccountStore.login(context, testMobile)
 
         assertResumes(V7HomeActivity::class.java)
 
