@@ -84,20 +84,33 @@ jobs:
       - name: Android emulator smoke tests
         timeout-minutes: 25
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 120
         with:
           api-level: 34
           target: default
           arch: x86_64
           profile: pixel_2
           force-avd-creation: true
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data -memory 4096 -cores 2
           disable-animations: true
           script: |
-            set -o pipefail
+            set -euo pipefail
             adb start-server
             adb wait-for-device
-            sleep 15
-            adb shell getprop sys.boot_completed
+            for i in $(seq 1 60); do
+              boot="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+              pkg="$(adb shell service check package 2>/dev/null || true)"
+              if [ "$boot" = "1" ] && echo "$pkg" | grep -q "found"; then
+                echo "Emulator services ready on attempt $i"
+                break
+              fi
+              echo "Waiting for Android system services: attempt $i boot=$boot package=$pkg"
+              sleep 5
+            done
+            test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1"
+            adb shell service check package | grep -q "found"
             adb shell pm path android
             timeout --signal=TERM --kill-after=30s 10m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
 
