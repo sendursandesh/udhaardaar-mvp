@@ -35,7 +35,7 @@ class V5LocalStore(context: Context) {
         val rows=(0 until a.length()).mapNotNull{a.optJSONObject(it)}
         if(!key.startsWith("v62_")) return rows
         if(key=="v62_users") return rows
-        val current=appContext.getSharedPreferences("udhaardaar_accounts",Context.MODE_PRIVATE).getString("current_mobile","")?.trim().orEmpty().ifBlank{"self"}
+        val current=V7AccountStore.currentMobile(appContext).ifBlank{"self"}
         return when(key){
             "v62_counterparties" -> rows.filter{it.optString("createdBy","")==current}
             "v62_funding_requests" -> rows.filter{it.optString("requesterId","")==current || it.optString("ownerUserId","")==current}

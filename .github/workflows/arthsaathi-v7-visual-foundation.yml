@@ -1,9 +1,11 @@
-name: ArthSaathi V7 Visual Foundation Build
+name: ArthSaathi V7 Step 6 Native Master Vision
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [arthsaathi-v7-master-build-2026-09-23]
   push:
-    branches: [arthsaathi-v7-visual-foundation-2026-09-22, arthsaathi-v7-master-build-2026-09-23]
+    branches: [arthsaathi-v7-visual-foundation-2026-09-22, arthsaathi-v7-master-build-2026-09-23, arthsaathi-v7-step1-5-rectification-2026-09-24, arthsaathi-v7-step6-native-master-vision-2026-09-24, arthsaathi-v7-master-integration-qa-2026-09-25]
 
 permissions:
   contents: read
@@ -50,9 +52,28 @@ jobs:
           grep -q "versionName '7.0'" app/build.gradle
           grep -q "V7HomeActivity" app/src/main/AndroidManifest.xml
           grep -q "V7ModuleActivity" app/src/main/AndroidManifest.xml
+          test -s app/src/main/java/com/udhaardaar/mvp/V7LocalStore.kt
+          test -s app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
+          test -s app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          test -s app/src/main/java/com/udhaardaar/mvp/V7LegacyProjectionSync.kt
+          grep -q "enum class Ownership" app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
+          grep -q "V7NativeModuleActivity" app/src/main/AndroidManifest.xml
+          ! grep -q "V7LegacyAdapter" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7Records.person" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7Records.relationship" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7Records.repayment" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7Records.asset" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7Records.liability" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          grep -q "V7LegacyProjectionSync.sync" app/src/main/java/com/udhaardaar/mvp/UdhaardaarApp.kt
+          grep -q "V7LegacyProjectionSync" app/src/main/java/com/udhaardaar/mvp/V7LegacyProjectionSync.kt
+          grep -q "native()" app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
+          ! grep -q "V5LocalStore" app/src/main/java/com/udhaardaar/mvp/V7CoreArchitecture.kt
+          ! grep -q "V62[A-Za-z].*Activity" app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt
+          grep -q "V7LegacyAdapter" app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt
           grep -q "Navigate Your Financial Journey" app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
           grep -q "Your Asset. Your Record. Your Right." app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
           grep -q "Plan • Protect • Grow • Nominate" app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
+          grep -q "validMethod" app/src/main/java/com/udhaardaar/mvp/V7CoreArchitecture.kt
           test -s app/src/main/res/drawable/arthsaathi_logo.xml
           echo "V7 visual foundation gates passed"
 
@@ -63,21 +84,35 @@ jobs:
       - name: Android emulator smoke tests
         timeout-minutes: 25
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 120
         with:
           api-level: 34
           target: default
           arch: x86_64
           profile: pixel_2
           force-avd-creation: true
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data -memory 4096 -cores 2
           disable-animations: true
           script: |
+            set -euo pipefail
             adb start-server
             adb wait-for-device
-            sleep 15
-            adb shell getprop sys.boot_completed
+            for i in $(seq 1 60); do
+              boot="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+              pkg="$(adb shell service check package 2>/dev/null || true)"
+              if [ "$boot" = "1" ] && echo "$pkg" | grep -q "found"; then
+                echo "Emulator services ready on attempt $i"
+                break
+              fi
+              echo "Waiting for Android system services: attempt $i boot=$boot package=$pkg"
+              sleep 5
+            done
+            test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1"
+            adb shell service check package | grep -q "found"
             adb shell pm path android
-            gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
+            timeout --signal=TERM --kill-after=30s 10m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
 
       - name: Upload V7 APK
         uses: actions/upload-artifact@v4

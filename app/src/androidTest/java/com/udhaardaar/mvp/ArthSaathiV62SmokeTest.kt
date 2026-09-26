@@ -2,7 +2,6 @@ package com.udhaardaar.mvp
 
 import android.content.Context
 import android.content.Intent
-import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -32,10 +31,6 @@ class ArthSaathiV62SmokeTest {
         scenario.use {
             it.onActivity { a ->
                 requireNotNull(a.window?.decorView) { "Window missing for " + activity.simpleName }
-            }
-            it.moveToState(Lifecycle.State.STARTED)
-            it.moveToState(Lifecycle.State.RESUMED)
-            it.onActivity { a ->
                 require(a.window?.decorView?.isShown == true) {
                     "Window not visible after resume for " + activity.simpleName
                 }
@@ -43,11 +38,23 @@ class ArthSaathiV62SmokeTest {
         }
     }
 
-    @Test fun loginScreenActuallyRenders() {
+    private fun assertModuleResumes(module: String) {
+        val ownership = V7MasterVisionRegistry.find(module)?.ownership
+        val target = if (ownership == V7MasterVisionRegistry.Ownership.NATIVE) {
+            V7NativeModuleActivity::class.java
+        } else {
+            V7ModuleActivity::class.java
+        }
+        assertResumes(target, Intent(context, target).putExtra("module", module))
+    }
+
+    @Test(timeout = 60000)
+    fun loginScreenActuallyRenders() {
         assertResumes(LoginActivity::class.java)
     }
 
-    @Test fun v7HomeAndPrimaryJourneysDoNotCrash() {
+    @Test(timeout = 180000)
+    fun v7HomeAndPrimaryJourneysDoNotCrash() {
         prefs.edit()
             .putString("name_9876543210", "Test User")
             .putBoolean("logged_in", true)
@@ -56,24 +63,20 @@ class ArthSaathiV62SmokeTest {
 
         assertResumes(V7HomeActivity::class.java)
 
-        val modules = listOf("RECORD", "CREDIT", "ASSETS", "GROW", "PROTECT", "LEGAL", "MORE")
-        for (module in modules) {
-            assertResumes(
-                V7ModuleActivity::class.java,
-                Intent(context, V7ModuleActivity::class.java).putExtra("module", module)
-            )
-        }
+        listOf("RECORD", "CREDIT", "ASSETS", "GROW", "PROTECT", "LEGAL", "MORE")
+            .forEach(::assertModuleResumes)
 
-        val tools = listOf("PORTFOLIO", "OPPORTUNITY", "MARKET", "ADDRESS", "REVENUE", "ADVOCATE", "CLAIM", "AI", "SECURITY")
-        for (tool in tools) {
-            assertResumes(
-                V7ToolsActivity::class.java,
-                Intent(context, V7ToolsActivity::class.java).putExtra("tool", tool)
-            )
-        }
+        listOf("PORTFOLIO", "OPPORTUNITY", "MARKET", "ADDRESS", "REVENUE", "ADVOCATE", "CLAIM", "AI", "SECURITY")
+            .forEach { tool ->
+                assertResumes(
+                    V7ToolsActivity::class.java,
+                    Intent(context, V7ToolsActivity::class.java).putExtra("tool", tool)
+                )
+            }
     }
 
-    @Test fun v7NavigationDoesNotDuplicateTopLevelModules() {
+    @Test(timeout = 60000)
+    fun v7NavigationDoesNotDuplicateTopLevelModules() {
         prefs.edit()
             .putString("name_9876543210", "Test User")
             .putBoolean("logged_in", true)
