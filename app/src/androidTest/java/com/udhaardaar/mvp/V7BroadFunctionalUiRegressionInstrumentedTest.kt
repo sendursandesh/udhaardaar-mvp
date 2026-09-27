@@ -53,7 +53,7 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
                 val root = a.window.decorView
                 edit(root, "Full name").setText("UI Person")
                 val mobileField = edit(root, "10-digit mobile")
-                mobileField.setText("123456789012345")
+                mobileField.setText("987654321012345")
                 assertEquals("1234567890", mobileField.text.toString())
                 edit(root, "PAN (optional)").setText("BADPAN")
                 button(root, "Save Person in V7").performClick()
@@ -76,6 +76,9 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
         ).use { scenario ->
             scenario.onActivity { a ->
                 val root = a.window.decorView
+                val creditSpinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner }
+                requireNotNull(creditSpinner)
+                creditSpinner.setSelection((creditSpinner.adapter as android.widget.ArrayAdapter<*>).getPosition("Credit UI • 9876504322").coerceAtLeast(0))
                 edit(root, "Amount").setText("10000")
                 edit(root, "ROI % (e.g. 12.00)").setText("120")
                 button(root, "Register Credit in V7").performClick()
@@ -149,6 +152,9 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
         ).use { scenario ->
             scenario.onActivity { a ->
                 val root = a.window.decorView
+                val creditSpinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner }
+                requireNotNull(creditSpinner)
+                creditSpinner.setSelection((creditSpinner.adapter as android.widget.ArrayAdapter<*>).getPosition("Structure QA • 9876504324").coerceAtLeast(0))
                 edit(root, "Amount").setText("25000")
                 edit(root, "ROI % (e.g. 12.00)").setText("12.345")
                 button(root, "Register Credit in V7").performClick()
@@ -219,7 +225,7 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
     @Test fun v7HomeRendersAfterSessionAndNativeRoutesDoNotExposeLegacyActivitiesDirectly() {
         ActivityScenario.launch<V7HomeActivity>(Intent(context, V7HomeActivity::class.java)).use { scenario ->
             scenario.onActivity { a ->
-                assertTrue(a.window.decorView.findViewsWithText("Financial Snapshot").isNotEmpty())
+                assertTrue(a.window.decorView.findViewsWithText("Your Financial Snapshot").isNotEmpty())
                 assertTrue(V7MasterVisionRegistry.find("CREDIT")?.ownership == V7MasterVisionRegistry.Ownership.NATIVE)
                 assertTrue(V7MasterVisionRegistry.find("RECORD")?.ownership == V7MasterVisionRegistry.Ownership.NATIVE)
             }
