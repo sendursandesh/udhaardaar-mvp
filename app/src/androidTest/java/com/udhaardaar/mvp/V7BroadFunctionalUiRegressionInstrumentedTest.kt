@@ -53,8 +53,8 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
                 val root = a.window.decorView
                 edit(root, "Full name").setText("UI Person")
                 val mobileField = edit(root, "10-digit mobile")
-                mobileField.setText("123456789012345")
-                assertEquals("1234567890", mobileField.text.toString())
+                mobileField.setText("987650432109876")
+                assertEquals("9876504321", mobileField.text.toString())
                 edit(root, "PAN (optional)").setText("BADPAN")
                 button(root, "Save Person in V7").performClick()
                 assertEquals("Enter a valid PAN", edit(root, "PAN (optional)").error)
@@ -63,7 +63,7 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
                 edit(root, "GSTIN (optional)").setText("10ABCDE1234F1Z5")
                 button(root, "Save Person in V7").performClick()
                 assertTrue(V7Core.all(context, V7Core.Keys.PEOPLE).any {
-                    it.optString("name") == "UI Person" && it.optString("mobile") == "1234567890"
+                    it.optString("name") == "UI Person" && it.optString("mobile") == "9876504321"
                 })
             }
         }
