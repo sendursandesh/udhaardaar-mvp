@@ -76,6 +76,10 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
         ).use { scenario ->
             scenario.onActivity { a ->
                 val root = a.window.decorView
+                val spinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner }
+                requireNotNull(spinner)
+                val peopleLabels = (0 until spinner.count).map { spinner.getItemAtPosition(it).toString() }
+                spinner.setSelection(peopleLabels.indexOfFirst { it.startsWith("Credit UI • 9876504322") })
                 edit(root, "Amount").setText("10000")
                 edit(root, "ROI %").setText("120")
                 button(root, "Register Credit in V7").performClick()
