@@ -126,7 +126,7 @@ jobs:
           disk-size: 6000M
           heap-size: 600M
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -camera-back none
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-snapshot-save -camera-back none
           disable-animations: true
           script: |
             mkdir -p build/v7-emulator-diagnostics
