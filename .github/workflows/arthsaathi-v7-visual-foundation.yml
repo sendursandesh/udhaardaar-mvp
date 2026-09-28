@@ -127,6 +127,7 @@ jobs:
           heap-size: 600M
           emulator-boot-timeout: 1200
           emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-snapshot-save -camera-back none
+          pre-emulator-launch-script: adb start-server
           disable-animations: true
           script: |
             mkdir -p build/v7-emulator-diagnostics
