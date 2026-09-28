@@ -113,14 +113,19 @@ jobs:
           ls -l /dev/kvm
 
       - name: Android emulator smoke tests
-        timeout-minutes: 25
+        timeout-minutes: 35
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 120
         with:
           api-level: 34
           target: default
           arch: x86_64
           profile: pixel_2
           force-avd-creation: true
+          disk-size: 6000M
+          heap-size: 600M
+          emulator-boot-timeout: 1200
           emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -camera-back none
           disable-animations: true
           script: |
@@ -144,16 +149,17 @@ jobs:
 
       - name: Capture emulator diagnostics
         if: always()
+        timeout-minutes: 3
         run: |
           set +e
           mkdir -p build/v7-emulator-diagnostics
-          adb devices -l > build/v7-emulator-diagnostics/adb-devices-final.txt 2>&1
-          adb shell getprop > build/v7-emulator-diagnostics/getprop-final.txt 2>&1
-          adb shell dumpsys activity activities > build/v7-emulator-diagnostics/activity.txt 2>&1
-          adb shell dumpsys meminfo > build/v7-emulator-diagnostics/meminfo.txt 2>&1
-          adb logcat -d -v threadtime > build/v7-emulator-diagnostics/logcat.txt 2>&1
-          adb shell screencap -p /sdcard/v7-final.png >/dev/null 2>&1
-          adb pull /sdcard/v7-final.png build/v7-emulator-diagnostics/v7-final.png >/dev/null 2>&1
+          timeout 10s adb devices -l > build/v7-emulator-diagnostics/adb-devices-final.txt 2>&1 || true
+          timeout 10s adb shell getprop > build/v7-emulator-diagnostics/getprop-final.txt 2>&1 || true
+          timeout 10s adb shell dumpsys activity activities > build/v7-emulator-diagnostics/activity.txt 2>&1 || true
+          timeout 10s adb shell dumpsys meminfo > build/v7-emulator-diagnostics/meminfo.txt 2>&1 || true
+          timeout 15s adb logcat -d -v threadtime > build/v7-emulator-diagnostics/logcat.txt 2>&1 || true
+          timeout 10s adb shell screencap -p /sdcard/v7-final.png >/dev/null 2>&1 || true
+          timeout 10s adb pull /sdcard/v7-final.png build/v7-emulator-diagnostics/v7-final.png >/dev/null 2>&1 || true
           find app/build/outputs -type f -maxdepth 8 -print > build/v7-emulator-diagnostics/build-outputs.txt 2>&1
           find app/build/test-results app/build/reports -type f -maxdepth 10 -print > build/v7-emulator-diagnostics/test-reports.txt 2>&1
           true
