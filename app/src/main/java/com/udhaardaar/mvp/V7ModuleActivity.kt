@@ -152,6 +152,8 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("◉", "Portfolio Intelligence", "Holdings, value, allocation and performance"),
             Triple("▥", "MIS Dashboard", "First-hand financial information from your records"),
             Triple("↔", "Opportunity Cost", "Compare current portfolio with alternatives"),
+            Triple("▤", "MIS Dashboard", "Connected financial intelligence and revenue"),
+            Triple("⇄", "ERP / Tally", "Explicit data exchange boundary"),
             Triple("⌁", "Market Data", "Timestamped external data with freshness"),
             Triple("◌", "Scenarios", "Analyse before making a decision"),
             Triple("▤", "Reports", "Statements and financial reports")
@@ -160,6 +162,8 @@ class V7ModuleActivity : AppCompatActivity() {
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "OPPORTUNITY")) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "MARKET")) },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "MIS")) },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "INTEGRATION")) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "OPPORTUNITY")) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) }
         ))
@@ -251,12 +255,14 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("💳", "Revenue & Payments", "Services, invoices and payment records"),
             Triple("BE", "Government Schemes", "Eligibility and benefit records"),
             Triple("RE", "Rental & Lease", "Lease relationships and documents"),
-            Triple("⚙", "Security & Consent", "Consent, audit and protected sharing")
+            Triple("⚙", "Security & Consent", "Consent, audit and protected sharing"),
+            Triple("◈", "Credit Score", "Consent-gated explainable internal score")
         ), listOf(
             { openMore("CHARGECHECK") }, { openNative("LIABILITIES") },
             { openMore("REPORTS") }, { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "REVENUE")) },
             { openMore("BENEFITS") }, { openMore("RENTAL") },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "AI")) }
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "AI")) },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "SCORE")) }
         ))
     }
 
