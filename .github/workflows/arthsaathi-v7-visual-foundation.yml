@@ -103,6 +103,15 @@ jobs:
           ! grep -R 'Log\.d\|Log\.i\|Log\.v\|Log\.w\|Log\.e' -n app/src/main/java
           echo "V7 security/privacy static gate passed"
 
+      - name: Enable KVM for Android emulator
+        run: |
+          set -euxo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          test -e /dev/kvm
+          ls -l /dev/kvm
+
       - name: Android emulator smoke tests
         timeout-minutes: 25
         uses: reactivecircus/android-emulator-runner@v2
@@ -112,16 +121,51 @@ jobs:
           arch: x86_64
           profile: pixel_2
           force-avd-creation: true
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -camera-back none
           disable-animations: true
           script: |
+            set -o pipefail
+            mkdir -p build/v7-emulator-diagnostics
             adb start-server
+            adb devices -l | tee build/v7-emulator-diagnostics/adb-devices.txt
             adb wait-for-device
             echo "Waiting for Android package manager..."
-            for i in $(seq 1 30); do adb shell pm path android >/dev/null 2>&1 && break; sleep 2; done
-            adb shell getprop sys.boot_completed
-            adb shell pm path android
-            gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
+            boot_ok=false
+            for i in $(seq 1 60); do
+              if adb shell pm path android >/dev/null 2>&1; then boot_ok=true; break; fi
+              adb shell getprop sys.boot_completed 2>/dev/null || true
+              sleep 2
+            done
+            echo "boot_ok=$boot_ok"
+            adb shell getprop > build/v7-emulator-diagnostics/getprop.txt || true
+            adb shell pm path android > build/v7-emulator-diagnostics/pm-path.txt || true
+            adb shell dumpsys package com.udhaardaar.mvp > build/v7-emulator-diagnostics/package.txt || true
+            gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace 2>&1 | tee build/v7-emulator-diagnostics/instrumentation.log
+
+      - name: Capture emulator diagnostics
+        if: always()
+        run: |
+          set +e
+          mkdir -p build/v7-emulator-diagnostics
+          adb devices -l > build/v7-emulator-diagnostics/adb-devices-final.txt 2>&1
+          adb shell getprop > build/v7-emulator-diagnostics/getprop-final.txt 2>&1
+          adb shell dumpsys activity activities > build/v7-emulator-diagnostics/activity.txt 2>&1
+          adb shell dumpsys meminfo > build/v7-emulator-diagnostics/meminfo.txt 2>&1
+          adb logcat -d -v threadtime > build/v7-emulator-diagnostics/logcat.txt 2>&1
+          adb shell screencap -p /sdcard/v7-final.png >/dev/null 2>&1
+          adb pull /sdcard/v7-final.png build/v7-emulator-diagnostics/v7-final.png >/dev/null 2>&1
+          find app/build/outputs -type f -maxdepth 8 -print > build/v7-emulator-diagnostics/build-outputs.txt 2>&1
+          find app/build/test-results app/build/reports -type f -maxdepth 10 -print > build/v7-emulator-diagnostics/test-reports.txt 2>&1
+          true
+
+      - name: Upload V7 emulator diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArthSaathi-V7-emulator-diagnostics
+          path: build/v7-emulator-diagnostics
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Upload V7 APK
         uses: actions/upload-artifact@v4
