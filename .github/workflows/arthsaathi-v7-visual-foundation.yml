@@ -119,7 +119,7 @@ jobs:
           ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 120
         with:
           api-level: 34
-          target: aosp_atd
+          target: default
           arch: x86_64
           profile: pixel_2
           force-avd-creation: true
@@ -128,7 +128,7 @@ jobs:
           emulator-boot-timeout: 1200
           emulator-build: 15004761
           emulator-options: -no-window -noaudio -no-boot-anim -gpu off -no-snapshot -no-snapshot-save -camera-back none
-          pre-emulator-launch-script: adb start-server
+          pre-emulator-launch-script: adb kill-server || true; adb start-server
           disable-animations: true
           script: |
             mkdir -p build/v7-emulator-diagnostics
