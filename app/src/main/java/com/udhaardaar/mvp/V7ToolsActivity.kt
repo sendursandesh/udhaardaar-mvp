@@ -18,7 +18,7 @@ class V7ToolsActivity : AppCompatActivity() {
         r.addView(h);return r
     }
     private fun render(tool:String){
-        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"MARKET"->market();"ADDRESS"->address();"REVENUE"->revenue();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();else->portfolio()}
+        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"MARKET"->market();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();else->portfolio()}
         r.addView(ArthSaathiV7Design.goldButton(this,"Back"){finish()},LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(12)})
         setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
     }
@@ -99,6 +99,57 @@ class V7ToolsActivity : AppCompatActivity() {
             last.put("status",V7RevenueEngine.PaymentStatus.SUCCESS.name);V7Core.replace(this,V7Core.Keys.PAYMENTS,last);status.text="Payment marked SUCCESS. Receipt/reconciliation can now follow."
         },LinearLayout.LayoutParams(-1,dp(46)).apply{topMargin=dp(6)});r.addView(status,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)});return r
     }
+    private fun mis():LinearLayout{
+        val r=shell("MIS & Financial Command Centre","One connected view of assets, liabilities, credit, portfolio, revenue and records.")
+        val out=ArthSaathiV7Design.text(this,"",11f,ArthSaathiV7Design.NAVY)
+        r.addView(ArthSaathiV7Design.goldButton(this,"Refresh MIS"){
+            val m=V7MIS.snapshot(this)
+            out.text="Assets: ₹%.2f\nLiabilities: ₹%.2f\nReceivables: ₹%.2f\nPayables: ₹%.2f\nNet worth: ₹%.2f\nPortfolio: ₹%.2f (gain/loss ₹%.2f)\nActive credits: %d\nReconciled revenue: ₹%.2f\nRecorded payments: ₹%.2f\nInvoices: %d\nAudit events: %d".format(
+                m.optDouble("assets"),m.optDouble("liabilities"),m.optDouble("receivables"),m.optDouble("payables"),
+                m.optDouble("netWorth"),m.optDouble("portfolioValue"),m.optDouble("portfolioGain"),
+                m.optInt("activeCredits"),m.optDouble("reconciledRevenue"),m.optDouble("recordedPayments"),
+                m.optInt("invoiceCount"),m.optInt("auditEvents"))
+        },LinearLayout.LayoutParams(-1,dp(48)))
+        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+        return r
+    }
+    private fun score():LinearLayout{
+        val r=shell("Credit Score","Explainable internal score; borrower/counterparty consent is required before disclosure.")
+        val people=V7Core.all(this,V7Core.Keys.PEOPLE)
+        val labels=if(people.isEmpty()) listOf("No person recorded") else people.map{it.optString("name")+" • "+it.optString("mobile")}
+        val spinner=Spinner(this).apply{adapter=ArrayAdapter(this@V7ToolsActivity,android.R.layout.simple_spinner_dropdown_item,labels)}
+        r.addView(spinner,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(7)})
+        val out=ArthSaathiV7Design.text(this,"Score is hidden until verified consent is supplied.",11f,ArthSaathiV7Design.NAVY)
+        r.addView(ArthSaathiV7Design.outlineButton(this,"Grant Test Consent & Calculate"){
+            if(people.isEmpty()) { out.text="Create a person and credit relationship first."; return@outlineButton }
+            val person=people[spinner.selectedItemPosition]
+            val service=V7Architecture.LocalConsentService(this)
+            val consent=service.request(V7Architecture.ConsentRequest(person.optString("id"),"SCORE_DISCLOSURE","score",V7Core.user(this),V7Core.now()+300000L,true))
+            if(service.grant(consent.id,true)==null){out.text="Consent verification failed.";return@outlineButton}
+            val result=V7ScoreEngine.calculate(this,person.optString("id"),true)
+            out.text=result?.let{"Score: "+it.score+" • "+it.band+"\n"+it.factors.joinToString("\n")} ?: "Score unavailable."
+        },LinearLayout.LayoutParams(-1,dp(46)).apply{topMargin=dp(8)})
+        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+        return r
+    }
+    private fun integration():LinearLayout{
+        val r=shell("ERP & Tally Integration","Explicit export/connector boundary for future ERP and TallyPrime synchronisation. No silent transmission.")
+        val format=input("Format (JSON / XML / CSV)")
+        val connector=input("Connector (TALLY_PRIME / GENERIC_ERP / ACCOUNTING_ERP)")
+        val out=ArthSaathiV7Design.text(this,"Reviewable export package will be generated locally.",10.5f,ArthSaathiV7Design.NAVY)
+        r.addView(format,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        r.addView(connector,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        r.addView(ArthSaathiV7Design.goldButton(this,"Generate Integration Package"){
+            val f=runCatching{V7ExternalIntegration.Format.valueOf(format.text.toString().trim().uppercase())}.getOrNull()
+            val c=runCatching{V7ExternalIntegration.Connector.valueOf(connector.text.toString().trim().uppercase())}.getOrNull()
+            if(f==null||c==null){out.text="Use JSON/XML/CSV and a supported connector.";return@goldButton}
+            val p=V7ExternalIntegration.export(this,c,f)
+            out.text="Connector: "+p.connector+"\nFormat: "+p.format+"\nRecords: "+p.recordCount+"\nPayload generated locally and not transmitted."
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(9)})
+        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+        return r
+    }
+
     private fun advocate():LinearLayout{
         val r=shell("Advocate Directory","Search by city, domain, court, language and consultation mode. No arbitrary best/worst ranking.")
         val n=input("Name");val city=input("City");val state=input("State");val domain=input("Practice domain");val court=input("Court");val lang=input("Language");val mode=input("Consultation mode")
