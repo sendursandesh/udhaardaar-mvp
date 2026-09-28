@@ -131,24 +131,13 @@ jobs:
           script: |
             mkdir -p build/v7-emulator-diagnostics
             adb start-server
-            adb devices -l | tee build/v7-emulator-diagnostics/adb-devices.txt
+            adb devices -l > build/v7-emulator-diagnostics/adb-devices.txt
             adb wait-for-device
-            echo "Waiting for Android package manager..."
-            boot_ok=false
-            for i in $(seq 1 60); do
-              if adb shell pm path android >/dev/null 2>&1; then boot_ok=true; break; fi
-              adb shell getprop sys.boot_completed 2>/dev/null || true
-              sleep 2
-            done
-            echo "boot_ok=$boot_ok"
-            adb shell getprop > build/v7-emulator-diagnostics/getprop.txt || true
-            adb shell pm path android > build/v7-emulator-diagnostics/pm-path.txt || true
-            adb shell dumpsys package com.udhaardaar.mvp > build/v7-emulator-diagnostics/package.txt || true
-            set +e
+            adb shell getprop sys.boot_completed > build/v7-emulator-diagnostics/boot-completed.txt
+            adb shell getprop > build/v7-emulator-diagnostics/getprop.txt
+            adb shell pm path android > build/v7-emulator-diagnostics/pm-path.txt
+            adb shell dumpsys package com.udhaardaar.mvp > build/v7-emulator-diagnostics/package.txt
             gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace > build/v7-emulator-diagnostics/instrumentation.log 2>&1
-            test_rc=$?
-            cat build/v7-emulator-diagnostics/instrumentation.log
-            exit $test_rc
 
       - name: Capture emulator diagnostics
         if: always()
