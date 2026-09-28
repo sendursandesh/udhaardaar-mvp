@@ -120,12 +120,13 @@ class V7ToolsActivity : AppCompatActivity() {
         val spinner=Spinner(this).apply{adapter=ArrayAdapter(this@V7ToolsActivity,android.R.layout.simple_spinner_dropdown_item,labels)}
         r.addView(spinner,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(7)})
         val out=ArthSaathiV7Design.text(this,"Score is hidden until verified consent is supplied.",11f,ArthSaathiV7Design.NAVY)
-        r.addView(ArthSaathiV7Design.outlineButton(this,"Grant Test Consent & Calculate"){
+        r.addView(ArthSaathiV7Design.outlineButton(this,"Calculate with Verified Consent"){
             if(people.isEmpty()) { out.text="Create a person and credit relationship first."; return@outlineButton }
             val person=people[spinner.selectedItemPosition]
-            val service=V7Architecture.LocalConsentService(this)
-            val consent=service.request(V7Architecture.ConsentRequest(person.optString("id"),"SCORE_DISCLOSURE","score",V7Core.user(this),V7Core.now()+300000L,true))
-            if(service.grant(consent.id,true)==null){out.text="Consent verification failed.";return@outlineButton}
+            if(!V7Core.hasConsent(this,person.optString("id"),"SCORE_DISCLOSURE")) {
+                out.text="Verified borrower/counterparty consent is required before the score can be disclosed."
+                return@outlineButton
+            }
             val result=V7ScoreEngine.calculate(this,person.optString("id"),true)
             out.text=result?.let{"Score: "+it.score+" • "+it.band+"\n"+it.factors.joinToString("\n")} ?: "Score unavailable."
         },LinearLayout.LayoutParams(-1,dp(46)).apply{topMargin=dp(8)})
