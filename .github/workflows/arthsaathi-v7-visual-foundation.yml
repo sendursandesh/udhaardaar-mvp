@@ -119,7 +119,7 @@ jobs:
           ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 120
         with:
           api-level: 34
-          target: default
+          target: aosp_atd
           arch: x86_64
           profile: pixel_2
           force-avd-creation: true
