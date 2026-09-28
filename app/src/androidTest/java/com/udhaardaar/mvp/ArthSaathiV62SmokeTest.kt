@@ -2,7 +2,6 @@ package com.udhaardaar.mvp
 
 import android.content.Context
 import android.content.Intent
-import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -14,16 +13,17 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ArthSaathiV62SmokeTest {
     private lateinit var context: Context
-    private lateinit var prefs: android.content.SharedPreferences
+    private val testMobile = "9876543210"
 
     @Before fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
-        prefs = context.getSharedPreferences("udhaardaar_accounts", Context.MODE_PRIVATE)
-        prefs.edit().clear().commit()
+        V7AccountStore.logout(context)
+        V7LocalStore(context).remove("v7_accounts", testMobile)
     }
 
     @After fun tearDown() {
-        prefs.edit().clear().commit()
+        V7AccountStore.logout(context)
+        V7LocalStore(context).remove("v7_accounts", testMobile)
     }
 
     private fun assertResumes(activity: Class<out android.app.Activity>, intent: Intent? = null) {
@@ -31,12 +31,8 @@ class ArthSaathiV62SmokeTest {
         else ActivityScenario.launch<android.app.Activity>(intent)
         scenario.use {
             it.onActivity { a ->
-                requireNotNull(a.window?.decorView) { "Window missing for " + activity.simpleName }
-            }
-            it.moveToState(Lifecycle.State.STARTED)
-            it.moveToState(Lifecycle.State.RESUMED)
-            it.onActivity { a ->
-                require(a.window?.decorView?.isShown == true) {
+                val decor = requireNotNull(a.window?.decorView) { "Window missing for " + activity.simpleName }
+                require(decor.isShown) {
                     "Window not visible after resume for " + activity.simpleName
                 }
             }
@@ -48,19 +44,24 @@ class ArthSaathiV62SmokeTest {
     }
 
     @Test fun v7HomeAndPrimaryJourneysDoNotCrash() {
-        prefs.edit()
-            .putString("name_9876543210", "Test User")
-            .putBoolean("logged_in", true)
-            .putString("current_mobile", "9876543210")
-            .commit()
+        V7AccountStore.create(context, "Test User", testMobile)
+        V7AccountStore.login(context, testMobile)
 
         assertResumes(V7HomeActivity::class.java)
 
         val modules = listOf("RECORD", "CREDIT", "ASSETS", "GROW", "PROTECT", "LEGAL", "MORE")
         for (module in modules) {
+            // V7ModuleActivity is a routing shell. Native modules intentionally
+            // redirect to V7NativeModuleActivity and finish the shell, so the
+            // smoke test must assert the canonical destination rather than the
+            // transient router activity.
+            val destination = if (V7MasterVisionRegistry.find(module)?.ownership ==
+                V7MasterVisionRegistry.Ownership.NATIVE
+            ) V7NativeModuleActivity::class.java else V7ModuleActivity::class.java
+
             assertResumes(
-                V7ModuleActivity::class.java,
-                Intent(context, V7ModuleActivity::class.java).putExtra("module", module)
+                destination,
+                Intent(context, destination).putExtra("module", module)
             )
         }
 
@@ -74,11 +75,8 @@ class ArthSaathiV62SmokeTest {
     }
 
     @Test fun v7NavigationDoesNotDuplicateTopLevelModules() {
-        prefs.edit()
-            .putString("name_9876543210", "Test User")
-            .putBoolean("logged_in", true)
-            .putString("current_mobile", "9876543210")
-            .commit()
+        V7AccountStore.create(context, "Test User", testMobile)
+        V7AccountStore.login(context, testMobile)
 
         assertResumes(V7HomeActivity::class.java)
         ActivityScenario.launch(V7HomeActivity::class.java).use { scenario ->
