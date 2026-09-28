@@ -92,8 +92,8 @@ class V7FinalAcceptanceInstrumentedTest {
         assertEquals(12,emi.instalments)
         assertTrue(emi.emi>0 && emi.totalPayable>120000)
         val ppi=ArthSaathiFinancialRules.plan(120000.0,12.0,12,"PRINCIPAL + INTEREST")
-        assertEquals(13200.0,ppi.emi,0.01)
-        assertEquals(158400.0,ppi.totalPayable,0.01)
+        assertEquals(11200.0,ppi.emi,0.01)
+        assertEquals(134400.0,ppi.totalPayable,0.01)
     }
 
     @Test fun assetLiabilityPortfolioAndNetWorthRemainConnected(){
