@@ -126,6 +126,7 @@ jobs:
           disk-size: 6000M
           heap-size: 600M
           emulator-boot-timeout: 1200
+          emulator-build: 15004761
           emulator-options: -no-window -noaudio -no-boot-anim -gpu off -no-snapshot -no-snapshot-save -camera-back none
           pre-emulator-launch-script: adb start-server
           disable-animations: true
