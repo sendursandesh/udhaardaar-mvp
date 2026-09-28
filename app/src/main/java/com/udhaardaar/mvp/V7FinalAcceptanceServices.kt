@@ -91,5 +91,5 @@ object V7ExternalIntegration {
         return out.append("</DATA></BODY></ENVELOPE>").toString()
     }
     private fun xml(v:String)=v.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
-    private fun csv(v:String)=""" + v.replace(""","""") + """
+    private fun csv(v:String)=char(34)+v.replace(char(34).toString(),char(34).toString()+char(34))+char(34)
 }
