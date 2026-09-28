@@ -129,7 +129,6 @@ jobs:
           emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -camera-back none
           disable-animations: true
           script: |
-            set -o pipefail
             mkdir -p build/v7-emulator-diagnostics
             adb start-server
             adb devices -l | tee build/v7-emulator-diagnostics/adb-devices.txt
@@ -145,7 +144,11 @@ jobs:
             adb shell getprop > build/v7-emulator-diagnostics/getprop.txt || true
             adb shell pm path android > build/v7-emulator-diagnostics/pm-path.txt || true
             adb shell dumpsys package com.udhaardaar.mvp > build/v7-emulator-diagnostics/package.txt || true
-            gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace 2>&1 | tee build/v7-emulator-diagnostics/instrumentation.log
+            set +e
+            gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace > build/v7-emulator-diagnostics/instrumentation.log 2>&1
+            test_rc=$?
+            cat build/v7-emulator-diagnostics/instrumentation.log
+            exit $test_rc
 
       - name: Capture emulator diagnostics
         if: always()
