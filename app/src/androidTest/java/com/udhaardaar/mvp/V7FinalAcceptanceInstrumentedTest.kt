@@ -168,6 +168,32 @@ class V7FinalAcceptanceInstrumentedTest {
         }
     }
 
+
+    @Test fun consentScopeCannotCrossAuthorizeDifferentRelationship() {
+        val p=V7Records.person(c,"Scope Customer","9876507720")
+        val relA=V7Records.relationship(c,p.optString("id"),"INFORMAL_CREDIT","RECEIVABLE",5000.0,0.0,"PRINCIPAL_PLUS_INTEREST","A")
+        val relB=V7Records.relationship(c,p.optString("id"),"INFORMAL_CREDIT","RECEIVABLE",5000.0,0.0,"PRINCIPAL_PLUS_INTEREST","B")
+        val svc=V7Architecture.LocalConsentService(c)
+        val con=svc.request(V7Architecture.ConsentRequest(p.optString("id"),"REPAYMENT_UPDATE","relationship:"+relA.optString("id"),V7Core.user(c),V7Core.now()+120000L,true))
+        assertNotNull(svc.grant(con.id,true))
+        V7Records.repayment(c,relB.optString("id"),1000.0,1000.0,0.0,"UPI",true)
+        assertEquals(5000.0,V7Core.find(c,V7Core.Keys.RELATIONSHIPS,relB.optString("id"))!!.optDouble("outstanding"),0.001)
+    }
+
+    @Test fun scoreEngineRejectsCallerClaimWithoutStoredConsent() {
+        val p=V7Records.person(c,"Score Guard","9876507721")
+        V7Records.relationship(c,p.optString("id"),"INFORMAL_CREDIT","RECEIVABLE",1000.0,0.0,"PRINCIPAL_PLUS_INTEREST","guard")
+        assertNull(V7ScoreEngine.calculate(c,p.optString("id"),true))
+    }
+
+    @Test fun allRegisteredV7ModulesHaveLaunchableEntryPoint() {
+        V7MasterVisionRegistry.all().forEach { module ->
+            ActivityScenario.launch<V7ModuleActivity>(Intent(c,V7ModuleActivity::class.java).putExtra("module",module.key)).use { scenario ->
+                scenario.onActivity { a -> assertTrue("Module not visible: "+module.key, a.window.decorView.isShown) }
+            }
+        }
+    }
+
     private fun allText(v:View):List<String>{
         val out=mutableListOf<String>()
         if(v is TextView) out.add(v.text?.toString().orEmpty())
