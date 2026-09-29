@@ -9,6 +9,7 @@ object V7ScoreEngine {
     data class Result(val score: Int, val band: String, val factors: List<String>)
     fun calculate(c: Context, partyId: String, borrowerConsentVerified: Boolean): Result? {
         if (!borrowerConsentVerified || partyId.isBlank()) return null
+        if (!V7Core.hasConsent(c, partyId, "SCORE_DISCLOSURE")) return null
         val relationships = V7Core.all(c, V7Core.Keys.RELATIONSHIPS).filter { it.optString("partyId") == partyId }
         val ids = relationships.map { it.optString("id") }.toSet()
         val repayments = V7Core.all(c, V7Core.Keys.REPAYMENTS).filter { it.optString("relationshipId") in ids }
