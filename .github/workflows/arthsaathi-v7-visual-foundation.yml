@@ -131,15 +131,56 @@ jobs:
           pre-emulator-launch-script: adb kill-server || true; adb start-server
           disable-animations: true
           script: |
+            # Run the actual harness under bash. The emulator action invokes this
+            # block through /usr/bin/sh; keeping bash explicit avoids shell-specific
+            # pipefail failures seen in earlier V7 runs.
+            bash -euo pipefail <<'V7_EMULATOR_SCRIPT'
             mkdir -p build/v7-emulator-diagnostics
             adb start-server
-            adb devices -l > build/v7-emulator-diagnostics/adb-devices.txt
-            adb wait-for-device
+            adb devices -l | tee build/v7-emulator-diagnostics/adb-devices.txt
+
+            # AVDs can report "offline" for a few seconds after boot. Wait for
+            # both an attached device and a responsive shell before testing.
+            for attempt in {1..30}; do
+              state="$(adb get-state 2>/dev/null || true)"
+              boot="$(adb shell getprop sys.boot_completed 2>/dev/null || true)"
+              if [[ "$state" == "device" && "$boot" == "1" ]]; then
+                break
+              fi
+              if [[ "$state" == "offline" ]]; then
+                adb reconnect offline >/dev/null 2>&1 || true
+              fi
+              sleep 2
+            done
+
+            test "$(adb get-state)" = "device"
+            test "$(adb shell getprop sys.boot_completed)" = "1"
             adb shell getprop sys.boot_completed > build/v7-emulator-diagnostics/boot-completed.txt
             adb shell getprop > build/v7-emulator-diagnostics/getprop.txt
             adb shell pm path android > build/v7-emulator-diagnostics/pm-path.txt
             adb shell dumpsys package com.udhaardaar.mvp > build/v7-emulator-diagnostics/package.txt
+
+            set +e
             gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace > build/v7-emulator-diagnostics/instrumentation.log 2>&1
+            rc=$?
+            set -e
+
+            # Retry only a transient ADB-offline failure; never hide a real
+            # instrumentation assertion/test failure.
+            if [[ "$rc" -ne 0 ]] && grep -qiE "device offline|device .*offline|more than one device" build/v7-emulator-diagnostics/instrumentation.log; then
+              adb reconnect offline >/dev/null 2>&1 || true
+              for attempt in {1..20}; do
+                [[ "$(adb get-state 2>/dev/null || true)" == "device" ]] && break
+                sleep 2
+              done
+              gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace > build/v7-emulator-diagnostics/instrumentation-retry.log 2>&1
+            elif [[ "$rc" -ne 0 ]]; then
+              cat build/v7-emulator-diagnostics/instrumentation.log
+              exit "$rc"
+            fi
+
+            echo "V7 emulator instrumentation PASS"
+            V7_EMULATOR_SCRIPT
 
       - name: Capture emulator diagnostics
         if: always()
