@@ -190,7 +190,13 @@ object V7RevenueEngine {
     fun reconcile(c:Context,paymentId:String,settlementReference:String){
         V7Core.find(c,V7Core.Keys.PAYMENTS,paymentId)?.apply{
             put("status",PaymentStatus.RECONCILED.name);put("settlementReference",settlementReference);put("reconciledAt",V7Core.now());V7Core.replace(c,V7Core.Keys.PAYMENTS,this)
-            V7Core.add(c,V7Core.Keys.REVENUE,org.json.JSONObject().apply{put("id",V7Core.id("REV"));put("paymentId",paymentId);put("amount",this@apply.optDouble("amount"));put("settlementReference",settlementReference)})
+            val reconciledAmount = optDouble("amount", 0.0)
+            V7Core.add(c,V7Core.Keys.REVENUE,org.json.JSONObject().apply{
+                put("id",V7Core.id("REV"))
+                put("paymentId",paymentId)
+                put("amount",reconciledAmount)
+                put("settlementReference",settlementReference)
+            })
         }
     }
 }
