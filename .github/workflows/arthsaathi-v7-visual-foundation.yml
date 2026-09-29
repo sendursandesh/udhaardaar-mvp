@@ -155,6 +155,7 @@ jobs:
           timeout 10s adb shell screencap -p /sdcard/v7-final.png >/dev/null 2>&1 || true
           timeout 10s adb pull /sdcard/v7-final.png build/v7-emulator-diagnostics/v7-final.png >/dev/null 2>&1 || true
           find app/build/outputs -type f -maxdepth 8 -print > build/v7-emulator-diagnostics/build-outputs.txt 2>&1
+          timeout 15s adb pull /sdcard/arthsaathi_v7 build/v7-emulator-diagnostics/arthsaathi_v7 >/dev/null 2>&1 || true
           find app/build/test-results app/build/reports -type f -maxdepth 10 -print > build/v7-emulator-diagnostics/test-reports.txt 2>&1
           true
 
