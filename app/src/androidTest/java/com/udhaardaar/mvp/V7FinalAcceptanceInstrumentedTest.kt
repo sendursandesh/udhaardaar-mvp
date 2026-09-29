@@ -188,8 +188,24 @@ class V7FinalAcceptanceInstrumentedTest {
 
     @Test fun allRegisteredV7ModulesHaveLaunchableEntryPoint() {
         V7MasterVisionRegistry.all().forEach { module ->
-            ActivityScenario.launch<V7ModuleActivity>(Intent(c,V7ModuleActivity::class.java).putExtra("module",module.key)).use { scenario ->
-                scenario.onActivity { a -> assertTrue("Module not visible: "+module.key, a.window.decorView.isShown) }
+            if (module.ownership == V7MasterVisionRegistry.Ownership.NATIVE) {
+                // V7ModuleActivity is a router for native modules and intentionally
+                // finishes after handing off to the canonical native activity.
+                ActivityScenario.launch<V7NativeModuleActivity>(
+                    Intent(c, V7NativeModuleActivity::class.java).putExtra("module", module.key)
+                ).use { scenario ->
+                    scenario.onActivity { a ->
+                        assertTrue("Native module not visible: " + module.key, a.window.decorView.isShown)
+                    }
+                }
+            } else {
+                ActivityScenario.launch<V7ModuleActivity>(
+                    Intent(c, V7ModuleActivity::class.java).putExtra("module", module.key)
+                ).use { scenario ->
+                    scenario.onActivity { a ->
+                        assertTrue("Legacy-adapter module not visible: " + module.key, a.window.decorView.isShown)
+                    }
+                }
             }
         }
     }
