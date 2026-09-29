@@ -73,8 +73,8 @@ object V7Core {
         put("id",id("CONS"));put("subjectId",subjectId);put("purpose",purpose);put("documentVersion",documentVersion)
         put("verified",verified);put("status",if(verified)"GRANTED" else "PENDING");put("createdAt",now());put("withdrawn",false)
     }.also{add(c,Keys.CONSENTS,it)}
-    fun hasConsent(c:Context,subjectId:String,purpose:String)=all(c,Keys.CONSENTS).any{
-        it.optString("subjectId")==subjectId&&it.optString("purpose")==purpose&&it.optBoolean("verified")&&
+    fun hasConsent(c:Context,subjectId:String,purpose:String,scope:String?=null)=all(c,Keys.CONSENTS).any{
+        it.optString("subjectId")==subjectId&&it.optString("purpose")==purpose&& (scope==null || it.optString("scope")==scope) && it.optBoolean("verified")&&
             it.optString("status")=="GRANTED"&&!it.optBoolean("withdrawn")&&it.optLong("expiresAt",Long.MAX_VALUE)>now()
     }
     fun metrics(c:Context):org.json.JSONObject{
@@ -125,7 +125,7 @@ object V7Records {
             val relationship = V7Core.find(c,V7Core.Keys.RELATIONSHIPS,relationshipId) ?: return@also
             val consentRequired = relationship.optBoolean("consentRequired", true)
             val partyId = relationship.optString("partyId").orEmpty()
-            val activeConsent = partyId.isNotBlank() && V7Core.hasConsent(c, partyId, "REPAYMENT_UPDATE")
+            val activeConsent = partyId.isNotBlank() && V7Core.hasConsent(c, partyId, "REPAYMENT_UPDATE", "relationship:"+relationshipId)
             val validMethod = repayment.optString("method") in setOf("CASH","UPI","NEFT","BANK_TRANSFER","NACH","CHEQUE","OTHER")
             val validAmounts = amount > 0.0 && principal >= 0.0 && interest >= 0.0 && principal + interest <= amount + 0.005
             val outstanding = relationship.optDouble("outstanding",relationship.optDouble("amount",0.0))
