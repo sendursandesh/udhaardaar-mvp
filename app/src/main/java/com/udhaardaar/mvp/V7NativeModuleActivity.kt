@@ -146,14 +146,14 @@ class V7NativeModuleActivity : AppCompatActivity() {
             if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
             val r = roi.text.toString().toDoubleOrNull() ?: 0.0
             if (r < 0.0 || r > 100.0) { roi.error = "ROI must be between 0 and 100%"; return@button }
-            V7Records.relationship(this, people[spinner.selectedItemPosition].optString("id"),
+            val relationship = V7Records.relationship(this, people[spinner.selectedItemPosition].optString("id"),
                 "INFORMAL_CREDIT", "RECEIVABLE", a, r,
                 repayment.text.toString().ifBlank { "PRINCIPAL_PLUS_INTEREST" },
-                purpose.text.toString()).apply {
-                    put("lendingMethod", lendingMethod.text.toString().ifBlank { "UPI" }.uppercase())
-                    put("guarantorId", guarantor.text.toString().trim())
-                    put("documentStatus", "PENDING")
-                }
+                purpose.text.toString())
+            relationship.put("lendingMethod", lendingMethod.text.toString().ifBlank { "UPI" }.uppercase())
+            relationship.put("guarantorId", guarantor.text.toString().trim())
+            relationship.put("documentStatus", "PENDING")
+            V7Core.replace(this, V7Core.Keys.RELATIONSHIPS, relationship)
             Toast.makeText(this, "Credit relationship saved in V7.", Toast.LENGTH_SHORT).show()
             renderRelationshipList(body)
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
