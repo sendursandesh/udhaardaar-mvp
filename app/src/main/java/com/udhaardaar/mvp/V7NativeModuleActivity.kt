@@ -137,7 +137,9 @@ class V7NativeModuleActivity : AppCompatActivity() {
         val roi = field("ROI %", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
         val purpose = field("Purpose")
         val repayment = field("Repayment structure (EMI / Principal + Interest)")
-        listOf(amount, roi, purpose, repayment).forEach { body.addView(it, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) }) }
+        val lendingMethod = field("Method of lending (CASH / UPI / NEFT / BANK_TRANSFER / NACH / CHEQUE)")
+        val guarantor = field("Guarantor person ID (optional)")
+        listOf(amount, roi, purpose, repayment, lendingMethod, guarantor).forEach { body.addView(it, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) }) }
         body.addView(button("Register Credit in V7") {
             if (people.isEmpty()) { Toast.makeText(this, "Create a person first in Record.", Toast.LENGTH_SHORT).show(); return@button }
             val a = amount.text.toString().toDoubleOrNull()
@@ -147,7 +149,11 @@ class V7NativeModuleActivity : AppCompatActivity() {
             V7Records.relationship(this, people[spinner.selectedItemPosition].optString("id"),
                 "INFORMAL_CREDIT", "RECEIVABLE", a, r,
                 repayment.text.toString().ifBlank { "PRINCIPAL_PLUS_INTEREST" },
-                purpose.text.toString())
+                purpose.text.toString()).apply {
+                    put("lendingMethod", lendingMethod.text.toString().ifBlank { "UPI" }.uppercase())
+                    put("guarantorId", guarantor.text.toString().trim())
+                    put("documentStatus", "PENDING")
+                }
             Toast.makeText(this, "Credit relationship saved in V7.", Toast.LENGTH_SHORT).show()
             renderRelationshipList(body)
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
@@ -177,27 +183,75 @@ class V7NativeModuleActivity : AppCompatActivity() {
         val spinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
         body.addView(spinner, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
         val amount = field("Principal amount", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
-        val method = field("Method (CASH / UPI / NEFT)")
+        val method = field("Method (CASH / UPI / NEFT / BANK_TRANSFER / NACH / CHEQUE)")
         body.addView(amount, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
         body.addView(method, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        var consentVerified = false
+        var consentId = ""
+        val consentStatus = ArthSaathiV7Design.text(this, "Consent not verified.", 10f, ArthSaathiV7Design.RED)
+        body.addView(ArthSaathiV7Design.outlineButton(this, "Request / Verify OTP Consent") {
+            if (rels.isEmpty()) { Toast.makeText(this, "No outstanding V7 relationship.", Toast.LENGTH_SHORT).show(); return@outlineButton }
+            val rel = rels[spinner.selectedItemPosition]
+            val partyId = rel.optString("partyId")
+            if (partyId.isBlank()) { consentStatus.text = "Consent cannot be requested: relationship has no identified party."; return@outlineButton }
+            val request = V7Architecture.LocalConsentService(this).request(
+                V7Architecture.ConsentRequest(
+                    subjectId = partyId,
+                    purpose = "REPAYMENT_UPDATE",
+                    scope = "relationship:" + rel.optString("id"),
+                    actorId = V7Core.user(this),
+                    expiresAt = V7Core.now() + 120_000L,
+                    otpRequired = true
+                )
+            )
+            consentId = request.id
+            if ((applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) {
+                consentStatus.text = "Production OTP provider is not configured in this build; repayment remains blocked."
+                return@outlineButton
+            }
+            val otp = field("Enter 6-digit OTP", android.text.InputType.TYPE_CLASS_NUMBER).apply {
+                filters = arrayOf(android.text.InputFilter.LengthFilter(6))
+            }
+            val dialog = android.app.AlertDialog.Builder(this)
+                .setTitle("Verify repayment consent")
+                .setMessage("Development OTP: 123456. This development path is blocked from production builds.")
+                .setView(otp)
+                .setNegativeButton("CANCEL", null)
+                .setPositiveButton("VERIFY", null)
+                .create()
+            dialog.setOnShowListener {
+                dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    if (otp.text.toString() != "123456") {
+                        otp.error = "Incorrect OTP"
+                        return@setOnClickListener
+                    }
+                    val granted = V7Architecture.LocalConsentService(this).grant(consentId, true)
+                    consentVerified = granted != null
+                    consentStatus.text = if (consentVerified) "Consent verified for this relationship until expiry." else "Consent verification failed."
+                    consentStatus.setTextColor(if (consentVerified) ArthSaathiV7Design.GREEN else ArthSaathiV7Design.RED)
+                    dialog.dismiss()
+                }
+            }
+            dialog.show()
+        }, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(8) })
+        body.addView(consentStatus, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
         body.addView(button("Record Repayment") {
             if (rels.isEmpty()) { Toast.makeText(this, "No outstanding V7 relationship.", Toast.LENGTH_SHORT).show(); return@button }
+            if (!consentVerified) { Toast.makeText(this, "Verify OTP consent for the selected relationship first.", Toast.LENGTH_LONG).show(); return@button }
             val a = amount.text.toString().toDoubleOrNull()
             if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
             val rel = rels[spinner.selectedItemPosition]
             val before = rel.optDouble("outstanding")
-            V7Records.repayment(this, rel.optString("id"), a, a, 0.0, method.text.toString().ifBlank { "UPI" }, true)
+            val chosenMethod = method.text.toString().ifBlank { "UPI" }.uppercase()
+            V7Records.repayment(this, rel.optString("id"), a, a, 0.0, chosenMethod, true)
             val after = V7Core.find(this, V7Core.Keys.RELATIONSHIPS, rel.optString("id"))?.optDouble("outstanding") ?: before
             if (after == before) {
-                Toast.makeText(this, "Not recorded: active OTP-verified consent is required.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Not recorded: consent, method or amount validation failed.", Toast.LENGTH_LONG).show()
             } else {
                 Toast.makeText(this, "Repayment recorded; outstanding updated.", Toast.LENGTH_SHORT).show()
                 renderRepaymentList(body)
             }
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
-        body.addView(ArthSaathiV7Design.text(this,
-            "Consent status is evaluated by the canonical V7 core. This screen does not bypass OTP consent.", 9.5f, ArthSaathiV7Design.MUTED),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         renderRepaymentList(body)
         setContentView(shell("Repayment Centre", "Chronological repayment records with consent enforcement.", body))
     }
