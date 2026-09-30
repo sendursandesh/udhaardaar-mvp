@@ -210,6 +210,43 @@ class V7FinalAcceptanceInstrumentedTest {
         }
     }
 
+    @Test fun creditRegistrationPersistsLendingMethodGuarantorAndDocumentState() {
+        val p = V7Records.person(c, "Credit Field QA", "9876507722")
+        val rel = V7Records.relationship(c, p.optString("id"), "INFORMAL_CREDIT", "RECEIVABLE", 25000.0, 12.0, "PRINCIPAL_PLUS_INTEREST", "business")
+        rel.put("lendingMethod", "NEFT")
+        rel.put("guarantorId", "GUARANTOR-001")
+        rel.put("documentStatus", "PENDING")
+        V7Core.replace(c, V7Core.Keys.RELATIONSHIPS, rel)
+        val stored = V7Core.find(c, V7Core.Keys.RELATIONSHIPS, rel.optString("id"))!!
+        assertEquals("NEFT", stored.optString("lendingMethod"))
+        assertEquals("GUARANTOR-001", stored.optString("guarantorId"))
+        assertEquals("PENDING", stored.optString("documentStatus"))
+    }
+
+    @Test fun repaymentUiExposesExplicitConsentVerificationBeforeMutation() {
+        ActivityScenario.launch<V7NativeModuleActivity>(
+            Intent(c, V7NativeModuleActivity::class.java).putExtra("module", "REPAYMENT")
+        ).use { scenario ->
+            scenario.onActivity { a ->
+                val labels = allText(a.window.decorView)
+                assertTrue(labels.any { it.contains("Request / Verify OTP Consent") })
+                assertTrue(labels.any { it.contains("Consent not verified.") })
+                assertTrue(labels.any { it.contains("Record Repayment") })
+            }
+        }
+    }
+
+    @Test fun growUiHasSingleMisNavigationEntry() {
+        ActivityScenario.launch<V7ModuleActivity>(
+            Intent(c, V7ModuleActivity::class.java).putExtra("module", "GROW")
+        ).use { scenario ->
+            scenario.onActivity { a ->
+                val labels = allText(a.window.decorView).filter { it == "MIS Dashboard" }
+                assertEquals(1, labels.size)
+            }
+        }
+    }
+
     private fun allText(v:View):List<String>{
         val out=mutableListOf<String>()
         if(v is TextView) out.add(v.text?.toString().orEmpty())
