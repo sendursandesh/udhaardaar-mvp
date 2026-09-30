@@ -152,7 +152,6 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("◉", "Portfolio Intelligence", "Holdings, value, allocation and performance"),
             Triple("▥", "MIS Dashboard", "First-hand financial information from your records"),
             Triple("↔", "Opportunity Cost", "Compare current portfolio with alternatives"),
-            Triple("▤", "MIS Dashboard", "Connected financial intelligence and revenue"),
             Triple("⇄", "ERP / Tally", "Explicit data exchange boundary"),
             Triple("⌁", "Market Data", "Timestamped external data with freshness"),
             Triple("◌", "Scenarios", "Analyse before making a decision"),
@@ -161,9 +160,8 @@ class V7ModuleActivity : AppCompatActivity() {
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "OPPORTUNITY")) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "MARKET")) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "MIS")) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "INTEGRATION")) },
+            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "MARKET")) },
             { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "OPPORTUNITY")) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) }
         ))
