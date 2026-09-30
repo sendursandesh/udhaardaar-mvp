@@ -9,19 +9,19 @@ import android.text.InputFilter
 import android.text.InputType
 import android.view.Gravity
 import android.view.WindowManager
+import android.content.pm.ApplicationInfo
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import kotlin.random.Random
 
 class LoginActivity : AppCompatActivity() {
-    private val prefs by lazy { getSharedPreferences("udhaardaar_accounts", MODE_PRIVATE) }
     private val d get() = resources.displayMetrics.density
     private fun dp(v:Int)=(v*d).toInt()
 
     override fun onCreate(b:Bundle?) {
         super.onCreate(b)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
-        if (prefs.getBoolean("logged_in",false)) { openHome(); return }
+        V7AccountStore.migrateLegacyPreferences(this)
+        if (V7AccountStore.isLoggedIn(this)) { openHome(); return }
         showLogin()
     }
 
@@ -53,8 +53,8 @@ class LoginActivity : AppCompatActivity() {
         card.addView(ArthSaathiV7Design.goldButton(this,"SEND OTP") {
             val x=m.text.toString()
             if(!validMobile(x)){m.error="Enter a valid 10-digit mobile number";return@goldButton}
-            if(!prefs.contains("name_$x")){showNoAccount(x);return@goldButton}
-            otp("Secure login OTP",x){prefs.edit().putBoolean("logged_in",true).putString("current_mobile",x).apply();openHome()}
+            if(V7AccountStore.account(this,x)==null){showNoAccount(x);return@goldButton}
+            otp("Secure login OTP",x){V7AccountStore.login(this,x);openHome()}
         },LinearLayout.LayoutParams(-1,dp(48)).apply { topMargin=dp(10) })
         card.addView(ArthSaathiV7Design.text(this,"or",10f,ArthSaathiV7Design.MUTED).apply { gravity=Gravity.CENTER },
             LinearLayout.LayoutParams(-1,-2).apply { topMargin=dp(9) })
@@ -85,9 +85,10 @@ class LoginActivity : AppCompatActivity() {
         card.addView(ArthSaathiV7Design.goldButton(this,"VERIFY MOBILE + CREATE ACCOUNT"){
             val x=m.text.toString()
             if(n.text.trim().length<2||!validMobile(x)){Toast.makeText(this,"Enter name and valid 10-digit mobile.",Toast.LENGTH_LONG).show();return@goldButton}
-            if(prefs.contains("name_$x")){Toast.makeText(this,"An account already exists. Please log in.",Toast.LENGTH_LONG).show();return@goldButton}
+            if(V7AccountStore.account(this,x)!=null){Toast.makeText(this,"An account already exists. Please log in.",Toast.LENGTH_LONG).show();return@goldButton}
             otp("Verify mobile and create account",x){
-                prefs.edit().putString("name_$x",n.text.toString().trim()).putBoolean("logged_in",true).putString("current_mobile",x).apply()
+                V7AccountStore.create(this,n.text.toString().trim(),x)
+                V7AccountStore.login(this,x)
                 openHome()
             }
         },LinearLayout.LayoutParams(-1,dp(48)).apply { topMargin=dp(10) })
@@ -99,12 +100,25 @@ class LoginActivity : AppCompatActivity() {
 
     private fun validMobile(x:String)=x.matches(Regex("[6-9][0-9]{9}"))
 
+    /**
+     * Development-only OTP harness. Production authentication must use the
+     * configured server/provider and must never expose the OTP in the UI.
+     */
     private fun otp(title:String,mobile:String,done:()->Unit) {
-        val code=(100000+Random.nextInt(900000)).toString()
+        if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) == 0) {
+            AlertDialog.Builder(this).setTitle("Authentication service unavailable")
+                .setMessage("Production OTP authentication is not configured in this build. Login is blocked rather than falling back to a local/demo OTP.")
+                .setPositiveButton("OK",null).show()
+            return
+        }
+        val code="123456"
         val e=ArthSaathiV7Design.input(this,"Enter 6-digit OTP").apply { inputType=InputType.TYPE_CLASS_NUMBER; filters=arrayOf(InputFilter.LengthFilter(6)) }
-        val dialog=AlertDialog.Builder(this).setTitle(title).setMessage("Demo OTP: $code").setView(e).setNegativeButton("CANCEL",null).setPositiveButton("VERIFY",null).create()
+        val dialog=AlertDialog.Builder(this).setTitle("$title (development)")
+            .setMessage("Development-only OTP: 123456. This path is blocked from production builds.")
+            .setView(e).setNegativeButton("CANCEL",null).setPositiveButton("VERIFY",null).create()
         dialog.setOnShowListener { dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { if(e.text.toString()==code){dialog.dismiss();done()}else e.error="Incorrect OTP" } }
         dialog.show()
+        e.requestFocus()
     }
 
     private fun openHome(){startActivity(Intent(this,V7HomeActivity::class.java));finish()}

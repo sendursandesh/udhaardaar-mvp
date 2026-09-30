@@ -17,8 +17,9 @@ class ReminderReceiver : BroadcastReceiver() {
         val due = intent.getStringExtra("due_date") ?: "today"
         manager.notify((System.currentTimeMillis() % Int.MAX_VALUE).toInt(), NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Udhaardaar repayment due")
-            .setContentText("A repayment is scheduled for $due. Open Udhaardaar to record the payment.")
+            .setContentTitle("ArthSaathi reminder")
+            .setContentText("A repayment reminder is available. Open ArthSaathi to view details.")
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setAutoCancel(true).build())
     }
 }

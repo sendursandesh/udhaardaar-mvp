@@ -10,15 +10,14 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 
 class V7HomeActivity : AppCompatActivity() {
-    private val p by lazy { getSharedPreferences("udhaardaar_accounts", MODE_PRIVATE) }
-    private val d get() = resources.displayMetrics.density
+        private val d get() = resources.displayMetrics.density
     private fun dp(v: Int) = (v * d).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); render() }
     override fun onResume() { super.onResume(); if (!isFinishing) render() }
 
     private fun render() {
-        if (!p.getBoolean("logged_in", false)) {
+        if (!V7AccountStore.isLoggedIn(this)) {
             startActivity(Intent(this, LoginActivity::class.java)); finish(); return
         }
         val root = LinearLayout(this).apply {
@@ -36,8 +35,7 @@ class V7HomeActivity : AppCompatActivity() {
             LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(5) })
         root.addView(header)
 
-        val mobile = p.getString("current_mobile", "").orEmpty()
-        val name = p.getString("name_$mobile", "User").orEmpty().ifBlank { "User" }
+        val name = V7AccountStore.currentName(this).ifBlank { "User" }
         val welcome = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
