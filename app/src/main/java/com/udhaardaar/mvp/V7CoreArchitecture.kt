@@ -97,10 +97,15 @@ object V7Core {
 }
 
 object V7Records {
-    fun person(c:Context,name:String,mobile:String="",pan:String="",aadhaar:String="",gstin:String="")=org.json.JSONObject().apply{
+    fun person(c:Context,name:String,mobile:String="",pan:String="",aadhaar:String="",gstin:String="",email:String="",address:String="",pin:String="",city:String="",district:String="",state:String="",photoUri:String="")=org.json.JSONObject().apply{
         put("id",V7Core.id("PERSON"));put("name",name.trim());put("mobile",mobile.trim());put("pan",pan.trim().uppercase())
-        put("aadhaar",aadhaar.trim());put("gstin",gstin.trim().uppercase());put("createdAt",V7Core.now())
-    }.also{V7Core.add(c,V7Core.Keys.PEOPLE,it)}
+        put("aadhaar",aadhaar.trim());put("gstin",gstin.trim().uppercase());put("email",email.trim());put("address",address.trim())
+        put("pin",pin.trim());put("city",city.trim());put("district",district.trim());put("state",state.trim());put("photoUri",photoUri.trim());put("createdAt",V7Core.now())
+    }.also{ person ->
+        V7Core.add(c,V7Core.Keys.PEOPLE,person)
+        if(address.isNotBlank() || pin.isNotBlank() || city.isNotBlank() || district.isNotBlank() || state.isNotBlank())
+            address(c,person.optString("id"),"Profile address",address,pin,state,district,city,"PROFILE")
+    }
     fun address(c:Context,ownerId:String,label:String,address:String,pin:String,state:String="",district:String="",city:String="",source:String="MANUAL",lat:Double=0.0,lon:Double=0.0)=org.json.JSONObject().apply{
         put("id",V7Core.id("ADDR"));put("ownerId",ownerId);put("label",label);put("address",address);put("pin",pin);put("state",state);put("district",district);put("city",city);put("source",source);put("latitude",lat);put("longitude",lon);put("isPrimary",false)
     }.also{V7Core.add(c,V7Core.Keys.ADDRESSES,it)}
