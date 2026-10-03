@@ -61,7 +61,7 @@ class V7NativeModuleActivity : AppCompatActivity() {
             setPadding(dp(9), dp(7), dp(9), dp(10))
         }
         val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        row.addView(ArthSaathiV7Design.text(this, "‹", 36f, Color.WHITE).apply {
+        row.addView(ArthSaathiV7Design.text(this, "←", 30f, Color.WHITE).apply {
             setOnClickListener { finish() }
         }, LinearLayout.LayoutParams(dp(40), dp(44)))
         row.addView(ArthSaathiV7Design.brand(this, 23f, true), LinearLayout.LayoutParams(0, -2, 1f))
