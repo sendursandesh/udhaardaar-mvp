@@ -20,7 +20,7 @@ import androidx.appcompat.app.AppCompatActivity
  * 5. Native V7 modules are opened directly; compatibility engines are reached
  *    through an isolated compatibility boundary when unavoidable.
  */
-class V7ModuleActivity : AppCompatActivity() {
+class V7ModuleActivity : V7SessionActivity() {
     private val d get() = resources.displayMetrics.density
     private fun dp(v: Int) = (v * d).toInt()
 
