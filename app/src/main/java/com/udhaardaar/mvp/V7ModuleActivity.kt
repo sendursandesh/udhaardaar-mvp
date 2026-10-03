@@ -201,7 +201,8 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("BE", "Government Benefits", "Eligibility and benefit records"),
             Triple("RE", "Rental & Lease", "Lease relationships and documents"),
             Triple("⚙", "Security & Consent", "Consent, audit and protected sharing"),
-            Triple("◈", "Credit Score", "Consent-gated explainable internal score")
+            Triple("◈", "Credit Score", "Consent-gated explainable internal score"),
+            Triple("⚖", "Will & Legacy", "Create a will record and link recorded assets")
         ), listOf(
             { openTool("CHARGECHECK") },
             { startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", "LIABILITIES")) },
@@ -209,7 +210,8 @@ class V7ModuleActivity : AppCompatActivity() {
             { openTool("BENEFITS") },
             { openTool("RENTAL") },
             { openTool("SECURITY") },
-            { openTool("SCORE") }
+            { openTool("SCORE") },
+            { openTool("WILL") }
         ))
     }
 
