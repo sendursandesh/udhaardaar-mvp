@@ -42,15 +42,23 @@ class V7HomeActivity : AppCompatActivity() {
             setPadding(dp(11), dp(9), dp(11), dp(9))
             background = ArthSaathiV7Design.card(this@V7HomeActivity, Color.WHITE, 14)
         }
-        val avatar = TextView(this).apply {
-            text = name.trim().firstOrNull()?.uppercase() ?: "U"
-            textSize = 15f; gravity = Gravity.CENTER
-            setTextColor(ArthSaathiV7Design.NAVY); typeface = Typeface.DEFAULT_BOLD
+        val mobile = V7AccountStore.currentMobile(this)
+        val person = V7Core.all(this, V7Core.Keys.PEOPLE).firstOrNull { it.optString("mobile") == mobile }
+        val avatar = ImageView(this).apply {
+            contentDescription = "Profile picture"
+            scaleType = ImageView.ScaleType.CENTER_CROP
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(ArthSaathiV7Design.GOLD_PALE)
                 setStroke(dp(1), ArthSaathiV7Design.GOLD)
             }
+            val uri = person?.optString("photoUri").orEmpty()
+            if (uri.isNotBlank()) runCatching {
+                contentResolver.openInputStream(android.net.Uri.parse(uri)).use { input ->
+                    if (input != null) setImageBitmap(android.graphics.BitmapFactory.decodeStream(input))
+                }
+            }
+            if (drawable == null) setImageResource(R.drawable.arthsaathi_logo)
         }
         welcome.addView(avatar, LinearLayout.LayoutParams(dp(38), dp(38)))
         val wt = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(9), 0, 0, 0) }
