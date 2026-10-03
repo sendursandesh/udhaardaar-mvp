@@ -3,6 +3,8 @@ package com.udhaardaar.mvp
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
+import android.os.Handler
+import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 
 /**
@@ -17,7 +19,8 @@ abstract class V7SessionActivity : AppCompatActivity() {
         private const val LAST_ACTIVITY = "last_activity"
     }
 
-    private fun markActivity() {
+    private val handler = Handler(Looper.getMainLooper())
+    private val expiryCheck = object : Runnable { override fun run() {\n        if (!isFinishing && V7AccountStore.isLoggedIn(this@V7SessionActivity)) {\n            if (expired()) forceLogout() else handler.postDelayed(this, 30_000L)\n        }\n    } }\n\n    private fun markActivity() {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit()
             .putLong(LAST_ACTIVITY, SystemClock.elapsedRealtime()).apply()
     }
