@@ -18,10 +18,72 @@ class V7ToolsActivity : AppCompatActivity() {
         r.addView(h);return r
     }
     private fun render(tool:String){
-        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"SCENARIO"->scenario();"MARKET"->market();"REPORTS"->reports();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();else->portfolio()}
+        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"SCENARIO"->scenario();"MARKET"->market();"REPORTS"->reports();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();"DOCUMENTS"->documents();"PEOPLE"->people();"INSURANCE"->insurance();"TTMM"->ttmm();"QR"->qr();"LEGAL"->legal();"BENEFITS"->benefits();"RENTAL"->rental();"CHARGECHECK"->chargeCheck();else->unknownTool(tool)}
         r.addView(ArthSaathiV7Design.goldButton(this,"Back"){finish()},LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(12)})
         setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
     }
+    private fun unknownTool(tool:String):LinearLayout {
+        val r=shell("Unavailable V7 function","This function has no registered destination yet; it will not silently open another module.")
+        r.addView(ArthSaathiV7Design.text(this,"Destination not registered: $tool",11f,ArthSaathiV7Design.NAVY,true))
+        return r
+    }
+    private fun documents():LinearLayout {
+        val r=shell("Documents","Your recorded documents, versions and evidence references.")
+        val docs=V7Core.all(this,V7Core.Keys.DOCUMENTS)
+        r.addView(ArthSaathiV7Design.text(this,if(docs.isEmpty()) "No documents recorded yet." else docs.joinToString("\n\n"){ "• "+it.optString("name",it.optString("id"))+"  |  "+it.optString("status","RECORDED") },11f,ArthSaathiV7Design.NAVY))
+        return r
+    }
+    private fun people():LinearLayout {
+        val r=shell("People & Relationships","Borrowers, guarantors and authorised people recorded in V7.")
+        val people=V7Core.all(this,V7Core.Keys.PEOPLE)
+        r.addView(ArthSaathiV7Design.text(this,if(people.isEmpty()) "No profiles recorded." else people.joinToString("\n\n"){ "• "+it.optString("name")+"  •  "+it.optString("mobile") },11f,ArthSaathiV7Design.NAVY))
+        r.addView(ArthSaathiV7Design.goldButton(this,"Edit Profiles"){startActivity(Intent(this,V7NativeModuleActivity::class.java).putExtra("module","RECORD"))},LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(9)})
+        return r
+    }
+    private fun insurance():LinearLayout {
+        val r=shell("Insurance","Policies, renewal dates, nominees and claim references.")
+        val policies=V7Core.all(this,V7Core.Keys.POLICIES)
+        r.addView(ArthSaathiV7Design.text(this,if(policies.isEmpty()) "No policies recorded." else policies.joinToString("\n\n"){ "• "+it.optString("name",it.optString("policyNumber","Policy")) },11f,ArthSaathiV7Design.NAVY))
+        return r
+    }
+    private fun ttmm():LinearLayout {
+        val r=shell("TTMM — Share & Settle","Shared expenses, contributions and settlements.")
+        val records=V7Core.all(this,V7Core.Keys.TTMM)
+        r.addView(ArthSaathiV7Design.text(this,if(records.isEmpty()) "No TTMM records yet." else records.joinToString("\n\n"){ "• "+it.optString("groupName",it.optString("description","Shared expense")) },11f,ArthSaathiV7Design.NAVY))
+        r.addView(ArthSaathiV7Design.text(this,"Use a structured group record for equal, custom, percentage or shares-based splits. Each settlement should carry consent and an audit event.",10.5f,ArthSaathiV7Design.MUTED).apply{setPadding(0,dp(8),0,0)})
+        return r
+    }
+    private fun qr():LinearLayout {
+        val r=shell("QR Udhaar Khata","Record merchant credit and repayment without silently changing balances.")
+        val qr=V7Core.all(this,V7Core.Keys.QR)
+        r.addView(ArthSaathiV7Design.text(this,if(qr.isEmpty()) "No QR Khata records yet." else qr.joinToString("\n\n"){ "• "+it.optString("merchant",it.optString("partyId","Record"))+"  |  ₹"+it.optDouble("amount",0.0) },11f,ArthSaathiV7Design.NAVY))
+        return r
+    }
+    private fun legal():LinearLayout {
+        val r=shell("Legal & Claims","Claims, legal matters and advocate records in the V7 data model.")
+        val claims=V7Core.all(this,V7Core.Keys.CLAIMS)
+        val legal=V7Core.all(this,V7Core.Keys.LEGAL)
+        r.addView(ArthSaathiV7Design.text(this,"Claims: "+claims.size+"\nLegal matters: "+legal.size,11f,ArthSaathiV7Design.NAVY,true))
+        r.addView(ArthSaathiV7Design.outlineButton(this,"Open Claim Assistance"){startActivity(Intent(this,V7ToolsActivity::class.java).putExtra("tool","CLAIM"))},LinearLayout.LayoutParams(-1,dp(46)).apply{topMargin=dp(8)})
+        return r
+    }
+    private fun benefits():LinearLayout {
+        val r=shell("Government Benefits","Record benefits or refunds that are actually received; no unsupported eligibility claim is made.")
+        r.addView(ArthSaathiV7Design.text(this,"Benefit records are stored only when supported by user-provided or connected-source evidence.",11f,ArthSaathiV7Design.NAVY))
+        return r
+    }
+    private fun rental():LinearLayout {
+        val r=shell("Rental & Lease","Lease relationships, rent terms and agreement references.")
+        val rel=V7Core.all(this,V7Core.Keys.RELATIONSHIPS).filter{it.optString("type").contains("LEASE",true)||it.optString("type").contains("RENT",true)}
+        r.addView(ArthSaathiV7Design.text(this,if(rel.isEmpty()) "No rental/lease relationships recorded." else rel.joinToString("\n\n"){ "• "+it.optString("purpose","Lease")+"  |  ₹"+it.optDouble("amount",0.0) },11f,ArthSaathiV7Design.NAVY))
+        return r
+    }
+    private fun chargeCheck():LinearLayout {
+        val r=shell("ChargeCheck","Compare recorded sanctioned charges with actual charges.")
+        r.addView(ArthSaathiV7Design.text(this,"Use the Asset/Document/Finance records as the source of truth for a charge comparison. No charge is inferred without a recorded amount.",11f,ArthSaathiV7Design.NAVY))
+        return r
+    }
+
     private fun security():LinearLayout{
         val r=shell("Security & Consent","Review consent records, audit history and the current protected session.")
         val user=V7Core.user(this)
