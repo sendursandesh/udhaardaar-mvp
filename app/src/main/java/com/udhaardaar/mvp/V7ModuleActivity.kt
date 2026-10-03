@@ -4,9 +4,22 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 
+/**
+ * ArthSaathi V7 canonical module router.
+ *
+ * Rules:
+ * 1. One owner per major journey.
+ * 2. Address/location is profile data, never a top-level module.
+ * 3. No duplicate menu entries.
+ * 4. MIS, Portfolio, Opportunity Cost, Market Data, Scenario, ERP/Tally and
+ *    Reports are distinct tools with distinct destinations.
+ * 5. Native V7 modules are opened directly; compatibility engines are reached
+ *    only through V7LegacyAdapter.
+ */
 class V7ModuleActivity : AppCompatActivity() {
     private val d get() = resources.displayMetrics.density
     private fun dp(v: Int) = (v * d).toInt()
@@ -17,36 +30,30 @@ class V7ModuleActivity : AppCompatActivity() {
     }
 
     private fun render(key: String) {
-        val ownership = V7MasterVisionRegistry.find(key)?.ownership
-        if (ownership == V7MasterVisionRegistry.Ownership.NATIVE) {
-            startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", key))
-            finish()
-            return
+        when (key) {
+            "RECORD", "CREDIT", "REPAYMENT", "ASSETS" -> {
+                startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", key))
+                finish()
+                return
+            }
         }
+
         val title = when (key) {
-            "RECORD" -> "Record"
-            "CREDIT" -> "Credit & Money Relationships"
-            "REPAYMENT" -> "Repayment Centre"
             "PROTECT" -> "Protect"
-            "GROW" -> "Grow"
-            "ASSETS" -> "Assets"
-            "TTMM" -> "Together • Share & Settle"
+            "GROW" -> "Grow — Financial Intelligence"
+            "TTMM" -> "TTMM — Share & Settle"
             "QR_KHATA" -> "QR Udhaar Khata"
-            "LEGAL" -> "Legal & AI"
-            "MORE" -> "More"
+            "LEGAL" -> "Legal & Claims"
+            "MORE" -> "More Services"
             else -> key
         }
         val sub = when (key) {
-            "RECORD" -> "Your identity, family, people, addresses and evidence in one connected record."
-            "CREDIT" -> "Informal, trade, formal and repayment relationships with consent and audit."
-            "REPAYMENT" -> "Chronological dues, repayments, consent and closure."
-            "PROTECT" -> "Protect your family, documents, rights and future."
-            "GROW" -> "Understand your portfolio, performance and opportunity cost."
-            "ASSETS" -> "Record what you own, its value, evidence and protection."
-            "TTMM" -> "Share expenses clearly and settle with a record."
-            "QR_KHATA" -> "Identify a relationship, record the transaction and confirm consent."
-            "LEGAL" -> "Legal pathways, claims, professional connections and AI assistance."
-            else -> "All supporting ArthSaathi services, without duplicate menu ownership."
+            "PROTECT" -> "Insurance, documents, alerts and protection actions."
+            "GROW" -> "Portfolio, MIS, scenarios, market data and integrations."
+            "TTMM" -> "Shared expenses, contributions, settlements and history."
+            "QR_KHATA" -> "Scan, record and maintain a consented merchant credit ledger."
+            "LEGAL" -> "Claims, legal assistance, advocates and financial AI."
+            else -> "Supporting ArthSaathi services."
         }
 
         val root = LinearLayout(this).apply {
@@ -54,14 +61,14 @@ class V7ModuleActivity : AppCompatActivity() {
             setPadding(dp(10), dp(7), dp(10), dp(22))
             setBackgroundColor(ArthSaathiV7Design.CREAM)
         }
-
         val top = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = ArthSaathiV7Design.bg(this@V7ModuleActivity)
-            setPadding(dp(9), dp(7), dp(9), dp(9))
+            setPadding(dp(9), dp(7), dp(9), dp(10))
         }
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         row.addView(ArthSaathiV7Design.text(this, "‹", 36f, Color.WHITE).apply {
+            contentDescription = "Back"
             setOnClickListener { finish() }
         }, LinearLayout.LayoutParams(dp(40), dp(45)))
         row.addView(ArthSaathiV7Design.brand(this, 23f, true), LinearLayout.LayoutParams(0, -2, 1f))
@@ -71,23 +78,19 @@ class V7ModuleActivity : AppCompatActivity() {
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
         root.addView(top)
 
-        root.addView(ArthSaathiV7Design.section(this, title, sub), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
-
         when (key) {
-            "RECORD" -> record(root)
-            "CREDIT" -> credit(root)
-            "REPAYMENT" -> repayment(root)
             "GROW" -> grow(root)
             "PROTECT" -> protect(root)
-            "ASSETS" -> assets(root)
             "TTMM" -> ttmm(root)
             "QR_KHATA" -> qr(root)
             "LEGAL" -> legal(root)
             else -> more(root)
         }
 
-        root.addView(ArthSaathiV7Design.goldButton(this, "Back to Financial Command Centre") { finish() },
-            LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(13) })
+        root.addView(
+            ArthSaathiV7Design.goldButton(this, "Back to Financial Command Centre") { finish() },
+            LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(13) }
+        )
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
     }
 
@@ -99,8 +102,10 @@ class V7ModuleActivity : AppCompatActivity() {
                 val index = i + j
                 if (index < items.size) {
                     val t = items[index]
-                    row.addView(ArthSaathiV7Design.tile(this, t.first, t.second, t.third, actions[index]),
-                        LinearLayout.LayoutParams(0, dp(116), 1f).apply { if (j == 1) leftMargin = dp(5) })
+                    row.addView(
+                        ArthSaathiV7Design.tile(this, t.first, t.second, t.third, actions[index]),
+                        LinearLayout.LayoutParams(0, dp(116), 1f).apply { if (j == 1) leftMargin = dp(5) }
+                    )
                 }
             }
             root.addView(row, LinearLayout.LayoutParams(-1, dp(116)).apply { if (i > 0) topMargin = dp(5) })
@@ -108,109 +113,50 @@ class V7ModuleActivity : AppCompatActivity() {
         }
     }
 
-    private fun record(root: LinearLayout) {
-        addGrid(root, listOf(
-            Triple("ID", "Profile & Identity", "Identity, contact and primary record"),
-            Triple("👥", "Family & Contacts", "People, relationships and authorised access"),
-            Triple("⌂", "Address & Location", "PIN-assisted and map-assisted addresses"),
-            Triple("▤", "Document Vault", "Evidence, versions, source and integrity")
-        ), listOf(
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.PEOPLE) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.PEOPLE) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADDRESS")) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.DOCUMENTS) }
-        ))
-    }
-
-    private fun repayment(root: LinearLayout) {
-        root.addView(ArthSaathiV7Design.section(this, "Repayment Centre", "Open the canonical repayment engine with chronological dues and consent-controlled updates."))
-        root.addView(ArthSaathiV7Design.goldButton(this, "Open Repayment Centre") {
-            V7LegacyAdapter.open(this, V7LegacyAdapter.Route.REPAYMENT)
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
-    }
-
-    private fun credit(root: LinearLayout) {
-        addGrid(root, listOf(
-            Triple("₹", "Udhaardaar / Informal Credit", "Consent-led credit registration and tracking"),
-            Triple("▦", "QR Udhaar Khata", "Scan, identify, record and confirm"),
-            Triple("▤", "Trade Credit", "Invoice-backed payable / receivable records"),
-            Triple("FC", "Formal Credit", "Facilities, terms and outstanding"),
-            Triple("↻", "Repayment Centre", "Chronological dues, repayments and closure"),
-            Triple("♙", "Guarantor", "Linked guarantor and evidence records")
-        ), listOf(
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.CREDIT) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TRADE) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.FORMAL_CREDIT) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.REPAYMENT) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.GUARANTOR) }
-        ))
-    }
-
     private fun grow(root: LinearLayout) {
+        // Exactly one entry for each intelligence function.
         addGrid(root, listOf(
-            Triple("◉", "Portfolio Intelligence", "Holdings, value, allocation and performance"),
-            Triple("▥", "MIS Dashboard", "First-hand financial information from your records"),
-            Triple("↔", "Opportunity Cost", "Compare current portfolio with alternatives"),
-            Triple("▤", "MIS Dashboard", "Connected financial intelligence and revenue"),
-            Triple("⇄", "ERP / Tally", "Explicit data exchange boundary"),
-            Triple("⌁", "Market Data", "Timestamped external data with freshness"),
-            Triple("◌", "Scenarios", "Analyse before making a decision"),
-            Triple("▤", "Reports", "Statements and financial reports")
+            Triple("◉", "Portfolio Intelligence", "Holdings, allocation, value and performance"),
+            Triple("▥", "MIS Dashboard", "Assets, liabilities, credit, revenue and financial position"),
+            Triple("↔", "Opportunity Cost", "AI-assisted analysis of possible portfolio switches"),
+            Triple("◌", "Scenarios", "Test assumptions before making a decision"),
+            Triple("⌁", "Market Data", "External values with source, timestamp and freshness"),
+            Triple("⇄", "ERP / Tally", "Explicit import/export and connector boundary"),
+            Triple("▤", "Reports", "Statements and generated financial reports")
         ), listOf(
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "OPPORTUNITY")) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "MARKET")) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "MIS")) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "INTEGRATION")) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "OPPORTUNITY")) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.MIS) }
+            { openTool("PORTFOLIO") },
+            { openTool("MIS") },
+            { openTool("OPPORTUNITY") },
+            { openTool("SCENARIO") },
+            { openTool("MARKET") },
+            { openTool("INTEGRATION") },
+            { openTool("REPORTS") }
         ))
     }
 
     private fun protect(root: LinearLayout) {
+        // Address deliberately omitted: it belongs to Profile/Record editing.
         addGrid(root, listOf(
             Triple("☂", "Insurance", "Policies, renewal, nominee and claims"),
             Triple("▣", "Documents", "Evidence, versions and expiry tracking"),
-            Triple("♡", "Family", "People, authorised access and legacy"),
-            Triple("✓", "Claims", "Ownership to claim closure"),
-            Triple("⌂", "Address", "PIN and location-assisted address records"),
+            Triple("♡", "Family & Access", "People, relationships and authorised access"),
+            Triple("✓", "Claims", "Ownership, evidence and claim lifecycle"),
             Triple("!", "Alerts", "Due dates, renewals and document actions")
         ), listOf(
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.INSURANCE) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.DOCUMENTS) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.PEOPLE) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.LEGAL) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADDRESS")) },
+            { openTool("CLAIM") },
             { V7AlertEngine.evaluate(this); Toast.makeText(this, "Alerts evaluated from recorded events and due dates.", Toast.LENGTH_SHORT).show() }
-        ))
-    }
-
-    private fun assets(root: LinearLayout) {
-        addGrid(root, listOf(
-            Triple("▣", "Asset Vault", "Financial and non-financial assets"),
-            Triple("⌁", "Valuation", "Record value and update history"),
-            Triple("▤", "Evidence", "Link ownership documents"),
-            Triple("♡", "Nominee", "Link nominee information"),
-            Triple("↗", "Protection", "Connect insurance and safeguards"),
-            Triple("!", "Claims", "Prepare ownership and claim records")
-        ), listOf(
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.ASSET_VAULT) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.ASSET_VAULT) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.DOCUMENTS) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.LEGAL) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.INSURANCE) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.LEGAL) }
         ))
     }
 
     private fun ttmm(root: LinearLayout) {
         addGrid(root, listOf(
-            Triple("👥", "Together • Share", "Create a shared expense group"),
-            Triple("₹", "Contribute", "Record who paid and how much"),
-            Triple("↔", "Settle", "See pending settlements"),
-            Triple("▤", "History", "Keep a transparent record")
+            Triple("👥", "Create / Open Group", "Shared expense group and members"),
+            Triple("₹", "Record Contribution", "Who paid, how much and for what"),
+            Triple("↔", "Settle", "Pending balances and settlement records"),
+            Triple("▤", "History", "Transparent expense and settlement history")
         ), listOf(
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
@@ -221,10 +167,10 @@ class V7ModuleActivity : AppCompatActivity() {
 
     private fun qr(root: LinearLayout) {
         addGrid(root, listOf(
-            Triple("▦", "Scan / Identify", "QR-based party and transaction capture"),
+            Triple("▦", "Scan / Identify", "Capture party and transaction details"),
             Triple("₹", "Record Khata", "Credit or repayment ledger entry"),
-            Triple("✓", "Consent", "OTP-confirmed mutation"),
-            Triple("↻", "Balance", "Outstanding updates from the ledger")
+            Triple("✓", "Consent", "Consent-controlled record mutation"),
+            Triple("↻", "Balance", "Outstanding and transaction history")
         ), listOf(
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_SCANNER) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) },
@@ -238,45 +184,36 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("⚖", "Legal Assistance", "Issue, parties, timeline and evidence"),
             Triple("♙", "Advocate Directory", "Search by city and practice domain"),
             Triple("▤", "Claim Assistance", "Ownership, nominee/heir and documents"),
-            Triple("◉", "AI Financial Advisor", "Ask about your recorded financial information")
+            Triple("◉", "AI Financial Advisor", "Answers from recorded financial information")
         ), listOf(
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.LEGAL) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "ADVOCATE")) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "CLAIM")) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "SECURITY")) }
+            { openTool("ADVOCATE") },
+            { openTool("CLAIM") },
+            { openTool("AI") }
         ))
     }
 
     private fun more(root: LinearLayout) {
         addGrid(root, listOf(
-            Triple("CC", "ChargeCheck", "Compare sanctioned and actual charges"),
-            Triple("LI", "Liability Vault", "Track loans and obligations"),
-            Triple("RP", "Reports", "Statements and reports"),
-            Triple("💳", "Revenue & Payments", "Services, invoices and payment records"),
-            Triple("BE", "Government Schemes", "Eligibility and benefit records"),
+            Triple("CC", "ChargeCheck", "Sanctioned vs actual charges"),
+            Triple("LI", "Liability Vault", "Loans and other obligations"),
+            Triple("💳", "Revenue & Payments", "Service charges, invoices and payment records"),
+            Triple("BE", "Government Benefits", "Eligibility and benefit records"),
             Triple("RE", "Rental & Lease", "Lease relationships and documents"),
             Triple("⚙", "Security & Consent", "Consent, audit and protected sharing"),
             Triple("◈", "Credit Score", "Consent-gated explainable internal score")
         ), listOf(
-            { openMore("CHARGECHECK") }, { openNative("LIABILITIES") },
-            { openMore("REPORTS") }, { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "REVENUE")) },
-            { openMore("BENEFITS") }, { openMore("RENTAL") },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "AI")) },
-            { startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", "SCORE")) }
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.CHARGECHECK) },
+            { startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", "LIABILITIES")) },
+            { openTool("REVENUE") },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.BENEFITS) },
+            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.RENTAL) },
+            { openTool("SECURITY") },
+            { openTool("SCORE") }
         ))
     }
 
-    private fun openNative(module: String) {
-        startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", module))
-    }
-
-    private fun openMore(section: String) {
-        V7LegacyAdapter.open(this, when (section) {
-            "CHARGECHECK" -> V7LegacyAdapter.Route.CHARGECHECK
-            "LIABILITY" -> V7LegacyAdapter.Route.LIABILITY
-            "BENEFITS" -> V7LegacyAdapter.Route.BENEFITS
-            "RENTAL" -> V7LegacyAdapter.Route.RENTAL
-            else -> V7LegacyAdapter.Route.DOCUMENTS
-        })
+    private fun openTool(tool: String) {
+        startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", tool))
     }
 }
