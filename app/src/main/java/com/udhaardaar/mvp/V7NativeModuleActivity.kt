@@ -35,7 +35,11 @@ class V7NativeModuleActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 700 && resultCode == RESULT_OK) {
-            pendingPhotoUri = data?.data?.toString().orEmpty()
+            val uri = data?.data
+            if (uri != null) {
+                runCatching { contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+                pendingPhotoUri = uri.toString()
+            } else pendingPhotoUri = ""
             Toast.makeText(this, if (pendingPhotoUri.isNotBlank()) "Profile picture selected." else "No picture selected.", Toast.LENGTH_SHORT).show()
         }
     }
