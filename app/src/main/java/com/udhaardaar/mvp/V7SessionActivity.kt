@@ -2,16 +2,12 @@ package com.udhaardaar.mvp
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.SystemClock
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.appcompat.app.AppCompatActivity
 
-/**
- * Canonical V7 session guard.
- * Session expires after inactivity and cannot be bypassed by navigating back
- * to an already-created protected Activity.
- */
+/** Canonical V7 inactivity/session guard. */
 abstract class V7SessionActivity : AppCompatActivity() {
     companion object {
         const val TIMEOUT_MS = 15L * 60L * 1000L
@@ -20,7 +16,15 @@ abstract class V7SessionActivity : AppCompatActivity() {
     }
 
     private val handler = Handler(Looper.getMainLooper())
-    private val expiryCheck = object : Runnable { override fun run() {\n        if (!isFinishing && V7AccountStore.isLoggedIn(this@V7SessionActivity)) {\n            if (expired()) forceLogout() else handler.postDelayed(this, 30_000L)\n        }\n    } }\n\n    private fun markActivity() {
+    private val expiryCheck = object : Runnable {
+        override fun run() {
+            if (!isFinishing && V7AccountStore.isLoggedIn(this@V7SessionActivity)) {
+                if (expired()) forceLogout() else handler.postDelayed(this, 30_000L)
+            }
+        }
+    }
+
+    private fun markActivity() {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit()
             .putLong(LAST_ACTIVITY, SystemClock.elapsedRealtime()).apply()
     }
@@ -47,7 +51,19 @@ abstract class V7SessionActivity : AppCompatActivity() {
             forceLogout()
         } else {
             markActivity()
+            handler.removeCallbacks(expiryCheck)
+            handler.postDelayed(expiryCheck, 30_000L)
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        handler.removeCallbacks(expiryCheck)
+    }
+
+    override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
+        super.onDestroy()
     }
 
     override fun onUserInteraction() {
