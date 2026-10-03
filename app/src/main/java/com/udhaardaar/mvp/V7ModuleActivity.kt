@@ -160,7 +160,7 @@ class V7ModuleActivity : V7SessionActivity() {
         ), listOf(
             { openTool("TTMM") },
             { openTool("TTMM") },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
+            { openTool("TTMM") },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) }
         ))
     }
@@ -175,7 +175,7 @@ class V7ModuleActivity : V7SessionActivity() {
             { openTool("QR") },
             { openTool("QR") },
             { openTool("QR") },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) }
+            { openTool("QR") }
         ))
     }
 
