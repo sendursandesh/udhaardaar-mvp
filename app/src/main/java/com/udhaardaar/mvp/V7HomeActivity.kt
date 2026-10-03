@@ -9,7 +9,7 @@ import android.view.Gravity
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 
-class V7HomeActivity : AppCompatActivity() {
+class V7HomeActivity : V7SessionActivity() {
         private val d get() = resources.displayMetrics.density
     private fun dp(v: Int) = (v * d).toInt()
 
