@@ -14,7 +14,7 @@ import org.json.JSONObject
  * ArthSaathi V7 Step 6 — first native migration tranche.
  *
  * These screens use only V7Core/V7Records/V7LocalStore. They never launch
- * V5/V6.2 activities. Legacy-backed modules remain behind V7LegacyAdapter.
+ * V5/V6.2 activities. Compatibility-backed modules are isolated outside this screen.
  */
 class V7NativeModuleActivity : AppCompatActivity() {
     private val d get() = resources.displayMetrics.density
