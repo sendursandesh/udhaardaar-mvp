@@ -143,9 +143,9 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("✓", "Claims", "Ownership, evidence and claim lifecycle"),
             Triple("!", "Alerts", "Due dates, renewals and document actions")
         ), listOf(
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.INSURANCE) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.DOCUMENTS) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.PEOPLE) },
+            { openTool("INSURANCE") },
+            { openTool("DOCUMENTS") },
+            { openTool("PEOPLE") },
             { openTool("CLAIM") },
             { V7AlertEngine.evaluate(this); Toast.makeText(this, "Alerts evaluated from recorded events and due dates.", Toast.LENGTH_SHORT).show() }
         ))
@@ -158,7 +158,7 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("↔", "Settle", "Pending balances and settlement records"),
             Triple("▤", "History", "Transparent expense and settlement history")
         ), listOf(
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
+            { openTool("TTMM") },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) }
@@ -172,8 +172,8 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("✓", "Consent", "Consent-controlled record mutation"),
             Triple("↻", "Balance", "Outstanding and transaction history")
         ), listOf(
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_SCANNER) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) },
+            { openTool("QR") },
+            { openTool("QR") },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) }
         ))
@@ -186,7 +186,7 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("▤", "Claim Assistance", "Ownership, nominee/heir and documents"),
             Triple("◉", "AI Financial Advisor", "Answers from recorded financial information")
         ), listOf(
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.LEGAL) },
+            { openTool("LEGAL") },
             { openTool("ADVOCATE") },
             { openTool("CLAIM") },
             { openTool("AI") }
@@ -203,11 +203,11 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("⚙", "Security & Consent", "Consent, audit and protected sharing"),
             Triple("◈", "Credit Score", "Consent-gated explainable internal score")
         ), listOf(
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.CHARGECHECK) },
+            { openTool("CHARGECHECK") },
             { startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", "LIABILITIES")) },
             { openTool("REVENUE") },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.BENEFITS) },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.RENTAL) },
+            { openTool("BENEFITS") },
+            { openTool("RENTAL") },
             { openTool("SECURITY") },
             { openTool("SCORE") }
         ))
