@@ -210,31 +210,120 @@ class V7NativeModuleActivity : AppCompatActivity() {
 
     private fun credit() {
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        body.addView(ArthSaathiV7Design.section(this, "Register Credit", "V7-native relationship record. Repayment mutations remain consent-controlled."))
+        body.addView(ArthSaathiV7Design.section(this, "Register Credit", "Selection-driven terms with automatic repayment calculation and schedule."))
+
         val people = V7Core.all(this, V7Core.Keys.PEOPLE)
         val labels = if (people.isEmpty()) listOf("No person — create one in Record") else people.map { it.optString("name") + " • " + it.optString("mobile") }
-        val spinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
-        body.addView(spinner, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-        val amount = field("Amount", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
-        val roi = field("ROI %", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
-        val purpose = field("Purpose")
-        val repayment = field("Repayment structure (EMI / Principal + Interest)")
-        listOf(amount, roi, purpose, repayment).forEach { body.addView(it, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) }) }
+        val personSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
+        body.addView(personSpinner, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+
+        val amount = field("Credit amount (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
+        body.addView(amount, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+
+        val roiSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
+                listOf("0%","6%","8%","10%","12%","15%","18%","24%","36%","Custom"))
+        }
+        body.addView(labelledSpinner("ROI", roiSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+
+        val customRoi = field("Custom ROI %", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
+        customRoi.visibility = View.GONE
+        body.addView(customRoi, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(2) })
+        roiSpinner.onItemSelectedListener = object: android.widget.AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                customRoi.visibility = if (position == 9) View.VISIBLE else View.GONE
+            }
+        }
+
+        val methodSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
+                listOf("EMI","Principal + Interest","Bullet"))
+        }
+        body.addView(labelledSpinner("Repayment method", methodSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+
+        val tenureSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
+                listOf("3 months","6 months","9 months","12 months","18 months","24 months","36 months","48 months","60 months"))
+        }
+        body.addView(labelledSpinner("Repayment tenure", tenureSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+
+        val frequencySpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
+                listOf("Monthly","Quarterly","Half-yearly","Yearly"))
+        }
+        body.addView(labelledSpinner("Repayment frequency", frequencySpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+
+        val startDate = TextView(this).apply {
+            text = "Start date: Select"
+            textSize = 14f; setTextColor(ArthSaathiV7Design.NAVY); gravity = Gravity.CENTER_VERTICAL
+            background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 10)
+            setPadding(dp(12),0,dp(12),0)
+            setOnClickListener {
+                val cal = java.util.Calendar.getInstance()
+                android.app.DatePickerDialog(this@V7NativeModuleActivity,{_,y,m,d0->
+                    text = "Start date: %04d-%02d-%02d".format(y,m+1,d0)
+                },cal.get(java.util.Calendar.YEAR),cal.get(java.util.Calendar.MONTH),cal.get(java.util.Calendar.DAY_OF_MONTH)).show()
+            }
+        }
+        body.addView(startDate, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+
+        val preview = ArthSaathiV7Design.text(this,"Repayment schedule will be calculated automatically.",10.5f,ArthSaathiV7Design.NAVY)
+        body.addView(preview, LinearLayout.LayoutParams(-1,-2).apply { topMargin = dp(8) })
+
+        body.addView(button("Calculate Repayment Schedule") {
+            val a = amount.text.toString().toDoubleOrNull()
+            if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
+            val roi = if (roiSpinner.selectedItemPosition == 9) customRoi.text.toString().toDoubleOrNull() ?: -1.0 else roiSpinner.selectedItemPosition.let { listOf(0.0,6.0,8.0,10.0,12.0,15.0,18.0,24.0,36.0)[it] }
+            if (roi < 0.0 || roi > 100.0) { customRoi.error = "ROI must be 0–100%"; return@button }
+            val months = listOf(3,6,9,12,18,24,36,48,60)[tenureSpinner.selectedItemPosition]
+            val method = methodSpinner.selectedItem.toString()
+            val monthlyRate = roi / 1200.0
+            val emi = if (method == "EMI") {
+                if (monthlyRate == 0.0) a / months else a * monthlyRate * Math.pow(1+monthlyRate,months.toDouble()) / (Math.pow(1+monthlyRate,months.toDouble())-1)
+            } else 0.0
+            val interest = a * roi / 100.0 * months / 12.0
+            val periodic = when(frequencySpinner.selectedItemPosition){0->1;1->3;2->6;else->12}
+            val installments = kotlin.math.ceil(months.toDouble()/periodic).toInt()
+            preview.text = when(method){
+                "EMI" -> "EMI: ₹%.2f\nTotal payable: ₹%.2f\nInstallments: %d\nFirst due: calculated from selected start date".format(emi,emi*months,months)
+                "Principal + Interest" -> "Principal per period: ₹%.2f\nEstimated total interest: ₹%.2f\nInstallments: %d".format(a/installments,interest,installments)
+                else -> "Bullet repayment\nPrincipal: ₹%.2f\nEstimated interest: ₹%.2f\nDue after: %d months".format(a,interest,months)
+            }
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+
         body.addView(button("Register Credit in V7") {
             if (people.isEmpty()) { Toast.makeText(this, "Create a person first in Record.", Toast.LENGTH_SHORT).show(); return@button }
             val a = amount.text.toString().toDoubleOrNull()
             if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
-            val r = roi.text.toString().toDoubleOrNull() ?: 0.0
-            if (r < 0.0 || r > 100.0) { roi.error = "ROI must be between 0 and 100%"; return@button }
-            V7Records.relationship(this, people[spinner.selectedItemPosition].optString("id"),
-                "INFORMAL_CREDIT", "RECEIVABLE", a, r,
-                repayment.text.toString().ifBlank { "PRINCIPAL_PLUS_INTEREST" },
-                purpose.text.toString())
-            Toast.makeText(this, "Credit relationship saved in V7.", Toast.LENGTH_SHORT).show()
+            val roi = if (roiSpinner.selectedItemPosition == 9) customRoi.text.toString().toDoubleOrNull() ?: -1.0 else listOf(0.0,6.0,8.0,10.0,12.0,15.0,18.0,24.0,36.0)[roiSpinner.selectedItemPosition]
+            if (roi < 0.0 || roi > 100.0) { customRoi.error = "ROI must be 0–100%"; return@button }
+            val months = listOf(3,6,9,12,18,24,36,48,60)[tenureSpinner.selectedItemPosition]
+            val method = methodSpinner.selectedItem.toString()
+            val periodic = when(frequencySpinner.selectedItemPosition){0->1;1->3;2->6;else->12}
+            val monthlyRate = roi / 1200.0
+            val emi = if (method=="EMI") {
+                if(monthlyRate==0.0) a/months else a*monthlyRate*Math.pow(1+monthlyRate,months.toDouble())/(Math.pow(1+monthlyRate,months.toDouble())-1)
+            } else 0.0
+            val interest = a*roi/100.0*months/12.0
+            val rel = V7Records.relationship(this,people[personSpinner.selectedItemPosition].optString("id"),"INFORMAL_CREDIT","RECEIVABLE",a,roi,method.uppercase().replace(" ","_"),"")
+            rel.put("tenureMonths",months);rel.put("frequency",frequencySpinner.selectedItem.toString());rel.put("periodMonths",periodic)
+            rel.put("emiAmount",emi);rel.put("estimatedInterest",interest);rel.put("startDate",startDate.text.toString().removePrefix("Start date: ").trim())
+            rel.put("firstDueDate",startDate.text.toString().removePrefix("Start date: ").trim());rel.put("scheduleStatus","CALCULATED")
+            V7Core.replace(this,V7Core.Keys.RELATIONSHIPS,rel)
+            Toast.makeText(this, "Credit registered with calculated terms.", Toast.LENGTH_SHORT).show()
             renderRelationshipList(body)
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) })
+
         renderRelationshipList(body)
-        setContentView(shell("Credit & Money Relationships", "Native V7 credit registration with V7-owned data.", body))
+        setContentView(shell("Credit & Money Relationships", "Selection-driven credit terms and automatic repayment calculation.", body))
+    }
+
+    private fun labelledSpinner(label:String, spinner:Spinner):LinearLayout {
+        val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
+        box.addView(ArthSaathiV7Design.text(this,label,10f,ArthSaathiV7Design.MUTED,true))
+        box.addView(spinner,LinearLayout.LayoutParams(-1,dp(48)))
+        return box
     }
 
     private fun renderRelationshipList(body: LinearLayout) {
