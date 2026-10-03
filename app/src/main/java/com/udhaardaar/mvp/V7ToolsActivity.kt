@@ -18,7 +18,7 @@ class V7ToolsActivity : AppCompatActivity() {
         r.addView(h);return r
     }
     private fun render(tool:String){
-        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"MARKET"->market();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();else->portfolio()}
+        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"SCENARIO"->scenario();"MARKET"->market();"REPORTS"->reports();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();else->portfolio()}
         r.addView(ArthSaathiV7Design.goldButton(this,"Back"){finish()},LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(12)})
         setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
     }
@@ -61,6 +61,48 @@ class V7ToolsActivity : AppCompatActivity() {
         },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(9)})
         r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(12)});return r
     }
+    private fun scenario():LinearLayout{
+        val r=shell("Scenario Analysis","Model a defined what-if case separately from opportunity-cost analysis.")
+        val base=input("Current value (₹)")
+        val growth=input("Expected annual growth %")
+        val years=input("Period (years)")
+        val contribution=input("Annual contribution (₹)")
+        val out=ArthSaathiV7Design.text(this,"Enter assumptions to model the scenario.",11f,ArthSaathiV7Design.NAVY)
+        listOf(base,growth,years,contribution).forEach{r.addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})}
+        r.addView(ArthSaathiV7Design.goldButton(this,"Run Scenario"){
+            val b=base.text.toString().toDoubleOrNull()
+            val g=growth.text.toString().toDoubleOrNull()
+            val y=years.text.toString().toDoubleOrNull()
+            val a=contribution.text.toString().toDoubleOrNull()?:0.0
+            if(b==null||b<0||g==null||y==null||y<=0){out.text="Enter valid base value, growth and period.";return@goldButton}
+            val factor=Math.pow(1.0+g/100.0,y)
+            val future=b*factor+a*((factor-1.0)/(g/100.0).takeIf{Math.abs(it)>1e-9}?:y)
+            out.text="Scenario value after %.1f years: ₹%.2f".format(y,future)
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+        return r
+    }
+
+    private fun reports():LinearLayout{
+        val r=shell("Reports","Generated views from recorded ArthSaathi data. Reports are distinct from MIS.")
+        val out=ArthSaathiV7Design.text(this,"Select a report to generate.",11f,ArthSaathiV7Design.NAVY)
+        val types=Spinner(this).apply{adapter=ArrayAdapter(this@V7ToolsActivity,android.R.layout.simple_spinner_dropdown_item,
+            listOf("Financial Position","Credit & Repayment","Assets & Nominees","Revenue & Payments","Audit & Consent"))}
+        r.addView(types,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(7)})
+        r.addView(ArthSaathiV7Design.goldButton(this,"Generate Report"){
+            val m=V7MIS.snapshot(this)
+            out.text=when(types.selectedItemPosition){
+                0->"Financial Position\nAssets: ₹%.2f\nLiabilities: ₹%.2f\nNet worth: ₹%.2f".format(m.optDouble("assets"),m.optDouble("liabilities"),m.optDouble("netWorth"))
+                1->"Credit & Repayment\nActive credits: %d\nReceivables: ₹%.2f\nPayables: ₹%.2f".format(m.optInt("activeCredits"),m.optDouble("receivables"),m.optDouble("payables"))
+                2->"Assets & Nominees\nAssets recorded: ₹%.2f".format(m.optDouble("assets"))
+                3->"Revenue & Payments\nReconciled revenue: ₹%.2f\nRecorded payments: ₹%.2f\nInvoices: %d".format(m.optDouble("reconciledRevenue"),m.optDouble("recordedPayments"),m.optInt("invoiceCount"))
+                else->"Audit & Consent\nAudit events: %d".format(m.optInt("auditEvents"))
+            }
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+        return r
+    }
+
     private fun market():LinearLayout{
         val r=shell("Market Data","Every market value is stored with source, timestamp and freshness.")
         val i=input("Instrument / product");val s=input("Source");val v=input("Observed value");val f=input("Freshness in minutes")
