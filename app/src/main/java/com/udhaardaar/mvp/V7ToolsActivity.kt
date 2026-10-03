@@ -18,10 +18,35 @@ class V7ToolsActivity : AppCompatActivity() {
         r.addView(h);return r
     }
     private fun render(tool:String){
-        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"SCENARIO"->scenario();"MARKET"->market();"REPORTS"->reports();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();"DOCUMENTS"->documents();"PEOPLE"->people();"INSURANCE"->insurance();"TTMM"->ttmm();"QR"->qr();"LEGAL"->legal();"BENEFITS"->benefits();"RENTAL"->rental();"CHARGECHECK"->chargeCheck();else->unknownTool(tool)}
+        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"SCENARIO"->scenario();"MARKET"->market();"REPORTS"->reports();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();"WILL"->will();"DOCUMENTS"->documents();"PEOPLE"->people();"INSURANCE"->insurance();"TTMM"->ttmm();"QR"->qr();"LEGAL"->legal();"BENEFITS"->benefits();"RENTAL"->rental();"CHARGECHECK"->chargeCheck();else->unknownTool(tool)}
         r.addView(ArthSaathiV7Design.goldButton(this,"Back"){finish()},LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(12)})
         setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
     }
+    private fun will():LinearLayout {
+        val r=shell("Will & Legacy","Link recorded assets to a will record. This stores the relationship; legal drafting remains subject to the selected legal workflow.")
+        val assets=V7Core.all(this,V7Core.Keys.ASSETS)
+        val labels=if(assets.isEmpty()) listOf("No recorded assets") else assets.map{"₹ %.2f • %s".format(it.optDouble("currentValue",it.optDouble("value",0.0)),it.optString("type","Asset"))}
+        val spinner=Spinner(this).apply{adapter=ArrayAdapter(this@V7ToolsActivity,android.R.layout.simple_spinner_dropdown_item,labels)}
+        val testator=input("Testator / owner")
+        val willRef=input("Will / document reference")
+        r.addView(testator,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        r.addView(willRef,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        r.addView(ArthSaathiV7Design.text(this,"Asset to link",10f,ArthSaathiV7Design.MUTED,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(8)})
+        r.addView(spinner,LinearLayout.LayoutParams(-1,dp(48)))
+        val out=ArthSaathiV7Design.text(this,"",11f,ArthSaathiV7Design.NAVY)
+        r.addView(ArthSaathiV7Design.goldButton(this,"Link Asset to Will"){
+            if(assets.isEmpty()){out.text="Record an asset first in Asset Vault.";return@goldButton}
+            if(testator.text.isBlank()||willRef.text.isBlank()){out.text="Testator and will/document reference are required.";return@goldButton}
+            val w=org.json.JSONObject().apply{
+                put("id",V7Core.id("WILL"));put("testator",testator.text.toString().trim());put("documentReference",willRef.text.toString().trim())
+                put("assetId",assets[spinner.selectedItemPosition].optString("id"));put("status","RECORDED");put("createdAt",V7Core.now())
+            }
+            V7Core.add(this,V7Core.Keys.WILL,w)
+            out.text="Asset linked to will record "+w.getString("id")+"."
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(9)})
+        return r
+    }
+
     private fun unknownTool(tool:String):LinearLayout {
         val r=shell("Unavailable V7 function","This function has no registered destination yet; it will not silently open another module.")
         r.addView(ArthSaathiV7Design.text(this,"Destination not registered: $tool",11f,ArthSaathiV7Design.NAVY,true))
