@@ -6,6 +6,8 @@ import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
+import java.io.File
 import org.json.JSONObject
 
 /**
@@ -41,6 +43,16 @@ class V7NativeModuleActivity : AppCompatActivity() {
                 pendingPhotoUri = uri.toString()
             } else pendingPhotoUri = ""
             Toast.makeText(this, if (pendingPhotoUri.isNotBlank()) "Profile picture selected." else "No picture selected.", Toast.LENGTH_SHORT).show()
+        } else if (requestCode == 701 && resultCode == RESULT_OK) {
+            val bitmap = data?.extras?.get("data") as? android.graphics.Bitmap
+            if (bitmap != null) {
+                runCatching {
+                    val file = File(filesDir, "profile_" + V7Core.id("PHOTO") + ".jpg")
+                    file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, it) }
+                    pendingPhotoUri = FileProvider.getUriForFile(this, packageName + ".fileprovider", file).toString()
+                }.onFailure { pendingPhotoUri = "" }
+            }
+            Toast.makeText(this, if (pendingPhotoUri.isNotBlank()) "Camera photo captured." else "Camera photo could not be saved.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -124,13 +136,19 @@ class V7NativeModuleActivity : AppCompatActivity() {
             body.addView(it, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
         }
 
-        body.addView(button("Add / Change Profile Picture") {
+        body.addView(button("Choose Profile Picture") {
             val pick = android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).apply {
                 type = "image/*"
                 addCategory(android.content.Intent.CATEGORY_OPENABLE)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
             }
             startActivityForResult(pick, 700)
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) })
+        body.addView(button("Take Profile Picture") {
+            val camera = android.content.Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+            if (camera.resolveActivity(packageManager) == null) Toast.makeText(this, "No camera application is available.", Toast.LENGTH_SHORT).show()
+            else startActivityForResult(camera, 701)
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(5) })
 
         body.addView(button(if (selectedPersonId == null) "Create Profile" else "Save Profile Changes") {
             val n = recordName.text.toString().trim()
