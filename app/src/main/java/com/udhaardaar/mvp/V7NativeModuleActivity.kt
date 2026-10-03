@@ -16,7 +16,7 @@ import org.json.JSONObject
  * These screens use only V7Core/V7Records/V7LocalStore. They never launch
  * V5/V6.2 activities. Compatibility-backed modules are isolated outside this screen.
  */
-class V7NativeModuleActivity : AppCompatActivity() {
+class V7NativeModuleActivity : V7SessionActivity() {
     private val d get() = resources.displayMetrics.density
     private fun dp(v: Int) = (v * d).toInt()
     private val key get() = intent.getStringExtra("module") ?: "RECORD"
