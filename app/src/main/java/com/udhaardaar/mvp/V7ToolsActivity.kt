@@ -6,7 +6,7 @@ import android.view.Gravity
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 
-class V7ToolsActivity : AppCompatActivity() {
+class V7ToolsActivity : V7SessionActivity() {
     private val d get()=resources.displayMetrics.density
     private fun dp(v:Int)=(v*d).toInt()
     private fun input(h:String)=ArthSaathiV7Design.input(this,h)
