@@ -388,21 +388,101 @@ class V7NativeModuleActivity : AppCompatActivity() {
 
     private fun assets() {
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        body.addView(ArthSaathiV7Design.section(this, "Asset Vault", "Financial and non-financial assets stored in V7."))
-        val type = field("Asset type (property / vehicle / deposit / other)")
-        val description = field("Description")
-        val value = field("Current value", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
-        listOf(type, description, value).forEach { body.addView(it, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) }) }
+        body.addView(ArthSaathiV7Design.section(this, "Asset Vault", "Choose the asset nature first; the relevant fields appear automatically."))
+
+        val nature = Spinner(this).apply {
+            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
+                listOf("Property","Vehicle","Bank Deposit / FD","Investment","Insurance Policy","Business Interest","Gold / Jewellery","Other"))
+        }
+        body.addView(labelledSpinner("Nature of asset", nature), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+
+        val dynamic = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        body.addView(dynamic, LinearLayout.LayoutParams(-1,-2).apply { topMargin = dp(2) })
+
+        val description = field("Asset description")
+        val value = field("Current value (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
+        body.addView(description, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        body.addView(value, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+
+        val people = V7Core.all(this,V7Core.Keys.PEOPLE)
+        val nomineeLabels = listOf("No nominee selected") + people.map{it.optString("name")+" • "+it.optString("mobile")}
+        val nominee = Spinner(this).apply {
+            adapter = ArrayAdapter(this@V7NativeModuleActivity,android.R.layout.simple_spinner_dropdown_item,nomineeLabels)
+        }
+        body.addView(labelledSpinner("Asset-wise nominee",nominee), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+
+        fun rebuild() {
+            dynamic.removeAllViews()
+            when(nature.selectedItemPosition) {
+                0 -> {
+                    val address=field("Property address")
+                    val title=field("Title / deed document reference")
+                    dynamic.addView(address,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.addView(title,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.tag = arrayOf(address,title)
+                }
+                1 -> {
+                    val reg=field("Vehicle registration number")
+                    val model=field("Make / model")
+                    dynamic.addView(reg,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.addView(model,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.tag = arrayOf(reg,model)
+                }
+                2 -> {
+                    val bank=field("Bank / institution")
+                    val maturity=field("Maturity date / reference")
+                    dynamic.addView(bank,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.addView(maturity,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.tag = arrayOf(bank,maturity)
+                }
+                3 -> {
+                    val instrument=field("Instrument / folio / account reference")
+                    val platform=field("Platform / institution")
+                    dynamic.addView(instrument,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.addView(platform,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.tag = arrayOf(instrument,platform)
+                }
+                4 -> {
+                    val policy=field("Policy number / insurer")
+                    val renewal=field("Renewal / maturity date")
+                    dynamic.addView(policy,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.addView(renewal,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.tag = arrayOf(policy,renewal)
+                }
+                5 -> {
+                    val entity=field("Business / entity name")
+                    val ownership=field("Ownership percentage")
+                    dynamic.addView(entity,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.addView(ownership,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.tag = arrayOf(entity,ownership)
+                }
+                else -> {
+                    val detail=field("Asset-specific detail")
+                    dynamic.addView(detail,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(5)})
+                    dynamic.tag = arrayOf(detail)
+                }
+            }
+        }
+        nature.onItemSelectedListener=object:android.widget.AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(parent:android.widget.AdapterView<*>?) {}
+            override fun onItemSelected(parent:android.widget.AdapterView<*>?,view:View?,position:Int,id:Long){rebuild()}
+        }
+        rebuild()
+
         body.addView(button("Save Asset in V7") {
-            val v = value.text.toString().toDoubleOrNull()
-            if (type.text.toString().isBlank()) { type.error = "Asset type is required"; return@button }
-            if (v == null || v < 0) { value.error = "Enter a valid value"; return@button }
-            V7Records.asset(this, V7Core.user(this), type.text.toString(), description.text.toString(), v)
-            Toast.makeText(this, "Asset saved in V7.", Toast.LENGTH_SHORT).show()
+            val v=value.text.toString().toDoubleOrNull()
+            if(v==null||v<0){value.error="Enter a valid value";return@button}
+            val extra=(dynamic.tag as? Array<*>)?.mapNotNull{it as? EditText}?.joinToString(" | "){it.text.toString().trim()}.orEmpty()
+            val nomineeId=if(nominee.selectedItemPosition>0) people[nominee.selectedItemPosition-1].optString("id") else ""
+            val asset=V7Records.asset(this,V7Core.user(this),nature.selectedItem.toString(),description.text.toString()+" | "+extra,v,"",nomineeId)
+            asset.put("assetNature",nature.selectedItem.toString())
+            asset.put("dynamicDetails",extra)
+            V7Core.replace(this,V7Core.Keys.ASSETS,asset)
+            Toast.makeText(this,"Asset saved with type-specific details and nominee link.",Toast.LENGTH_SHORT).show()
             renderAssetList(body)
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        }, LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
         renderAssetList(body)
-        setContentView(shell("Asset Vault", "Native V7 asset ownership, value and evidence links.", body))
+        setContentView(shell("Asset Vault", "Dynamic asset forms with evidence and asset-wise nominee.", body))
     }
 
     private fun renderAssetList(body: LinearLayout) {
