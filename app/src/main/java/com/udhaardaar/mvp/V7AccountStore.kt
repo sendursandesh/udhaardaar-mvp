@@ -41,10 +41,13 @@ object V7AccountStore {
             put("mobile", mobile.trim())
             put("loggedInAt", V7Core.now())
         })
+        c.getSharedPreferences("v7_session_guard", Context.MODE_PRIVATE).edit()
+            .putLong("last_activity", android.os.SystemClock.elapsedRealtime()).apply()
     }
 
     fun logout(c: Context) {
         store(c).remove(SESSION, SESSION_ID)
+        c.getSharedPreferences("v7_session_guard", Context.MODE_PRIVATE).edit().clear().apply()
     }
 
     /**
