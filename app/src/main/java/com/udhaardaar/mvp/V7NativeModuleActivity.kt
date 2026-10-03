@@ -217,6 +217,10 @@ class V7NativeModuleActivity : AppCompatActivity() {
         val personSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
         body.addView(personSpinner, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
 
+        val guarantorLabels = listOf("No guarantor") + people.map { it.optString("name") + " • " + it.optString("mobile") }
+        val guarantorSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, guarantorLabels) }
+        body.addView(labelledSpinner("Guarantor (optional)", guarantorSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+
         val amount = field("Credit amount (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
         body.addView(amount, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
 
@@ -308,6 +312,7 @@ class V7NativeModuleActivity : AppCompatActivity() {
             val interest = a*roi/100.0*months/12.0
             val rel = V7Records.relationship(this,people[personSpinner.selectedItemPosition].optString("id"),"INFORMAL_CREDIT","RECEIVABLE",a,roi,method.uppercase().replace(" ","_"),"")
             rel.put("tenureMonths",months);rel.put("frequency",frequencySpinner.selectedItem.toString());rel.put("periodMonths",periodic)
+            rel.put("guarantorId",if(guarantorSpinner.selectedItemPosition>0) people[guarantorSpinner.selectedItemPosition-1].optString("id") else "")
             rel.put("emiAmount",emi);rel.put("estimatedInterest",interest);rel.put("startDate",startDate.text.toString().removePrefix("Start date: ").trim())
             rel.put("firstDueDate",startDate.text.toString().removePrefix("Start date: ").trim());rel.put("scheduleStatus","CALCULATED")
             V7Core.replace(this,V7Core.Keys.RELATIONSHIPS,rel)
