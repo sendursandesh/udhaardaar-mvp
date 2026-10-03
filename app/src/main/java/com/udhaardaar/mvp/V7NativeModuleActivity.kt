@@ -342,35 +342,67 @@ class V7NativeModuleActivity : AppCompatActivity() {
 
     private fun repayment() {
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        body.addView(ArthSaathiV7Design.section(this, "Consent-Controlled Repayment", "V7 will reject mutation unless active consent exists for the relationship party."))
+        body.addView(ArthSaathiV7Design.section(this, "Repayment Centre", "Select the repayment type and payment method; balances are updated only after required consent."))
+
         val rels = V7Core.all(this, V7Core.Keys.RELATIONSHIPS).filter { it.optDouble("outstanding") > 0.005 }
-        val labels = if (rels.isEmpty()) listOf("No outstanding V7 relationship") else rels.map { "₹ %.2f outstanding".format(it.optDouble("outstanding")) + " • " + it.optString("type") }
-        val spinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
-        body.addView(spinner, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-        val amount = field("Principal amount", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
-        val method = field("Method (CASH / UPI / NEFT)")
-        body.addView(amount, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-        body.addView(method, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        val labels = if (rels.isEmpty()) listOf("No outstanding V7 relationship") else rels.map { "₹ %.2f outstanding • %s".format(it.optDouble("outstanding"),it.optString("type")) }
+        val relationshipSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity,android.R.layout.simple_spinner_dropdown_item,labels) }
+        body.addView(relationshipSpinner,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(6)})
+
+        val repaymentType=Spinner(this).apply{
+            adapter=ArrayAdapter(this@V7NativeModuleActivity,android.R.layout.simple_spinner_dropdown_item,
+                listOf("Principal","Interest","EMI","Bullet repayment"))
+        }
+        body.addView(labelledSpinner("Repayment type",repaymentType),LinearLayout.LayoutParams(-1,dp(70)).apply{topMargin=dp(6)})
+
+        val amount=field("Amount paid (₹)",android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
+        body.addView(amount,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(6)})
+
+        val method=Spinner(this).apply{
+            adapter=ArrayAdapter(this@V7NativeModuleActivity,android.R.layout.simple_spinner_dropdown_item,
+                listOf("UPI","NEFT","Bank Transfer","Cash","NACH","Cheque","Other"))
+        }
+        body.addView(labelledSpinner("Payment method",method),LinearLayout.LayoutParams(-1,dp(70)).apply{topMargin=dp(6)})
+
+        val note=field("Reference / note (optional)")
+        body.addView(note,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(6)})
+
+        val status=ArthSaathiV7Design.text(this,"No repayment recorded yet.",10.5f,ArthSaathiV7Design.NAVY)
+        body.addView(status,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+
         body.addView(button("Record Repayment") {
-            if (rels.isEmpty()) { Toast.makeText(this, "No outstanding V7 relationship.", Toast.LENGTH_SHORT).show(); return@button }
-            val a = amount.text.toString().toDoubleOrNull()
-            if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
-            val rel = rels[spinner.selectedItemPosition]
-            val before = rel.optDouble("outstanding")
-            V7Records.repayment(this, rel.optString("id"), a, a, 0.0, method.text.toString().ifBlank { "UPI" }, true)
-            val after = V7Core.find(this, V7Core.Keys.RELATIONSHIPS, rel.optString("id"))?.optDouble("outstanding") ?: before
-            if (after == before) {
-                Toast.makeText(this, "Not recorded: active OTP-verified consent is required.", Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(this, "Repayment recorded; outstanding updated.", Toast.LENGTH_SHORT).show()
+            if(rels.isEmpty()){status.text="No outstanding relationship.";return@button}
+            val rel=rels[relationshipSpinner.selectedItemPosition]
+            val paid=amount.text.toString().toDoubleOrNull()
+            if(paid==null||paid<=0){amount.error="Enter a valid payment amount";return@button}
+            val outstanding=rel.optDouble("outstanding")
+            if(paid>outstanding+0.005){amount.error="Payment cannot exceed outstanding amount";return@button}
+            val type=repaymentType.selectedItem.toString()
+            val principal=when(type){
+                "Interest"->0.0
+                "Principal"->paid
+                else->{
+                    val roi=rel.optDouble("roiPercent",0.0)
+                    val monthlyInterest=outstanding*roi/1200.0
+                    (paid-monthlyInterest).coerceIn(0.0,paid)
+                }
+            }
+            val interest=(paid-principal).coerceAtLeast(0.0)
+            V7Records.repayment(this,rel.optString("id"),paid,principal,interest,method.selectedItem.toString().uppercase().replace(" ","_"),true)
+            val after=V7Core.find(this,V7Core.Keys.RELATIONSHIPS,rel.optString("id"))?.optDouble("outstanding")?:outstanding
+            if(after>=outstanding-0.0001){
+                status.text="Not recorded: active OTP-verified consent for this relationship is required."
+            }else{
+                status.text="Repayment recorded. Outstanding: ₹%.2f".format(after)
                 renderRepaymentList(body)
             }
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+
         body.addView(ArthSaathiV7Design.text(this,
-            "Consent status is evaluated by the canonical V7 core. This screen does not bypass OTP consent.", 9.5f, ArthSaathiV7Design.MUTED),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+            "Every repayment is audited. No consent means no balance mutation.",9.5f,ArthSaathiV7Design.MUTED),
+            LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
         renderRepaymentList(body)
-        setContentView(shell("Repayment Centre", "Chronological repayment records with consent enforcement.", body))
+        setContentView(shell("Repayment Centre", "Structured repayment types, payment methods and consent enforcement.", body))
     }
 
     private fun renderRepaymentList(body: LinearLayout) {
