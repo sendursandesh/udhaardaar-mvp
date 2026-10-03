@@ -18,6 +18,27 @@ class V7NativeModuleActivity : AppCompatActivity() {
     private val d get() = resources.displayMetrics.density
     private fun dp(v: Int) = (v * d).toInt()
     private val key get() = intent.getStringExtra("module") ?: "RECORD"
+    private var selectedPersonId: String? = null
+    private var pendingPhotoUri: String = ""
+    private lateinit var recordName: EditText
+    private lateinit var recordMobile: EditText
+    private lateinit var recordPan: EditText
+    private lateinit var recordAadhaar: EditText
+    private lateinit var recordGstin: EditText
+    private lateinit var recordEmail: EditText
+    private lateinit var recordAddress: EditText
+    private lateinit var recordPin: EditText
+    private lateinit var recordCity: EditText
+    private lateinit var recordDistrict: EditText
+    private lateinit var recordState: EditText
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 700 && resultCode == RESULT_OK) {
+            pendingPhotoUri = data?.data?.toString().orEmpty()
+            Toast.makeText(this, if (pendingPhotoUri.isNotBlank()) "Profile picture selected." else "No picture selected.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,32 +102,86 @@ class V7NativeModuleActivity : AppCompatActivity() {
 
     private fun record() {
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        body.addView(ArthSaathiV7Design.section(this, "People & Identity", "V7-owned people records. No legacy storage."))
-        val name = field("Full name")
-        val mobile = field("10-digit mobile", android.text.InputType.TYPE_CLASS_PHONE)
-        val pan = field("PAN (optional)")
-        val aadhaar = field("Aadhaar (optional)", android.text.InputType.TYPE_CLASS_NUMBER)
-        val gstin = field("GSTIN (optional)")
-        listOf(name, mobile, pan, aadhaar, gstin).forEach {
+        body.addView(ArthSaathiV7Design.section(this, "Profile & Identity", "Create or edit one complete profile. Address and picture belong to the profile, not a separate module."))
+
+        recordName = field("Full name")
+        recordMobile = field("10-digit mobile", android.text.InputType.TYPE_CLASS_PHONE)
+        recordPan = field("PAN (optional)")
+        recordAadhaar = field("Aadhaar (optional)", android.text.InputType.TYPE_CLASS_NUMBER)
+        recordGstin = field("GSTIN (optional)")
+        recordEmail = field("Email (optional)", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
+        recordAddress = field("Address")
+        recordPin = field("6-digit PIN", android.text.InputType.TYPE_CLASS_NUMBER)
+        recordCity = field("City / Town")
+        recordDistrict = field("District")
+        recordState = field("State")
+
+        listOf(recordName,recordMobile,recordPan,recordAadhaar,recordGstin,recordEmail,recordAddress,recordPin,recordCity,recordDistrict,recordState).forEach {
             body.addView(it, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
         }
-        body.addView(button("Save Person in V7") {
-            val n = name.text.toString().trim()
-            val m = mobile.text.toString().trim()
-            if (n.isBlank()) { name.error = "Name is required"; return@button }
-            if (m.length != 10 || !m.all(Char::isDigit) || !m.matches(Regex("[6-9][0-9]{9}"))) { mobile.error = "Enter a valid 10-digit mobile number"; return@button }
-            val panValue = pan.text.toString().trim().uppercase()
-            if (panValue.isNotBlank() && !panValue.matches(Regex("[A-Z]{5}[0-9]{4}[A-Z]"))) { pan.error = "Enter a valid PAN"; return@button }
-            val aadhaarValue = aadhaar.text.toString().trim()
-            if (aadhaarValue.isNotBlank() && !aadhaarValue.matches(Regex("[0-9]{12}"))) { aadhaar.error = "Enter a valid 12-digit Aadhaar"; return@button }
-            val gstinValue = gstin.text.toString().trim().uppercase()
-            if (gstinValue.isNotBlank() && !gstinValue.matches(Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"))) { gstin.error = "Enter a valid GSTIN"; return@button }
-            V7Records.person(this, n, m, panValue, aadhaarValue, gstinValue)
-            Toast.makeText(this, "Person saved in V7-owned Record.", Toast.LENGTH_SHORT).show()
+
+        body.addView(button("Add / Change Profile Picture") {
+            val pick = android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).apply {
+                type = "image/*"
+                addCategory(android.content.Intent.CATEGORY_OPENABLE)
+            }
+            startActivityForResult(pick, 700)
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) })
+
+        body.addView(button(if (selectedPersonId == null) "Create Profile" else "Save Profile Changes") {
+            val n = recordName.text.toString().trim()
+            val m = recordMobile.text.toString().trim()
+            if (n.isBlank()) { recordName.error = "Name is required"; return@button }
+            if (!m.matches(Regex("[6-9][0-9]{9}"))) { recordMobile.error = "Enter a valid 10-digit mobile number"; return@button }
+            val panValue = recordPan.text.toString().trim().uppercase()
+            if (panValue.isNotBlank() && !panValue.matches(Regex("[A-Z]{5}[0-9]{4}[A-Z]"))) { recordPan.error = "Enter a valid PAN"; return@button }
+            val aadhaarValue = recordAadhaar.text.toString().trim()
+            if (aadhaarValue.isNotBlank() && !aadhaarValue.matches(Regex("[0-9]{12}"))) { recordAadhaar.error = "Enter a valid 12-digit Aadhaar"; return@button }
+            val gstinValue = recordGstin.text.toString().trim().uppercase()
+            if (gstinValue.isNotBlank() && !gstinValue.matches(Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"))) { recordGstin.error = "Enter a valid GSTIN"; return@button }
+            val pin = recordPin.text.toString().trim()
+            if (pin.isNotBlank() && !pin.matches(Regex("[1-9][0-9]{5}"))) { recordPin.error = "Enter a valid 6-digit PIN"; return@button }
+
+            if (selectedPersonId == null) {
+                V7Records.person(this,n,m,panValue,aadhaarValue,gstinValue,recordEmail.text.toString(),recordAddress.text.toString(),pin,recordCity.text.toString(),recordDistrict.text.toString(),recordState.text.toString(),pendingPhotoUri)
+                Toast.makeText(this, "Profile created in V7.", Toast.LENGTH_SHORT).show()
+            } else {
+                val p = V7Core.find(this,V7Core.Keys.PEOPLE,selectedPersonId!!) ?: return@button
+                p.put("name",n);p.put("mobile",m);p.put("pan",panValue);p.put("aadhaar",aadhaarValue);p.put("gstin",gstinValue)
+                p.put("email",recordEmail.text.toString().trim());p.put("address",recordAddress.text.toString().trim());p.put("pin",pin)
+                p.put("city",recordCity.text.toString().trim());p.put("district",recordDistrict.text.toString().trim());p.put("state",recordState.text.toString().trim())
+                if(pendingPhotoUri.isNotBlank()) p.put("photoUri",pendingPhotoUri)
+                V7Core.replace(this,V7Core.Keys.PEOPLE,p)
+                Toast.makeText(this, "Profile changes saved.", Toast.LENGTH_SHORT).show()
+            }
+            selectedPersonId = null
+            pendingPhotoUri = ""
+            clearRecordFields()
             renderRecordList(body)
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) })
+
         renderRecordList(body)
-        setContentView(shell("Record & Identity", "People, identity and the canonical V7 record.", body))
+        setContentView(shell("Record & Identity", "One editable profile containing identity, contact, address and picture.", body))
+    }
+
+    private fun clearRecordFields() {
+        listOf(recordName,recordMobile,recordPan,recordAadhaar,recordGstin,recordEmail,recordAddress,recordPin,recordCity,recordDistrict,recordState).forEach { it.text.clear() }
+    }
+
+    private fun loadPerson(p: JSONObject) {
+        selectedPersonId = p.optString("id")
+        recordName.setText(p.optString("name"))
+        recordMobile.setText(p.optString("mobile"))
+        recordPan.setText(p.optString("pan"))
+        recordAadhaar.setText(p.optString("aadhaar"))
+        recordGstin.setText(p.optString("gstin"))
+        recordEmail.setText(p.optString("email"))
+        recordAddress.setText(p.optString("address"))
+        recordPin.setText(p.optString("pin"))
+        recordCity.setText(p.optString("city"))
+        recordDistrict.setText(p.optString("district"))
+        recordState.setText(p.optString("state"))
+        pendingPhotoUri = p.optString("photoUri")
     }
 
     private fun renderRecordList(body: LinearLayout) {
@@ -115,13 +190,20 @@ class V7NativeModuleActivity : AppCompatActivity() {
             tag = "v7_record_list"; orientation = LinearLayout.VERTICAL
             setPadding(dp(2), dp(8), dp(2), 0)
         }
-        box.addView(ArthSaathiV7Design.section(this, "Saved People", "Live from v7_people."))
+        box.addView(ArthSaathiV7Design.section(this, "Saved Profiles", "Tap Edit to update the complete profile."))
         val people = V7Core.all(this, V7Core.Keys.PEOPLE)
-        if (people.isEmpty()) box.addView(ArthSaathiV7Design.text(this, "No people recorded yet.", 10f, ArthSaathiV7Design.MUTED))
+        if (people.isEmpty()) box.addView(ArthSaathiV7Design.text(this, "No profiles recorded yet.", 10f, ArthSaathiV7Design.MUTED))
         people.takeLast(20).reversed().forEach { p ->
-            box.addView(ArthSaathiV7Design.text(this,
-                p.optString("name") + "  •  " + p.optString("mobile"), 12f, ArthSaathiV7Design.NAVY, true),
-                LinearLayout.LayoutParams(-1, dp(38)))
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 10)
+                setPadding(dp(9), dp(5), dp(5), dp(5))
+            }
+            val info = ArthSaathiV7Design.text(this, p.optString("name") + "  •  " + p.optString("mobile"), 11.5f, ArthSaathiV7Design.NAVY, true)
+            row.addView(info, LinearLayout.LayoutParams(0, dp(48), 1f))
+            row.addView(button("Edit") { loadPerson(p) }, LinearLayout.LayoutParams(dp(82), dp(44)))
+            box.addView(row, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(5) })
         }
         body.addView(box)
     }
