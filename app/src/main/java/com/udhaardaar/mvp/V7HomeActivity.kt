@@ -58,6 +58,8 @@ class V7HomeActivity : AppCompatActivity() {
         wt.addView(ArthSaathiV7Design.text(this, "Good to see you!", 9.5f, ArthSaathiV7Design.MUTED))
         welcome.addView(wt, LinearLayout.LayoutParams(0, -2, 1f))
         welcome.addView(ArthSaathiV7Design.text(this, "Smarter Finance\nStronger Tomorrow", 9f, ArthSaathiV7Design.GOLD, true).apply { gravity = Gravity.CENTER })
+        welcome.setOnClickListener { startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", "RECORD")) }
+        welcome.contentDescription = "Open profile and identity"
         root.addView(welcome, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
         val hero = LinearLayout(this).apply {
@@ -78,9 +80,14 @@ class V7HomeActivity : AppCompatActivity() {
         val stats = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         listOf("₹ %.2f".format(m.optDouble("assets")) to "Total Assets", m.optInt("activeCredits").toString() to "Active Credits", "₹ %.2f".format(m.optDouble("liabilities")) to "Liabilities")
             .forEachIndexed { i, pair ->
-                stats.addView(ArthSaathiV7Design.stat(this, pair.first, pair.second,
-                    if (i == 1) ArthSaathiV7Design.GREEN else ArthSaathiV7Design.GOLD),
-                    LinearLayout.LayoutParams(0, dp(76), 1f).apply { if (i > 0) leftMargin = dp(5) })
+                val stat = ArthSaathiV7Design.stat(this, pair.first, pair.second,
+                    if (i == 1) ArthSaathiV7Design.GREEN else ArthSaathiV7Design.GOLD)
+            stat.setOnClickListener {
+                val module = when (i) { 0 -> "ASSETS"; 1 -> "CREDIT"; else -> "LIABILITIES" }
+                startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", module))
+            }
+            stat.contentDescription = "${pair.second}. Tap to open details."
+            stats.addView(stat, LinearLayout.LayoutParams(0, dp(76), 1f).apply { if (i > 0) leftMargin = dp(5) })
             }
         root.addView(stats)
 
