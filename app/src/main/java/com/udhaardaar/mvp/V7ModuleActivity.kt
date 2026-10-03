@@ -18,7 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
  * 4. MIS, Portfolio, Opportunity Cost, Market Data, Scenario, ERP/Tally and
  *    Reports are distinct tools with distinct destinations.
  * 5. Native V7 modules are opened directly; compatibility engines are reached
- *    only through V7LegacyAdapter.
+ *    through an isolated compatibility boundary when unavoidable.
  */
 class V7ModuleActivity : AppCompatActivity() {
     private val d get() = resources.displayMetrics.density
@@ -159,7 +159,7 @@ class V7ModuleActivity : AppCompatActivity() {
             Triple("▤", "History", "Transparent expense and settlement history")
         ), listOf(
             { openTool("TTMM") },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
+            { openTool("TTMM") },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) }
         ))
@@ -174,7 +174,7 @@ class V7ModuleActivity : AppCompatActivity() {
         ), listOf(
             { openTool("QR") },
             { openTool("QR") },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) },
+            { openTool("QR") },
             { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.QR_KHATA) }
         ))
     }
