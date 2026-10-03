@@ -3,6 +3,8 @@ package com.udhaardaar.mvp
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
@@ -114,8 +116,41 @@ object ArthSaathiV7Design {
         words.addView(brand(c, 25f, true))
         words.addView(text(c, TAGLINE, 10.5f, GOLD_PALE, false))
         box.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
-        val pillars = text(c, PILLARS, 9.5f, GOLD_2, true).apply { gravity = Gravity.CENTER }
-        box.addView(pillars, LinearLayout.LayoutParams(dp(c, 142), -2))
+
+        // Identity is a global V7 concern: show the signed-in user's name and
+        // stored profile picture wherever the V7 design system is used.
+        val mobile = V7AccountStore.currentMobile(c)
+        val person = if (mobile.isBlank()) null else V7Core.all(c, V7Core.Keys.PEOPLE)
+            .firstOrNull { it.optString("mobile") == mobile }
+        val identity = LinearLayout(c).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val photoUri = person?.optString("photoUri").orEmpty()
+        val avatar = ImageView(c).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(c, 38), dp(c, 38))
+            contentDescription = "Profile picture"
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = card(c, GOLD_PALE, 20)
+            if (photoUri.isNotBlank()) {
+                runCatching {
+                    c.contentResolver.openInputStream(Uri.parse(photoUri)).use { input ->
+                        if (input != null) setImageBitmap(BitmapFactory.decodeStream(input))
+                    }
+                }
+            }
+            if (drawable == null) setImageResource(R.drawable.arthsaathi_logo)
+        }
+        identity.addView(avatar)
+        identity.addView(text(c, person?.optString("name").orEmpty().ifBlank { "User" }, 10f, WHITE, true).apply {
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(dp(c, 5), 0, 0, 0)
+        })
+        box.addView(identity, LinearLayout.LayoutParams(dp(c, 92), -2))
+
+        val pillars = text(c, PILLARS, 8.5f, GOLD_2, true).apply { gravity = Gravity.CENTER }
+        box.addView(pillars, LinearLayout.LayoutParams(dp(c, 115), -2))
         return box
     }
 
