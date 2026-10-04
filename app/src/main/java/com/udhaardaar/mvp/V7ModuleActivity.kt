@@ -196,16 +196,14 @@ class V7ModuleActivity : V7SessionActivity() {
             Triple("LI", "Liability Vault", "Loans & dues"),
             Triple("💳", "Revenue & Payments", "Charges & payments"),
             Triple("BE", "Government Benefits", "Benefits"),
-            Triple("RE", "Rental & Lease", "Leases"),
             Triple("⚙", "Security & Consent", "Privacy & consent"),
             Triple("◈", "Credit Score", "Explainable score"),
-            Triple("⚖", "Will & Legacy", "Will & legacy")
+            Triple("⚖", "Will, Inheritance & Claims", "Family wealth & succession")
         ), listOf(
             { openTool("CHARGECHECK") },
             { startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", "LIABILITIES")) },
             { openTool("REVENUE") },
             { openTool("BENEFITS") },
-            { openTool("RENTAL") },
             { openTool("SECURITY") },
             { openTool("SCORE") },
             { openTool("WILL") }
