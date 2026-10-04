@@ -16,10 +16,10 @@ object ArthSaathiV7Design {
     val NAVY = Color.rgb(5, 24, 48)
     val NAVY_2 = Color.rgb(11, 43, 79)
     val NAVY_3 = Color.rgb(18, 61, 103)
-    val GOLD = Color.rgb(242, 182, 50)
-    val GOLD_2 = Color.rgb(255, 210, 80)
-    val GOLD_PALE = Color.rgb(255, 239, 183)
-    val CREAM = Color.rgb(255, 250, 239)
+    val GOLD = Color.rgb(214, 148, 8)
+    val GOLD_2 = Color.rgb(255, 213, 88)
+    val GOLD_PALE = Color.rgb(255, 244, 207)
+    val CREAM = Color.rgb(255, 250, 241)
     val WHITE = Color.WHITE
     val MUTED = Color.rgb(101, 115, 130)
     val GREEN = Color.rgb(34, 145, 93)
@@ -35,8 +35,10 @@ object ArthSaathiV7Design {
     fun dp(c: Context, v: Int) = (v * d(c)).toInt()
 
     fun bg(c: Context): GradientDrawable =
-        GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(NAVY, NAVY_2, NAVY)).apply { cornerRadius = dp(c, 24).toFloat() }
+        GradientDrawable(GradientDrawable.Orientation.TL_BR,
+            intArrayOf(NAVY, NAVY_2, Color.rgb(30, 76, 120))).apply {
+            cornerRadius = dp(c, 22).toFloat()
+        }
 
     fun card(c: Context, fill: Int = WHITE, radius: Int = 16): GradientDrawable =
         GradientDrawable().apply {
@@ -64,9 +66,10 @@ object ArthSaathiV7Design {
             minHeight = dp(c, 46)
             stateListAnimator = null
             background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(GOLD_2, GOLD)).apply {
-                cornerRadius = dp(c, 14).toFloat()
+                intArrayOf(GOLD_2, GOLD, Color.rgb(183, 116, 0))).apply {
+                cornerRadius = dp(c, 15).toFloat()
             }
+            elevation = dp(c, 2).toFloat()
             setOnClickListener { action() }
         }
 
@@ -149,6 +152,34 @@ object ArthSaathiV7Design {
         })
         box.addView(identity, LinearLayout.LayoutParams(dp(c, 112), -2))
         return box
+    }
+
+    fun bottomNav(c: Context, selected: String, actions: Map<String, () -> Unit>): LinearLayout {
+        val bar = LinearLayout(c).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(dp(c, 4), dp(c, 5), dp(c, 4), dp(c, 7))
+            background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(NAVY, NAVY_2)).apply {
+                cornerRadius = dp(c, 18).toFloat()
+                setStroke(dp(c, 1), GOLD)
+            }
+            elevation = dp(c, 6).toFloat()
+        }
+        listOf("Home" to "⌂", "Credit" to "₹", "Repay" to "↻", "Vault" to "▣", "More" to "•••").forEach { (label, icon) ->
+            val item = LinearLayout(c).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(dp(c, 2), dp(c, 2), dp(c, 2), dp(c, 2))
+                setOnClickListener { actions[label]?.invoke() }
+                contentDescription = label
+            }
+            val active = label == selected
+            item.addView(text(c, icon, if (active) 20f else 18f, if (active) GOLD_2 else WHITE, true).apply { gravity = Gravity.CENTER })
+            item.addView(text(c, label, 9f, if (active) GOLD_2 else WHITE, active).apply { gravity = Gravity.CENTER })
+            bar.addView(item, LinearLayout.LayoutParams(0, dp(c, 52), 1f))
+        }
+        return bar
     }
 
     fun navItem(c: Context, icon: String, label: String, action: () -> Unit): LinearLayout {
