@@ -146,7 +146,9 @@ class V7NativeModuleActivity : V7SessionActivity() {
     private fun render(module: String) {
         when (module) {
             "RECORD" -> record()
-            "CREDIT" -> credit()
+            "CREDIT" -> creditCentre()
+            "CREDIT_REGISTER" -> creditRegister()
+            "CREDIT_DETAIL" -> creditDetail()
             "REPAYMENT" -> repayment()
             "ASSETS" -> assets()
             "LIABILITIES" -> liabilities()
@@ -331,161 +333,162 @@ class V7NativeModuleActivity : V7SessionActivity() {
         body.addView(box)
     }
 
-    private fun credit() {
+    /** Loans & Udhaar centre: existing accounts are browsed here; registration is a separate action. */
+    private fun creditCentre() {
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        body.addView(ArthSaathiV7Design.section(this, "Give / Take Money", "Choose the type of credit. Rental / Lease is handled here — not as a separate module."))
+        body.addView(ArthSaathiV7Design.section(this, "Loans & Udhaar", "Browse every registered credit account — active and closed. Tap any account to open its complete details."))
+        body.addView(button("＋ Register New Credit") {
+            startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", "CREDIT_REGISTER"))
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(5) })
+
+        val natureOptions = listOf("All", "Personal / Hand Loan", "Trade Credit / Udhaar", "Rental / Lease")
+        val statusOptions = listOf("All", "Active", "Closed")
+        var selectedNature = 0
+        var selectedStatus = 0
+        val listBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        body.addView(ArthSaathiV7Design.section(this, "Credit Accounts", "Select a nature and status. Closed accounts remain visible for history."), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+
+        fun segmentRow(options: List<String>, onSelect: (Int) -> Unit): LinearLayout {
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(2), 0, dp(2)) }
+            options.forEachIndexed { index, label ->
+                val b = Button(this).apply {
+                    text = label
+                    textSize = 9.5f
+                    isAllCaps = false
+                    setPadding(dp(4), 0, dp(4), 0)
+                    setOnClickListener { onSelect(index) }
+                }
+                row.addView(b, LinearLayout.LayoutParams(0, dp(42), 1f).apply { if (index > 0) leftMargin = dp(3) })
+            }
+            return row
+        }
+        fun statusOf(r: org.json.JSONObject): String = if (r.optDouble("outstanding", r.optDouble("amount", 0.0)) <= 0.005 || r.optString("status") == "CLOSED") "Closed" else "Active"
+        fun natureOf(r: org.json.JSONObject): String = when (r.optString("creditType")) {
+            "Trade Credit / Udhaar", "TRADE_CREDIT" -> "Trade Credit / Udhaar"
+            "Rental / Lease", "RENTAL_LEASE" -> "Rental / Lease"
+            else -> "Personal / Hand Loan"
+        }
+        fun renderAccounts() {
+            listBox.removeAllViews()
+            val all = V7Core.all(this, V7Core.Keys.RELATIONSHIPS).asReversed()
+            val filtered = all.filter { r ->
+                val n = natureOf(r); val s = statusOf(r)
+                (selectedNature == 0 || n == natureOptions[selectedNature]) && (selectedStatus == 0 || s == statusOptions[selectedStatus])
+            }
+            if (filtered.isEmpty()) {
+                listBox.addView(ArthSaathiV7Design.text(this, "No accounts found in this segment. Registered closed accounts will remain here for history.", 10f, ArthSaathiV7Design.MUTED), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+                return
+            }
+            filtered.forEach { r ->
+                val person = V7Core.find(this, V7Core.Keys.PEOPLE, r.optString("partyId"))
+                val personName = person?.optString("name").orEmpty().ifBlank { "Person / Business" }
+                val nature = natureOf(r); val status = statusOf(r)
+                val outstanding = r.optDouble("outstanding", r.optDouble("amount", 0.0))
+                val card = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 13)
+                    setPadding(dp(11), dp(9), dp(11), dp(9))
+                    isClickable = true
+                    setOnClickListener { startActivity(Intent(this@V7NativeModuleActivity, V7NativeModuleActivity::class.java).putExtra("module", "CREDIT_DETAIL").putExtra("relationshipId", r.optString("id"))) }
+                }
+                val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+                head.addView(ArthSaathiV7Design.text(this, personName, 13f, ArthSaathiV7Design.NAVY, true), LinearLayout.LayoutParams(0, -2, 1f))
+                head.addView(ArthSaathiV7Design.text(this, status, 9f, if (status == "Closed") ArthSaathiV7Design.MUTED else ArthSaathiV7Design.GREEN, true))
+                card.addView(head)
+                card.addView(ArthSaathiV7Design.text(this, nature, 9.5f, ArthSaathiV7Design.GOLD, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(2) })
+                card.addView(ArthSaathiV7Design.text(this, "Original: ₹ %.2f   •   Outstanding: ₹ %.2f".format(r.optDouble("amount"), outstanding), 10.5f, ArthSaathiV7Design.NAVY), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
+                card.addView(ArthSaathiV7Design.text(this, "Tap to open complete account details ›", 9f, ArthSaathiV7Design.MUTED), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
+                listBox.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+            }
+        }
+        val natureRow = segmentRow(natureOptions) { selectedNature = it; renderAccounts() }
+        val statusRow = segmentRow(statusOptions) { selectedStatus = it; renderAccounts() }
+        body.addView(ArthSaathiV7Design.text(this, "Nature of credit", 9.5f, ArthSaathiV7Design.MUTED, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+        body.addView(natureRow)
+        body.addView(ArthSaathiV7Design.text(this, "Account status", 9.5f, ArthSaathiV7Design.MUTED, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
+        body.addView(statusRow)
+        body.addView(listBox, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
+        renderAccounts()
+        setContentView(shell("Loans & Udhaar", "Your complete credit account centre — active and closed accounts.", body))
+    }
+
+    /** Registration is deliberately separate from the account list. */
+    private fun creditRegister() {
+        val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        body.addView(ArthSaathiV7Design.section(this, "Register New Credit", "Use this screen only when creating a new credit account. Select the nature of credit from the dropdown."))
         val people = V7Core.all(this, V7Core.Keys.PEOPLE)
         val labels = if (people.isEmpty()) listOf("No person — create one in Record") else people.map { it.optString("name") + " • " + it.optString("mobile") }
         val personSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
         body.addView(labelledSpinner("Person / Business", personSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(4) })
         val creditType = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Personal Loan / Hand Loan", "Trade Credit / Udhaar", "Rental / Lease")) }
-        body.addView(labelledSpinner("What are you recording?", creditType), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(4) })
-        val guarantorLabels = listOf("No guarantor") + people.map { it.optString("name") + " • " + it.optString("mobile") }
-        val guarantorSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, guarantorLabels) }
-        val guarantorBox = labelledSpinner("Guarantor (optional)", guarantorSpinner)
-        body.addView(guarantorBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        body.addView(labelledSpinner("Nature of Credit", creditType), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(4) })
         val amount = field("Amount / Rent due (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
         body.addView(amount, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-        val lendingMethod = Spinner(this).apply {
-            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
-                listOf("UPI","Cash","NEFT","Bank Transfer","Cheque","NACH","Other"))
-        }
+        val lendingMethod = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("UPI","Cash","NEFT","Bank Transfer","Cheque","NACH","Other")) }
         body.addView(labelledSpinner("How was the money given / paid?", lendingMethod), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
         val roiSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("0%","6%","8%","10%","12%","15%","18%","24%","36%","Custom")) }
-        val roiBox = labelledSpinner("Interest / ROI", roiSpinner)
-        body.addView(roiBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
-        val customRoi = field("Custom ROI %", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
-        customRoi.visibility = View.GONE
+        body.addView(labelledSpinner("Interest / ROI", roiSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        val customRoi = field("Custom ROI %", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL).apply { visibility = View.GONE }
         body.addView(customRoi, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(2) })
         roiSpinner.onItemSelectedListener = object: android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) { customRoi.visibility = if (position == 9 && creditType.selectedItemPosition != 2) View.VISIBLE else View.GONE }
         }
         val methodSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("EMI","Principal + Interest","Bullet")) }
-        val methodBox = labelledSpinner("Repayment method", methodSpinner)
-        body.addView(methodBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        body.addView(labelledSpinner("Repayment method", methodSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
         val tenureSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("3 months","6 months","9 months","12 months","18 months","24 months","36 months","48 months","60 months")) }
-        val tenureBox = labelledSpinner("Repayment / lease term", tenureSpinner)
-        body.addView(tenureBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        body.addView(labelledSpinner("Repayment / lease term", tenureSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
         val frequencySpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Monthly","Quarterly","Half-yearly","Yearly")) }
-        val frequencyBox = labelledSpinner("Payment frequency", frequencySpinner)
-        body.addView(frequencyBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
-        val leasePanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 14); setPadding(dp(10), dp(10), dp(10), dp(10)) }
-        leasePanel.addView(ArthSaathiV7Design.text(this, "Rental / Lease details", 14f, ArthSaathiV7Design.NAVY, true))
-        leasePanel.addView(ArthSaathiV7Design.text(this, "Scan the lease deed / rent agreement. The app will read the document and highlight key terms for review.", 10f, ArthSaathiV7Design.MUTED))
-        val deposit = field("Security deposit (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
-        val leaseEnd = field("Lease end date (optional)")
-        leasePanel.addView(deposit, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-        leasePanel.addView(leaseEnd, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(5) })
-        val scanRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val upload = button("Choose Deed / Agreement") {
-            val pick = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE); putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "application/pdf")); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-            startActivityForResult(pick, 702)
-        }
-        val camera = button("Scan with Camera") {
-            val take = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
-            if (take.resolveActivity(packageManager) == null) Toast.makeText(this, "Camera is not available.", Toast.LENGTH_SHORT).show() else startActivityForResult(take, 703)
-        }
-        scanRow.addView(upload, LinearLayout.LayoutParams(0, dp(48), 1f))
-        scanRow.addView(camera, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(5) })
-        leasePanel.addView(scanRow, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-        leaseScanResult = ArthSaathiV7Design.text(this, "No lease document scanned yet.", 9.5f, ArthSaathiV7Design.MUTED)
-        leasePanel.addView(leaseScanResult, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-        body.addView(leasePanel, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-
-        val invoicePanel = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 14)
-            setPadding(dp(10), dp(10), dp(10), dp(10))
-        }
-        invoicePanel.addView(ArthSaathiV7Design.text(this, "Trade Credit Invoice", 14f, ArthSaathiV7Design.NAVY, true))
-        invoicePanel.addView(ArthSaathiV7Design.text(this, "Upload or photograph the invoice. ArthSaathi reads the visible text so you can review vendor, date, amount and other details before saving.", 10f, ArthSaathiV7Design.MUTED))
-        val invoiceRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val invoiceUpload = button("Choose Invoice") {
-            val pick = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                type = "image/*"
-                addCategory(Intent.CATEGORY_OPENABLE)
-                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "application/pdf"))
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            startActivityForResult(pick, 704)
-        }
-        val invoiceCamera = button("Scan Invoice") {
-            val take = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
-            if (take.resolveActivity(packageManager) == null) Toast.makeText(this, "Camera is not available.", Toast.LENGTH_SHORT).show()
-            else startActivityForResult(take, 705)
-        }
-        invoiceRow.addView(invoiceUpload, LinearLayout.LayoutParams(0, dp(48), 1f))
-        invoiceRow.addView(invoiceCamera, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(5) })
-        invoicePanel.addView(invoiceRow, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) })
-        invoiceScanResult = ArthSaathiV7Design.text(this, "No invoice scanned yet.", 9.5f, ArthSaathiV7Design.MUTED)
-        invoicePanel.addView(invoiceScanResult, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-        body.addView(invoicePanel, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
-
-        val startDate = TextView(this).apply {
-            text = "Start date: Select"; textSize = 14f; setTextColor(ArthSaathiV7Design.NAVY); gravity = Gravity.CENTER_VERTICAL
-            background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 10); setPadding(dp(12),0,dp(12),0)
-            setOnClickListener { val cal = java.util.Calendar.getInstance(); android.app.DatePickerDialog(this@V7NativeModuleActivity,{_,y,m,d0-> text = "Start date: %04d-%02d-%02d".format(y,m+1,d0) },cal.get(java.util.Calendar.YEAR),cal.get(java.util.Calendar.MONTH),cal.get(java.util.Calendar.DAY_OF_MONTH)).show() }
-        }
-        body.addView(startDate, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-        val preview = ArthSaathiV7Design.text(this,"Repayment schedule will be calculated automatically.",10.5f,ArthSaathiV7Design.NAVY)
-        body.addView(preview, LinearLayout.LayoutParams(-1,-2).apply { topMargin = dp(8) })
-        fun refreshType() {
-            val isLease = creditType.selectedItemPosition == 2
-            roiBox.visibility = if (isLease) View.GONE else View.VISIBLE
-            customRoi.visibility = if (!isLease && roiSpinner.selectedItemPosition == 9) View.VISIBLE else View.GONE
-            methodBox.visibility = if (isLease) View.GONE else View.VISIBLE
-            guarantorBox.visibility = if (isLease) View.GONE else View.VISIBLE
-            leasePanel.visibility = if (isLease) View.VISIBLE else View.GONE
-            invoicePanel.visibility = if (creditType.selectedItemPosition == 1) View.VISIBLE else View.GONE
-            amount.hint = if (isLease) "Rent / due amount (₹)" else "Credit amount (₹)"
-            preview.text = if (isLease) "Lease dues will be tracked from the agreement terms. No interest/ROI is applied to rental/lease records." else if (creditType.selectedItemPosition == 1) "Trade credit: attach the invoice when available; review scanned details before saving." else "Repayment schedule will be calculated automatically."
-        }
-        creditType.onItemSelectedListener = object: android.widget.AdapterView.OnItemSelectedListener {
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) { refreshType() }
-        }
-        refreshType()
-        body.addView(button("Calculate Schedule") {
-            val a = amount.text.toString().toDoubleOrNull()
-            if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
-            if (creditType.selectedItemPosition == 2) {
-                preview.text = "Rental / Lease selected\nRent / due amount: ₹%.2f\nDeposit: ₹%.2f\nPayment frequency: %s\nDocument: %s".format(a, deposit.text.toString().toDoubleOrNull() ?: 0.0, frequencySpinner.selectedItem.toString(), if (leaseDocumentUri.isBlank()) "Not scanned" else "Scanned and ready for review")
-                return@button
-            }
-            val roi = if (roiSpinner.selectedItemPosition == 9) customRoi.text.toString().toDoubleOrNull() ?: -1.0 else listOf(0.0,6.0,8.0,10.0,12.0,15.0,18.0,24.0,36.0)[roiSpinner.selectedItemPosition]
-            if (roi < 0.0 || roi > 100.0) { customRoi.error = "ROI must be 0–100%"; return@button }
-            val months = listOf(3,6,9,12,18,24,36,48,60)[tenureSpinner.selectedItemPosition]
-            val method = methodSpinner.selectedItem.toString(); val monthlyRate = roi / 1200.0
-            val emi = if (method == "EMI") { if (monthlyRate == 0.0) a / months else a * monthlyRate * Math.pow(1+monthlyRate,months.toDouble()) / (Math.pow(1+monthlyRate,months.toDouble())-1) } else 0.0
-            val interest = a * roi / 100.0 * months / 12.0; val periodic = when(frequencySpinner.selectedItemPosition){0->1;1->3;2->6;else->12}; val installments = kotlin.math.ceil(months.toDouble()/periodic).toInt()
-            preview.text = when(method){ "EMI" -> "EMI: ₹%.2f\nTotal payable: ₹%.2f\nInstallments: %d".format(emi,emi*months,months); "Principal + Interest" -> "Principal per period: ₹%.2f\nEstimated total interest: ₹%.2f\nInstallments: %d".format(a/installments,interest,installments); else -> "Bullet repayment\nPrincipal: ₹%.2f\nEstimated interest: ₹%.2f\nDue after: %d months".format(a,interest,months) }
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
-        body.addView(button("Register Credit") {
-            if (people.isEmpty()) { Toast.makeText(this, "Create a person first in Record.", Toast.LENGTH_SHORT).show(); return@button }
-            val a = amount.text.toString().toDoubleOrNull(); if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
-            val isLease = creditType.selectedItemPosition == 2
-            if (isLease && leaseDocumentUri.isBlank()) { Toast.makeText(this, "Please scan or attach the lease deed / rent agreement before registering.", Toast.LENGTH_LONG).show(); return@button }
-            val roi = if (isLease) 0.0 else if (roiSpinner.selectedItemPosition == 9) customRoi.text.toString().toDoubleOrNull() ?: -1.0 else listOf(0.0,6.0,8.0,10.0,12.0,15.0,18.0,24.0,36.0)[roiSpinner.selectedItemPosition]
-            if (roi < 0.0 || roi > 100.0) { customRoi.error = "ROI must be 0–100%"; return@button }
-            val months = listOf(3,6,9,12,18,24,36,48,60)[tenureSpinner.selectedItemPosition]
-            val method = if (isLease) "RENTAL_DUES" else methodSpinner.selectedItem.toString().uppercase().replace(" ","_")
-            val periodic = when(frequencySpinner.selectedItemPosition){0->1;1->3;2->6;else->12}; val monthlyRate = roi / 1200.0
-            val emi = if (!isLease && method == "EMI") { if (monthlyRate == 0.0) a/months else a*monthlyRate*Math.pow(1+monthlyRate,months.toDouble())/(Math.pow(1+monthlyRate,months.toDouble())-1) } else 0.0
-            val interest = if (isLease) 0.0 else a*roi/100.0*months/12.0
-            val relType = when(creditType.selectedItemPosition) { 1 -> "TRADE_CREDIT"; 2 -> "RENTAL_LEASE"; else -> "INFORMAL_CREDIT" }
-            val rel = V7Records.relationship(this, people[personSpinner.selectedItemPosition].optString("id"), relType, "RECEIVABLE", a, roi, method, if (isLease) leaseExtractedText else "")
-            rel.put("creditType", creditType.selectedItem.toString()); rel.put("tenureMonths",months); rel.put("frequency",frequencySpinner.selectedItem.toString()); rel.put("periodMonths",periodic)
-            rel.put("guarantorId",if(!isLease && guarantorSpinner.selectedItemPosition>0) people[guarantorSpinner.selectedItemPosition-1].optString("id") else "")
-            rel.put("lendingMethod", lendingMethod.selectedItem.toString().uppercase().replace(" ","_"))
-            rel.put("emiAmount",emi); rel.put("estimatedInterest",interest); rel.put("startDate",startDate.text.toString().removePrefix("Start date: ").trim()); rel.put("firstDueDate",startDate.text.toString().removePrefix("Start date: ").trim()); rel.put("scheduleStatus","CALCULATED")
-            if (isLease) { rel.put("securityDeposit", deposit.text.toString().toDoubleOrNull() ?: 0.0); rel.put("leaseEndDate", leaseEnd.text.toString().trim()); rel.put("leaseDocumentUri", leaseDocumentUri); rel.put("leaseExtractedText", leaseExtractedText); rel.put("leaseDocumentScanned", true) }
-            if (creditType.selectedItemPosition == 1) { rel.put("invoiceDocumentUri", invoiceDocumentUri); rel.put("invoiceExtractedText", invoiceExtractedText); rel.put("invoiceScanned", invoiceDocumentUri.isNotBlank()) }
+        body.addView(labelledSpinner("Payment frequency", frequencySpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        val guarantorLabels = listOf("No guarantor") + V7Core.all(this,V7Core.Keys.PEOPLE).map{it.optString("name")+" • "+it.optString("mobile")}
+        val guarantorSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, guarantorLabels) }
+        body.addView(labelledSpinner("Guarantor (optional)", guarantorSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        val startDate=field("Start / registration date").apply{setText("Start date: "+java.text.SimpleDateFormat("dd MMM yyyy",java.util.Locale.getDefault()).format(java.util.Date()))}
+        body.addView(startDate,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        val preview=ArthSaathiV7Design.text(this,"Enter the terms and tap Calculate to preview.",10.5f,ArthSaathiV7Design.NAVY)
+        body.addView(preview,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        body.addView(button("Calculate Terms"){val a=amount.text.toString().toDoubleOrNull()?:0.0;if(a<=0){amount.error="Enter a valid amount";return@button};preview.text="Terms ready for review. Selected nature: "+creditType.selectedItem.toString()},LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        body.addView(button("Register Credit"){
+            if(V7Core.all(this,V7Core.Keys.PEOPLE).isEmpty()){Toast.makeText(this,"Create a person first in Record.",Toast.LENGTH_SHORT).show();return@button}
+            val people=V7Core.all(this,V7Core.Keys.PEOPLE);val a=amount.text.toString().toDoubleOrNull();if(a==null||a<=0){amount.error="Enter a valid amount";return@button}
+            val isLease=creditType.selectedItemPosition==2;val roi=if(isLease)0.0 else if(roiSpinner.selectedItemPosition==9)customRoi.text.toString().toDoubleOrNull()?:-1.0 else listOf(0.0,6.0,8.0,10.0,12.0,15.0,18.0,24.0,36.0)[roiSpinner.selectedItemPosition]
+            if(roi<0||roi>100){customRoi.error="ROI must be 0–100%";return@button}
+            val months=listOf(3,6,9,12,18,24,36,48,60)[tenureSpinner.selectedItemPosition];val method=if(isLease)"RENTAL_DUES" else methodSpinner.selectedItem.toString().uppercase().replace(" ","_");val periodic=when(frequencySpinner.selectedItemPosition){0->1;1->3;2->6;else->12};val mr=roi/1200.0
+            val emi=if(!isLease&&method=="EMI"){if(mr==0.0)a/months else a*mr*Math.pow(1+mr,months.toDouble())/(Math.pow(1+mr,months.toDouble())-1)}else 0.0;val interest=if(isLease)0.0 else a*roi/100.0*months/12.0
+            val relType=when(creditType.selectedItemPosition){1->"TRADE_CREDIT";2->"RENTAL_LEASE";else->"INFORMAL_CREDIT"};val rel=V7Records.relationship(this,people[personSpinner.selectedItemPosition].optString("id"),relType,"RECEIVABLE",a,roi,method,"")
+            rel.put("creditType",creditType.selectedItem.toString());rel.put("tenureMonths",months);rel.put("frequency",frequencySpinner.selectedItem.toString());rel.put("periodMonths",periodic);rel.put("guarantorId",if(guarantorSpinner.selectedItemPosition>0)people[guarantorSpinner.selectedItemPosition-1].optString("id") else "");rel.put("lendingMethod",lendingMethod.selectedItem.toString().uppercase().replace(" ","_"));rel.put("emiAmount",emi);rel.put("estimatedInterest",interest);rel.put("startDate",startDate.text.toString().removePrefix("Start date: ").trim());rel.put("firstDueDate",startDate.text.toString().removePrefix("Start date: ").trim());rel.put("scheduleStatus","CALCULATED")
             V7Core.replace(this,V7Core.Keys.RELATIONSHIPS,rel)
-            Toast.makeText(this, if (isLease) "Rental / Lease recorded with scanned agreement." else "Credit registered with calculated terms.", Toast.LENGTH_SHORT).show(); renderRelationshipList(body)
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) })
-        renderRelationshipList(body)
-        setContentView(shell("Give / Take Money", "All credit types are registered here, including Rental / Lease.", body))
+            Toast.makeText(this,"New credit account registered.",Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this,V7NativeModuleActivity::class.java).putExtra("module","CREDIT_DETAIL").putExtra("relationshipId",rel.optString("id")));finish()
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(7)})
+        setContentView(shell("Register New Credit", "Create a new account; it will immediately appear in Loans & Udhaar.", body))
+    }
+
+    /** Complete drill-down for one credit account. */
+    private fun creditDetail() {
+        val id = intent.getStringExtra("relationshipId").orEmpty()
+        val rel = V7Core.find(this, V7Core.Keys.RELATIONSHIPS, id)
+        if (rel == null) { Toast.makeText(this, "Credit account not found.", Toast.LENGTH_SHORT).show(); finish(); return }
+        val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val party = V7Core.find(this, V7Core.Keys.PEOPLE, rel.optString("partyId"))
+        val guarantor = V7Core.find(this, V7Core.Keys.PEOPLE, rel.optString("guarantorId"))
+        val outstanding = rel.optDouble("outstanding", rel.optDouble("amount",0.0))
+        val status = if (outstanding <= 0.005 || rel.optString("status") == "CLOSED") "CLOSED" else "ACTIVE"
+        val nature = rel.optString("creditType").ifBlank { when(rel.optString("type")){"TRADE_CREDIT"->"Trade Credit / Udhaar";"RENTAL_LEASE"->"Rental / Lease";else->"Personal Loan / Hand Loan"} }
+        fun section(title:String, value:String){ body.addView(ArthSaathiV7Design.section(this,title));body.addView(ArthSaathiV7Design.text(this,value,10.5f,ArthSaathiV7Design.NAVY),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(3);bottomMargin=dp(6)}) }
+        section("Account Status", "${status}   •   ${nature}\nAccount ID: ${rel.optString("id")}\nRegistered: ${rel.optString("startDate").ifBlank { "Not recorded" }}")
+        section("Person / Business", "Name: ${party?.optString("name").orEmpty().ifBlank { "Not linked" }}\nMobile: ${party?.optString("mobile").orEmpty()}\nPAN: ${party?.optString("pan").orEmpty()}\nGSTIN: ${party?.optString("gstin").orEmpty()}")
+        section("Financial Terms", "Original amount: ₹%.2f\nOutstanding: ₹%.2f\nROI: %.2f%%\nLending / payment method: %s\nRepayment structure: %s".format(rel.optDouble("amount"),outstanding,rel.optDouble("roiPercent"),rel.optString("lendingMethod").replace("_"," "),rel.optString("repaymentStructure").replace("_"," ")))
+        section("Repayment Schedule", "Term: ${rel.optInt("tenureMonths")} months\nFrequency: ${rel.optString("frequency")}\nEMI / periodic amount: ₹%.2f\nEstimated interest: ₹%.2f\nFirst due date: %s\nSchedule status: %s".format(rel.optDouble("emiAmount"),rel.optDouble("estimatedInterest"),rel.optString("firstDueDate"),rel.optString("scheduleStatus").ifBlank{"Not calculated"}))
+        section("Guarantor", if(guarantor==null) "No guarantor recorded." else "Name: ${guarantor.optString("name")}\nMobile: ${guarantor.optString("mobile")}\nPAN: ${guarantor.optString("pan")}\nGSTIN: ${guarantor.optString("gstin")}")
+        val docs = "Consent required: ${rel.optBoolean("consentRequired",true)}\nLease document: ${if(rel.optString("leaseDocumentUri").isBlank())"Not attached" else "Attached"}\nTrade invoice: ${if(rel.optString("invoiceDocumentUri").isBlank())"Not attached" else "Attached"}"
+        section("Documents & Consent", docs)
+        body.addView(ArthSaathiV7Design.section(this,"Repayment Transactions","Every recorded repayment linked to this account."))
+        val payments=V7Core.all(this,V7Core.Keys.REPAYMENTS).filter{it.optString("relationshipId")==id}.sortedByDescending{it.optLong("timestamp")}
+        if(payments.isEmpty()) body.addView(ArthSaathiV7Design.text(this,"No repayments recorded.",10f,ArthSaathiV7Design.MUTED))
+        payments.forEach{p->body.addView(ArthSaathiV7Design.text(this,"₹ %.2f • Principal ₹ %.2f • Interest ₹ %.2f • %s".format(p.optDouble("amount"),p.optDouble("principal"),p.optDouble("interest"),p.optString("method")),10.5f,ArthSaathiV7Design.NAVY,true),LinearLayout.LayoutParams(-1,dp(36)))}
+        body.addView(button("Record Repayment") { startActivity(Intent(this,V7NativeModuleActivity::class.java).putExtra("module","REPAYMENT").putExtra("relationshipId",id)) },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        setContentView(shell("Credit Account Details","Full account drill-down — terms, outstanding, guarantor, documents and repayments.",body))
     }
 
     private fun scanLeaseDocument(image: InputImage) {
