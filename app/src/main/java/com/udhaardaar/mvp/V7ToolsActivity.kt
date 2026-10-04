@@ -4,9 +4,27 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
 import android.widget.*
+import com.journeyapps.barcodescanner.IntentIntegrator
+import com.journeyapps.barcodescanner.IntentResult
 import androidx.appcompat.app.AppCompatActivity
 
 class V7ToolsActivity : V7SessionActivity() {
+    private var qrReferenceField: EditText? = null
+    private var qrMerchantField: EditText? = null
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        val result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+        if (result != null) {
+            if (result.contents != null) {
+                qrReferenceField?.setText(result.contents)
+                Toast.makeText(this, "QR scanned. Review the details before recording.", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "QR scan cancelled.", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
     private val d get()=resources.displayMetrics.density
     private fun dp(v:Int)=(v*d).toInt()
     private fun input(h:String)=ArthSaathiV7Design.input(this,h)
@@ -18,12 +36,12 @@ class V7ToolsActivity : V7SessionActivity() {
         r.addView(h);return r
     }
     private fun render(tool:String){
-        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"SCENARIO"->scenario();"MARKET"->market();"REPORTS"->reports();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();"WILL"->will();"DOCUMENTS"->documents();"PEOPLE"->people();"INSURANCE"->insurance();"TTMM_CREATE"->ttmmCreate();"TTMM_CONTRIBUTION"->ttmmContribution();"TTMM_SETTLE"->ttmmSettle();"TTMM_HISTORY"->ttmmHistory();"QR_SCAN"->qrScan();"QR_RECORD"->qrRecord();"QR_CONSENT"->qrConsent();"QR_BALANCE"->qrBalance();"LEGAL"->legal();"BENEFITS"->benefits();"RENTAL"->rental();"CHARGECHECK"->chargeCheck();else->unknownTool(tool)}
+        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"SCENARIO"->scenario();"MARKET"->market();"REPORTS"->reports();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();"WILL"->will();"DOCUMENTS"->documents();"PEOPLE"->people();"INSURANCE"->insurance();"TTMM_CREATE"->ttmmCreate();"TTMM_CONTRIBUTION"->ttmmContribution();"TTMM_SETTLE"->ttmmSettle();"TTMM_HISTORY"->ttmmHistory();"QR_SCAN"->qrScan();"QR_RECORD"->qrRecord();"QR_CONSENT"->qrConsent();"QR_BALANCE"->qrBalance();"LEGAL"->legal();"BENEFITS"->benefits();"CHARGECHECK"->chargeCheck();"NOMINEE"->nominee();"ALERTS"->alerts();else->unknownTool(tool)}
         r.addView(ArthSaathiV7Design.goldButton(this,"Back"){finish()},LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(12)})
         setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
     }
     private fun will():LinearLayout {
-        val r=shell("Will & Legacy","Link recorded assets to a will record. This stores the relationship; legal drafting remains subject to the selected legal workflow.")
+        val r=shell("Will & Inheritance","Link recorded assets to a will record. This stores the relationship; legal drafting remains subject to the selected legal workflow.")
         val assets=V7Core.all(this,V7Core.Keys.ASSETS)
         val labels=if(assets.isEmpty()) listOf("No recorded assets") else assets.map{"₹ %.2f • %s".format(it.optDouble("currentValue",it.optDouble("value",0.0)),it.optString("type","Asset"))}
         val spinner=Spinner(this).apply{adapter=ArrayAdapter(this@V7ToolsActivity,android.R.layout.simple_spinner_dropdown_item,labels)}
@@ -97,12 +115,6 @@ class V7ToolsActivity : V7SessionActivity() {
         r.addView(ArthSaathiV7Design.text(this,"Benefit records are stored only when supported by user-provided or connected-source evidence.",11f,ArthSaathiV7Design.NAVY))
         return r
     }
-    private fun rental():LinearLayout {
-        val r=shell("Rental & Lease","Lease relationships, rent terms and agreement references.")
-        val rel=V7Core.all(this,V7Core.Keys.RELATIONSHIPS).filter{it.optString("type").contains("LEASE",true)||it.optString("type").contains("RENT",true)}
-        r.addView(ArthSaathiV7Design.text(this,if(rel.isEmpty()) "No rental/lease relationships recorded." else rel.joinToString("\n\n"){ "• "+it.optString("purpose","Lease")+"  |  ₹"+it.optDouble("amount",0.0) },11f,ArthSaathiV7Design.NAVY))
-        return r
-    }
     private fun chargeCheck():LinearLayout {
         val r=shell("ChargeCheck","Compare recorded sanctioned charges with actual charges.")
         r.addView(ArthSaathiV7Design.text(this,"Use the Asset/Document/Finance records as the source of truth for a charge comparison. No charge is inferred without a recorded amount.",11f,ArthSaathiV7Design.NAVY))
@@ -146,10 +158,23 @@ class V7ToolsActivity : V7SessionActivity() {
             addView(ArthSaathiV7Design.text(this@V7ToolsActivity,if(records.isEmpty()) "No TTMM records yet." else records.joinToString("\n\n"){ "• "+it.optString("type","GROUP")+" | "+it.optString("groupName","")+" | ₹"+it.optDouble("amount",0.0)+" | "+it.optString("createdAt") },11f,ArthSaathiV7Design.NAVY))
         }
 
-    private fun qrScan():LinearLayout = shell("QR Khata — Scan / Identify","Identify the merchant or transaction reference before recording a ledger entry.")
+    private fun qrScan():LinearLayout = shell("QR Udhaar Khata — Scan / Identify","Scan a merchant QR or transaction code first. Nothing is recorded until you review and confirm.")
         .apply {
-            val ref=input("QR / transaction reference"); val merchant=input("Merchant / party"); addView(ref);addView(merchant,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
-            addView(ArthSaathiV7Design.text(this@V7ToolsActivity,"V7 keeps scan/identify separate from ledger mutation. Camera/QR integration can populate these fields without silently creating a credit.",10.5f,ArthSaathiV7Design.MUTED).apply{setPadding(0,dp(8),0,0)})
+            val ref=input("QR / transaction reference")
+            val merchant=input("Merchant / party")
+            qrReferenceField=ref
+            qrMerchantField=merchant
+            addView(ref)
+            addView(merchant,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+            addView(ArthSaathiV7Design.goldButton(this@V7ToolsActivity,"Scan QR Code"){
+                IntentIntegrator(this@V7ToolsActivity).apply{
+                    setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
+                    setPrompt("Scan the merchant or transaction QR")
+                    setBeepEnabled(true)
+                    setOrientationLocked(false)
+                }.initiateScan()
+            },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+            addView(ArthSaathiV7Design.text(this@V7ToolsActivity,"After scanning, review the merchant/reference and continue to Record Khata. Scanning never changes a balance by itself.",10.5f,ArthSaathiV7Design.MUTED).apply{setPadding(0,dp(8),0,0)})
         }
 
     private fun qrRecord():LinearLayout = shell("QR Khata — Record","Create a merchant credit/repayment ledger record after identification.")
@@ -175,6 +200,47 @@ class V7ToolsActivity : V7SessionActivity() {
             val rows=V7Core.all(this@V7ToolsActivity,V7Core.Keys.QR);val total=rows.filter{it.optString("type","CREDIT")=="CREDIT"}.sumOf{it.optDouble("amount",0.0)}-rows.filter{it.optString("type")=="REPAYMENT"}.sumOf{it.optDouble("amount",0.0)}
             addView(ArthSaathiV7Design.text(this@V7ToolsActivity,"Recorded QR Khata net balance: ₹%.2f".format(total),12f,ArthSaathiV7Design.NAVY,true))
         }
+
+    private fun nominee():LinearLayout {
+        val r=shell("Nominee & Family","Choose who should receive or access a recorded asset, subject to the relevant legal documents.")
+        val people=V7Core.all(this,V7Core.Keys.PEOPLE)
+        val ownerLabels=if(people.isEmpty()) listOf("No profile recorded") else people.map{it.optString("name")+" • "+it.optString("mobile")}
+        val owner=Spinner(this).apply{adapter=ArrayAdapter(this@V7ToolsActivity,android.R.layout.simple_spinner_dropdown_item,ownerLabels)}
+        val name=input("Nominee full name")
+        val relation=input("Relationship (e.g. spouse, son, daughter)")
+        val mobile=input("Nominee mobile (optional)")
+        val share=input("Share % (optional)")
+        r.addView(ArthSaathiV7Design.text(this,"Whose nominee?",10f,ArthSaathiV7Design.MUTED,true))
+        r.addView(owner,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(3)})
+        listOf(name,relation,mobile,share).forEach{r.addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})}
+        val out=ArthSaathiV7Design.text(this,"",10.5f,ArthSaathiV7Design.NAVY)
+        r.addView(ArthSaathiV7Design.goldButton(this,"Save Nominee"){
+            if(people.isEmpty()){out.text="Create a profile first.";return@goldButton}
+            if(name.text.isBlank()||relation.text.isBlank()){out.text="Nominee name and relationship are required.";return@goldButton}
+            val pct=share.text.toString().toDoubleOrNull()?:0.0
+            if(pct<0||pct>100){share.error="Share must be 0–100%";return@goldButton}
+            V7Core.add(this@V7ToolsActivity,V7Core.Keys.NOMINEES,org.json.JSONObject().apply{
+                put("id",V7Core.id("NOM"));put("ownerId",people[owner.selectedItemPosition].optString("id"));put("name",name.text.toString().trim())
+                put("relationship",relation.text.toString().trim());put("mobile",mobile.text.toString().trim());put("sharePercent",pct);put("status","ACTIVE");put("createdAt",V7Core.now())
+            })
+            out.text="Nominee saved. Link this nominee to individual assets in Asset Vault when required."
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(9)})
+        val existing=V7Core.all(this,V7Core.Keys.NOMINEES)
+        r.addView(ArthSaathiV7Design.section(this,"Saved Nominees","Nominees currently recorded in ArthSaathi."))
+        r.addView(ArthSaathiV7Design.text(this,if(existing.isEmpty())"No nominees recorded." else existing.joinToString("\n\n"){"• "+it.optString("name")+" • "+it.optString("relationship")+" • "+it.optString("sharePercent")+"%"},11f,ArthSaathiV7Design.NAVY))
+        r.addView(out)
+        return r
+    }
+
+    private fun alerts():LinearLayout {
+        val r=shell("Renewal & Due Alerts","See reminders generated from recorded due dates, repayments, renewals and other events.")
+        V7AlertEngine.evaluate(this)
+        val alerts=V7Core.all(this,V7Core.Keys.ALERTS).sortedByDescending{it.optLong("createdAt")}
+        r.addView(ArthSaathiV7Design.text(this,if(alerts.isEmpty())"No active alerts from the records available." else alerts.take(30).joinToString("\n\n"){
+            "• "+it.optString("title",it.optString("type","Alert"))+"\n"+it.optString("message",it.optString("detail","Review the related record."))
+        },11f,ArthSaathiV7Design.NAVY))
+        return r
+    }
 
     private fun security():LinearLayout{
         val r=shell("Security & Consent","Review consent records, audit history and the current protected session.")
