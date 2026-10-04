@@ -74,7 +74,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun showRegister(prefill:String="") {
         val r=shell(); brandBlock(r)
-        r.addView(ArthSaathiV7Design.text(this,"Create your ArthSaathi account",20f,Color.WHITE,true).apply { gravity=Gravity.CENTER })
+        r.addView(ArthSaathiV7Design.text(this,"Create your ArthSaathi account",20f,ArthSaathiV7Design.NAVY,true).apply { gravity=Gravity.CENTER })
         val card=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(14),dp(14),dp(14),dp(14)); background=ArthSaathiV7Design.card(this@LoginActivity,Color.WHITE,18) }
         val n=ArthSaathiV7Design.input(this,"Full name")
         val m=ArthSaathiV7Design.input(this,"Mobile number").apply { inputType=InputType.TYPE_CLASS_PHONE; filters=arrayOf(InputFilter.LengthFilter(10)) }
