@@ -20,7 +20,6 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(b:Bundle?) {
         super.onCreate(b)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
-        V7AccountStore.migrateLegacyPreferences(this)
         if (V7AccountStore.isLoggedIn(this)) { openHome(); return }
         showLogin()
     }
