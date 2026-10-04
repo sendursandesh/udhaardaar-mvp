@@ -171,13 +171,13 @@ class V7HomeActivity : V7SessionActivity() {
                     val item = items[index]
                     row.addView(
                         ArthSaathiV7Design.tile(this, item.first.first, item.first.second, item.first.third, item.second),
-                        LinearLayout.LayoutParams(0, dp(103), 1f).apply {
+                        LinearLayout.LayoutParams(0, dp(116), 1f).apply {
                             if (j > 0) leftMargin = dp(5)
                         }
                     )
                 }
             }
-            root.addView(row, LinearLayout.LayoutParams(-1, dp(103)).apply {
+            root.addView(row, LinearLayout.LayoutParams(-1, dp(116)).apply {
                 if (i > 0) topMargin = dp(5)
             })
             i += 3
