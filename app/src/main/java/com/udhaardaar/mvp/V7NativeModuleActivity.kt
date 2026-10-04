@@ -192,6 +192,29 @@ class V7NativeModuleActivity : V7SessionActivity() {
             )
         }
 
+        val locationStatus = ArthSaathiV7Design.text(this, "PIN lookup will suggest the postal area. Always confirm the address on the map before saving.", 9.5f, ArthSaathiV7Design.MUTED)
+        body.addView(locationStatus, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(5) })
+        val locationRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        locationRow.addView(button("Find Address from PIN") {
+            V7LocationEngine.lookupPinAsync(this, recordPin.text.toString().trim()) { result ->
+                runOnUiThread {
+                    locationStatus.text = result.message + if (result.postOffice.isNotBlank()) "\nPost offices: " + result.postOffice else ""
+                    if (result.pinValid) {
+                        if (result.city.isNotBlank()) recordCity.setText(result.city)
+                        if (result.district.isNotBlank()) recordDistrict.setText(result.district)
+                        if (result.state.isNotBlank()) recordState.setText(result.state)
+                    }
+                }
+            }
+        }, LinearLayout.LayoutParams(0, dp(46), 1f))
+        locationRow.addView(button("Confirm on Map") {
+            val query=listOf(recordAddress.text.toString(),recordCity.text.toString(),recordDistrict.text.toString(),recordState.text.toString(),recordPin.text.toString()).filter{it.isNotBlank()}.joinToString(", ")
+            if(query.isBlank()){recordAddress.error="Enter an address or PIN first";return@button}
+            runCatching { startActivity(V7LocationEngine.mapIntent(this,query)) }
+                .onFailure { Toast.makeText(this,"No map application is available.",Toast.LENGTH_SHORT).show() }
+        }, LinearLayout.LayoutParams(0, dp(46), 1f).apply { leftMargin = dp(5) })
+        body.addView(locationRow, LinearLayout.LayoutParams(-1, dp(46)).apply { topMargin = dp(5) })
+
         profilePreview = ImageView(this).apply {
             layoutParams = LinearLayout.LayoutParams(dp(92), dp(92)).apply { gravity = Gravity.CENTER; topMargin = dp(5) }
             scaleType = ImageView.ScaleType.CENTER_CROP
