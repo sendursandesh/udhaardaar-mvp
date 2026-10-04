@@ -40,6 +40,9 @@ class V7NativeModuleActivity : V7SessionActivity() {
     private var leaseDocumentUri: String = ""
     private var leaseExtractedText: String = ""
     private var leaseScanResult: TextView? = null
+    private var invoiceDocumentUri: String = ""
+    private var invoiceExtractedText: String = ""
+    private var invoiceScanResult: TextView? = null
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -74,6 +77,20 @@ class V7NativeModuleActivity : V7SessionActivity() {
             if (bitmap != null) {
                 leaseDocumentUri = "camera:" + System.currentTimeMillis()
                 scanLeaseDocument(InputImage.fromBitmap(bitmap, 0))
+            }
+        }
+ else if (requestCode == 704 && resultCode == RESULT_OK) {
+            val uri = data?.data
+            if (uri != null) {
+                invoiceDocumentUri = uri.toString()
+                runCatching { scanInvoiceDocument(InputImage.fromFilePath(this, uri)) }
+                    .onFailure { invoiceScanResult?.text = "Invoice selected. Text scan is available for image pages; please review the attachment." }
+            }
+        } else if (requestCode == 705 && resultCode == RESULT_OK) {
+            val bitmap = data?.extras?.get("data") as? android.graphics.Bitmap
+            if (bitmap != null) {
+                invoiceDocumentUri = "camera:" + System.currentTimeMillis()
+                scanInvoiceDocument(InputImage.fromBitmap(bitmap, 0))
             }
         }
     }
@@ -346,6 +363,36 @@ class V7NativeModuleActivity : V7SessionActivity() {
         leaseScanResult = ArthSaathiV7Design.text(this, "No lease document scanned yet.", 9.5f, ArthSaathiV7Design.MUTED)
         leasePanel.addView(leaseScanResult, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         body.addView(leasePanel, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+
+        val invoicePanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 14)
+            setPadding(dp(10), dp(10), dp(10), dp(10))
+        }
+        invoicePanel.addView(ArthSaathiV7Design.text(this, "Trade Credit Invoice", 14f, ArthSaathiV7Design.NAVY, true))
+        invoicePanel.addView(ArthSaathiV7Design.text(this, "Upload or photograph the invoice. ArthSaathi reads the visible text so you can review vendor, date, amount and other details before saving.", 10f, ArthSaathiV7Design.MUTED))
+        val invoiceRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val invoiceUpload = button("Choose Invoice") {
+            val pick = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                type = "image/*"
+                addCategory(Intent.CATEGORY_OPENABLE)
+                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "application/pdf"))
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivityForResult(pick, 704)
+        }
+        val invoiceCamera = button("Scan Invoice") {
+            val take = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+            if (take.resolveActivity(packageManager) == null) Toast.makeText(this, "Camera is not available.", Toast.LENGTH_SHORT).show()
+            else startActivityForResult(take, 705)
+        }
+        invoiceRow.addView(invoiceUpload, LinearLayout.LayoutParams(0, dp(48), 1f))
+        invoiceRow.addView(invoiceCamera, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(5) })
+        invoicePanel.addView(invoiceRow, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) })
+        invoiceScanResult = ArthSaathiV7Design.text(this, "No invoice scanned yet.", 9.5f, ArthSaathiV7Design.MUTED)
+        invoicePanel.addView(invoiceScanResult, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+        body.addView(invoicePanel, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+
         val startDate = TextView(this).apply {
             text = "Start date: Select"; textSize = 14f; setTextColor(ArthSaathiV7Design.NAVY); gravity = Gravity.CENTER_VERTICAL
             background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 10); setPadding(dp(12),0,dp(12),0)
@@ -361,8 +408,9 @@ class V7NativeModuleActivity : V7SessionActivity() {
             methodBox.visibility = if (isLease) View.GONE else View.VISIBLE
             guarantorBox.visibility = if (isLease) View.GONE else View.VISIBLE
             leasePanel.visibility = if (isLease) View.VISIBLE else View.GONE
+            invoicePanel.visibility = if (creditType.selectedItemPosition == 1) View.VISIBLE else View.GONE
             amount.hint = if (isLease) "Rent / due amount (₹)" else "Credit amount (₹)"
-            preview.text = if (isLease) "Lease dues will be tracked from the agreement terms. No interest/ROI is applied to rental/lease records." else "Repayment schedule will be calculated automatically."
+            preview.text = if (isLease) "Lease dues will be tracked from the agreement terms. No interest/ROI is applied to rental/lease records." else if (creditType.selectedItemPosition == 1) "Trade credit: attach the invoice when available; review scanned details before saving." else "Repayment schedule will be calculated automatically."
         }
         creditType.onItemSelectedListener = object: android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
@@ -402,6 +450,7 @@ class V7NativeModuleActivity : V7SessionActivity() {
             rel.put("guarantorId",if(!isLease && guarantorSpinner.selectedItemPosition>0) people[guarantorSpinner.selectedItemPosition-1].optString("id") else "")
             rel.put("emiAmount",emi); rel.put("estimatedInterest",interest); rel.put("startDate",startDate.text.toString().removePrefix("Start date: ").trim()); rel.put("firstDueDate",startDate.text.toString().removePrefix("Start date: ").trim()); rel.put("scheduleStatus","CALCULATED")
             if (isLease) { rel.put("securityDeposit", deposit.text.toString().toDoubleOrNull() ?: 0.0); rel.put("leaseEndDate", leaseEnd.text.toString().trim()); rel.put("leaseDocumentUri", leaseDocumentUri); rel.put("leaseExtractedText", leaseExtractedText); rel.put("leaseDocumentScanned", true) }
+            if (creditType.selectedItemPosition == 1) { rel.put("invoiceDocumentUri", invoiceDocumentUri); rel.put("invoiceExtractedText", invoiceExtractedText); rel.put("invoiceScanned", invoiceDocumentUri.isNotBlank()) }
             V7Core.replace(this,V7Core.Keys.RELATIONSHIPS,rel)
             Toast.makeText(this, if (isLease) "Rental / Lease recorded with scanned agreement." else "Credit registered with calculated terms.", Toast.LENGTH_SHORT).show(); renderRelationshipList(body)
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) })
@@ -419,6 +468,19 @@ class V7NativeModuleActivity : V7SessionActivity() {
             recognizer.close()
         }.addOnFailureListener {
             leaseScanResult?.text = "Document captured, but text could not be read. Keep the scanned document attached and enter terms manually."
+            recognizer.close()
+        }
+    }
+
+    private fun scanInvoiceDocument(image: InputImage) {
+        invoiceScanResult?.text = "Reading invoice…"
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        recognizer.process(image).addOnSuccessListener { result ->
+            invoiceExtractedText = result.text
+            invoiceScanResult?.text = if (result.text.isBlank()) "Invoice image captured. Please enter the amount and review the attachment manually." else "Invoice scanned ✓\n\nReview extracted text before saving:\n" + result.text.take(1400)
+            recognizer.close()
+        }.addOnFailureListener {
+            invoiceScanResult?.text = "Invoice captured, but text could not be read. The attachment remains available for review."
             recognizer.close()
         }
     }
