@@ -66,10 +66,21 @@ jobs:
           grep -q "V7Records.liability" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
           grep -q "V7LegacyProjectionSync.sync" app/src/main/java/com/udhaardaar/mvp/UdhaardaarApp.kt
           grep -q "V7LegacyProjectionSync" app/src/main/java/com/udhaardaar/mvp/V7LegacyProjectionSync.kt
+          test "$(grep -o 'openTool("[A-Z0-9_]*")' app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt | sort | uniq -d | wc -l)" -eq 0
+          test "$(grep -o 'openTool("[A-Z0-9_]*")' app/src/main/java/com/udhaardaar/mvp/V7HomeActivity.kt | sort | uniq -d | wc -l)" -eq 0
           grep -q "native()" app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
           ! grep -q "V5LocalStore" app/src/main/java/com/udhaardaar/mvp/V7CoreArchitecture.kt
+          ! grep -q "V7LegacyAdapter" app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt
+          ! grep -q "V7LegacyAdapter" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          ! grep -q "V62[A-Za-z].*Activity" app/src/main/java/com/udhaardaar/mvp/V7HomeActivity.kt
           ! grep -q "V62[A-Za-z].*Activity" app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt
-          grep -q "V7LegacyAdapter" app/src/main/java/com/udhaardaar/mvp/V7ModuleActivity.kt
+          ! grep -q "V62[A-Za-z].*Activity" app/src/main/java/com/udhaardaar/mvp/V7NativeModuleActivity.kt
+          ! grep -q "V62[A-Za-z].*Activity" app/src/main/java/com/udhaardaar/mvp/V7ToolsActivity.kt
+          ! grep -q "ArthSaathiHomeActivity\|ArthSaathiModulesActivity" app/src/main/AndroidManifest.xml
+          ! grep -q "V62[A-Za-z].*Activity" app/src/main/AndroidManifest.xml
+          ! grep -q "V7LegacyAdapter\|V7LegacyEventBridge" app/src/main/java/com/udhaardaar/mvp/UdhaardaarApp.kt
+          ! grep -q "LEGACY_ADAPTER" app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
+          grep -q "Every user-facing V7 route is native" app/src/main/java/com/udhaardaar/mvp/V7MasterVisionRegistry.kt
           grep -q "Navigate Your Financial Journey" app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
           grep -q "Your Asset. Your Record. Your Right." app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
           grep -q "Plan • Protect • Grow • Nominate" app/src/main/java/com/udhaardaar/mvp/ArthSaathiV7Design.kt
