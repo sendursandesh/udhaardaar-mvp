@@ -108,11 +108,26 @@ class V7ToolsActivity : V7SessionActivity() {
         return r
     }
     private fun documents():LinearLayout {
-        val r=shell("Documents","Your recorded documents, versions and evidence references.")
+        val r=shell("My Documents","Keep important papers and evidence references in one place. Documents can be linked to credits, assets, insurance and claims.")
+        val name=input("Document name")
+        val type=input("Document type (Aadhaar / PAN / deed / invoice / policy / other)")
+        val reference=input("Document number / reference")
+        listOf(name,type,reference).forEach{r.addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})}
+        val out=ArthSaathiV7Design.text(this,"",10.5f,ArthSaathiV7Design.NAVY)
+        r.addView(ArthSaathiV7Design.goldButton(this,"Save Document Reference"){
+            if(name.text.isBlank()){name.error="Document name is required";return@goldButton}
+            V7Core.add(this,V7Core.Keys.DOCUMENTS,org.json.JSONObject().apply{
+                put("id",V7Core.id("DOC"));put("name",name.text.toString().trim());put("type",type.text.toString().trim());put("reference",reference.text.toString().trim());put("status","RECORDED");put("createdAt",V7Core.now())
+            })
+            out.text="Document reference saved. You can link the evidence to the relevant asset, credit or claim."
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(9)})
+        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(8)})
         val docs=V7Core.all(this,V7Core.Keys.DOCUMENTS)
-        r.addView(ArthSaathiV7Design.text(this,if(docs.isEmpty()) "No documents recorded yet." else docs.joinToString("\n\n"){ "• "+it.optString("name",it.optString("id"))+"  |  "+it.optString("status","RECORDED") },11f,ArthSaathiV7Design.NAVY))
+        r.addView(ArthSaathiV7Design.section(this,"Saved Documents","Recorded document references."))
+        r.addView(ArthSaathiV7Design.text(this,if(docs.isEmpty())"No documents recorded yet." else docs.takeLast(30).reversed().joinToString("\n\n"){"• "+it.optString("name")+" • "+it.optString("type")+" • "+it.optString("reference")},11f,ArthSaathiV7Design.NAVY))
         return r
     }
+
     private fun people():LinearLayout {
         val r=shell("People & Relationships","Borrowers, guarantors and authorised people recorded in V7.")
         val people=V7Core.all(this,V7Core.Keys.PEOPLE)
@@ -121,11 +136,25 @@ class V7ToolsActivity : V7SessionActivity() {
         return r
     }
     private fun insurance():LinearLayout {
-        val r=shell("Insurance","Policies, renewal dates, nominees and claim references.")
+        val r=shell("Insurance Policies","Record policy details, renewal dates, nominees and claim references.")
+        val name=input("Policy / plan name");val insurer=input("Insurance company");val number=input("Policy number");val premium=input("Premium (₹)");val renewal=input("Renewal date");val nominee=input("Nominee")
+        listOf(name,insurer,number,premium,renewal,nominee).forEach{r.addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})}
+        val out=ArthSaathiV7Design.text(this,"",10.5f,ArthSaathiV7Design.NAVY)
+        r.addView(ArthSaathiV7Design.goldButton(this,"Save Insurance Policy"){
+            if(name.text.isBlank()||insurer.text.isBlank()){Toast.makeText(this,"Policy name and insurer are required.",Toast.LENGTH_SHORT).show();return@goldButton}
+            val p=org.json.JSONObject().apply{
+                put("id",V7Core.id("POL"));put("name",name.text.toString().trim());put("insurer",insurer.text.toString().trim());put("policyNumber",number.text.toString().trim())
+                put("premium",premium.text.toString().toDoubleOrNull()?:0.0);put("renewalDate",renewal.text.toString().trim());put("nominee",nominee.text.toString().trim());put("status","ACTIVE")
+            }
+            V7Core.add(this,V7Core.Keys.POLICIES,p);out.text="Insurance policy saved. Renewal alerts will use the recorded date when available."
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(9)})
         val policies=V7Core.all(this,V7Core.Keys.POLICIES)
-        r.addView(ArthSaathiV7Design.text(this,if(policies.isEmpty()) "No policies recorded." else policies.joinToString("\n\n"){ "• "+it.optString("name",it.optString("policyNumber","Policy")) },11f,ArthSaathiV7Design.NAVY))
+        r.addView(ArthSaathiV7Design.section(this,"Saved Policies","Your recorded insurance policies."))
+        r.addView(ArthSaathiV7Design.text(this,if(policies.isEmpty())"No policies recorded." else policies.takeLast(20).reversed().joinToString("\n\n"){"• "+it.optString("name")+" • "+it.optString("insurer")+" • "+it.optString("policyNumber")},11f,ArthSaathiV7Design.NAVY))
+        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(8)})
         return r
     }
+
     private fun ttmm():LinearLayout {
         val r=shell("TTMM — Share & Settle","Shared expenses, contributions and settlements.")
         val records=V7Core.all(this,V7Core.Keys.TTMM)
@@ -148,13 +177,44 @@ class V7ToolsActivity : V7SessionActivity() {
         return r
     }
     private fun benefits():LinearLayout {
-        val r=shell("Government Benefits","Record benefits or refunds that are actually received; no unsupported eligibility claim is made.")
-        r.addView(ArthSaathiV7Design.text(this,"Benefit records are stored only when supported by user-provided or connected-source evidence.",11f,ArthSaathiV7Design.NAVY))
+        val r=shell("Benefits & Refunds","Record money or support you have actually received. ArthSaathi does not claim eligibility automatically.")
+        val name=input("Benefit / refund name");val source=input("Source / department / institution");val amount=input("Amount received (₹)");val date=input("Received date");val reference=input("Reference / proof")
+        listOf(name,source,amount,date,reference).forEach{r.addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})}
+        val out=ArthSaathiV7Design.text(this,"",10.5f,ArthSaathiV7Design.NAVY)
+        r.addView(ArthSaathiV7Design.goldButton(this,"Save Benefit / Refund"){
+            val a=amount.text.toString().toDoubleOrNull()
+            if(name.text.isBlank()||a==null||a<0){Toast.makeText(this,"Name and a valid amount are required.",Toast.LENGTH_SHORT).show();return@goldButton}
+            V7Core.add(this,V7Core.Keys.BENEFITS,org.json.JSONObject().apply{
+                put("id",V7Core.id("BEN"));put("name",name.text.toString().trim());put("source",source.text.toString().trim());put("amount",a);put("date",date.text.toString().trim());put("reference",reference.text.toString().trim());put("createdAt",V7Core.now())
+            })
+            out.text="Benefit/refund recorded as received."
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(9)})
+        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(8)})
         return r
     }
+
     private fun chargeCheck():LinearLayout {
-        val r=shell("ChargeCheck","Compare recorded sanctioned charges with actual charges.")
-        r.addView(ArthSaathiV7Design.text(this,"Use the Asset/Document/Finance records as the source of truth for a charge comparison. No charge is inferred without a recorded amount.",11f,ArthSaathiV7Design.NAVY))
+        val r=shell("Check Loan / Bank Charges","Compare what was sanctioned or promised with what was actually charged. Enter only amounts supported by your documents or statements.")
+        val item=input("Charge name (processing / legal / insurance / other)")
+        val sanctioned=input("Promised / sanctioned amount (₹)")
+        val actual=input("Actual amount charged (₹)")
+        val source=input("Source / document reference")
+        val out=ArthSaathiV7Design.text(this,"",11f,ArthSaathiV7Design.NAVY)
+        listOf(item,sanctioned,actual,source).forEach{r.addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})}
+        r.addView(ArthSaathiV7Design.goldButton(this,"Compare Charges"){
+            val s=sanctioned.text.toString().toDoubleOrNull();val a=actual.text.toString().toDoubleOrNull()
+            if(s==null||a==null||s<0||a<0){out.text="Enter valid sanctioned and actual amounts.";return@goldButton}
+            val diff=a-s
+            out.text=when{diff>0.005->"Actual charge is ₹%.2f higher than promised.".format(diff);diff < -0.005->"Actual charge is ₹%.2f lower than promised.".format(-diff);else->"Actual charge matches the promised amount."}
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(9)})
+        r.addView(ArthSaathiV7Design.outlineButton(this,"Save Comparison"){
+            val s=sanctioned.text.toString().toDoubleOrNull();val a=actual.text.toString().toDoubleOrNull()
+            if(item.text.isBlank()||s==null||a==null||s<0||a<0){out.text="Complete the charge comparison first.";return@outlineButton}
+            V7Core.add(this,V7Core.Keys.CHARGE_CHECKS,org.json.JSONObject().apply{
+                put("id",V7Core.id("CHG"));put("item",item.text.toString().trim());put("sanctioned",s);put("actual",a);put("difference",a-s);put("source",source.text.toString().trim());put("createdAt",V7Core.now())
+            })
+            out.text="Charge comparison saved for your records."
+        },LinearLayout.LayoutParams(-1,dp(46)).apply{topMargin=dp(7)})
         return r
     }
 
@@ -484,14 +544,28 @@ class V7ToolsActivity : V7SessionActivity() {
     }
 
     private fun advocate():LinearLayout{
-        val r=shell("Advocate Directory","Search by city, domain, court, language and consultation mode. No arbitrary best/worst ranking.")
-        val n=input("Name");val city=input("City");val state=input("State");val domain=input("Practice domain");val court=input("Court");val lang=input("Language");val mode=input("Consultation mode")
-        listOf(n,city,state,domain,court,lang,mode).forEach{r.addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5)})}
+        val r=shell("Advocate Directory","Find advocates by city, practice area, court, language and consultation mode. Profiles are user-submitted until independently verified.")
+        val q=input("Search name / practice area")
+        val city=input("City")
+        val domain=input("Practice area")
         val out=ArthSaathiV7Design.text(this,"",10.5f,ArthSaathiV7Design.NAVY)
-        r.addView(ArthSaathiV7Design.goldButton(this,"Add Professional Profile"){
-            if(n.text.isBlank()){n.error="Required";return@goldButton};V7LegalEngine.professional(this,n.text.toString(),city.text.toString(),state.text.toString(),domain.text.toString(),court.text.toString(),lang.text.toString(),mode.text.toString(),"USER_SUBMITTED");out.text="Professional profile recorded."
-        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)});r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(9)});return r
+        r.addView(q);r.addView(city,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)});r.addView(domain,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})
+        r.addView(ArthSaathiV7Design.goldButton(this,"Search Advocates"){
+            val rows=V7LegalEngine.search(this,q.text.toString(),city.text.toString(),domain.text.toString())
+            out.text=if(rows.isEmpty())"No matching advocate profiles recorded yet." else rows.joinToString("\n\n"){"• "+it.optString("name")+"\n"+it.optString("city")+" • "+it.optString("domain")+" • "+it.optString("court")+"\n"+it.optString("language")+" • "+it.optString("consultationMode")}
+        },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        r.addView(ArthSaathiV7Design.section(this,"Add Advocate Profile","Use this only for a profile you have permission to record."))
+        val n=input("Advocate name");val state=input("State");val court=input("Court");val lang=input("Language");val mode=input("Consultation mode")
+        listOf(n,state,court,lang,mode).forEach{r.addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5)})}
+        r.addView(ArthSaathiV7Design.outlineButton(this,"Save Advocate Profile"){
+            if(n.text.isBlank()){n.error="Required";return@outlineButton}
+            V7LegalEngine.professional(this,n.text.toString(),city.text.toString(),state.text.toString(),domain.text.toString(),court.text.toString(),lang.text.toString(),mode.text.toString(),"USER_SUBMITTED")
+            out.text="Advocate profile recorded. Search again to view it."
+        },LinearLayout.LayoutParams(-1,dp(46)).apply{topMargin=dp(8)})
+        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+        return r
     }
+
     private fun claim():LinearLayout{
         val r=shell("Claim Assistance","Prepare the evidence path from ownership to claim closure.")
         val asset=input("Asset ID");val claimant=input("Claimant");val nominee=input("Nominee / Heir");val institution=input("Institution");val amount=input("Claim amount")
