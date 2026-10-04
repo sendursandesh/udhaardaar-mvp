@@ -40,7 +40,7 @@ class V7ModuleActivity : V7SessionActivity() {
         val title = when (key) {
             "PROTECT" -> "Insurance & Protection"
             "GROW" -> "Investments & Returns"
-            "TTMM" -> "Group Expenses"
+            "GROUP_KHATA" -> "Group Khata"
             "QR_KHATA" -> "QR Udhaar Khata"
             "LEGAL" -> "Legal Help & Claims"
             "MORE" -> "More Services"
@@ -49,7 +49,7 @@ class V7ModuleActivity : V7SessionActivity() {
         val sub = when (key) {
             "PROTECT" -> "Policies, renewals and claims"
             "GROW" -> "Portfolio, returns and financial tools"
-            "TTMM" -> "Share a group expense and settle who owes whom"
+            "GROUP_KHATA" -> "Share costs, track contributions and settle who owes whom"
             "QR_KHATA" -> "Scan a transaction and record an udhaar entry"
             "LEGAL" -> "Legal help, advocates and claims"
             else -> "Profile, records and other useful services"
@@ -80,7 +80,7 @@ class V7ModuleActivity : V7SessionActivity() {
         when (key) {
             "GROW" -> grow(root)
             "PROTECT" -> protect(root)
-            "TTMM" -> ttmm(root)
+            "GROUP_KHATA" -> ttmm(root)
             "QR_KHATA" -> qr(root)
             "LEGAL" -> legal(root)
             else -> more(root)
@@ -197,13 +197,13 @@ class V7ModuleActivity : V7SessionActivity() {
         addGrid(root, listOf(
             Triple("●", "My Profile & Family", "People, contacts & access"),
             Triple("▣", "My Documents", "Important papers & evidence"),
-            Triple("👥", "Group Expenses", "Share, split & settle expenses"),
+            Triple("○", "Nominees & Beneficiaries", "Who can receive your assets"),
             Triple("▦", "QR Udhaar Khata", "Scan and record merchant credit"),
             Triple("LI", "My Loans & Dues", "Loans, liabilities & outstanding")
         ), listOf(
             { openTool("PEOPLE") },
             { openTool("DOCUMENTS") },
-            { openModule("TTMM") },
+            { openTool("NOMINEE") },
             { openModule("QR_KHATA") },
             { startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", "LIABILITIES")) }
         ))
@@ -222,12 +222,10 @@ class V7ModuleActivity : V7SessionActivity() {
         root.addView(ArthSaathiV7Design.section(this, "Security & Support", "Keep your records protected and get help when needed.").apply { setPadding(0, dp(10), 0, 0) })
         addGrid(root, listOf(
             Triple("✓", "Privacy & Consent", "Who can access what"),
-            Triple("◈", "Credit Reliability Score", "Consent-based reliability view"),
-            Triple("⚖", "Will & Inheritance", "Plan family assets & claims")
+            Triple("◈", "Credit Reliability Score", "Consent-based reliability view")
         ), listOf(
             { openTool("SECURITY") },
-            { openTool("SCORE") },
-            { openTool("WILL") }
+            { openTool("SCORE") }
         ))
     }
 
