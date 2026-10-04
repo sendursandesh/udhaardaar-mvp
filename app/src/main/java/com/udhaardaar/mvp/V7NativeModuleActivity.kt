@@ -422,6 +422,8 @@ class V7NativeModuleActivity : V7SessionActivity() {
         body.addView(labelledSpinner("Person / Business", personSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(4) })
         val creditType = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Personal Loan / Hand Loan", "Trade Credit / Udhaar", "Rental / Lease")) }
         body.addView(labelledSpinner("Nature of Credit", creditType), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(4) })
+        val directionSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("I gave this credit", "I received this credit")) }
+        body.addView(labelledSpinner("Credit direction", directionSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(4) })
         val amount = field("Amount / Rent due (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
         body.addView(amount, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
         val lendingMethod = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("UPI","Cash","NEFT","Bank Transfer","Cheque","NACH","Other")) }
@@ -443,6 +445,31 @@ class V7NativeModuleActivity : V7SessionActivity() {
         val guarantorLabels = listOf("No guarantor") + V7Core.all(this,V7Core.Keys.PEOPLE).map{it.optString("name")+" • "+it.optString("mobile")}
         val guarantorSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, guarantorLabels) }
         body.addView(labelledSpinner("Guarantor (optional)", guarantorSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        val leasePanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 14); setPadding(dp(10), dp(10), dp(10), dp(10)) }
+        leasePanel.addView(ArthSaathiV7Design.text(this, "Rental / Lease document", 14f, ArthSaathiV7Design.NAVY, true))
+        leasePanel.addView(ArthSaathiV7Design.text(this, "Attach or scan the lease deed / rent agreement when Rental / Lease is selected.", 10f, ArthSaathiV7Design.MUTED))
+        val deposit = field("Security deposit (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
+        val leaseEnd = field("Lease end date (optional)")
+        leasePanel.addView(deposit, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        leasePanel.addView(leaseEnd, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(5) })
+        val leaseRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        leaseRow.addView(button("Choose Deed / Agreement") { val pick=Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="image/*";addCategory(Intent.CATEGORY_OPENABLE);putExtra(Intent.EXTRA_MIME_TYPES,arrayOf("image/*","application/pdf"));addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)};startActivityForResult(pick,702) }, LinearLayout.LayoutParams(0,dp(48),1f))
+        leaseRow.addView(button("Scan Camera") { val take=Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE); if(take.resolveActivity(packageManager)!=null) startActivityForResult(take,703) else Toast.makeText(this,"Camera is not available.",Toast.LENGTH_SHORT).show() }, LinearLayout.LayoutParams(0,dp(48),1f).apply{leftMargin=dp(5)})
+        leasePanel.addView(leaseRow, LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(6)})
+        leaseScanResult = ArthSaathiV7Design.text(this,"No lease document scanned yet.",9.5f,ArthSaathiV7Design.MUTED)
+        leasePanel.addView(leaseScanResult,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        body.addView(leasePanel,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(8)})
+
+        val invoicePanel = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; background=ArthSaathiV7Design.card(this@V7NativeModuleActivity,Color.WHITE,14);setPadding(dp(10),dp(10),dp(10),dp(10)) }
+        invoicePanel.addView(ArthSaathiV7Design.text(this,"Trade Credit / Udhaar invoice",14f,ArthSaathiV7Design.NAVY,true))
+        invoicePanel.addView(ArthSaathiV7Design.text(this,"Attach or scan an invoice/QR where available.",10f,ArthSaathiV7Design.MUTED))
+        val invRow=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
+        invRow.addView(button("Choose Invoice"){val pick=Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="image/*";addCategory(Intent.CATEGORY_OPENABLE);putExtra(Intent.EXTRA_MIME_TYPES,arrayOf("image/*","application/pdf"));addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)};startActivityForResult(pick,704)},LinearLayout.LayoutParams(0,dp(48),1f))
+        invRow.addView(button("Scan Invoice"){val take=Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);if(take.resolveActivity(packageManager)!=null)startActivityForResult(take,705)else Toast.makeText(this,"Camera is not available.",Toast.LENGTH_SHORT).show()},LinearLayout.LayoutParams(0,dp(48),1f).apply{leftMargin=dp(5)})
+        invoicePanel.addView(invRow,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(6)})
+        invoiceScanResult=ArthSaathiV7Design.text(this,"No invoice scanned yet.",9.5f,ArthSaathiV7Design.MUTED)
+        invoicePanel.addView(invoiceScanResult,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        body.addView(invoicePanel,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(8)})
         val startDate=field("Start / registration date").apply{setText("Start date: "+java.text.SimpleDateFormat("dd MMM yyyy",java.util.Locale.getDefault()).format(java.util.Date()))}
         body.addView(startDate,LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
         val preview=ArthSaathiV7Design.text(this,"Enter the terms and tap Calculate to preview.",10.5f,ArthSaathiV7Design.NAVY)
@@ -455,7 +482,10 @@ class V7NativeModuleActivity : V7SessionActivity() {
             if(roi<0||roi>100){customRoi.error="ROI must be 0–100%";return@button}
             val months=listOf(3,6,9,12,18,24,36,48,60)[tenureSpinner.selectedItemPosition];val method=if(isLease)"RENTAL_DUES" else methodSpinner.selectedItem.toString().uppercase().replace(" ","_");val periodic=when(frequencySpinner.selectedItemPosition){0->1;1->3;2->6;else->12};val mr=roi/1200.0
             val emi=if(!isLease&&method=="EMI"){if(mr==0.0)a/months else a*mr*Math.pow(1+mr,months.toDouble())/(Math.pow(1+mr,months.toDouble())-1)}else 0.0;val interest=if(isLease)0.0 else a*roi/100.0*months/12.0
-            val relType=when(creditType.selectedItemPosition){1->"TRADE_CREDIT";2->"RENTAL_LEASE";else->"INFORMAL_CREDIT"};val rel=V7Records.relationship(this,people[personSpinner.selectedItemPosition].optString("id"),relType,"RECEIVABLE",a,roi,method,"")
+            val relType=when(creditType.selectedItemPosition){1->"TRADE_CREDIT";2->"RENTAL_LEASE";else->"INFORMAL_CREDIT"};val direction=if(directionSpinner.selectedItemPosition==0)"RECEIVABLE" else "PAYABLE";val rel=V7Records.relationship(this,people[personSpinner.selectedItemPosition].optString("id"),relType,direction,a,roi,method,if(isLease)leaseExtractedText else "")
+            if(isLease&&leaseDocumentUri.isBlank()){Toast.makeText(this,"Please attach or scan the lease deed / rent agreement.",Toast.LENGTH_LONG).show();return@button}
+            if(creditType.selectedItemPosition==1){rel.put("invoiceDocumentUri",invoiceDocumentUri);rel.put("invoiceExtractedText",invoiceExtractedText);rel.put("invoiceScanned",invoiceDocumentUri.isNotBlank())}
+            if(isLease){rel.put("securityDeposit",deposit.text.toString().toDoubleOrNull()?:0.0);rel.put("leaseEndDate",leaseEnd.text.toString().trim());rel.put("leaseDocumentUri",leaseDocumentUri);rel.put("leaseExtractedText",leaseExtractedText);rel.put("leaseDocumentScanned",true)}
             rel.put("creditType",creditType.selectedItem.toString());rel.put("tenureMonths",months);rel.put("frequency",frequencySpinner.selectedItem.toString());rel.put("periodMonths",periodic);rel.put("guarantorId",if(guarantorSpinner.selectedItemPosition>0)people[guarantorSpinner.selectedItemPosition-1].optString("id") else "");rel.put("lendingMethod",lendingMethod.selectedItem.toString().uppercase().replace(" ","_"));rel.put("emiAmount",emi);rel.put("estimatedInterest",interest);rel.put("startDate",startDate.text.toString().removePrefix("Start date: ").trim());rel.put("firstDueDate",startDate.text.toString().removePrefix("Start date: ").trim());rel.put("scheduleStatus","CALCULATED")
             V7Core.replace(this,V7Core.Keys.RELATIONSHIPS,rel)
             Toast.makeText(this,"New credit account registered.",Toast.LENGTH_SHORT).show()
@@ -482,6 +512,8 @@ class V7NativeModuleActivity : V7SessionActivity() {
         section("Repayment Schedule", "Term: ${rel.optInt("tenureMonths")} months\nFrequency: ${rel.optString("frequency")}\nEMI / periodic amount: ₹%.2f\nEstimated interest: ₹%.2f\nFirst due date: %s\nSchedule status: %s".format(rel.optDouble("emiAmount"),rel.optDouble("estimatedInterest"),rel.optString("firstDueDate"),rel.optString("scheduleStatus").ifBlank{"Not calculated"}))
         section("Guarantor", if(guarantor==null) "No guarantor recorded." else "Name: ${guarantor.optString("name")}\nMobile: ${guarantor.optString("mobile")}\nPAN: ${guarantor.optString("pan")}\nGSTIN: ${guarantor.optString("gstin")}")
         val docs = "Consent required: ${rel.optBoolean("consentRequired",true)}\nLease document: ${if(rel.optString("leaseDocumentUri").isBlank())"Not attached" else "Attached"}\nTrade invoice: ${if(rel.optString("invoiceDocumentUri").isBlank())"Not attached" else "Attached"}"
+        if(nature=="Rental / Lease") section("Lease Terms", "Security deposit: ₹%.2f\nLease end date: %s".format(rel.optDouble("securityDeposit"),rel.optString("leaseEndDate").ifBlank{"Not recorded"}))
+        if(nature=="Trade Credit / Udhaar") section("Trade Invoice", "Invoice attached: ${rel.optBoolean("invoiceScanned",false)}\nScanned text available: ${rel.optString("invoiceExtractedText").isNotBlank()}")
         section("Documents & Consent", docs)
         body.addView(ArthSaathiV7Design.section(this,"Repayment Transactions","Every recorded repayment linked to this account."))
         val payments=V7Core.all(this,V7Core.Keys.REPAYMENTS).filter{it.optString("relationshipId")==id}.sortedByDescending{it.optLong("timestamp")}
