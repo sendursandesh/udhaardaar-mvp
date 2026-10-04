@@ -128,15 +128,15 @@ class V7HomeActivity : V7SessionActivity() {
         )
 
         addGrid(root, listOf(
-            Triple("₹", "Give / Take Money", "Record credit & loans") to { open("CREDIT") },
+            Triple("₹", "Loans & Udhaar", "Give, receive & track credit") to { open("CREDIT") },
             Triple("↻", "Collect / Pay Dues", "Repayments & outstanding") to { open("REPAYMENT") },
             Triple("▣", "My Assets & Property", "Property, gold, deposits & more") to { open("ASSET_VAULT") },
-            Triple("◆", "Insurance & Protection", "Policies, family & alerts") to { open("INSURANCE") },
-            Triple("▥", "Investments & Returns", "Investments, MIS & growth") to { openModule("GROW") },
-            Triple("♜", "Will, Inheritance & Claims", "Family wealth after you") to { openTool("WILL") },
+            Triple("◆", "Insurance & Protection", "Policies, renewals & claims") to { open("INSURANCE") },
+            Triple("▥", "Investments & Returns", "Portfolio, MIS & growth") to { openModule("GROW") },
+            Triple("♜", "Will & Inheritance", "Plan family assets & claims") to { openTool("WILL") },
             Triple("⚖", "Legal Help & Claims", "Legal help and advocates") to { openModule("LEGAL") },
-            Triple("●", "Nominee & Family", "Nominees and access") to { openTool("PEOPLE") },
-            Triple("✦", "My Money Report", "Assets, dues & benefits") to { openTool("MIS") }
+            Triple("●", "Nominee & Family", "Choose who can receive assets") to { openTool("NOMINEE") },
+            Triple("✦", "My Money Report", "Assets, dues, returns & benefits") to { openTool("MIS") }
         ))
 
         root.addView(
