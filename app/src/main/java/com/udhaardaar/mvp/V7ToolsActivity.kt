@@ -484,7 +484,7 @@ class V7ToolsActivity : V7SessionActivity() {
         val out=ArthSaathiV7Design.text(this,"",11f,ArthSaathiV7Design.NAVY)
         val assetChart=DonutView(this)
         val portfolioChart=DonutView(this)
-        assetChart.layoutParams=LinearLayout.LayoutParams(-1,dp(270)).apply{topMargin=dp(8)}
+        assetChart.layoutParams=LinearLayout.LayoutParams(-1,dp(360)).apply{topMargin=dp(8)}
         portfolioChart.layoutParams=LinearLayout.LayoutParams(-1,dp(270)).apply{topMargin=dp(8)}
         r.addView(ArthSaathiV7Design.section(this,"Your Numbers","Assets, liabilities, dues, portfolio and benefits."))
         r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
