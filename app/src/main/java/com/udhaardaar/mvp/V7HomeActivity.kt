@@ -71,19 +71,21 @@ class V7HomeActivity : V7SessionActivity() {
         root.addView(welcome, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
         val hero = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(15), dp(13), dp(15), dp(13))
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(11), dp(14), dp(11))
             background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                intArrayOf(ArthSaathiV7Design.NAVY_3, ArthSaathiV7Design.NAVY)).apply { cornerRadius = dp(18).toFloat() }
+                intArrayOf(ArthSaathiV7Design.NAVY_3, ArthSaathiV7Design.NAVY)).apply { cornerRadius = dp(16).toFloat() }
         }
-        hero.addView(ArthSaathiV7Design.text(this, "Plan Today", 20f, Color.WHITE, true))
-        hero.addView(ArthSaathiV7Design.text(this, "For a Brighter Tomorrow", 12f, ArthSaathiV7Design.GOLD_2, true))
-        hero.addView(ArthSaathiV7Design.text(this, ArthSaathiV7Design.PROMISE, 10.5f, ArthSaathiV7Design.GOLD_PALE),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+        hero.addView(ArthSaathiV7Design.logo(this, 46))
+        val heroWords = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), 0, 0, 0) }
+        heroWords.addView(ArthSaathiV7Design.text(this, "Your Money. Your Records.", 14f, Color.WHITE, true))
+        heroWords.addView(ArthSaathiV7Design.text(this, "Your Rights.", 11f, ArthSaathiV7Design.GOLD_2, true))
+        hero.addView(heroWords)
         root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
         val m = V7Core.metrics(this)
-        root.addView(ArthSaathiV7Design.section(this, "Your Financial Snapshot", "Live from your recorded ArthSaathi data. At a glance. In control. Always."),
+        root.addView(ArthSaathiV7Design.section(this, "Financial Snapshot"),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
         val stats = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         listOf("₹ %.2f".format(m.optDouble("assets")) to "Total Assets", m.optInt("activeCredits").toString() to "Active Credits", "₹ %.2f".format(m.optDouble("liabilities")) to "Liabilities")
@@ -99,24 +101,22 @@ class V7HomeActivity : V7SessionActivity() {
             }
         root.addView(stats)
 
-        root.addView(ArthSaathiV7Design.section(this, "Major Journeys", "One function. One logical home."),
+        root.addView(ArthSaathiV7Design.section(this, "What do you want to do?"),
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
         addGrid(root, listOf(
-            Triple("₹", "Register Credit", "Record money relationships") to { open("CREDIT") },
-            Triple("↻", "Repayment", "Track dues and repayments") to { open("REPAYMENT") },
-            Triple("▣", "Asset Vault", "Record what you own") to { open("ASSET_VAULT") },
-            Triple("◆", "Protect", "Insurance and protection") to { open("INSURANCE") },
-            Triple("▥", "Grow", "Portfolio and financial intelligence") to { openModule("GROW") },
-            Triple("▤", "Legal & Claims", "Protect and claim what matters") to { open("LEGACY") }
+            Triple("₹", "Register Credit", "") to { open("CREDIT") },
+            Triple("↻", "Repayment", "") to { open("REPAYMENT") },
+            Triple("▣", "Assets", "") to { open("ASSET_VAULT") },
+            Triple("◆", "Protect", "") to { open("INSURANCE") },
+            Triple("▥", "Grow", "") to { openModule("GROW") },
+            Triple("▤", "Legal & Claims", "") to { open("LEGACY") }
         ))
 
         val footer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             setPadding(dp(8), dp(13), dp(8), dp(5))
         }
-        footer.addView(ArthSaathiV7Design.text(this, "ArthSaathi", 18f, ArthSaathiV7Design.NAVY, true).apply { gravity = Gravity.CENTER })
-        footer.addView(ArthSaathiV7Design.text(this, ArthSaathiV7Design.TAGLINE, 10f, ArthSaathiV7Design.GOLD, true).apply { gravity = Gravity.CENTER })
-        footer.addView(ArthSaathiV7Design.text(this, "Organise Today  •  Make Informed Choices  •  Protect Tomorrow", 9f, ArthSaathiV7Design.MUTED).apply { gravity = Gravity.CENTER })
+        footer.addView(ArthSaathiV7Design.text(this, "ArthSaathi", 15f, ArthSaathiV7Design.NAVY, true).apply { gravity = Gravity.CENTER })
         root.addView(footer)
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
     }
