@@ -296,9 +296,9 @@ class V7NativeModuleActivity : V7SessionActivity() {
         val people = V7Core.all(this, V7Core.Keys.PEOPLE)
         val labels = if (people.isEmpty()) listOf("No person — create one in Record") else people.map { it.optString("name") + " • " + it.optString("mobile") }
         val personSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
-        body.addView(ArthSaathiV7Design.fieldGroup(this, "Person / Business", personSpinner, true), LinearLayout.LayoutParams(-1, dp(76)).apply { topMargin = dp(4) })
+        body.addView(labelledSpinner("Person / Business", personSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(4) })
         val creditType = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Personal Loan / Hand Loan", "Trade Credit / Udhaar", "Rental / Lease")) }
-        body.addView(ArthSaathiV7Design.fieldGroup(this, "What are you recording?", creditType, true), LinearLayout.LayoutParams(-1, dp(76)).apply { topMargin = dp(4) })
+        body.addView(labelledSpinner("What are you recording?", creditType), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(4) })
         val guarantorLabels = listOf("No guarantor") + people.map { it.optString("name") + " • " + it.optString("mobile") }
         val guarantorSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, guarantorLabels) }
         val guarantorBox = labelledSpinner("Guarantor (optional)", guarantorSpinner)
