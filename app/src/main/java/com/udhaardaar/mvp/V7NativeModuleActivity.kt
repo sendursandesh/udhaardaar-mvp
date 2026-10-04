@@ -33,6 +33,7 @@ class V7NativeModuleActivity : V7SessionActivity() {
     private lateinit var recordCity: EditText
     private lateinit var recordDistrict: EditText
     private lateinit var recordState: EditText
+    private lateinit var profilePreview: ImageView
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -41,6 +42,7 @@ class V7NativeModuleActivity : V7SessionActivity() {
             if (uri != null) {
                 runCatching { contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
                 pendingPhotoUri = uri.toString()
+                profilePreview.setImageURI(uri)
             } else pendingPhotoUri = ""
             Toast.makeText(this, if (pendingPhotoUri.isNotBlank()) "Profile picture selected." else "No picture selected.", Toast.LENGTH_SHORT).show()
         } else if (requestCode == 701 && resultCode == RESULT_OK) {
@@ -50,6 +52,7 @@ class V7NativeModuleActivity : V7SessionActivity() {
                     val file = File(filesDir, "profile_" + V7Core.id("PHOTO") + ".jpg")
                     file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, it) }
                     pendingPhotoUri = FileProvider.getUriForFile(this, packageName + ".fileprovider", file).toString()
+                    profilePreview.setImageBitmap(bitmap)
                 }.onFailure { pendingPhotoUri = "" }
             }
             Toast.makeText(this, if (pendingPhotoUri.isNotBlank()) "Camera photo captured." else "Camera photo could not be saved.", Toast.LENGTH_SHORT).show()
@@ -132,9 +135,34 @@ class V7NativeModuleActivity : V7SessionActivity() {
         recordDistrict = field("District")
         recordState = field("State")
 
-        listOf(recordName,recordMobile,recordPan,recordAadhaar,recordGstin,recordEmail,recordAddress,recordPin,recordCity,recordDistrict,recordState).forEach {
-            body.addView(it, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        val fields = listOf(
+            "Full name" to recordName,
+            "Mobile number" to recordMobile,
+            "PAN" to recordPan,
+            "Aadhaar" to recordAadhaar,
+            "GSTIN" to recordGstin,
+            "Email" to recordEmail,
+            "Address" to recordAddress,
+            "PIN code" to recordPin,
+            "City / Town" to recordCity,
+            "District" to recordDistrict,
+            "State" to recordState
+        )
+        fields.forEach { (label, input) ->
+            body.addView(
+                ArthSaathiV7Design.fieldGroup(this, label, input, label == "Full name" || label == "Mobile number"),
+                LinearLayout.LayoutParams(-1, dp(76)).apply { topMargin = dp(2) }
+            )
         }
+
+        profilePreview = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(92), dp(92)).apply { gravity = Gravity.CENTER; topMargin = dp(5) }
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, ArthSaathiV7Design.GOLD_PALE, 46)
+            contentDescription = "Profile picture preview"
+            setImageResource(R.drawable.arthsaathi_logo)
+        }
+        body.addView(profilePreview)
 
         body.addView(button("Choose Profile Picture") {
             val pick = android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -204,6 +232,7 @@ class V7NativeModuleActivity : V7SessionActivity() {
         recordDistrict.setText(p.optString("district"))
         recordState.setText(p.optString("state"))
         pendingPhotoUri = p.optString("photoUri")
+        if (pendingPhotoUri.isNotBlank()) runCatching { profilePreview.setImageURI(android.net.Uri.parse(pendingPhotoUri)) }
     }
 
     private fun renderRecordList(body: LinearLayout) {
@@ -222,8 +251,19 @@ class V7NativeModuleActivity : V7SessionActivity() {
                 background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 10)
                 setPadding(dp(9), dp(5), dp(5), dp(5))
             }
-            val info = ArthSaathiV7Design.text(this, p.optString("name") + "  •  " + p.optString("mobile"), 11.5f, ArthSaathiV7Design.NAVY, true)
-            row.addView(info, LinearLayout.LayoutParams(0, dp(48), 1f))
+            val avatar = ImageView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, ArthSaathiV7Design.GOLD_PALE, 22)
+                contentDescription = "Profile picture"
+                setImageResource(R.drawable.arthsaathi_logo)
+                p.optString("photoUri").takeIf { it.isNotBlank() }?.let { uri ->
+                    runCatching { setImageURI(android.net.Uri.parse(uri)) }
+                }
+            }
+            row.addView(avatar)
+            val info = ArthSaathiV7Design.text(this, p.optString("name") + "\n" + p.optString("mobile"), 11.5f, ArthSaathiV7Design.NAVY, true)
+            row.addView(info, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(8) })
             row.addView(button("Edit") { loadPerson(p) }, LinearLayout.LayoutParams(dp(82), dp(44)))
             box.addView(row, LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(5) })
         }
