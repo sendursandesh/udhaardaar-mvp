@@ -31,7 +31,7 @@ class V7FinalAcceptanceInstrumentedTest {
         assertEquals(V7MasterVisionRegistry.Module.entries.size,modules.size)
         assertEquals(modules.size,modules.map{it.key}.toSet().size)
         assertTrue(V7MasterVisionRegistry.native().map{it.key}.containsAll(listOf("RECORD","CREDIT","ASSETS","LIABILITIES","REPAYMENT")))
-        assertTrue(V7MasterVisionRegistry.legacyBacked().isNotEmpty())
+        assertTrue(V7MasterVisionRegistry.legacyBacked().isEmpty())
     }
 
     @Test fun eventBusReceivesCanonicalRecordChanges(){
@@ -188,26 +188,31 @@ class V7FinalAcceptanceInstrumentedTest {
 
     @Test fun allRegisteredV7ModulesHaveLaunchableEntryPoint() {
         V7MasterVisionRegistry.all().forEach { module ->
-            if (module.ownership == V7MasterVisionRegistry.Ownership.NATIVE) {
-                // V7ModuleActivity is a router for native modules and intentionally
-                // finishes after handing off to the canonical native activity.
-                ActivityScenario.launch<V7NativeModuleActivity>(
-                    Intent(c, V7NativeModuleActivity::class.java).putExtra("module", module.key)
-                ).use { scenario ->
-                    scenario.onActivity { a ->
-                        assertTrue("Native module not visible: " + module.key, a.window.decorView.isShown)
+            when (module.destination) {
+                V7MasterVisionRegistry.Destination.NATIVE_MODULE ->
+                    ActivityScenario.launch<V7NativeModuleActivity>(
+                        Intent(c, V7NativeModuleActivity::class.java).putExtra("module", module.key)
+                    ).use { scenario ->
+                        scenario.onActivity { a ->
+                            assertTrue("Native module not visible: " + module.key, a.window.decorView.isShown)
+                        }
                     }
-                }
-            } else {
-                ActivityScenario.launch<V7ModuleActivity>(
-                    Intent(c, V7ModuleActivity::class.java).putExtra("module", module.key)
-                ).use { scenario ->
-                    scenario.onActivity { a ->
-                        assertTrue("Legacy-adapter module not visible: " + module.key, a.window.decorView.isShown)
+                V7MasterVisionRegistry.Destination.MODULE_ROUTER ->
+                    ActivityScenario.launch<V7ModuleActivity>(
+                        Intent(c, V7ModuleActivity::class.java).putExtra("module", module.key)
+                    ).use { scenario ->
+                        scenario.onActivity { a ->
+                            assertTrue("V7 module router not visible: " + module.key, a.window.decorView.isShown)
+                        }
                     }
-                }
             }
         }
+    }
+
+    @Test fun noLegacyRouteArtifactsRemainInV7Contract() {
+        assertTrue(V7MasterVisionRegistry.legacyBacked().isEmpty())
+        assertTrue(V7MasterVisionRegistry.all().all { it.ownership != V7MasterVisionRegistry.Ownership.NATIVE || it.destination == V7MasterVisionRegistry.Destination.NATIVE_MODULE })
+        assertEquals(V7MasterVisionRegistry.all().size, V7MasterVisionRegistry.all().map { it.key }.toSet().size)
     }
 
     private fun allText(v:View):List<String>{
