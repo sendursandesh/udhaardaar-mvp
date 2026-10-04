@@ -49,19 +49,4 @@ object V7AccountStore {
         store(c).remove(SESSION, SESSION_ID)
         c.getSharedPreferences("v7_session_guard", Context.MODE_PRIVATE).edit().clear().apply()
     }
-
-    /**
-     * One-time migration of the old account preference into encrypted V7 storage.
-     * The old preference is cleared after successful migration.
-     */
-    fun migrateLegacyPreferences(c: Context) {
-        val legacy = c.getSharedPreferences("udhaardaar_accounts", Context.MODE_PRIVATE)
-        val mobile = legacy.getString("current_mobile", "").orEmpty().trim()
-        if (mobile.isNotBlank() && account(c, mobile) == null) {
-            val name = legacy.getString("name_$mobile", "User").orEmpty().ifBlank { "User" }
-            create(c, name, mobile)
-        }
-        if (mobile.isNotBlank() && !isLoggedIn(c)) login(c, mobile)
-        legacy.edit().clear().commit()
-    }
 }
