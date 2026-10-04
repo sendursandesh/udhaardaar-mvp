@@ -112,7 +112,7 @@ class V7HomeActivity : V7SessionActivity() {
         val stats = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         listOf(
             "₹ %.2f".format(m.optDouble("assets")) to "Total Assets",
-            "₹ %.2f".format(m.optDouble("liabilities")) to "Active Credits"
+            "₹ %.2f".format(m.optDouble("activeCredits")) to "Active Credits"
         ).forEachIndexed { i, pair ->
             val stat = ArthSaathiV7Design.stat(this, pair.first, pair.second,
                 if (i == 1) ArthSaathiV7Design.GREEN else ArthSaathiV7Design.GOLD)
