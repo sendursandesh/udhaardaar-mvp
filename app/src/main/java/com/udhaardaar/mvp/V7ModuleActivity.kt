@@ -121,6 +121,7 @@ class V7ModuleActivity : V7SessionActivity() {
             Triple("◌", "What-If Calculator", "Try future scenarios"),
             Triple("⌁", "Market Values", "Record current market values"),
             Triple("⇄", "Accounting Export", "Tally / ERP data export"),
+            Triple("◉", "Money Guide", "Simple financial guidance"),
             Triple("▤", "Detailed Reports", "Statements & summaries")
         ), listOf(
             { openTool("PORTFOLIO") },
@@ -129,6 +130,7 @@ class V7ModuleActivity : V7SessionActivity() {
             { openTool("SCENARIO") },
             { openTool("MARKET") },
             { openTool("INTEGRATION") },
+            { openTool("AI") },
             { openTool("REPORTS") }
         ))
     }
