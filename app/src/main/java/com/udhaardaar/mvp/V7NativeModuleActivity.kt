@@ -322,6 +322,11 @@ class V7NativeModuleActivity : V7SessionActivity() {
         body.addView(guarantorBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
         val amount = field("Amount / Rent due (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
         body.addView(amount, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        val lendingMethod = Spinner(this).apply {
+            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
+                listOf("UPI","Cash","NEFT","Bank Transfer","Cheque","NACH","Other"))
+        }
+        body.addView(labelledSpinner("How was the money given / paid?", lendingMethod), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
         val roiSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("0%","6%","8%","10%","12%","15%","18%","24%","36%","Custom")) }
         val roiBox = labelledSpinner("Interest / ROI", roiSpinner)
         body.addView(roiBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
@@ -448,6 +453,7 @@ class V7NativeModuleActivity : V7SessionActivity() {
             val rel = V7Records.relationship(this, people[personSpinner.selectedItemPosition].optString("id"), relType, "RECEIVABLE", a, roi, method, if (isLease) leaseExtractedText else "")
             rel.put("creditType", creditType.selectedItem.toString()); rel.put("tenureMonths",months); rel.put("frequency",frequencySpinner.selectedItem.toString()); rel.put("periodMonths",periodic)
             rel.put("guarantorId",if(!isLease && guarantorSpinner.selectedItemPosition>0) people[guarantorSpinner.selectedItemPosition-1].optString("id") else "")
+            rel.put("lendingMethod", lendingMethod.selectedItem.toString().uppercase().replace(" ","_"))
             rel.put("emiAmount",emi); rel.put("estimatedInterest",interest); rel.put("startDate",startDate.text.toString().removePrefix("Start date: ").trim()); rel.put("firstDueDate",startDate.text.toString().removePrefix("Start date: ").trim()); rel.put("scheduleStatus","CALCULATED")
             if (isLease) { rel.put("securityDeposit", deposit.text.toString().toDoubleOrNull() ?: 0.0); rel.put("leaseEndDate", leaseEnd.text.toString().trim()); rel.put("leaseDocumentUri", leaseDocumentUri); rel.put("leaseExtractedText", leaseExtractedText); rel.put("leaseDocumentScanned", true) }
             if (creditType.selectedItemPosition == 1) { rel.put("invoiceDocumentUri", invoiceDocumentUri); rel.put("invoiceExtractedText", invoiceExtractedText); rel.put("invoiceScanned", invoiceDocumentUri.isNotBlank()) }
