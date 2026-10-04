@@ -229,8 +229,10 @@ class V7ToolsActivity : V7SessionActivity() {
             val y=years.text.toString().toDoubleOrNull()
             val a=contribution.text.toString().toDoubleOrNull()?:0.0
             if(b==null||b<0||g==null||y==null||y<=0){out.text="Enter valid base value, growth and period.";return@goldButton}
-            val factor=Math.pow(1.0+g/100.0,y)
-            val future=b*factor+a*((factor-1.0)/(g/100.0).takeIf{Math.abs(it)>1e-9}?:y)
+            val baseValue=b!!; val growthValue=g!!; val yearsValue=y!!
+            val factor=Math.pow(1.0+growthValue/100.0,yearsValue)
+            val denominator=growthValue/100.0
+            val future=baseValue*factor+a*((factor-1.0)/(denominator.takeIf{Math.abs(it)>1e-9}?:yearsValue))
             out.text="Scenario value after %.1f years: ₹%.2f".format(y,future)
         },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
         r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
