@@ -151,9 +151,9 @@ class V7ModuleActivity : V7SessionActivity() {
     private fun ttmm(root: LinearLayout) {
         addGrid(root, listOf(
             Triple("👥", "Create / Open Group", "Groups & members"),
-            Triple("₹", "Record Contribution", "Contributions"),
-            Triple("↔", "Settle", "Settle balances"),
-            Triple("▤", "History", "Past expenses")
+            Triple("₹", "Add Shared Expense", "Who paid, amount & split"),
+            Triple("↔", "See Who Owes", "Balances to settle"),
+            Triple("▤", "Expense History", "Past group expenses")
         ), listOf(
             { openTool("TTMM_CREATE") },
             { openTool("TTMM_CONTRIBUTION") },
