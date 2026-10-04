@@ -23,6 +23,7 @@ object V7Core {
         const val INVOICES="v7_invoices"; const val PAYMENTS="v7_payments"; const val REVENUE="v7_revenue"
         const val SERVICES="v7_services"; const val PORTFOLIOS="v7_portfolios"; const val TTMM="v7_ttmm"
         const val QR="v7_qr"; const val TRADE="v7_trade"; const val FORMAL="v7_formal"; const val WILL="v7_will"
+        const val BENEFITS="v7_benefits"; const val CHARGE_CHECKS="v7_charge_checks"
         const val REPAYMENTS="v7_repayments"; const val FUNDING="v7_funding"
     }
 
