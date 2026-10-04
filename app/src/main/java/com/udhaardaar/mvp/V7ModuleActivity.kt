@@ -15,7 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
  * 1. One owner per major journey.
  * 2. Address/location is profile data, never a top-level module.
  * 3. No duplicate menu entries.
- * 4. MIS, Portfolio, Opportunity Cost, Market Data, Scenario, ERP/Tally and
+ * 4. MIS, Portfolio, Switch Analysis, Market Data, Scenario, ERP/Tally and
  *    Reports are distinct tools with distinct destinations.
  * 5. Every user-facing destination is V7-owned; no legacy compatibility route exists.
  */
@@ -39,20 +39,20 @@ class V7ModuleActivity : V7SessionActivity() {
 
         val title = when (key) {
             "PROTECT" -> "Protect"
-            "GROW" -> "Grow — Financial Intelligence"
-            "TTMM" -> "TTMM — Share & Settle"
-            "QR_KHATA" -> "QR Udhaar Khata"
+            "GROW" -> "Grow"
+            "TTMM" -> "TTMM"
+            "QR_KHATA" -> "QR Khata"
             "LEGAL" -> "Legal & Claims"
-            "MORE" -> "More Services"
+            "MORE" -> "More"
             else -> key
         }
         val sub = when (key) {
-            "PROTECT" -> "Insurance, documents, alerts and protection actions."
-            "GROW" -> "Portfolio, MIS, scenarios, market data and integrations."
-            "TTMM" -> "Shared expenses, contributions, settlements and history."
-            "QR_KHATA" -> "Scan, record and maintain a consented merchant credit ledger."
-            "LEGAL" -> "Claims, legal assistance, advocates and financial AI."
-            else -> "Supporting ArthSaathi services."
+            "PROTECT" -> "Insurance & protection"
+            "GROW" -> "Portfolio & insights"
+            "TTMM" -> "Group expenses"
+            "QR_KHATA" -> "Scan & record credit"
+            "LEGAL" -> "Claims & legal help"
+            else -> "More financial tools"
         }
 
         val root = LinearLayout(this).apply {
@@ -87,7 +87,7 @@ class V7ModuleActivity : V7SessionActivity() {
         }
 
         root.addView(
-            ArthSaathiV7Design.goldButton(this, "Back to Financial Command Centre") { finish() },
+            ArthSaathiV7Design.goldButton(this, "Back to Home") { finish() },
             LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(13) }
         )
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
@@ -115,13 +115,13 @@ class V7ModuleActivity : V7SessionActivity() {
     private fun grow(root: LinearLayout) {
         // Exactly one entry for each intelligence function.
         addGrid(root, listOf(
-            Triple("◉", "Portfolio Intelligence", "Holdings, allocation, value and performance"),
-            Triple("▥", "MIS Dashboard", "Assets, liabilities, credit, revenue and financial position"),
-            Triple("↔", "Opportunity Cost", "AI-assisted analysis of possible portfolio switches"),
-            Triple("◌", "Scenarios", "Test assumptions before making a decision"),
-            Triple("⌁", "Market Data", "External values with source, timestamp and freshness"),
-            Triple("⇄", "ERP / Tally", "Explicit import/export and connector boundary"),
-            Triple("▤", "Reports", "Statements and generated financial reports")
+            Triple("◉", "Portfolio", "Holdings & returns"),
+            Triple("▥", "MIS", "Your financial position"),
+            Triple("↔", "Switch Analysis", "Compare alternatives"),
+            Triple("◌", "Scenarios", "Try scenarios"),
+            Triple("⌁", "Market Data", "Current market values"),
+            Triple("⇄", "ERP / Tally", "Import & export"),
+            Triple("▤", "Reports", "Statements & reports")
         ), listOf(
             { openTool("PORTFOLIO") },
             { openTool("MIS") },
@@ -136,10 +136,10 @@ class V7ModuleActivity : V7SessionActivity() {
     private fun protect(root: LinearLayout) {
         // Address deliberately omitted: it belongs to Profile/Record editing.
         addGrid(root, listOf(
-            Triple("☂", "Insurance", "Policies, renewal and nominee records"),
-            Triple("▣", "Documents", "Evidence, versions and expiry tracking"),
-            Triple("♡", "Family & Access", "People, relationships and authorised access"),
-            Triple("!", "Alerts", "Due dates, renewals and document actions")
+            Triple("☂", "Insurance", "Policies & nominees"),
+            Triple("▣", "Documents", "Important documents"),
+            Triple("♡", "Family & Access", "Family & access"),
+            Triple("!", "Alerts", "Due dates & reminders")
         ), listOf(
             { openTool("INSURANCE") },
             { openTool("DOCUMENTS") },
@@ -150,10 +150,10 @@ class V7ModuleActivity : V7SessionActivity() {
 
     private fun ttmm(root: LinearLayout) {
         addGrid(root, listOf(
-            Triple("👥", "Create / Open Group", "Shared expense group and members"),
-            Triple("₹", "Record Contribution", "Who paid, how much and for what"),
-            Triple("↔", "Settle", "Pending balances and settlement records"),
-            Triple("▤", "History", "Transparent expense and settlement history")
+            Triple("👥", "Create / Open Group", "Groups & members"),
+            Triple("₹", "Record Contribution", "Contributions"),
+            Triple("↔", "Settle", "Settle balances"),
+            Triple("▤", "History", "Past expenses")
         ), listOf(
             { openTool("TTMM_CREATE") },
             { openTool("TTMM_CONTRIBUTION") },
@@ -164,10 +164,10 @@ class V7ModuleActivity : V7SessionActivity() {
 
     private fun qr(root: LinearLayout) {
         addGrid(root, listOf(
-            Triple("▦", "Scan / Identify", "Capture party and transaction details"),
-            Triple("₹", "Record Khata", "Credit or repayment ledger entry"),
-            Triple("✓", "Consent", "Consent-controlled record mutation"),
-            Triple("↻", "Balance", "Outstanding and transaction history")
+            Triple("▦", "Scan / Identify", "Scan details"),
+            Triple("₹", "Record Khata", "Add entry"),
+            Triple("✓", "Consent", "Confirm consent"),
+            Triple("↻", "Balance", "Balance & history")
         ), listOf(
             { openTool("QR_SCAN") },
             { openTool("QR_RECORD") },
@@ -178,10 +178,10 @@ class V7ModuleActivity : V7SessionActivity() {
 
     private fun legal(root: LinearLayout) {
         addGrid(root, listOf(
-            Triple("⚖", "Legal Assistance", "Issue, parties, timeline and evidence"),
-            Triple("♙", "Advocate Directory", "Search by city and practice domain"),
-            Triple("▤", "Claim Assistance", "Ownership, nominee/heir and documents"),
-            Triple("◉", "AI Financial Advisor", "Answers from recorded financial information")
+            Triple("⚖", "Legal Assistance", "Cases & evidence"),
+            Triple("♙", "Advocate Directory", "Find an advocate"),
+            Triple("▤", "Claim Assistance", "Claims & documents"),
+            Triple("◉", "AI Financial Advisor", "Financial guidance")
         ), listOf(
             { openTool("LEGAL") },
             { openTool("ADVOCATE") },
@@ -192,14 +192,14 @@ class V7ModuleActivity : V7SessionActivity() {
 
     private fun more(root: LinearLayout) {
         addGrid(root, listOf(
-            Triple("CC", "ChargeCheck", "Sanctioned vs actual charges"),
-            Triple("LI", "Liability Vault", "Loans and other obligations"),
-            Triple("💳", "Revenue & Payments", "Service charges, invoices and payment records"),
-            Triple("BE", "Government Benefits", "Eligibility and benefit records"),
-            Triple("RE", "Rental & Lease", "Lease relationships and documents"),
-            Triple("⚙", "Security & Consent", "Consent, audit and protected sharing"),
-            Triple("◈", "Credit Score", "Consent-gated explainable internal score"),
-            Triple("⚖", "Will & Legacy", "Create a will record and link recorded assets")
+            Triple("CC", "ChargeCheck", "Compare charges"),
+            Triple("LI", "Liability Vault", "Loans & dues"),
+            Triple("💳", "Revenue & Payments", "Charges & payments"),
+            Triple("BE", "Government Benefits", "Benefits"),
+            Triple("RE", "Rental & Lease", "Leases"),
+            Triple("⚙", "Security & Consent", "Privacy & consent"),
+            Triple("◈", "Credit Score", "Explainable score"),
+            Triple("⚖", "Will & Legacy", "Will & legacy")
         ), listOf(
             { openTool("CHARGECHECK") },
             { startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", "LIABILITIES")) },
