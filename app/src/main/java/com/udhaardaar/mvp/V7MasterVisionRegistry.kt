@@ -40,7 +40,7 @@ object V7MasterVisionRegistry {
         LEGAL("LEGAL", "Legal Help & Claims", Ownership.ROUTER, Destination.MODULE_ROUTER,
             listOf(V7Core.Keys.LEGAL, V7Core.Keys.CLAIMS, V7Core.Keys.PROFESSIONALS)),
         MORE("MORE", "More Services", Ownership.ROUTER, Destination.MODULE_ROUTER,
-            listOf(V7Core.Keys.SERVICES, V7Core.Keys.REVENUE, V7Core.Keys.AUDIT))
+            listOf(V7Core.Keys.SERVICES, V7Core.Keys.REVENUE, V7Core.Keys.AUDIT, V7Core.Keys.BENEFITS, V7Core.Keys.CHARGE_CHECKS))
     }
 
     fun all(): List<Module> = Module.entries
