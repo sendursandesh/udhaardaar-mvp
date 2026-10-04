@@ -231,6 +231,10 @@ class V7ModuleActivity : V7SessionActivity() {
         ))
     }
 
+    private fun openModule(module: String) {
+        startActivity(Intent(this, V7ModuleActivity::class.java).putExtra("module", module))
+    }
+
     private fun openTool(tool: String) {
         startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", tool))
     }
