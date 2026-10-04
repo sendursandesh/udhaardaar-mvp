@@ -178,15 +178,15 @@ class V7ModuleActivity : V7SessionActivity() {
 
     private fun legal(root: LinearLayout) {
         addGrid(root, listOf(
-            Triple("⚖", "Legal Assistance", "Cases & evidence"),
-            Triple("♙", "Advocate Directory", "Find an advocate"),
-            Triple("▤", "Claim Assistance", "Claims & documents"),
-            Triple("◉", "AI Financial Advisor", "Financial guidance")
+            Triple("⚖", "Legal Help", "Cases, documents & evidence"),
+            Triple("♙", "Find an Advocate", "Search by city and legal area"),
+            Triple("▤", "Claim Assistance", "Claims & supporting documents"),
+            Triple("▤", "Inheritance Claims", "Family asset claim checklist")
         ), listOf(
             { openTool("LEGAL") },
             { openTool("ADVOCATE") },
             { openTool("CLAIM") },
-            { openTool("AI") }
+            { openTool("WILL") }
         ))
     }
 
