@@ -4,7 +4,7 @@ package com.udhaardaar.mvp
  * ArthSaathi V7 Option 2 — canonical product/navigation contract.
  *
  * This is the single user-facing taxonomy for the V7 master build.
- * Technical/internal names (MIS, TTMM, QR_KHATA, GROW, etc.) must not be
+ * Technical/internal names (MIS, GROUP_KHATA, QR_KHATA, GROW, etc.) must not be
  * exposed as unexplained primary navigation labels.
  */
 object ArthSaathiV7MasterVision {
@@ -21,7 +21,7 @@ object ArthSaathiV7MasterVision {
         Tile("My Assets & Property", "Property, gold, deposits & more", "▣", "ASSETS"),
         Tile("Insurance & Protection", "Policies, renewals & claims", "◆", "PROTECT"),
         Tile("Investments & Returns", "Invest, compare & track growth", "▥", "GROW"),
-        Tile("Group Expenses", "Share costs with friends & family", "👥", "TTMM"),
+        Tile("Group Khata", "Share costs with friends & family", "👥", "GROUP_KHATA"),
         Tile("Will, Inheritance & Claims", "Plan and claim family assets", "♜", "WILL"),
         Tile("Legal Help & Claims", "Find legal help and advocates", "⚖", "LEGAL"),
         Tile("More Financial Tools", "Khata, ChargeCheck & other tools", "•••", "MORE")
