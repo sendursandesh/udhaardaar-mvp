@@ -3,12 +3,49 @@ package com.udhaardaar.mvp
 import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
+import android.view.View
 import android.widget.*
 import com.journeyapps.barcodescanner.IntentIntegrator
 import com.journeyapps.barcodescanner.IntentResult
 import androidx.appcompat.app.AppCompatActivity
 
 class V7ToolsActivity : V7SessionActivity() {
+    private class DonutView(context: android.content.Context) : View(context) {
+        private val paint=Paint(Paint.ANTI_ALIAS_FLAG)
+        private val rect=RectF()
+        private var values:List<Pair<String,Double>> = emptyList()
+        private val palette=intArrayOf(0xFFD69408.toInt(),0xFF173B67.toInt(),0xFF5C8DB8.toInt(),0xFF7A9E5C.toInt(),0xFF9B6A8C.toInt(),0xFF8A7B5A.toInt())
+        fun setValues(v:List<Pair<String,Double>>) { values=v.filter{it.second>0}.take(6); invalidate() }
+        override fun onDraw(canvas:Canvas) {
+            super.onDraw(canvas)
+            val total=values.sumOf{it.second}
+            if(total<=0){paint.color=0xFF6B7280.toInt();paint.textSize=34f;canvas.drawText("No data",width/2f-55f,height/2f,paint);return}
+            val size=minOf(width,height)*0.56f
+            val left=(width-size)/2f
+            val top=24f
+            rect.set(left,top,left+size,top+size)
+            var angle=-90f
+            values.forEachIndexed{i,p->
+                val sweep=(p.second/total*360.0).toFloat()
+                paint.color=palette[i%palette.size];paint.style=Paint.Style.FILL;canvas.drawArc(rect,angle,sweep,true,paint);angle+=sweep
+            }
+            paint.color=0xFFFFFAF1.toInt();paint.style=Paint.Style.FILL
+            val hole=size*0.48f;val cx=left+size/2;val cy=top+size/2
+            canvas.drawCircle(cx,cy,hole/2,paint)
+            paint.color=0xFF173B67.toInt();paint.textSize=28f;paint.textAlign=Paint.Align.CENTER;canvas.drawText("100%",cx,cy+10,paint)
+            paint.textAlign=Paint.Align.LEFT
+            var y=top+size+38
+            values.forEachIndexed{i,p->
+                paint.color=palette[i%palette.size];canvas.drawCircle(18f,y-7,7f,paint)
+                paint.color=0xFF173B67.toInt();paint.textSize=20f
+                canvas.drawText(p.first + ": ₹" + "%.0f".format(p.second),32f,y,paint)
+                y+=28
+            }
+        }
+    }
     private var qrReferenceField: EditText? = null
     private var qrMerchantField: EditText? = null
 
@@ -383,17 +420,29 @@ class V7ToolsActivity : V7SessionActivity() {
         },LinearLayout.LayoutParams(-1,dp(46)).apply{topMargin=dp(6)});r.addView(status,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)});return r
     }
     private fun mis():LinearLayout{
-        val r=shell("MIS & Financial Command Centre","One connected view of assets, liabilities, credit, portfolio, revenue and records.")
+        val r=shell("My Money Report","See the numbers first, then the charts. This is your personal MIS / financial command centre.")
         val out=ArthSaathiV7Design.text(this,"",11f,ArthSaathiV7Design.NAVY)
-        r.addView(ArthSaathiV7Design.goldButton(this,"Refresh MIS"){
+        val assetChart=DonutView(this)
+        val portfolioChart=DonutView(this)
+        assetChart.layoutParams=LinearLayout.LayoutParams(-1,dp(270)).apply{topMargin=dp(8)}
+        portfolioChart.layoutParams=LinearLayout.LayoutParams(-1,dp(270)).apply{topMargin=dp(8)}
+        r.addView(ArthSaathiV7Design.section(this,"Your Numbers","Assets, liabilities, dues, portfolio and benefits."))
+        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        r.addView(ArthSaathiV7Design.section(this,"Asset Mix","See where your recorded assets are concentrated.").apply{setPadding(0,dp(10),0,0)})
+        r.addView(assetChart)
+        r.addView(ArthSaathiV7Design.section(this,"Investment Mix","See how your recorded portfolio is distributed.").apply{setPadding(0,dp(10),0,0)})
+        r.addView(portfolioChart)
+        fun refresh(){
             val m=V7MIS.snapshot(this)
-            out.text="Assets: ₹%.2f\nLiabilities: ₹%.2f\nReceivables: ₹%.2f\nPayables: ₹%.2f\nNet worth: ₹%.2f\nPortfolio: ₹%.2f (gain/loss ₹%.2f)\nActive credits: %d\nReconciled revenue: ₹%.2f\nRecorded payments: ₹%.2f\nInvoices: %d\nAudit events: %d".format(
-                m.optDouble("assets"),m.optDouble("liabilities"),m.optDouble("receivables"),m.optDouble("payables"),
-                m.optDouble("netWorth"),m.optDouble("portfolioValue"),m.optDouble("portfolioGain"),
-                m.optInt("activeCredits"),m.optDouble("reconciledRevenue"),m.optDouble("recordedPayments"),
-                m.optInt("invoiceCount"),m.optInt("auditEvents"))
-        },LinearLayout.LayoutParams(-1,dp(48)))
-        r.addView(out,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+            out.text="Total assets: ₹%.2f\nLiabilities: ₹%.2f\nReceivables: ₹%.2f\nPayables: ₹%.2f\nNet worth: ₹%.2f\nPortfolio value: ₹%.2f\nPortfolio gain/loss: ₹%.2f\nActive credits: %d\nBenefits/refunds: recorded in your benefit records\nRevenue reconciled: ₹%.2f".format(
+                m.optDouble("assets"),m.optDouble("liabilities"),m.optDouble("receivables"),m.optDouble("payables"),m.optDouble("netWorth"),m.optDouble("portfolioValue"),m.optDouble("portfolioGain"),m.optInt("activeCredits"),m.optDouble("reconciledRevenue"))
+            val assets=V7Core.all(this,V7Core.Keys.ASSETS).groupBy{it.optString("type","Other")}.map{it.key to it.value.sumOf{a->a.optDouble("currentValue",a.optDouble("value",0.0))}}
+            val holdings=V7Core.all(this,V7Core.Keys.HOLDINGS).groupBy{it.optString("category","Other")}.map{it.key to it.value.sumOf{h->h.optDouble("currentValue",0.0)}}
+            assetChart.setValues(assets)
+            portfolioChart.setValues(holdings)
+        }
+        r.addView(ArthSaathiV7Design.goldButton(this,"Refresh My Money Report"){refresh()},LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(10)})
+        refresh()
         return r
     }
     private fun score():LinearLayout{
