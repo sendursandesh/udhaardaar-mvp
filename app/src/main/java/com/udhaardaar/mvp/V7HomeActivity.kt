@@ -127,17 +127,16 @@ class V7HomeActivity : V7SessionActivity() {
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(2) }
         )
 
-        addGrid(root, listOf(
-            Triple("₹", "Loans & Udhaar", "Give, receive & track credit") to { open("CREDIT") },
-            Triple("↻", "Collect / Pay Dues", "Repayments & outstanding") to { open("REPAYMENT") },
-            Triple("▣", "My Assets & Property", "Property, gold, deposits & more") to { open("ASSET_VAULT") },
-            Triple("◆", "Insurance & Protection", "Policies, renewals & claims") to { open("INSURANCE") },
-            Triple("▥", "Investments & Returns", "Portfolio, MIS & growth") to { openModule("GROW") },
-            Triple("♜", "Will & Inheritance", "Plan family assets & claims") to { openTool("WILL") },
-            Triple("⚖", "Legal Help & Claims", "Legal help and advocates") to { openModule("LEGAL") },
-            Triple("●", "Nominee & Family", "Choose who can receive assets") to { openTool("NOMINEE") },
-            Triple("✦", "My Money Report", "Assets, dues, returns & benefits") to { openTool("MIS") }
-        ))
+        addGrid(root, ArthSaathiV7MasterVision.dashboard.map { tile ->
+            Triple(tile.icon, tile.title, tile.subtitle) to {
+                when (tile.route) {
+                    "CREDIT", "REPAYMENT", "ASSETS", "PROTECT" -> open(tile.route)
+                    "GROW", "LEGAL", "TTMM" -> openModule(tile.route)
+                    "WILL" -> openTool("WILL")
+                    "MORE" -> startActivity(Intent(this, V7ModuleActivity::class.java).putExtra("module", "MORE"))
+                }
+            }
+        })
 
         root.addView(
             ArthSaathiV7Design.bottomNav(this, "Home", mapOf(
@@ -188,9 +187,8 @@ class V7HomeActivity : V7SessionActivity() {
         val module = when (key) {
             "CREDIT" -> "CREDIT"
             "REPAYMENT" -> "REPAYMENT"
-            "ASSET_VAULT" -> "ASSETS"
-            "INSURANCE" -> "PROTECT"
-            "LEGACY" -> "LEGAL"
+            "ASSETS" -> "ASSETS"
+            "PROTECT" -> "PROTECT"
             else -> "MORE"
         }
         startActivity(Intent(this, V7ModuleActivity::class.java).putExtra("module", module))
