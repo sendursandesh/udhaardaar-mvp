@@ -57,6 +57,18 @@ object ArthSaathiV7MasterVision {
         )
     )
 
+    val creditCentre: List<String> = listOf(
+        "Loans & Udhaar",
+        "Register New Credit",
+        "Existing Credit Accounts",
+        "Personal / Hand Loan",
+        "Trade Credit / Udhaar",
+        "Rental / Lease",
+        "Active Accounts",
+        "Closed Accounts",
+        "Credit Account Details"
+    )
+
     fun creditFlow(type: String): List<String> = when {
         type == "Rental / Lease" -> listOf(
             "Choose person / business",
