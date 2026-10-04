@@ -1,65 +1,51 @@
 package com.udhaardaar.mvp
 
 /**
- * ArthSaathi V7 Step 6 — Master Vision module ownership.
+ * Canonical ArthSaathi V7 top-level navigation contract.
  *
- * This registry is the canonical V7 ownership map. A module marked NATIVE is
- * implemented by V7-owned code/data. Every user-facing V7 route is native and
- * must resolve only to a V7-owned destination. Legacy versions are not a route,
- * hyperlink, adapter or fallback for V7 screens.
+ * Every top-level module has exactly one V7 owner and one destination path.
+ * Sub-functions (MIS, reports, claims, TTMM actions, QR actions, etc.) are
+ * tools inside their owning module and are never separate legacy routes.
  */
 object V7MasterVisionRegistry {
-    enum class Ownership { NATIVE }
+    enum class Ownership { NATIVE, ROUTER }
+
+    enum class Destination { NATIVE_MODULE, MODULE_ROUTER }
 
     enum class Module(
         val key: String,
         val displayName: String,
         val ownership: Ownership,
+        val destination: Destination,
         val v7DataKeys: List<String>
     ) {
-        RECORD("RECORD", "Record & Identity", Ownership.NATIVE,
+        RECORD("RECORD", "Record & Identity", Ownership.NATIVE, Destination.NATIVE_MODULE,
             listOf(V7Core.Keys.PEOPLE, V7Core.Keys.BUSINESSES, V7Core.Keys.ADDRESSES, V7Core.Keys.DOCUMENTS)),
-        CREDIT("CREDIT", "Credit & Money Relationships", Ownership.NATIVE,
+        CREDIT("CREDIT", "Credit & Money Relationships", Ownership.NATIVE, Destination.NATIVE_MODULE,
             listOf(V7Core.Keys.RELATIONSHIPS, V7Core.Keys.REPAYMENTS, V7Core.Keys.PAYMENTS, V7Core.Keys.INVOICES)),
-        ASSETS("ASSETS", "Asset Vault", Ownership.NATIVE,
-            listOf(V7Core.Keys.ASSETS, V7Core.Keys.HOLDINGS, V7Core.Keys.NOMINEES)),
-        LIABILITIES("LIABILITIES", "Liability Vault", Ownership.NATIVE,
-            listOf(V7Core.Keys.LIABILITIES)),
-        PROTECT("PROTECT", "Insurance & Protection", Ownership.NATIVE,
-            listOf(V7Core.Keys.POLICIES, V7Core.Keys.CLAIMS, V7Core.Keys.NOMINEES, V7Core.Keys.DOCUMENTS)),
-        GROW("GROW", "Portfolio & Financial Intelligence", Ownership.NATIVE,
-            listOf(V7Core.Keys.PORTFOLIOS, V7Core.Keys.HOLDINGS, V7Core.Keys.MARKET, V7Core.Keys.SCENARIOS)),
-        LEGAL("LEGAL", "Legal & Claims", Ownership.NATIVE,
-            listOf(V7Core.Keys.LEGAL, V7Core.Keys.CLAIMS, V7Core.Keys.PROFESSIONALS)),
-        BENEFITS("BENEFITS", "Government Benefits", Ownership.NATIVE,
-            listOf(V7Core.Keys.SERVICES, V7Core.Keys.ALERTS)),
-        TTMM("TTMM", "Together • Share & Settle", Ownership.NATIVE,
-            listOf(V7Core.Keys.TTMM, V7Core.Keys.PAYMENTS)),
-        QR_KHATA("QR_KHATA", "QR Udhaar Khata", Ownership.NATIVE,
-            listOf(V7Core.Keys.QR, V7Core.Keys.RELATIONSHIPS)),
-        TRADE("TRADE", "Trade Credit", Ownership.NATIVE,
-            listOf(V7Core.Keys.TRADE, V7Core.Keys.INVOICES, V7Core.Keys.RELATIONSHIPS)),
-        FORMAL_CREDIT("FORMAL_CREDIT", "Formal Credit", Ownership.NATIVE,
-            listOf(V7Core.Keys.FORMAL, V7Core.Keys.RELATIONSHIPS, V7Core.Keys.DOCUMENTS)),
-        REPAYMENT("REPAYMENT", "Repayment Centre", Ownership.NATIVE,
+        REPAYMENT("REPAYMENT", "Repayment Centre", Ownership.NATIVE, Destination.NATIVE_MODULE,
             listOf(V7Core.Keys.REPAYMENTS, V7Core.Keys.RELATIONSHIPS, V7Core.Keys.CONSENTS)),
-        MIS("MIS", "MIS & Reports", Ownership.NATIVE,
-            listOf(V7Core.Keys.AUDIT, V7Core.Keys.RELATIONSHIPS, V7Core.Keys.ASSETS, V7Core.Keys.LIABILITIES)),
-        RENTAL("RENTAL", "Rental & Lease", Ownership.NATIVE,
-            listOf(V7Core.Keys.RELATIONSHIPS, V7Core.Keys.DOCUMENTS)),
-        GUARANTOR("GUARANTOR", "Guarantor", Ownership.NATIVE,
-            listOf(V7Core.Keys.PEOPLE, V7Core.Keys.RELATIONSHIPS, V7Core.Keys.DOCUMENTS)),
-        CHARGECHECK("CHARGECHECK", "ChargeCheck", Ownership.NATIVE,
-            listOf(V7Core.Keys.DOCUMENTS, V7Core.Keys.LIABILITIES)),
-        QR_SCANNER("QR_SCANNER", "QR Scanner", Ownership.NATIVE,
-            listOf(V7Core.Keys.QR))
+        ASSETS("ASSETS", "Asset Vault", Ownership.NATIVE, Destination.NATIVE_MODULE,
+            listOf(V7Core.Keys.ASSETS, V7Core.Keys.HOLDINGS, V7Core.Keys.NOMINEES)),
+        LIABILITIES("LIABILITIES", "Liability Vault", Ownership.NATIVE, Destination.NATIVE_MODULE,
+            listOf(V7Core.Keys.LIABILITIES)),
+        PROTECT("PROTECT", "Protect", Ownership.ROUTER, Destination.MODULE_ROUTER,
+            listOf(V7Core.Keys.POLICIES, V7Core.Keys.DOCUMENTS, V7Core.Keys.NOMINEES, V7Core.Keys.ALERTS)),
+        GROW("GROW", "Grow — Financial Intelligence", Ownership.ROUTER, Destination.MODULE_ROUTER,
+            listOf(V7Core.Keys.PORTFOLIOS, V7Core.Keys.HOLDINGS, V7Core.Keys.MARKET, V7Core.Keys.SCENARIOS)),
+        TTMM("TTMM", "TTMM — Share & Settle", Ownership.ROUTER, Destination.MODULE_ROUTER,
+            listOf(V7Core.Keys.TTMM, V7Core.Keys.PAYMENTS)),
+        QR_KHATA("QR_KHATA", "QR Udhaar Khata", Ownership.ROUTER, Destination.MODULE_ROUTER,
+            listOf(V7Core.Keys.QR, V7Core.Keys.RELATIONSHIPS, V7Core.Keys.CONSENTS)),
+        LEGAL("LEGAL", "Legal & Claims", Ownership.ROUTER, Destination.MODULE_ROUTER,
+            listOf(V7Core.Keys.LEGAL, V7Core.Keys.CLAIMS, V7Core.Keys.PROFESSIONALS)),
+        MORE("MORE", "More Services", Ownership.ROUTER, Destination.MODULE_ROUTER,
+            listOf(V7Core.Keys.SERVICES, V7Core.Keys.REVENUE, V7Core.Keys.AUDIT))
     }
 
     fun all(): List<Module> = Module.entries
-
     fun native(): List<Module> = all().filter { it.ownership == Ownership.NATIVE }
-
-    fun legacyBacked(): List<Module> = all().filter { it.ownership == Ownership.NATIVE }
-
+    fun legacyBacked(): List<Module> = emptyList()
     fun find(key: String): Module? = all().firstOrNull { it.key == key }
+    fun destination(key: String): Destination? = find(key)?.destination
 }
