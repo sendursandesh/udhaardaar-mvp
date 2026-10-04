@@ -169,7 +169,33 @@ object V7PortfolioEngine {
 object V7LocationEngine {
     data class Result(val pinValid:Boolean,val state:String,val district:String,val city:String,val postOffice:String,val message:String)
     fun validatePin(pin:String)=pin.matches(Regex("[1-9][0-9]{5}"))
-    fun resolvePin(pin:String):Result=if(!validatePin(pin))Result(false,"","","","","Enter a valid 6-digit PIN code.") else Result(true,"","","","","PIN format validated. Confirm locality from the postal/map source before saving.")
+    fun resolvePin(pin:String):Result=if(!validatePin(pin))Result(false,"","","","","Enter a valid 6-digit PIN code.") else Result(true,"","","","","PIN format valid. Use Find Address from PIN to fetch the postal area, then confirm it on the map.")
+    fun lookupPinAsync(context:Context,pin:String,onResult:(Result)->Unit) {
+        if(!validatePin(pin)){ onResult(Result(false,"","","","","Enter a valid 6-digit PIN code.")); return }
+        Thread {
+            try {
+                val url=java.net.URL("https://api.postalpincode.in/pincode/"+pin)
+                val connection=(url.openConnection() as java.net.HttpURLConnection).apply{requestMethod="GET";connectTimeout=8000;readTimeout=8000}
+                val body=connection.inputStream.bufferedReader().use{it.readText()}
+                connection.disconnect()
+                val root=org.json.JSONArray(body)
+                val first=root.optJSONObject(0)
+                val offices=first?.optJSONArray("PostOffice")
+                if(first?.optString("Status")!="Success"||offices==null||offices.length()==0){
+                    onResult(Result(false,"","","","","PIN not found. Please check the PIN code."))
+                    return@Thread
+                }
+                val office=offices.optJSONObject(0)
+                val city=office?.optString("Name").orEmpty()
+                val district=office?.optString("District").orEmpty()
+                val state=office?.optString("State").orEmpty()
+                val allNames=(0 until offices.length()).mapNotNull{offices.optJSONObject(it)?.optString("Name")?.takeIf{n->n.isNotBlank()}}.distinct().take(5).joinToString(", ")
+                onResult(Result(true,state,district,city,allNames,"PIN found. Please confirm the locality and map location before saving."))
+            } catch(e:Exception) {
+                onResult(Result(false,"","","","","PIN lookup is temporarily unavailable. You can still enter the address manually and confirm it on the map."))
+            }
+        }.start()
+    }
     fun mapIntent(context:Context,query:String):Intent=Intent(Intent.ACTION_VIEW,Uri.parse("geo:0,0?q="+Uri.encode(query)))
 }
 
