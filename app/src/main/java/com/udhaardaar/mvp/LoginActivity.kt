@@ -27,24 +27,24 @@ class LoginActivity : AppCompatActivity() {
     private fun shell(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
-        setPadding(dp(16),dp(16),dp(16),dp(26))
+        setPadding(dp(16),dp(12),dp(16),dp(24))
         background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(ArthSaathiV7Design.NAVY, ArthSaathiV7Design.NAVY_2, ArthSaathiV7Design.CREAM))
+            intArrayOf(ArthSaathiV7Design.GOLD_PALE, ArthSaathiV7Design.CREAM, Color.WHITE))
     }
 
     private fun brandBlock(r:LinearLayout) {
         val box=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER_HORIZONTAL; setPadding(0,dp(14),0,dp(10)) }
-        box.addView(ArthSaathiV7Design.logo(this,112))
-        box.addView(ArthSaathiV7Design.brand(this,30f,true))
-        box.addView(ArthSaathiV7Design.text(this,ArthSaathiV7Design.TAGLINE,12f,ArthSaathiV7Design.GOLD_2,true).apply { gravity=Gravity.CENTER })
-        box.addView(ArthSaathiV7Design.text(this,ArthSaathiV7Design.PILLARS,10f,ArthSaathiV7Design.GOLD_PALE,true).apply { gravity=Gravity.CENTER })
+        box.addView(ArthSaathiV7Design.logo(this,132))
+        box.addView(ArthSaathiV7Design.brand(this,31f,false))
+        box.addView(ArthSaathiV7Design.text(this,ArthSaathiV7Design.TAGLINE,12f,ArthSaathiV7Design.NAVY,true).apply { gravity=Gravity.CENTER })
+        box.addView(ArthSaathiV7Design.text(this,ArthSaathiV7Design.PILLARS,10f,ArthSaathiV7Design.GOLD,true).apply { gravity=Gravity.CENTER })
         r.addView(box)
     }
 
     private fun showLogin() {
         val r=shell(); brandBlock(r)
-        r.addView(ArthSaathiV7Design.text(this,"Welcome Back",21f,Color.WHITE,true).apply { gravity=Gravity.CENTER })
-        r.addView(ArthSaathiV7Design.text(this,"Let’s build your financial clarity together.",10.5f,ArthSaathiV7Design.GOLD_PALE).apply { gravity=Gravity.CENTER },
+        r.addView(ArthSaathiV7Design.text(this,"Welcome Back",21f,ArthSaathiV7Design.NAVY,true).apply { gravity=Gravity.CENTER })
+        r.addView(ArthSaathiV7Design.text(this,"Let’s build your financial clarity together.",10.5f,ArthSaathiV7Design.MUTED).apply { gravity=Gravity.CENTER },
             LinearLayout.LayoutParams(-1,-2).apply { topMargin=dp(3) })
         val card=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(14),dp(14),dp(14),dp(14)); background=ArthSaathiV7Design.card(this@LoginActivity,Color.WHITE,18) }
         val m=ArthSaathiV7Design.input(this,"Enter registered mobile number")
