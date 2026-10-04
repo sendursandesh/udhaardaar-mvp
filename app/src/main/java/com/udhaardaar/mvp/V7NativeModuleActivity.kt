@@ -86,20 +86,21 @@ class V7NativeModuleActivity : V7SessionActivity() {
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
         root.addView(header)
         root.addView(body, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-        root.addView(ArthSaathiV7Design.goldButton(this, "Back to Financial Command Centre") { finish() },
+        root.addView(ArthSaathiV7Design.goldButton(this, "Back to Home") { finish() },
             LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(14) })
         return ScrollView(this).apply { isFillViewport = true; addView(root) }
     }
 
     private fun field(hint: String, inputType: Int = android.text.InputType.TYPE_CLASS_TEXT): EditText =
-        EditText(this).apply {
-            this.hint = hint
+        ArthSaathiV7Design.input(this, hint).apply {
             this.inputType = inputType
-            setSingleLine(true)
-            setPadding(dp(10), 0, dp(10), 0)
-            setTextColor(ArthSaathiV7Design.NAVY)
-            setHintTextColor(ArthSaathiV7Design.MUTED)
-            background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 10)
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_NEXT
+            setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_NEXT) {
+                    focusSearch(View.FOCUS_FORWARD)?.requestFocus()
+                    true
+                } else false
+            }
         }
 
     private fun button(text: String, action: () -> Unit): Button =
