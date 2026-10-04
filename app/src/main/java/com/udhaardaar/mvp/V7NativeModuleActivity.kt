@@ -9,6 +9,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import java.io.File
 import org.json.JSONObject
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 /**
  * ArthSaathi V7 Step 6 — first native migration tranche.
@@ -34,6 +37,9 @@ class V7NativeModuleActivity : V7SessionActivity() {
     private lateinit var recordDistrict: EditText
     private lateinit var recordState: EditText
     private lateinit var profilePreview: ImageView
+    private var leaseDocumentUri: String = ""
+    private var leaseExtractedText: String = ""
+    private var leaseScanResult: TextView? = null
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -56,6 +62,19 @@ class V7NativeModuleActivity : V7SessionActivity() {
                 }.onFailure { pendingPhotoUri = "" }
             }
             Toast.makeText(this, if (pendingPhotoUri.isNotBlank()) "Camera photo captured." else "Camera photo could not be saved.", Toast.LENGTH_SHORT).show()
+        } else if (requestCode == 702 && resultCode == RESULT_OK) {
+            val uri = data?.data
+            if (uri != null) {
+                leaseDocumentUri = uri.toString()
+                runCatching { scanLeaseDocument(InputImage.fromFilePath(this, uri)) }
+                    .onFailure { leaseScanResult?.text = "Document selected. Text scan is available for image pages; please review the attachment." }
+            }
+        } else if (requestCode == 703 && resultCode == RESULT_OK) {
+            val bitmap = data?.extras?.get("data") as? android.graphics.Bitmap
+            if (bitmap != null) {
+                leaseDocumentUri = "camera:" + System.currentTimeMillis()
+                scanLeaseDocument(InputImage.fromBitmap(bitmap, 0))
+            }
         }
     }
 
@@ -273,120 +292,142 @@ class V7NativeModuleActivity : V7SessionActivity() {
 
     private fun credit() {
         val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        body.addView(ArthSaathiV7Design.section(this, "Register Credit", "Selection-driven terms with automatic repayment calculation and schedule."))
-
+        body.addView(ArthSaathiV7Design.section(this, "Give / Take Money", "Choose the type of credit. Rental / Lease is handled here — not as a separate module."))
         val people = V7Core.all(this, V7Core.Keys.PEOPLE)
         val labels = if (people.isEmpty()) listOf("No person — create one in Record") else people.map { it.optString("name") + " • " + it.optString("mobile") }
         val personSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, labels) }
-        body.addView(personSpinner, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-
+        body.addView(ArthSaathiV7Design.fieldGroup(this, "Person / Business", personSpinner, true), LinearLayout.LayoutParams(-1, dp(76)).apply { topMargin = dp(4) })
+        val creditType = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Personal Loan / Hand Loan", "Trade Credit / Udhaar", "Rental / Lease")) }
+        body.addView(ArthSaathiV7Design.fieldGroup(this, "What are you recording?", creditType, true), LinearLayout.LayoutParams(-1, dp(76)).apply { topMargin = dp(4) })
         val guarantorLabels = listOf("No guarantor") + people.map { it.optString("name") + " • " + it.optString("mobile") }
         val guarantorSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, guarantorLabels) }
-        body.addView(labelledSpinner("Guarantor (optional)", guarantorSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
-
-        val amount = field("Credit amount (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
+        val guarantorBox = labelledSpinner("Guarantor (optional)", guarantorSpinner)
+        body.addView(guarantorBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        val amount = field("Amount / Rent due (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
         body.addView(amount, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-
-        val roiSpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
-                listOf("0%","6%","8%","10%","12%","15%","18%","24%","36%","Custom"))
-        }
-        body.addView(labelledSpinner("ROI", roiSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
-
+        val roiSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("0%","6%","8%","10%","12%","15%","18%","24%","36%","Custom")) }
+        val roiBox = labelledSpinner("Interest / ROI", roiSpinner)
+        body.addView(roiBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
         val customRoi = field("Custom ROI %", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
         customRoi.visibility = View.GONE
         body.addView(customRoi, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(2) })
         roiSpinner.onItemSelectedListener = object: android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                customRoi.visibility = if (position == 9) View.VISIBLE else View.GONE
-            }
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) { customRoi.visibility = if (position == 9 && creditType.selectedItemPosition != 2) View.VISIBLE else View.GONE }
         }
-
-        val methodSpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
-                listOf("EMI","Principal + Interest","Bullet"))
+        val methodSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("EMI","Principal + Interest","Bullet")) }
+        val methodBox = labelledSpinner("Repayment method", methodSpinner)
+        body.addView(methodBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        val tenureSpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("3 months","6 months","9 months","12 months","18 months","24 months","36 months","48 months","60 months")) }
+        val tenureBox = labelledSpinner("Repayment / lease term", tenureSpinner)
+        body.addView(tenureBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        val frequencySpinner = Spinner(this).apply { adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Monthly","Quarterly","Half-yearly","Yearly")) }
+        val frequencyBox = labelledSpinner("Payment frequency", frequencySpinner)
+        body.addView(frequencyBox, LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
+        val leasePanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 14); setPadding(dp(10), dp(10), dp(10), dp(10)) }
+        leasePanel.addView(ArthSaathiV7Design.text(this, "Rental / Lease details", 14f, ArthSaathiV7Design.NAVY, true))
+        leasePanel.addView(ArthSaathiV7Design.text(this, "Scan the lease deed / rent agreement. The app will read the document and highlight key terms for review.", 10f, ArthSaathiV7Design.MUTED))
+        val deposit = field("Security deposit (₹)", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL)
+        val leaseEnd = field("Lease end date (optional)")
+        leasePanel.addView(deposit, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        leasePanel.addView(leaseEnd, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(5) })
+        val scanRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val upload = button("Choose Deed / Agreement") {
+            val pick = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE); putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "application/pdf")); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            startActivityForResult(pick, 702)
         }
-        body.addView(labelledSpinner("Repayment method", methodSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
-
-        val tenureSpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
-                listOf("3 months","6 months","9 months","12 months","18 months","24 months","36 months","48 months","60 months"))
+        val camera = button("Scan with Camera") {
+            val take = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+            if (take.resolveActivity(packageManager) == null) Toast.makeText(this, "Camera is not available.", Toast.LENGTH_SHORT).show() else startActivityForResult(take, 703)
         }
-        body.addView(labelledSpinner("Repayment tenure", tenureSpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
-
-        val frequencySpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(this@V7NativeModuleActivity, android.R.layout.simple_spinner_dropdown_item,
-                listOf("Monthly","Quarterly","Half-yearly","Yearly"))
-        }
-        body.addView(labelledSpinner("Repayment frequency", frequencySpinner), LinearLayout.LayoutParams(-1, dp(70)).apply { topMargin = dp(6) })
-
+        scanRow.addView(upload, LinearLayout.LayoutParams(0, dp(48), 1f))
+        scanRow.addView(camera, LinearLayout.LayoutParams(0, dp(48), 1f).apply { leftMargin = dp(5) })
+        leasePanel.addView(scanRow, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
+        leaseScanResult = ArthSaathiV7Design.text(this, "No lease document scanned yet.", 9.5f, ArthSaathiV7Design.MUTED)
+        leasePanel.addView(leaseScanResult, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+        body.addView(leasePanel, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         val startDate = TextView(this).apply {
-            text = "Start date: Select"
-            textSize = 14f; setTextColor(ArthSaathiV7Design.NAVY); gravity = Gravity.CENTER_VERTICAL
-            background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 10)
-            setPadding(dp(12),0,dp(12),0)
-            setOnClickListener {
-                val cal = java.util.Calendar.getInstance()
-                android.app.DatePickerDialog(this@V7NativeModuleActivity,{_,y,m,d0->
-                    text = "Start date: %04d-%02d-%02d".format(y,m+1,d0)
-                },cal.get(java.util.Calendar.YEAR),cal.get(java.util.Calendar.MONTH),cal.get(java.util.Calendar.DAY_OF_MONTH)).show()
-            }
+            text = "Start date: Select"; textSize = 14f; setTextColor(ArthSaathiV7Design.NAVY); gravity = Gravity.CENTER_VERTICAL
+            background = ArthSaathiV7Design.card(this@V7NativeModuleActivity, Color.WHITE, 10); setPadding(dp(12),0,dp(12),0)
+            setOnClickListener { val cal = java.util.Calendar.getInstance(); android.app.DatePickerDialog(this@V7NativeModuleActivity,{_,y,m,d0-> text = "Start date: %04d-%02d-%02d".format(y,m+1,d0) },cal.get(java.util.Calendar.YEAR),cal.get(java.util.Calendar.MONTH),cal.get(java.util.Calendar.DAY_OF_MONTH)).show() }
         }
         body.addView(startDate, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(6) })
-
         val preview = ArthSaathiV7Design.text(this,"Repayment schedule will be calculated automatically.",10.5f,ArthSaathiV7Design.NAVY)
         body.addView(preview, LinearLayout.LayoutParams(-1,-2).apply { topMargin = dp(8) })
-
-        body.addView(button("Calculate Repayment Schedule") {
+        fun refreshType() {
+            val isLease = creditType.selectedItemPosition == 2
+            roiBox.visibility = if (isLease) View.GONE else View.VISIBLE
+            customRoi.visibility = if (!isLease && roiSpinner.selectedItemPosition == 9) View.VISIBLE else View.GONE
+            methodBox.visibility = if (isLease) View.GONE else View.VISIBLE
+            guarantorBox.visibility = if (isLease) View.GONE else View.VISIBLE
+            leasePanel.visibility = if (isLease) View.VISIBLE else View.GONE
+            amount.hint = if (isLease) "Rent / due amount (₹)" else "Credit amount (₹)"
+            preview.text = if (isLease) "Lease dues will be tracked from the agreement terms. No interest/ROI is applied to rental/lease records." else "Repayment schedule will be calculated automatically."
+        }
+        creditType.onItemSelectedListener = object: android.widget.AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) { refreshType() }
+        }
+        refreshType()
+        body.addView(button("Calculate Schedule") {
             val a = amount.text.toString().toDoubleOrNull()
             if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
-            val roi = if (roiSpinner.selectedItemPosition == 9) customRoi.text.toString().toDoubleOrNull() ?: -1.0 else roiSpinner.selectedItemPosition.let { listOf(0.0,6.0,8.0,10.0,12.0,15.0,18.0,24.0,36.0)[it] }
-            if (roi < 0.0 || roi > 100.0) { customRoi.error = "ROI must be 0–100%"; return@button }
-            val months = listOf(3,6,9,12,18,24,36,48,60)[tenureSpinner.selectedItemPosition]
-            val method = methodSpinner.selectedItem.toString()
-            val monthlyRate = roi / 1200.0
-            val emi = if (method == "EMI") {
-                if (monthlyRate == 0.0) a / months else a * monthlyRate * Math.pow(1+monthlyRate,months.toDouble()) / (Math.pow(1+monthlyRate,months.toDouble())-1)
-            } else 0.0
-            val interest = a * roi / 100.0 * months / 12.0
-            val periodic = when(frequencySpinner.selectedItemPosition){0->1;1->3;2->6;else->12}
-            val installments = kotlin.math.ceil(months.toDouble()/periodic).toInt()
-            preview.text = when(method){
-                "EMI" -> "EMI: ₹%.2f\nTotal payable: ₹%.2f\nInstallments: %d\nFirst due: calculated from selected start date".format(emi,emi*months,months)
-                "Principal + Interest" -> "Principal per period: ₹%.2f\nEstimated total interest: ₹%.2f\nInstallments: %d".format(a/installments,interest,installments)
-                else -> "Bullet repayment\nPrincipal: ₹%.2f\nEstimated interest: ₹%.2f\nDue after: %d months".format(a,interest,months)
+            if (creditType.selectedItemPosition == 2) {
+                preview.text = "Rental / Lease selected\nRent / due amount: ₹%.2f\nDeposit: ₹%.2f\nPayment frequency: %s\nDocument: %s".format(a, deposit.text.toString().toDoubleOrNull() ?: 0.0, frequencySpinner.selectedItem.toString(), if (leaseDocumentUri.isBlank()) "Not scanned" else "Scanned and ready for review")
+                return@button
             }
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
-
-        body.addView(button("Register Credit in V7") {
-            if (people.isEmpty()) { Toast.makeText(this, "Create a person first in Record.", Toast.LENGTH_SHORT).show(); return@button }
-            val a = amount.text.toString().toDoubleOrNull()
-            if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
             val roi = if (roiSpinner.selectedItemPosition == 9) customRoi.text.toString().toDoubleOrNull() ?: -1.0 else listOf(0.0,6.0,8.0,10.0,12.0,15.0,18.0,24.0,36.0)[roiSpinner.selectedItemPosition]
             if (roi < 0.0 || roi > 100.0) { customRoi.error = "ROI must be 0–100%"; return@button }
             val months = listOf(3,6,9,12,18,24,36,48,60)[tenureSpinner.selectedItemPosition]
-            val method = methodSpinner.selectedItem.toString()
-            val periodic = when(frequencySpinner.selectedItemPosition){0->1;1->3;2->6;else->12}
-            val monthlyRate = roi / 1200.0
-            val emi = if (method=="EMI") {
-                if(monthlyRate==0.0) a/months else a*monthlyRate*Math.pow(1+monthlyRate,months.toDouble())/(Math.pow(1+monthlyRate,months.toDouble())-1)
-            } else 0.0
-            val interest = a*roi/100.0*months/12.0
-            val rel = V7Records.relationship(this,people[personSpinner.selectedItemPosition].optString("id"),"INFORMAL_CREDIT","RECEIVABLE",a,roi,method.uppercase().replace(" ","_"),"")
-            rel.put("tenureMonths",months);rel.put("frequency",frequencySpinner.selectedItem.toString());rel.put("periodMonths",periodic)
-            rel.put("guarantorId",if(guarantorSpinner.selectedItemPosition>0) people[guarantorSpinner.selectedItemPosition-1].optString("id") else "")
-            rel.put("emiAmount",emi);rel.put("estimatedInterest",interest);rel.put("startDate",startDate.text.toString().removePrefix("Start date: ").trim())
-            rel.put("firstDueDate",startDate.text.toString().removePrefix("Start date: ").trim());rel.put("scheduleStatus","CALCULATED")
+            val method = methodSpinner.selectedItem.toString(); val monthlyRate = roi / 1200.0
+            val emi = if (method == "EMI") { if (monthlyRate == 0.0) a / months else a * monthlyRate * Math.pow(1+monthlyRate,months.toDouble()) / (Math.pow(1+monthlyRate,months.toDouble())-1) } else 0.0
+            val interest = a * roi / 100.0 * months / 12.0; val periodic = when(frequencySpinner.selectedItemPosition){0->1;1->3;2->6;else->12}; val installments = kotlin.math.ceil(months.toDouble()/periodic).toInt()
+            preview.text = when(method){ "EMI" -> "EMI: ₹%.2f\nTotal payable: ₹%.2f\nInstallments: %d".format(emi,emi*months,months); "Principal + Interest" -> "Principal per period: ₹%.2f\nEstimated total interest: ₹%.2f\nInstallments: %d".format(a/installments,interest,installments); else -> "Bullet repayment\nPrincipal: ₹%.2f\nEstimated interest: ₹%.2f\nDue after: %d months".format(a,interest,months) }
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(8) })
+        body.addView(button("Register Credit") {
+            if (people.isEmpty()) { Toast.makeText(this, "Create a person first in Record.", Toast.LENGTH_SHORT).show(); return@button }
+            val a = amount.text.toString().toDoubleOrNull(); if (a == null || a <= 0) { amount.error = "Enter a valid amount"; return@button }
+            val isLease = creditType.selectedItemPosition == 2
+            if (isLease && leaseDocumentUri.isBlank()) { Toast.makeText(this, "Please scan or attach the lease deed / rent agreement before registering.", Toast.LENGTH_LONG).show(); return@button }
+            val roi = if (isLease) 0.0 else if (roiSpinner.selectedItemPosition == 9) customRoi.text.toString().toDoubleOrNull() ?: -1.0 else listOf(0.0,6.0,8.0,10.0,12.0,15.0,18.0,24.0,36.0)[roiSpinner.selectedItemPosition]
+            if (roi < 0.0 || roi > 100.0) { customRoi.error = "ROI must be 0–100%"; return@button }
+            val months = listOf(3,6,9,12,18,24,36,48,60)[tenureSpinner.selectedItemPosition]
+            val method = if (isLease) "RENTAL_DUES" else methodSpinner.selectedItem.toString().uppercase().replace(" ","_")
+            val periodic = when(frequencySpinner.selectedItemPosition){0->1;1->3;2->6;else->12}; val monthlyRate = roi / 1200.0
+            val emi = if (!isLease && method == "EMI") { if (monthlyRate == 0.0) a/months else a*monthlyRate*Math.pow(1+monthlyRate,months.toDouble())/(Math.pow(1+monthlyRate,months.toDouble())-1) } else 0.0
+            val interest = if (isLease) 0.0 else a*roi/100.0*months/12.0
+            val relType = when(creditType.selectedItemPosition) { 1 -> "TRADE_CREDIT"; 2 -> "RENTAL_LEASE"; else -> "INFORMAL_CREDIT" }
+            val rel = V7Records.relationship(this, people[personSpinner.selectedItemPosition].optString("id"), relType, "RECEIVABLE", a, roi, method, if (isLease) leaseExtractedText else "")
+            rel.put("creditType", creditType.selectedItem.toString()); rel.put("tenureMonths",months); rel.put("frequency",frequencySpinner.selectedItem.toString()); rel.put("periodMonths",periodic)
+            rel.put("guarantorId",if(!isLease && guarantorSpinner.selectedItemPosition>0) people[guarantorSpinner.selectedItemPosition-1].optString("id") else "")
+            rel.put("emiAmount",emi); rel.put("estimatedInterest",interest); rel.put("startDate",startDate.text.toString().removePrefix("Start date: ").trim()); rel.put("firstDueDate",startDate.text.toString().removePrefix("Start date: ").trim()); rel.put("scheduleStatus","CALCULATED")
+            if (isLease) { rel.put("securityDeposit", deposit.text.toString().toDoubleOrNull() ?: 0.0); rel.put("leaseEndDate", leaseEnd.text.toString().trim()); rel.put("leaseDocumentUri", leaseDocumentUri); rel.put("leaseExtractedText", leaseExtractedText); rel.put("leaseDocumentScanned", true) }
             V7Core.replace(this,V7Core.Keys.RELATIONSHIPS,rel)
-            Toast.makeText(this, "Credit registered with calculated terms.", Toast.LENGTH_SHORT).show()
-            renderRelationshipList(body)
+            Toast.makeText(this, if (isLease) "Rental / Lease recorded with scanned agreement." else "Credit registered with calculated terms.", Toast.LENGTH_SHORT).show(); renderRelationshipList(body)
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(7) })
-
         renderRelationshipList(body)
-        setContentView(shell("Credit & Money Relationships", "Selection-driven credit terms and automatic repayment calculation.", body))
+        setContentView(shell("Give / Take Money", "All credit types are registered here, including Rental / Lease.", body))
     }
 
+    private fun scanLeaseDocument(image: InputImage) {
+        leaseScanResult?.text = "Reading document…"
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        recognizer.process(image).addOnSuccessListener { result ->
+            leaseExtractedText = result.text
+            val critical = extractLeaseTerms(result.text)
+            leaseScanResult?.text = if (critical.isBlank()) "Document scanned ✓\n\nReview extracted text before saving:\n" + result.text.take(1400) else "Document scanned ✓\n\nKey terms found:\n" + critical
+            recognizer.close()
+        }.addOnFailureListener {
+            leaseScanResult?.text = "Document captured, but text could not be read. Keep the scanned document attached and enter terms manually."
+            recognizer.close()
+        }
+    }
+
+    private fun extractLeaseTerms(text: String): String {
+        val lines = text.lines().map { it.trim() }.filter { it.isNotBlank() }
+        val patterns = listOf(Regex("(?i).*rent.*(?:₹|rs|inr|amount).*"), Regex("(?i).*(?:deposit|security).*"), Regex("(?i).*(?:term|tenure|period).*"), Regex("(?i).*(?:start|commenc).*date.*"), Regex("(?i).*(?:end|expiry|termination).*date.*"), Regex("(?i).*(?:notice|lock.?in).*"), Regex("(?i).*(?:escalat|increase|increment).*"), Regex("(?i).*(?:maintenance|electricity|water).*"), Regex("(?i).*(?:due|payment).*"))
+        return lines.filter { line -> patterns.any { it.matches(line) } }.distinct().take(12).joinToString("\n")
+    }
     private fun labelledSpinner(label:String, spinner:Spinner):LinearLayout {
         val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
         box.addView(ArthSaathiV7Design.text(this,label,10f,ArthSaathiV7Design.MUTED,true))
