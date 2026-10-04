@@ -17,8 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
  * 3. No duplicate menu entries.
  * 4. MIS, Portfolio, Opportunity Cost, Market Data, Scenario, ERP/Tally and
  *    Reports are distinct tools with distinct destinations.
- * 5. Native V7 modules are opened directly; compatibility engines are reached
- *    through an isolated compatibility boundary when unavoidable.
+ * 5. Every user-facing destination is V7-owned; no legacy compatibility route exists.
  */
 class V7ModuleActivity : V7SessionActivity() {
     private val d get() = resources.displayMetrics.density
@@ -137,16 +136,14 @@ class V7ModuleActivity : V7SessionActivity() {
     private fun protect(root: LinearLayout) {
         // Address deliberately omitted: it belongs to Profile/Record editing.
         addGrid(root, listOf(
-            Triple("☂", "Insurance", "Policies, renewal, nominee and claims"),
+            Triple("☂", "Insurance", "Policies, renewal and nominee records"),
             Triple("▣", "Documents", "Evidence, versions and expiry tracking"),
             Triple("♡", "Family & Access", "People, relationships and authorised access"),
-            Triple("✓", "Claims", "Ownership, evidence and claim lifecycle"),
             Triple("!", "Alerts", "Due dates, renewals and document actions")
         ), listOf(
             { openTool("INSURANCE") },
             { openTool("DOCUMENTS") },
             { openTool("PEOPLE") },
-            { openTool("CLAIM") },
             { V7AlertEngine.evaluate(this); Toast.makeText(this, "Alerts evaluated from recorded events and due dates.", Toast.LENGTH_SHORT).show() }
         ))
     }
@@ -158,10 +155,10 @@ class V7ModuleActivity : V7SessionActivity() {
             Triple("↔", "Settle", "Pending balances and settlement records"),
             Triple("▤", "History", "Transparent expense and settlement history")
         ), listOf(
-            { openTool("TTMM") },
-            { openTool("TTMM") },
-            { openTool("TTMM") },
-            { V7LegacyAdapter.open(this, V7LegacyAdapter.Route.TTMM) }
+            { openTool("TTMM_CREATE") },
+            { openTool("TTMM_CONTRIBUTION") },
+            { openTool("TTMM_SETTLE") },
+            { openTool("TTMM_HISTORY") }
         ))
     }
 
@@ -172,10 +169,10 @@ class V7ModuleActivity : V7SessionActivity() {
             Triple("✓", "Consent", "Consent-controlled record mutation"),
             Triple("↻", "Balance", "Outstanding and transaction history")
         ), listOf(
-            { openTool("QR") },
-            { openTool("QR") },
-            { openTool("QR") },
-            { openTool("QR") }
+            { openTool("QR_SCAN") },
+            { openTool("QR_RECORD") },
+            { openTool("QR_CONSENT") },
+            { openTool("QR_BALANCE") }
         ))
     }
 
