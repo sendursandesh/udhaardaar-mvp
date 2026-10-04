@@ -132,13 +132,32 @@ class V7ToolsActivity : V7SessionActivity() {
             },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
         }
 
-    private fun ttmmContribution():LinearLayout = shell("TTMM — Record Contribution","Record who paid, the amount and the shared expense purpose.")
+    private fun ttmmContribution():LinearLayout = shell("TTMM — Add Shared Expense","Enter one group expense. ArthSaathi calculates the equal share so the group can see who should settle.")
         .apply {
-            val group=input("Group ID / name"); val payer=input("Contributor"); val amount=input("Contribution amount (₹)"); val purpose=input("Expense purpose")
-            listOf(group,payer,amount,purpose).forEach{addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})}
-            addView(ArthSaathiV7Design.goldButton(this@V7ToolsActivity,"Record Contribution"){
-                val a=amount.text.toString().toDoubleOrNull();if(group.text.isBlank()||payer.text.isBlank()||a==null||a<=0){Toast.makeText(this@V7ToolsActivity,"Group, contributor and valid amount are required.",Toast.LENGTH_SHORT).show();return@goldButton}
-                V7Core.add(this@V7ToolsActivity,V7Core.Keys.TTMM,org.json.JSONObject().apply{put("id",V7Core.id("TTMMC"));put("groupName",group.text.toString().trim());put("payer",payer.text.toString().trim());put("amount",a);put("purpose",purpose.text.toString().trim());put("type","CONTRIBUTION");put("createdAt",V7Core.now())});Toast.makeText(this@V7ToolsActivity,"Contribution recorded.",Toast.LENGTH_SHORT).show()
+            val group=input("Group name")
+            val payer=input("Who paid?")
+            val participants=input("Participants (comma separated)")
+            val amount=input("Total expense (₹)")
+            val purpose=input("What was the expense for?")
+            listOf(group,payer,participants,amount,purpose).forEach{addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})}
+            val split=ArthSaathiV7Design.text(this@V7ToolsActivity,"Enter participants to calculate each person's equal share.",10.5f,ArthSaathiV7Design.MUTED)
+            addView(split,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(8)})
+            addView(ArthSaathiV7Design.outlineButton(this@V7ToolsActivity,"Calculate Equal Share"){
+                val a=amount.text.toString().toDoubleOrNull()
+                val names=participants.text.toString().split(",").map{it.trim()}.filter{it.isNotBlank()}.distinct()
+                if(a==null||a<=0||names.isEmpty()){split.text="Enter a valid amount and at least one participant.";return@outlineButton}
+                split.text="Participants: "+names.size+"\nEqual share per person: ₹%.2f\n"+names.joinToString(", "),a/names.size
+            },LinearLayout.LayoutParams(-1,dp(46)).apply{topMargin=dp(8)})
+            addView(ArthSaathiV7Design.goldButton(this@V7ToolsActivity,"Save Shared Expense"){
+                val a=amount.text.toString().toDoubleOrNull()
+                val names=participants.text.toString().split(",").map{it.trim()}.filter{it.isNotBlank()}.distinct()
+                if(group.text.isBlank()||payer.text.isBlank()||a==null||a<=0||names.isEmpty()){Toast.makeText(this@V7ToolsActivity,"Group, payer, participants and valid amount are required.",Toast.LENGTH_SHORT).show();return@goldButton}
+                val share=a/names.size
+                V7Core.add(this@V7ToolsActivity,V7Core.Keys.TTMM,org.json.JSONObject().apply{
+                    put("id",V7Core.id("TTME"));put("groupName",group.text.toString().trim());put("payer",payer.text.toString().trim());put("amount",a)
+                    put("purpose",purpose.text.toString().trim());put("type","SHARED_EXPENSE");put("participants",names.joinToString(","));put("equalShare",share);put("createdAt",V7Core.now())
+                })
+                Toast.makeText(this@V7ToolsActivity,"Shared expense saved. Each participant's equal share is ₹%.2f.".format(share),Toast.LENGTH_LONG).show()
             },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
         }
 
