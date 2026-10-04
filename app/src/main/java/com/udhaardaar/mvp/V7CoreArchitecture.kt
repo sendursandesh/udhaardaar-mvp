@@ -30,7 +30,10 @@ object V7Core {
     fun id(prefix:String)= prefix + "-" + UUID.randomUUID()
     fun now()=System.currentTimeMillis()
     fun store(c:Context)=V7LocalStore(c.applicationContext)
-    fun all(c:Context,key:String)=store(c).all(key)
+    fun all(c:Context,key:String)=store(c).all(key).filter {
+        val owner = it.optString("ownerUserId")
+        owner.isBlank() || owner == user(c)
+    }
     fun find(c:Context,key:String,id:String)=all(c,key).firstOrNull{it.optString("id")==id}
     fun add(c:Context,key:String,o:org.json.JSONObject){
         o.put("ownerUserId",user(c));o.put("updatedAt",now());store(c).add(key,o)
