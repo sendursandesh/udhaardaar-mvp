@@ -131,7 +131,7 @@ class V7HomeActivity : V7SessionActivity() {
             Triple(tile.icon, tile.title, tile.subtitle) to {
                 when (tile.route) {
                     "CREDIT", "REPAYMENT", "ASSETS", "PROTECT" -> open(tile.route)
-                    "GROW", "LEGAL", "TTMM" -> openModule(tile.route)
+                    "GROW", "LEGAL", "GROUP_KHATA" -> openModule(tile.route)
                     "WILL" -> openTool("WILL")
                     "MORE" -> startActivity(Intent(this, V7ModuleActivity::class.java).putExtra("module", "MORE"))
                 }
