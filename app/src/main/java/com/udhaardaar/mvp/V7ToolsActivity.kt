@@ -146,7 +146,7 @@ class V7ToolsActivity : V7SessionActivity() {
                 val a=amount.text.toString().toDoubleOrNull()
                 val names=participants.text.toString().split(",").map{it.trim()}.filter{it.isNotBlank()}.distinct()
                 if(a==null||a<=0||names.isEmpty()){split.text="Enter a valid amount and at least one participant.";return@outlineButton}
-                split.text="Participants: "+names.size+"\nEqual share per person: ₹%.2f\n"+names.joinToString(", "),a/names.size
+                split.text="Participants: %d\nEqual share per person: ₹%.2f\n%s".format(names.size,a/names.size,names.joinToString(", "))
             },LinearLayout.LayoutParams(-1,dp(46)).apply{topMargin=dp(8)})
             addView(ArthSaathiV7Design.goldButton(this@V7ToolsActivity,"Save Shared Expense"){
                 val a=amount.text.toString().toDoubleOrNull()
