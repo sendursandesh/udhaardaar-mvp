@@ -38,21 +38,21 @@ class V7ModuleActivity : V7SessionActivity() {
         }
 
         val title = when (key) {
-            "PROTECT" -> "Protect"
-            "GROW" -> "Grow"
-            "TTMM" -> "TTMM"
-            "QR_KHATA" -> "QR Khata"
-            "LEGAL" -> "Legal & Claims"
-            "MORE" -> "More"
+            "PROTECT" -> "Insurance & Protection"
+            "GROW" -> "Investments & Returns"
+            "TTMM" -> "Group Expenses"
+            "QR_KHATA" -> "QR Udhaar Khata"
+            "LEGAL" -> "Legal Help & Claims"
+            "MORE" -> "More Services"
             else -> key
         }
         val sub = when (key) {
-            "PROTECT" -> "Insurance & protection"
-            "GROW" -> "Portfolio & insights"
-            "TTMM" -> "Group expenses"
-            "QR_KHATA" -> "Scan & record credit"
-            "LEGAL" -> "Claims & legal help"
-            else -> "More financial tools"
+            "PROTECT" -> "Policies, renewals and claims"
+            "GROW" -> "Portfolio, returns and financial tools"
+            "TTMM" -> "Share a group expense and settle who owes whom"
+            "QR_KHATA" -> "Scan a transaction and record an udhaar entry"
+            "LEGAL" -> "Legal help, advocates and claims"
+            else -> "Profile, records and other useful services"
         }
 
         val root = LinearLayout(this).apply {
@@ -115,13 +115,13 @@ class V7ModuleActivity : V7SessionActivity() {
     private fun grow(root: LinearLayout) {
         // Exactly one entry for each intelligence function.
         addGrid(root, listOf(
-            Triple("◉", "Portfolio", "Holdings & returns"),
-            Triple("▥", "MIS", "Your financial position"),
-            Triple("↔", "Switch Analysis", "Compare alternatives"),
-            Triple("◌", "Scenarios", "Try scenarios"),
-            Triple("⌁", "Market Data", "Current market values"),
-            Triple("⇄", "ERP / Tally", "Import & export"),
-            Triple("▤", "Reports", "Statements & reports")
+            Triple("◉", "My Investments", "Holdings, value & returns"),
+            Triple("▥", "My Money Report", "Assets, dues & net position"),
+            Triple("↔", "Should I Switch?", "Compare return, cost & risk"),
+            Triple("◌", "What-If Calculator", "Try future scenarios"),
+            Triple("⌁", "Market Values", "Record current market values"),
+            Triple("⇄", "Accounting Export", "Tally / ERP data export"),
+            Triple("▤", "Detailed Reports", "Statements & summaries")
         ), listOf(
             { openTool("PORTFOLIO") },
             { openTool("MIS") },
@@ -136,15 +136,15 @@ class V7ModuleActivity : V7SessionActivity() {
     private fun protect(root: LinearLayout) {
         // Address deliberately omitted: it belongs to Profile/Record editing.
         addGrid(root, listOf(
-            Triple("☂", "Insurance", "Policies & nominees"),
-            Triple("▣", "Documents", "Important documents"),
-            Triple("♡", "Family & Access", "Family & access"),
-            Triple("!", "Alerts", "Due dates & reminders")
+            Triple("☂", "Insurance Policies", "Policies, renewal & nominee"),
+            Triple("▣", "Policy Documents", "Policy papers & evidence"),
+            Triple("!", "Renewal & Due Alerts", "Upcoming dates & reminders"),
+            Triple("⚖", "Insurance Claims", "Claim records & evidence")
         ), listOf(
             { openTool("INSURANCE") },
             { openTool("DOCUMENTS") },
-            { openTool("PEOPLE") },
-            { V7AlertEngine.evaluate(this); Toast.makeText(this, "Alerts evaluated from recorded events and due dates.", Toast.LENGTH_SHORT).show() }
+            { openTool("ALERTS") },
+            { openTool("CLAIM") }
         ))
     }
 
@@ -191,19 +191,38 @@ class V7ModuleActivity : V7SessionActivity() {
     }
 
     private fun more(root: LinearLayout) {
+        root.addView(ArthSaathiV7Design.section(this, "My Records & Family", "Keep your people, documents and shared expenses together."))
         addGrid(root, listOf(
-            Triple("CC", "ChargeCheck", "Compare charges"),
-            Triple("LI", "Liability Vault", "Loans & dues"),
-            Triple("💳", "Revenue & Payments", "Charges & payments"),
-            Triple("BE", "Government Benefits", "Benefits"),
-            Triple("⚙", "Security & Consent", "Privacy & consent"),
-            Triple("◈", "Credit Score", "Explainable score"),
-            Triple("⚖", "Will, Inheritance & Claims", "Family wealth & succession")
+            Triple("●", "My Profile & Family", "People, contacts & access"),
+            Triple("▣", "My Documents", "Important papers & evidence"),
+            Triple("👥", "Group Expenses", "Share, split & settle expenses"),
+            Triple("▦", "QR Udhaar Khata", "Scan and record merchant credit"),
+            Triple("LI", "My Loans & Dues", "Loans, liabilities & outstanding")
+        ), listOf(
+            { openTool("PEOPLE") },
+            { openTool("DOCUMENTS") },
+            { openModule("TTMM") },
+            { openModule("QR_KHATA") },
+            { startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", "LIABILITIES")) }
+        ))
+
+        root.addView(ArthSaathiV7Design.section(this, "Money Checks & Services", "Useful checks, payments and benefits.").apply { setPadding(0, dp(10), 0, 0) })
+        addGrid(root, listOf(
+            Triple("CC", "Check Loan / Bank Charges", "Compare promised vs actual"),
+            Triple("💳", "Payments & Charges", "Service charges & payments"),
+            Triple("BE", "Benefits & Refunds", "Record money received")
         ), listOf(
             { openTool("CHARGECHECK") },
-            { startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", "LIABILITIES")) },
             { openTool("REVENUE") },
-            { openTool("BENEFITS") },
+            { openTool("BENEFITS") }
+        ))
+
+        root.addView(ArthSaathiV7Design.section(this, "Security & Support", "Keep your records protected and get help when needed.").apply { setPadding(0, dp(10), 0, 0) })
+        addGrid(root, listOf(
+            Triple("✓", "Privacy & Consent", "Who can access what"),
+            Triple("◈", "Credit Reliability Score", "Consent-based reliability view"),
+            Triple("⚖", "Will & Inheritance", "Plan family assets & claims")
+        ), listOf(
             { openTool("SECURITY") },
             { openTool("SCORE") },
             { openTool("WILL") }
