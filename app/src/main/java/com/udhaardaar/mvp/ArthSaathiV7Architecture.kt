@@ -76,6 +76,27 @@ object ArthSaathiV7Architecture {
         "Credit Detail"
     )
 
+    val creditCentreFlow = listOf(
+        "Loans & Udhaar",
+        "Register New Credit",
+        "Select Nature of Credit",
+        "Personal / Hand Loan | Trade Credit / Udhaar | Rental / Lease",
+        "Browse Existing Accounts",
+        "Filter by Nature",
+        "Filter by Active / Closed",
+        "Open Credit Account",
+        "Complete Account Details",
+        "Linked Repayments / Documents / Guarantor / Consent"
+    )
+
+    val creditAccountDetailFields = listOf(
+        "Account status", "Nature of credit", "Person / Business",
+        "Original amount", "Outstanding", "ROI", "Lending / payment method",
+        "Repayment structure", "Tenure", "Frequency", "EMI / periodic amount",
+        "Due dates", "Guarantor", "Documents", "Consent / OTP", "Repayment transactions"
+    )
+
+
     val recordRelationships = mapOf(
         "CREDIT" to listOf("PERSON", "GUARANTOR", "REPAYMENT", "DOCUMENT", "CONSENT", "LIABILITY"),
         "REPAYMENT" to listOf("CREDIT", "PERSON", "MIS", "AUDIT"),
