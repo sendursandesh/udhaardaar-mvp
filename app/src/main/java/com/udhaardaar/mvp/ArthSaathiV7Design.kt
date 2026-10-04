@@ -220,7 +220,9 @@ object ArthSaathiV7Design {
         }
         box.addView(text(c, icon, 20f, GOLD, true))
         box.addView(text(c, title, 13.5f, NAVY, true), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(c, 6) })
-        box.addView(text(c, subtitle, 9.5f, MUTED), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(c, 3) })
+        if (subtitle.isNotBlank()) {
+            box.addView(text(c, subtitle, 9.5f, MUTED), LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(c, 3) })
+        }
         return box
     }
 
