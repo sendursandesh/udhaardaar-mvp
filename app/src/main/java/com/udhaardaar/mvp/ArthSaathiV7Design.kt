@@ -87,7 +87,7 @@ object ArthSaathiV7Design {
             setOnClickListener { action() }
         }
 
-    fun logo(c: Context, size: Int = 78): ImageView =
+    fun logo(c: Context, size: Int = 64): ImageView =
         ImageView(c).apply {
             setImageResource(R.drawable.arthsaathi_logo)
             scaleType = ImageView.ScaleType.CENTER_INSIDE
@@ -111,10 +111,10 @@ object ArthSaathiV7Design {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(c, 8), dp(c, 7), dp(c, 8), dp(c, 7))
         }
-        box.addView(logo(c, 58))
+        box.addView(logo(c, 52))
         val words = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_VERTICAL }
         words.addView(brand(c, 25f, true))
-        words.addView(text(c, TAGLINE, 10.5f, GOLD_PALE, false))
+        words.addView(text(c, TAGLINE, 9.5f, GOLD_PALE, false))
         box.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
 
         // Identity is a global V7 concern: show the signed-in user's name and
@@ -128,7 +128,7 @@ object ArthSaathiV7Design {
         }
         val photoUri = person?.optString("photoUri").orEmpty()
         val avatar = ImageView(c).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(c, 38), dp(c, 38))
+            layoutParams = LinearLayout.LayoutParams(dp(c, 42), dp(c, 42))
             contentDescription = "Profile picture"
             scaleType = ImageView.ScaleType.CENTER_CROP
             background = card(c, GOLD_PALE, 20)
@@ -147,10 +147,7 @@ object ArthSaathiV7Design {
             ellipsize = android.text.TextUtils.TruncateAt.END
             setPadding(dp(c, 5), 0, 0, 0)
         })
-        box.addView(identity, LinearLayout.LayoutParams(dp(c, 92), -2))
-
-        val pillars = text(c, PILLARS, 8.5f, GOLD_2, true).apply { gravity = Gravity.CENTER }
-        box.addView(pillars, LinearLayout.LayoutParams(dp(c, 115), -2))
+        box.addView(identity, LinearLayout.LayoutParams(dp(c, 112), -2))
         return box
     }
 
@@ -199,6 +196,18 @@ object ArthSaathiV7Design {
         if (subtitle.isNotBlank()) box.addView(text(c, subtitle, 10.5f, MUTED))
         return box
     }
+
+    fun fieldLabel(c: Context, label: String, required: Boolean = false): TextView =
+        text(c, if (required) "$label *" else label, 10.5f, NAVY, true).apply {
+            setPadding(dp(c, 2), dp(c, 4), dp(c, 2), dp(c, 2))
+        }
+
+    fun fieldGroup(c: Context, label: String, input: EditText, required: Boolean = false): LinearLayout =
+        LinearLayout(c).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(fieldLabel(c, label, required))
+            addView(input, LinearLayout.LayoutParams(-1, dp(c, 50)))
+        }
 
     fun tile(c: Context, icon: String, title: String, subtitle: String, action: () -> Unit): LinearLayout {
         val box = LinearLayout(c).apply {
