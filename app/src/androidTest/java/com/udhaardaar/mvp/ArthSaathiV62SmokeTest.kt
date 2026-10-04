@@ -11,7 +11,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class ArthSaathiV62SmokeTest {
+class ArthSaathiV7RoutingSmokeTest {
     private lateinit var context: Context
     private val testMobile = "9876543210"
 
@@ -55,9 +55,11 @@ class ArthSaathiV62SmokeTest {
             // redirect to V7NativeModuleActivity and finish the shell, so the
             // smoke test must assert the canonical destination rather than the
             // transient router activity.
-            val destination = if (V7MasterVisionRegistry.find(module)?.ownership ==
-                V7MasterVisionRegistry.Ownership.NATIVE
-            ) V7NativeModuleActivity::class.java else V7ModuleActivity::class.java
+            val destination = when (V7MasterVisionRegistry.find(module)?.destination) {
+                V7MasterVisionRegistry.Destination.NATIVE_MODULE -> V7NativeModuleActivity::class.java
+                V7MasterVisionRegistry.Destination.MODULE_ROUTER -> V7ModuleActivity::class.java
+                null -> error("Unregistered V7 module: $module")
+            }
 
             assertResumes(
                 destination,
@@ -65,7 +67,7 @@ class ArthSaathiV62SmokeTest {
             )
         }
 
-        val tools = listOf("PORTFOLIO", "OPPORTUNITY", "MARKET", "ADDRESS", "REVENUE", "ADVOCATE", "CLAIM", "AI", "SECURITY")
+        val tools = listOf("PORTFOLIO", "MIS", "OPPORTUNITY", "SCENARIO", "MARKET", "REPORTS", "REVENUE", "ADVOCATE", "CLAIM", "AI", "SECURITY", "TTMM_CREATE", "TTMM_CONTRIBUTION", "TTMM_SETTLE", "TTMM_HISTORY", "QR_SCAN", "QR_RECORD", "QR_CONSENT", "QR_BALANCE")
         for (tool in tools) {
             assertResumes(
                 V7ToolsActivity::class.java,
