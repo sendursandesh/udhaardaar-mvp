@@ -16,7 +16,8 @@ class V7MasterIntegrationScenarioInstrumentedTest {
         val modules = V7MasterVisionRegistry.all()
         assertEquals(V7MasterVisionRegistry.Module.entries.size, modules.size)
         assertTrue(modules.all { it.v7DataKeys.isNotEmpty() })
-        assertTrue(modules.map { it.key }.toSet().size == modules.size)
+        assertEquals(modules.size, modules.map { it.key }.toSet().size)
+        assertTrue(modules.all { it.destination == V7MasterVisionRegistry.Destination.NATIVE_MODULE || it.destination == V7MasterVisionRegistry.Destination.MODULE_ROUTER })
     }
 
     @Test fun customerAndCreditTypeMatrixUsesOneCanonicalRelationshipModel() {
