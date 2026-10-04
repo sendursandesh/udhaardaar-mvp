@@ -128,15 +128,15 @@ class V7HomeActivity : V7SessionActivity() {
         )
 
         addGrid(root, listOf(
-            Triple("₹", "Register Credit", "Create / record") to { open("CREDIT") },
-            Triple("↻", "Repayment", "Due & completed") to { open("REPAYMENT") },
-            Triple("▣", "Asset Vault", "Financial & non-financial") to { open("ASSET_VAULT") },
-            Triple("◆", "Protect", "Insurance & alerts") to { open("INSURANCE") },
-            Triple("▥", "Grow", "Portfolio & MIS") to { openModule("GROW") },
-            Triple("♜", "Legacy", "Will & succession") to { open("LEGACY") },
-            Triple("⚖", "Legal Assistance", "Claims & advocates") to { openModule("LEGAL") },
-            Triple("●", "Nominee", "People & access") to { openTool("PEOPLE") },
-            Triple("✦", "Insights", "Financial intelligence") to { openTool("MIS") }
+            Triple("₹", "Give / Take Money", "Record credit & loans") to { open("CREDIT") },
+            Triple("↻", "Collect / Pay Dues", "Repayments & outstanding") to { open("REPAYMENT") },
+            Triple("▣", "My Assets & Property", "Property, gold, deposits & more") to { open("ASSET_VAULT") },
+            Triple("◆", "Insurance & Protection", "Policies, family & alerts") to { open("INSURANCE") },
+            Triple("▥", "Investments & Returns", "Investments, MIS & growth") to { openModule("GROW") },
+            Triple("♜", "Will, Inheritance & Claims", "Family wealth after you") to { openTool("WILL") },
+            Triple("⚖", "Legal Help & Claims", "Legal help and advocates") to { openModule("LEGAL") },
+            Triple("●", "Nominee & Family", "Nominees and access") to { openTool("PEOPLE") },
+            Triple("✦", "My Money Report", "Assets, dues & benefits") to { openTool("MIS") }
         ))
 
         root.addView(
