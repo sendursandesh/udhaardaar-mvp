@@ -1,28 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <!-- ArthSaathi master mark: open golden journey arc, navy A, golden road and star. -->
-    <path android:fillColor="@android:color/transparent"
-        android:strokeColor="#F2B632" android:strokeWidth="5"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- ArthSaathi approved master mark: gold journey arc, navy A, flowing gold road and four-point star. -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#C98A0A"
+        android:strokeWidth="4.2"
         android:strokeLineCap="round"
-        android:pathData="M18,78 C8,48 23,19 53,12" />
-    <path android:fillColor="@android:color/transparent"
-        android:strokeColor="#F2B632" android:strokeWidth="5"
-        android:strokeLineCap="round"
-        android:pathData="M55,12 C85,19 100,48 90,78" />
-    <path android:fillColor="#102D52"
-        android:pathData="M24,88 L48,30 L54,18 L84,88 L69,88 L54,51 L39,88 Z" />
-    <path android:fillColor="#174B83"
-        android:pathData="M29,79 L48,34 L54,22 L59,36 L43,79 Z" />
-    <path android:fillColor="#D89408"
-        android:pathData="M52,88 C49,74 50,61 56,49 C60,41 65,34 72,28 L78,42 C70,50 65,59 64,68 C63,76 67,83 71,88 Z" />
-    <path android:fillColor="#FFE28A"
-        android:pathData="M55,88 C53,76 54,64 59,53 L63,61 C60,70 61,79 65,88 Z" />
-    <path android:fillColor="#FFD34E"
-        android:pathData="M54,3 L57,12 L66,16 L57,20 L54,29 L51,20 L42,16 L51,12 Z" />
-    <path android:fillColor="#FFF1AE"
-        android:pathData="M54,8 L56,14 L62,16 L56,18 L54,24 L52,18 L46,16 L52,14 Z" />
-    <path android:fillColor="#F2B632"
-        android:pathData="M30,92 Q54,85 86,92 Q54,89 30,92 Z" />
+        android:pathData="M17,78 C8,57 13,34 30,20 C39,13 47,10 54,9 C72,11 89,23 95,42 C99,54 97,68 91,79" />
+
+    <path
+        android:fillColor="#123A6A"
+        android:pathData="M21,88 L47,27 C49,22 52,17 54,13 L86,88 L70,88 L54,49 L38,88 Z" />
+
+    <path
+        android:fillColor="#1B5A99"
+        android:pathData="M27,79 L47,31 L54,18 L61,37 L45,79 Z" />
+
+    <path
+        android:fillColor="#D89A12"
+        android:pathData="M52,88 C49,77 50,65 54,55 C59,43 67,34 77,27 L82,42 C73,49 67,58 65,68 C63,76 67,83 72,88 Z" />
+
+    <path
+        android:fillColor="#FFD85C"
+        android:pathData="M55,87 C53,77 54,67 58,57 L63,64 C60,72 61,80 65,87 Z" />
+
+    <path
+        android:fillColor="#F5B91E"
+        android:pathData="M54,2 L57,11 L66,15 L57,19 L54,29 L51,19 L42,15 L51,11 Z" />
+
+    <path
+        android:fillColor="#FFF2B8"
+        android:pathData="M54,7 L56,13 L62,15 L56,17 L54,23 L52,17 L46,15 L52,13 Z" />
+
+    <path
+        android:fillColor="#D89A12"
+        android:pathData="M27,93 C43,88 67,88 88,93 C67,91 46,91 27,93 Z" />
+
+    <path
+        android:fillColor="#FFF7D6"
+        android:pathData="M50,52 L54,43 L58,52 L54,61 Z" />
 </vector>
