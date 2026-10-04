@@ -18,7 +18,7 @@ class V7ToolsActivity : V7SessionActivity() {
         r.addView(h);return r
     }
     private fun render(tool:String){
-        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"SCENARIO"->scenario();"MARKET"->market();"REPORTS"->reports();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();"WILL"->will();"DOCUMENTS"->documents();"PEOPLE"->people();"INSURANCE"->insurance();"TTMM"->ttmm();"QR"->qr();"LEGAL"->legal();"BENEFITS"->benefits();"RENTAL"->rental();"CHARGECHECK"->chargeCheck();else->unknownTool(tool)}
+        val r=when(tool){"PORTFOLIO"->portfolio();"OPPORTUNITY"->opportunity();"SCENARIO"->scenario();"MARKET"->market();"REPORTS"->reports();"ADDRESS"->address();"REVENUE"->revenue();"MIS"->mis();"SCORE"->score();"INTEGRATION"->integration();"ADVOCATE"->advocate();"CLAIM"->claim();"AI"->ai();"SECURITY"->security();"WILL"->will();"DOCUMENTS"->documents();"PEOPLE"->people();"INSURANCE"->insurance();"TTMM_CREATE"->ttmmCreate();"TTMM_CONTRIBUTION"->ttmmContribution();"TTMM_SETTLE"->ttmmSettle();"TTMM_HISTORY"->ttmmHistory();"QR_SCAN"->qrScan();"QR_RECORD"->qrRecord();"QR_CONSENT"->qrConsent();"QR_BALANCE"->qrBalance();"LEGAL"->legal();"BENEFITS"->benefits();"RENTAL"->rental();"CHARGECHECK"->chargeCheck();else->unknownTool(tool)}
         r.addView(ArthSaathiV7Design.goldButton(this,"Back"){finish()},LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(12)})
         setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
     }
@@ -108,6 +108,73 @@ class V7ToolsActivity : V7SessionActivity() {
         r.addView(ArthSaathiV7Design.text(this,"Use the Asset/Document/Finance records as the source of truth for a charge comparison. No charge is inferred without a recorded amount.",11f,ArthSaathiV7Design.NAVY))
         return r
     }
+
+    private fun ttmmCreate():LinearLayout = shell("TTMM — Create / Open Group","Create a named shared-expense group and record its members.")
+        .apply {
+            val group=input("Group name"); val members=input("Members / participant references")
+            addView(group); addView(members,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+            addView(ArthSaathiV7Design.goldButton(this@V7ToolsActivity,"Create Group"){
+                if(group.text.isBlank()){group.error="Group name required";return@goldButton}
+                val o=org.json.JSONObject().apply{put("id",V7Core.id("TTMMG"));put("groupName",group.text.toString().trim());put("members",members.text.toString().trim());put("createdAt",V7Core.now())}
+                V7Core.add(this@V7ToolsActivity,V7Core.Keys.TTMM,o);Toast.makeText(this@V7ToolsActivity,"TTMM group created.",Toast.LENGTH_SHORT).show()
+            },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        }
+
+    private fun ttmmContribution():LinearLayout = shell("TTMM — Record Contribution","Record who paid, the amount and the shared expense purpose.")
+        .apply {
+            val group=input("Group ID / name"); val payer=input("Contributor"); val amount=input("Contribution amount (₹)"); val purpose=input("Expense purpose")
+            listOf(group,payer,amount,purpose).forEach{addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})}
+            addView(ArthSaathiV7Design.goldButton(this@V7ToolsActivity,"Record Contribution"){
+                val a=amount.text.toString().toDoubleOrNull();if(group.text.isBlank()||payer.text.isBlank()||a==null||a<=0){Toast.makeText(this@V7ToolsActivity,"Group, contributor and valid amount are required.",Toast.LENGTH_SHORT).show();return@goldButton}
+                V7Core.add(this@V7ToolsActivity,V7Core.Keys.TTMM,org.json.JSONObject().apply{put("id",V7Core.id("TTMMC"));put("groupName",group.text.toString().trim());put("payer",payer.text.toString().trim());put("amount",a);put("purpose",purpose.text.toString().trim());put("type","CONTRIBUTION");put("createdAt",V7Core.now())});Toast.makeText(this@V7ToolsActivity,"Contribution recorded.",Toast.LENGTH_SHORT).show()
+            },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        }
+
+    private fun ttmmSettle():LinearLayout = shell("TTMM — Settle","Record a specific settlement between participants.")
+        .apply {
+            val group=input("Group ID / name"); val from=input("Paid by"); val to=input("Settled with"); val amount=input("Settlement amount (₹)")
+            listOf(group,from,to,amount).forEach{addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})}
+            addView(ArthSaathiV7Design.goldButton(this@V7ToolsActivity,"Record Settlement"){
+                val a=amount.text.toString().toDoubleOrNull();if(group.text.isBlank()||from.text.isBlank()||to.text.isBlank()||a==null||a<=0){Toast.makeText(this@V7ToolsActivity,"Complete the settlement details.",Toast.LENGTH_SHORT).show();return@goldButton}
+                V7Core.add(this@V7ToolsActivity,V7Core.Keys.TTMM,org.json.JSONObject().apply{put("id",V7Core.id("TTMS"));put("groupName",group.text.toString().trim());put("from",from.text.toString().trim());put("to",to.text.toString().trim());put("amount",a);put("type","SETTLEMENT");put("createdAt",V7Core.now())});Toast.makeText(this@V7ToolsActivity,"Settlement recorded.",Toast.LENGTH_SHORT).show()
+            },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        }
+
+    private fun ttmmHistory():LinearLayout = shell("TTMM — History","Review shared-expense contributions and settlements; this screen does not create or mutate records.")
+        .apply {
+            val records=V7Core.all(this@V7ToolsActivity,V7Core.Keys.TTMM).sortedBy{it.optLong("createdAt")}
+            addView(ArthSaathiV7Design.text(this@V7ToolsActivity,if(records.isEmpty()) "No TTMM records yet." else records.joinToString("\n\n"){ "• "+it.optString("type","GROUP")+" | "+it.optString("groupName","")+" | ₹"+it.optDouble("amount",0.0)+" | "+it.optString("createdAt") },11f,ArthSaathiV7Design.NAVY))
+        }
+
+    private fun qrScan():LinearLayout = shell("QR Khata — Scan / Identify","Identify the merchant or transaction reference before recording a ledger entry.")
+        .apply {
+            val ref=input("QR / transaction reference"); val merchant=input("Merchant / party"); addView(ref);addView(merchant,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+            addView(ArthSaathiV7Design.text(this@V7ToolsActivity,"V7 keeps scan/identify separate from ledger mutation. Camera/QR integration can populate these fields without silently creating a credit.",10.5f,ArthSaathiV7Design.MUTED).apply{setPadding(0,dp(8),0,0)})
+        }
+
+    private fun qrRecord():LinearLayout = shell("QR Khata — Record","Create a merchant credit/repayment ledger record after identification.")
+        .apply {
+            val merchant=input("Merchant / party");val amount=input("Transaction amount (₹)");val type=input("Type (CREDIT / REPAYMENT)");listOf(merchant,amount,type).forEach{addView(it,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})}
+            addView(ArthSaathiV7Design.goldButton(this@V7ToolsActivity,"Record Khata Entry"){
+                val a=amount.text.toString().toDoubleOrNull();if(merchant.text.isBlank()||a==null||a<=0){Toast.makeText(this@V7ToolsActivity,"Merchant and valid amount are required.",Toast.LENGTH_SHORT).show();return@goldButton}
+                V7Core.add(this@V7ToolsActivity,V7Core.Keys.QR,org.json.JSONObject().apply{put("id",V7Core.id("QR"));put("merchant",merchant.text.toString().trim());put("amount",a);put("type",type.text.toString().trim().uppercase());put("createdAt",V7Core.now())});Toast.makeText(this@V7ToolsActivity,"QR Khata entry recorded.",Toast.LENGTH_SHORT).show()
+            },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        }
+
+    private fun qrConsent():LinearLayout = shell("QR Khata — Consent","Verify consent before a QR Khata mutation is treated as authorised.")
+        .apply {
+            val subject=input("Party / subject ID");val purpose=input("Consent purpose");addView(subject);addView(purpose,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+            addView(ArthSaathiV7Design.goldButton(this@V7ToolsActivity,"Record Verified Consent"){
+                if(subject.text.isBlank()||purpose.text.isBlank()){Toast.makeText(this@V7ToolsActivity,"Subject and purpose are required.",Toast.LENGTH_SHORT).show();return@goldButton}
+                V7Core.add(this@V7ToolsActivity,V7Core.Keys.CONSENTS,org.json.JSONObject().apply{put("id",V7Core.id("CONS"));put("subjectId",subject.text.toString().trim());put("purpose",purpose.text.toString().trim());put("verified",true);put("status","GRANTED");put("createdAt",V7Core.now());put("withdrawn",false)});Toast.makeText(this@V7ToolsActivity,"Verified consent recorded.",Toast.LENGTH_SHORT).show()
+            },LinearLayout.LayoutParams(-1,dp(48)).apply{topMargin=dp(8)})
+        }
+
+    private fun qrBalance():LinearLayout = shell("QR Khata — Balance","Review outstanding QR Khata entries without creating or changing records.")
+        .apply {
+            val rows=V7Core.all(this@V7ToolsActivity,V7Core.Keys.QR);val total=rows.filter{it.optString("type","CREDIT")=="CREDIT"}.sumOf{it.optDouble("amount",0.0)}-rows.filter{it.optString("type")=="REPAYMENT"}.sumOf{it.optDouble("amount",0.0)}
+            addView(ArthSaathiV7Design.text(this@V7ToolsActivity,"Recorded QR Khata net balance: ₹%.2f".format(total),12f,ArthSaathiV7Design.NAVY,true))
+        }
 
     private fun security():LinearLayout{
         val r=shell("Security & Consent","Review consent records, audit history and the current protected session.")
