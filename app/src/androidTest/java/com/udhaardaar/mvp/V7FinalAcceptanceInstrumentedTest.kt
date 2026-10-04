@@ -34,6 +34,25 @@ class V7FinalAcceptanceInstrumentedTest {
         assertTrue(V7MasterVisionRegistry.legacyBacked().isEmpty())
     }
 
+    @Test fun recordsAreIsolatedByCurrentAccount() {
+        val mobileA="9876507781"; val mobileB="9876507782"
+        V7AccountStore.logout(c)
+        V7LocalStore(c).remove("v7_accounts",mobileA)
+        V7LocalStore(c).remove("v7_accounts",mobileB)
+        V7AccountStore.create(c,"Owner A",mobileA)
+        V7AccountStore.create(c,"Owner B",mobileB)
+        V7AccountStore.login(c,mobileA)
+        val a=V7Records.person(c,"Private A","9876507783")
+        assertTrue(V7Core.all(c,V7Core.Keys.PEOPLE).any{it.optString("id")==a.optString("id")})
+        V7AccountStore.login(c,mobileB)
+        assertFalse(V7Core.all(c,V7Core.Keys.PEOPLE).any{it.optString("id")==a.optString("id")})
+        V7AccountStore.login(c,mobileA)
+        assertTrue(V7Core.find(c,V7Core.Keys.PEOPLE,a.optString("id"))!=null)
+        V7AccountStore.logout(c)
+        V7LocalStore(c).remove("v7_accounts",mobileA)
+        V7LocalStore(c).remove("v7_accounts",mobileB)
+    }
+
     @Test fun eventBusReceivesCanonicalRecordChanges(){
         val events=mutableListOf<V7Architecture.Event>()
         val close=V7Architecture.Events.subscribe{events.add(it.event)}
