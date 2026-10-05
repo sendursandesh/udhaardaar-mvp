@@ -28,7 +28,7 @@ object ArthSaathiConsolidatedArchitecture {
         Module("AI_ADVISOR", "ArthSaathi AI Advisor", "INTELLIGENCE", "ArthSaathiModulesActivity:AI", "arthsaathi_preferences"),
         Module("MIS", "Management Information System", "INTELLIGENCE", "V62MISActivity", "v62_mis"),
         Module("RENTAL_LEASE", "Rental & Lease", "CREDIT", "V62RentalLeaseActivity", "v62_relationships"),
-        Module("REVENUE", "Revenue / Charges", "PLATFORM", "V62RevenueActivity", "v62_revenue")
+        Module("REVENUE", "Revenue / Charges", "PLATFORM", "V62ChargesActivity", "v62_revenue")
     )
 
     val requiredCrossCuttingRules = setOf(
