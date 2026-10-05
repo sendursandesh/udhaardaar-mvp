@@ -94,7 +94,9 @@ class V7HomeActivity : AppCompatActivity() {
             Triple("▣", "Asset Vault", "Record what you own") to { open("ASSET_VAULT") },
             Triple("◆", "Protect", "Insurance and protection") to { open("INSURANCE") },
             Triple("▥", "Grow", "Portfolio and financial intelligence") to { openModule("GROW") },
-            Triple("▤", "Legal & Claims", "Protect and claim what matters") to { open("LEGACY") }
+            Triple("▤", "Legal & Claims", "Protect and claim what matters") to { open("LEGACY") },
+            Triple("▦", "ChargeCheck", "Sanctioned vs actual charges") to { startActivity(Intent(this, ChargeCheckActivity::class.java)) },
+            Triple("◈", "Group Khata", "Shared expenses and settlement") to { startActivity(Intent(this, GroupKhataActivity::class.java)) }
         ))
 
         val footer = LinearLayout(this).apply {
@@ -267,6 +269,7 @@ class V7ModuleActivity : AppCompatActivity() {
         "GROW" -> "Grow & Financial Intelligence"
         "PROTECT" -> "Protection"
         "LEGAL" -> "Legal & Claims"
+        "MORE" -> "More Services"
         else -> "More ArthSaathi Services"
     }
     private fun addAction(root: LinearLayout, label: String, action: () -> Unit) {
