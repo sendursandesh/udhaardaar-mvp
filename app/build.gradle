@@ -4,15 +4,20 @@ plugins {
 }
 
 android {
-    namespace 'com.udhaardaar.mvp'
+    namespace 'com.arthsaathi.master'
     compileSdk 35
     defaultConfig {
         applicationId 'com.udhaardaar.mvp'
         minSdk 23
         targetSdk 35
-        versionCode 71
-        versionName '7.1'
+        versionCode 80
+        versionName '8.0'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+    sourceSets {
+        main.java.srcDirs = ['src/main/java/com/arthsaathi/master']
+        test.java.srcDirs = ['src/test/java/com/arthsaathi/master']
+        androidTest.java.srcDirs = ['src/androidTest/java/com/arthsaathi/master']
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = '17' }
