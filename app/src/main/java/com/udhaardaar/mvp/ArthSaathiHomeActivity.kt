@@ -1,16 +1,26 @@
 package com.udhaardaar.mvp
 
-import android.content.Intent
+import android.app.Activity
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import android.widget.LinearLayout
+import android.widget.TextView
 
-/** Compatibility entry point: never render the retired V5-style home. */
-class ArthSaathiHomeActivity : AppCompatActivity() {
+class ArthSaathiHomeActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        startActivity(Intent(this, V62HomeActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        if (!ArthSaathiSession.isLoggedIn(this)) {
+            startActivity(android.content.Intent(this, ArthSaathiLoginActivity::class.java))
+            finish()
+            return
+        }
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(32,48,32,32) }
+        root.addView(TextView(this).apply { text = "ArthSaathi"; textSize = 28f })
+        root.addView(TextView(this).apply { text = "Home / Command Centre"; textSize = 18f; setPadding(0,16,0,24) })
+        root.addView(TextView(this).apply {
+            text = ArthSaathiArchitectureRegistry.modules.filter { it.canonical }
+                .joinToString("\n") { module -> "• ${module.title}" }
+            textSize = 15f
         })
-        finish()
+        setContentView(root)
     }
 }
