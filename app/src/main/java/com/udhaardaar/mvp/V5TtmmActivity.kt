@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** TTMM: shared-bill memory and friend-verified micro-credit, integrated with V5 obligations. */
+/** Group Khata compatibility: shared-bill memory and friend-verified micro-credit, integrated with V5 obligations. */
 class V5TtmmActivity : AppCompatActivity() {
     private val store by lazy { V5LocalStore(this) }
     private val friends = mutableListOf<Triple<String, String, Double>>()
@@ -25,8 +25,8 @@ class V5TtmmActivity : AppCompatActivity() {
 
     private fun show() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(28, 24, 28, 24) }
-        add(root, TextView(this).apply { text = "TTMM"; textSize = 28f; setTextColor(Color.rgb(24,58,92)) }, 58)
-        add(root, TextView(this).apply { text = "Take The Money, Mate — one friend pays, everyone verifies their share. Confirmed shares become V5 receivable obligations and are remembered for recovery."; textSize = 13f }, 82)
+        add(root, TextView(this).apply { text = "Group Khata"; textSize = 28f; setTextColor(Color.rgb(24,58,92)) }, 58)
+        add(root, TextView(this).apply { text = "Group Khata — one member pays, everyone verifies their share. Confirmed shares become V5 receivable obligations and are remembered for recovery."; textSize = 13f }, 82)
         payer = field("Who paid the bill? *"); bill = field("Total bill ₹ *"); billRef = field("Restaurant / bill reference (optional)")
         add(root, payer); add(root, bill); add(root, billRef)
         add(root, btn("ADD FRIEND + SHARE", Color.rgb(0,145,135)) { addFriend() })
