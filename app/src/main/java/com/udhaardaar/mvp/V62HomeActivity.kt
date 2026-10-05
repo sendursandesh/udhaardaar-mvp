@@ -6,20 +6,93 @@ import android.os.Bundle
 import android.view.Gravity
 import android.widget.*
 
-class V62HomeActivity:androidx.appcompat.app.AppCompatActivity(){
- private val d by lazy{resources.displayMetrics.density};private val root by lazy{LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(ArthSaathiV62Design.dp(16,d),ArthSaathiV62Design.dp(10,d),ArthSaathiV62Design.dp(16,d),ArthSaathiV62Design.dp(18,d));setBackgroundColor(ArthSaathiV62Design.BG)}}
- private val store by lazy{V5LocalStore(this)}
- override fun onCreate(b:Bundle?){super.onCreate(b);window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);render()}
- override fun onResume(){super.onResume();if(!isFinishing)render()}
- private fun open(c:Class<*>)=startActivity(Intent(this,c))
- private fun tile(name:String,sub:String,symbol:String,color:Int,click:()->Unit)=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER_VERTICAL;setPadding(ArthSaathiV62Design.dp(11,d),ArthSaathiV62Design.dp(9,d),ArthSaathiV62Design.dp(9,d),ArthSaathiV62Design.dp(8,d));background=ArthSaathiV62Design.card(Color.WHITE,16,d);setOnClickListener{click()};addView(ArthSaathiV62Design.text(this@V62HomeActivity,symbol,18f,color,true));addView(ArthSaathiV62Design.text(this@V62HomeActivity,name,11f,ArthSaathiV62Design.NAVY,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=ArthSaathiV62Design.dp(4,d)});addView(ArthSaathiV62Design.text(this@V62HomeActivity,sub,8.5f,ArthSaathiV62Design.MUTED),LinearLayout.LayoutParams(-1,-2).apply{topMargin=ArthSaathiV62Design.dp(2,d)})}
- private fun render(){root.removeAllViews();val p=getSharedPreferences("udhaardaar_accounts",MODE_PRIVATE);if(!p.getBoolean("logged_in",false)){startActivity(Intent(this,LoginActivity::class.java));finish();return};ArthSaathiV62Design.add(root,ArthSaathiV62Design.title(this,"ArthSaathi","Navigate Your Financial Journey"),2);ArthSaathiV62Design.add(root,ArthSaathiV62Design.text(this,"Plan  •  Protect  •  Grow  •  Nominate",9.5f,ArthSaathiV62Design.GOLD,true),3);ArthSaathiV62Design.add(root,ArthSaathiV62Design.text(this,"Your financial life, connected.",18f,ArthSaathiV62Design.NAVY,true),14);ArthSaathiV62Design.add(root,ArthSaathiV62Design.text(this,"Every recorded transaction, repayment, asset, policy and group expense should update the relevant dashboards and alerts automatically.",10f,ArthSaathiV62Design.MUTED),4)
-  val rel=store.all(ArthSaathiV62Core.RELATIONSHIPS);val assets=store.all(ArthSaathiV62Core.ASSETS);val policies=store.all(ArthSaathiV62Core.INSURANCE);val ttmm=store.all(ArthSaathiV62Core.TTMM);val snap=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;setPadding(ArthSaathiV62Design.dp(12,d),ArthSaathiV62Design.dp(10,d),ArthSaathiV62Design.dp(12,d),ArthSaathiV62Design.dp(10,d));background=ArthSaathiV62Design.card(ArthSaathiV62Design.NAVY,18,d)};snap.addView(ArthSaathiV62Design.text(this,"FINANCIAL SNAPSHOT\n${rel.size} relationships   •   ${assets.size} assets   •   ${policies.size} policies   •   ${ttmm.size} TTMM entries",11f,Color.WHITE,true));ArthSaathiV62Design.add(root,snap,10)
-  ArthSaathiV62Design.add(root,ArthSaathiV62Design.text(this,"YOUR JOURNEY",11f,ArthSaathiV62Design.MUTED,true),14);val r1=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL};r1.addView(tile("Credit","Lend • borrow • trade","₹",ArthSaathiV62Design.BLUE){open(V62CreditRegistrationActivity::class.java)},LinearLayout.LayoutParams(0,78,d).apply{rightMargin=ArthSaathiV62Design.dp(4,d)});r1.addView(tile("Repayment","Schedule • history","↻",ArthSaathiV62Design.GREEN){open(V62RepaymentActivity::class.java)},LinearLayout.LayoutParams(0,78,d).apply{leftMargin=ArthSaathiV62Design.dp(4,d)});ArthSaathiV62Design.add(root,r1,6)
-  val r2=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL};r2.addView(tile("Asset Vault","Property • bank • evidence","◆",ArthSaathiV62Design.TEAL){open(V62AssetVaultActivity::class.java)},LinearLayout.LayoutParams(0,78,d).apply{rightMargin=ArthSaathiV62Design.dp(4,d)});r2.addView(tile("Insurance","Scan • verify • alert","+",ArthSaathiV62Design.GREEN){open(V62InsuranceActivity::class.java)},LinearLayout.LayoutParams(0,78,d).apply{leftMargin=ArthSaathiV62Design.dp(4,d)});ArthSaathiV62Design.add(root,r2,6)
-  val r3=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL};r3.addView(tile("Rental / Lease","Landlord • tenant","⌂",ArthSaathiV62Design.GOLD){open(V62RentalLeaseActivity::class.java)},LinearLayout.LayoutParams(0,78,d).apply{rightMargin=ArthSaathiV62Design.dp(4,d)});r3.addView(tile("TTMM","Group money • settle","◈",ArthSaathiV62Design.BLUE){open(V62TTMMActivity::class.java)},LinearLayout.LayoutParams(0,78,d).apply{leftMargin=ArthSaathiV62Design.dp(4,d)});ArthSaathiV62Design.add(root,r3,6)
-  val r4=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL};r4.addView(tile("MIS","Allocation • returns • risk","▥",ArthSaathiV62Design.TEAL){open(V62MISActivity::class.java)},LinearLayout.LayoutParams(0,78,d).apply{rightMargin=ArthSaathiV62Design.dp(4,d)});r4.addView(tile("Legacy & Legal","Will • nominee • claims","⚖",ArthSaathiV62Design.RED){startActivity(Intent(this@V62HomeActivity,ArthSaathiModulesActivity::class.java).putExtra("mode","LEGAL"))},LinearLayout.LayoutParams(0,78,d).apply{leftMargin=ArthSaathiV62Design.dp(4,d)});ArthSaathiV62Design.add(root,r4,6)
-  val ai=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(ArthSaathiV62Design.dp(13,d),ArthSaathiV62Design.dp(11,d),ArthSaathiV62Design.dp(13,d),ArthSaathiV62Design.dp(11,d));background=ArthSaathiV62Design.card(Color.rgb(238,248,245),16,d)};ai.addView(ArthSaathiV62Design.text(this,"✦  AI FINANCIAL ADVISOR",11f,ArthSaathiV62Design.GOLD,true));ai.addView(ArthSaathiV62Design.text(this,"Surface verified alerts, missed benefits, idle-fund opportunity cost, upcoming obligations and savings created by ArthSaathi.",10f,ArthSaathiV62Design.NAVY),LinearLayout.LayoutParams(-1,-2).apply{topMargin=ArthSaathiV62Design.dp(4,d)});ArthSaathiV62Design.add(root,ai,10)
-  setContentView(ScrollView(this).apply{isFillViewport=true;addView(root)})
- }
+class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
+    private val d get() = resources.displayMetrics.density
+    private val root by lazy {
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16),dp(12),dp(16),dp(24))
+            setBackgroundColor(ArthSaathiV62Design.BG)
+        }
+    }
+    private fun dp(v:Int)=(v*d).toInt()
+
+    override fun onCreate(b:Bundle?){
+        super.onCreate(b)
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        render()
+    }
+    override fun onResume(){super.onResume();if(!isFinishing)render()}
+
+    private fun card(module: ArthSaathiConsolidatedArchitecture.Module): LinearLayout =
+        LinearLayout(this).apply {
+            orientation=LinearLayout.VERTICAL
+            gravity=Gravity.CENTER_VERTICAL
+            setPadding(dp(11),dp(9),dp(9),dp(9))
+            background=ArthSaathiV62Design.card(Color.WHITE,16,d)
+            setOnClickListener{open(module)}
+            addView(ArthSaathiV62Design.text(this@V62HomeActivity,module.title,11.5f,ArthSaathiV62Design.NAVY,true))
+            addView(ArthSaathiV62Design.text(this@V62HomeActivity,module.category,8.5f,ArthSaathiV62Design.MUTED),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(3)})
+        }
+
+    private fun open(module: ArthSaathiConsolidatedArchitecture.Module){
+        when {
+            module.entryPoint=="V62CreditRegistrationActivity" -> startActivity(Intent(this,V62CreditRegistrationActivity::class.java))
+            module.entryPoint=="V62BureauActivity" -> startActivity(Intent(this,V62BureauActivity::class.java))
+            module.entryPoint=="V62AssetVaultActivity" -> startActivity(Intent(this,V62AssetVaultActivity::class.java))
+            module.entryPoint=="V62InsuranceActivity" -> startActivity(Intent(this,V62InsuranceActivity::class.java))
+            module.entryPoint=="V62ChargeCheckActivity" -> startActivity(Intent(this,V62ChargeCheckActivity::class.java))
+            module.entryPoint=="V62TTMMActivity" -> startActivity(Intent(this,V62TTMMActivity::class.java))
+            module.entryPoint=="V62MISActivity" -> startActivity(Intent(this,V62MISActivity::class.java))
+            module.entryPoint=="V62RentalLeaseActivity" -> startActivity(Intent(this,V62RentalLeaseActivity::class.java))
+            module.entryPoint=="V62ChargesActivity" -> startActivity(Intent(this,V62ChargesActivity::class.java))
+            module.entryPoint.startsWith("ArthSaathiModulesActivity:") -> {
+                val mode=module.entryPoint.substringAfter(":")
+                startActivity(Intent(this,ArthSaathiModulesActivity::class.java).putExtra("mode",mode))
+            }
+        }
+    }
+
+    private fun render(){
+        root.removeAllViews()
+        val p=getSharedPreferences("udhaardaar_accounts",MODE_PRIVATE)
+        if(!p.getBoolean("logged_in",false)){
+            startActivity(Intent(this,LoginActivity::class.java));finish();return
+        }
+
+        ArthSaathiV62Design.add(root,ArthSaathiV62Design.title(this,"ArthSaathi","Your Money. Your Records. Your Rights."),2)
+        ArthSaathiV62Design.add(root,ArthSaathiV62Design.text(this,"CONSOLIDATED V6.2 ARCHITECTURE",10f,ArthSaathiV62Design.GOLD,true),5)
+        ArthSaathiV62Design.add(root,ArthSaathiV62Design.text(this,"One master navigation tree. Register new credit separately from existing Loans & Udhaar records.",11f,ArthSaathiV62Design.MUTED),3)
+
+        val errors=ArthSaathiConsolidatedArchitecture.verifyRegistry()
+        val status=if(errors.isEmpty())"ARCHITECTURE CHECK: PASS" else "ARCHITECTURE CHECK: REVIEW REQUIRED"
+        val statusColor=if(errors.isEmpty())ArthSaathiV62Design.GREEN else ArthSaathiV62Design.RED
+        ArthSaathiV62Design.add(root,ArthSaathiV62Design.text(this,status,11f,statusColor,true),10)
+
+        val modules=ArthSaathiConsolidatedArchitecture.modules
+        var i=0
+        while(i<modules.size){
+            val row=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
+            row.addView(card(modules[i]),LinearLayout.LayoutParams(0,dp(82),1f).apply{rightMargin=dp(4)})
+            if(i+1<modules.size) row.addView(card(modules[i+1]),LinearLayout.LayoutParams(0,dp(82),1f).apply{leftMargin=dp(4)})
+            else row.addView(Space(this),LinearLayout.LayoutParams(0,dp(82),1f))
+            root.addView(row,LinearLayout.LayoutParams(-1,dp(82)).apply{if(i>0)topMargin=dp(6)})
+            i+=2
+        }
+
+        ArthSaathiV62Design.add(root,ArthSaathiV62Design.text(this,
+            "Core flow: Register Credit → party/terms → repayment calculation → guarantor → digital document → OTP consent → final registration. Existing credit accounts remain under Loans & Udhaar / records.",
+            10f,ArthSaathiV62Design.MUTED),12)
+
+        root.addView(Button(this).apply{
+            text="LOG OUT"
+            setOnClickListener{
+                p.edit().clear().apply()
+                startActivity(Intent(this@V62HomeActivity,LoginActivity::class.java))
+                finish()
+            }
+        },LinearLayout.LayoutParams(-1,dp(52)).apply{topMargin=dp(10)})
+
+        setContentView(ScrollView(this).apply{isFillViewport=true;addView(root)})
+    }
 }
