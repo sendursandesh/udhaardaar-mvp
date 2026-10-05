@@ -8,10 +8,10 @@ package com.udhaardaar.mvp
 object V62ArchitectureSpec {
     const val VERSION = "6.2"
     const val BRAND = "ArthSaathi"
-    const val TAGLINE = "Navigate Your Financial Journey"
+    const val TAGLINE = "Your Money. Your Records. Your Rights."
 
     val journey = listOf("PLAN", "PROTECT", "GROW", "NOMINATE")
-    val modules = listOf("Home", "Credit", "Repayment", "Rental & Lease", "TTMM", "Asset Vault", "Insurance", "MIS", "Legacy", "Legal", "AI Advisor")
+    val modules = ArthSaathiConsolidatedArchitecture.modules.map { it.id }
     val roles = listOf("LENDER", "BORROWER", "SUPPLIER", "BUYER", "SELLER", "LANDLORD", "TENANT", "GUARANTOR")
     val relationshipTypes = listOf("PERSONAL_CREDIT", "TRADE_CREDIT", "RENTAL", "LEASE", "GUARANTEE")
     val documentTypes = listOf("INVOICE", "PROMISSORY_NOTE", "LEASE_DEED", "RENT_AGREEMENT", "INSURANCE_POLICY", "PROPERTY_PAPER", "BANK_PASSBOOK", "OTHER")
@@ -48,6 +48,6 @@ object V62ArchitectureSpec {
         "Critical document terms must be filterable and traceable to page/source text.",
         "A single source record feeds Home, Repayment, MIS, Alerts, Legacy and AI insights.",
         "Language preference is explicit and persistent; modules never switch language automatically.",
-        "V5/V4/V3 activities are not valid V6.2 navigation targets."
+        "The consolidated architecture registry is the only valid V6.2 primary navigation contract."
     )
 }
