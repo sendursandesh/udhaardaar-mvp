@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - v7-master-architecture-2026-10-05
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
