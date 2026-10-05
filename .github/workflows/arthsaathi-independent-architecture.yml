@@ -1,0 +1,36 @@
+name: ArthSaathi Independent Architecture Guard
+
+on:
+  push:
+    branches:
+      - arthsaathi-independent-consolidated-master-2026-10-05
+  workflow_dispatch:
+
+jobs:
+  architecture-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject legacy routing in canonical ArthSaathi layer
+        run: |
+          set -euo pipefail
+          files=(
+            app/src/main/AndroidManifest.xml
+            app/src/main/java/com/udhaardaar/mvp/ArthSaathiApp.kt
+            app/src/main/java/com/udhaardaar/mvp/ArthSaathiSession.kt
+            app/src/main/java/com/udhaardaar/mvp/ArthSaathiDataStore.kt
+            app/src/main/java/com/udhaardaar/mvp/ArthSaathiWorkflowRepository.kt
+            app/src/main/java/com/udhaardaar/mvp/ArthSaathiNavigation.kt
+            app/src/main/java/com/udhaardaar/mvp/ArthSaathiArchitectureRegistry.kt
+            app/src/main/java/com/udhaardaar/mvp/ArthSaathiLoginActivity.kt
+            app/src/main/java/com/udhaardaar/mvp/ArthSaathiHomeActivity.kt
+          )
+          if grep -nE 'V3|V4|V5|V6|V62|V7|V5LocalStore|V5WorkflowRepository|V62Store|V62Repository|V7AccountStore|V7HomeActivity|V62HomeActivity|LoginActivity' "${files[@]}"; then
+            echo "Legacy dependency detected in canonical ArthSaathi layer."
+            exit 1
+          fi
+          if grep -nE 'V3|V4|V5|V6|V62|V7' app/src/main/AndroidManifest.xml; then
+            echo "Legacy activity/version remains in the active manifest."
+            exit 1
+          fi
+          echo "PASS: canonical ArthSaathi layer is free of legacy-version references."
