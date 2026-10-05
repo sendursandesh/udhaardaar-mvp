@@ -1,30 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.CAMERA" />
-
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
-        android:name=".ArthSaathiApp"
+        android:name="com.arthsaathi.master.ArthSaathiApp"
         android:allowBackup="false"
-        android:fullBackupContent="false"
         android:label="ArthSaathi"
         android:icon="@drawable/arthsaathi_logo"
         android:roundIcon="@drawable/arthsaathi_logo"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="false"
-        android:alwaysRetainTaskState="true"
-        android:theme="@style/Theme.ArthSaathi">
-
-        <activity android:name=".ArthSaathiLoginActivity" android:exported="true" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
+        android:theme="@style/Theme.ArthSaathi"
+        android:usesCleartextTraffic="false">
+        <activity android:name="com.arthsaathi.master.ArthSaathiLoginActivity" android:exported="true" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".ArthSaathiHomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
-        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">
-            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
-        </provider>
+        <activity android:name="com.arthsaathi.master.ArthSaathiHomeActivity" android:exported="false" android:screenOrientation="portrait"/>
+        <activity android:name="com.arthsaathi.master.ArthSaathiModuleActivity" android:exported="false" android:screenOrientation="portrait"/>
     </application>
 </manifest>
