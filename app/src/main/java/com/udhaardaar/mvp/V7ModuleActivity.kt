@@ -30,7 +30,18 @@ class V7ModuleActivity : V7SessionActivity() {
 
     private fun render(key: String) {
         when (key) {
-            "RECORD", "CREDIT", "REPAYMENT", "ASSETS" -> {
+            "REGISTER_CREDIT" -> {
+                startActivity(Intent(this, RegisterCreditV3Activity::class.java))
+                finish()
+                return
+            }
+            "MIS", "BENEFITS", "CHARGECHECK", "REVENUE", "SECURITY", "PEOPLE",
+            "DOCUMENTS", "NOMINEE", "SCORE", "WILL", "ADVOCATE", "CLAIM" -> {
+                startActivity(Intent(this, V7ToolsActivity::class.java).putExtra("tool", key))
+                finish()
+                return
+            }
+            "RECORD", "CREDIT", "REPAYMENT", "ASSETS", "LIABILITIES" -> {
                 startActivity(Intent(this, V7NativeModuleActivity::class.java).putExtra("module", key))
                 finish()
                 return
@@ -40,6 +51,7 @@ class V7ModuleActivity : V7SessionActivity() {
         val title = when (key) {
             "PROTECT" -> "Insurance & Protection"
             "GROW" -> "Investments & Returns"
+            "LIABILITIES" -> "Liability Vault"
             "GROUP_KHATA" -> "Group Khata"
             "QR_KHATA" -> "QR Udhaar Khata"
             "LEGAL" -> "Legal Help & Claims"
