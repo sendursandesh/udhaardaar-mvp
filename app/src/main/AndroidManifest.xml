@@ -14,7 +14,6 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
         android:alwaysRetainTaskState="true"
-        android:usesCleartextTraffic="false"
         android:theme="@style/Theme.ArthSaathi">
 
         <activity android:name=".ArthSaathiLoginActivity" android:exported="true" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
