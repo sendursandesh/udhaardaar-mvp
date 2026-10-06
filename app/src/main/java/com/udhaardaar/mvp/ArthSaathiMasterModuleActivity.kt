@@ -88,7 +88,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         body.addView(TextView(this).apply { text="ACTUAL RECORDED NUMBERS\n\nCredits registered: ₹"+String.format(Locale.US,"%.2f",credit)+"\nRepayments recorded: ₹"+String.format(Locale.US,"%.2f",paid)+"\nCredit outstanding: ₹"+String.format(Locale.US,"%.2f",out)+"\nGroup expenses: ₹"+String.format(Locale.US,"%.2f",group)+"\n\nAsset/portfolio charts and Benefits/Refunds value generated are presentation layers over recorded data."; textSize=17f })
     }
 
-    private fun informative(body:LinearLayout,title:String){ body.addView(TextView(this).apply { text="Canonical module: "+title+"\n\nThis module has one registered destination in the consolidated architecture. No V3/V4/V5/V6.2/V7 navigation contract is used."; textSize=17f }) }
+    private fun informative(body:LinearLayout,title:String){ body.addView(TextView(this).apply { text="Canonical module: "+title+"\n\nThis module has one registered destination in the consolidated architecture. Historical navigation contracts are not used."; textSize=17f }) }
     private fun field(parent:LinearLayout,hint:String,number:Boolean=false):EditText{ val e=EditText(this).apply{this.hint=hint;if(number)inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL};parent.addView(e);return e }
     private fun pickDate(target:EditText){ val c=Calendar.getInstance(); DatePickerDialog(this,{_,y,m,d->target.setText(dateFormat.format(GregorianCalendar(y,m,d).time))},c.get(Calendar.YEAR),c.get(Calendar.MONTH),c.get(Calendar.DAY_OF_MONTH)).show() }
 }
