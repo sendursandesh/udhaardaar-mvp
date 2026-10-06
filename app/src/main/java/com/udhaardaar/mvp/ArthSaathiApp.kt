@@ -5,6 +5,6 @@ import android.app.Application
 class ArthSaathiApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        ArthSaathiDataStore.initialize(this)
+        ArthSaathiDataStore.initialize(this)\n        ArthSaathiArchitectureGuard.verify()
     }
 }
