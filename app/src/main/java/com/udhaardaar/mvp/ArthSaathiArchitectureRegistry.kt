@@ -10,7 +10,10 @@ object ArthSaathiArchitectureRegistry {
         Module("QR_KHATA","QR Khata / Trade Credit","RECORD",ArthSaathiNavigation.QR_KHATA),
         Module("GROUP_KHATA","Group Khata / Group Expenses","RECORD",ArthSaathiNavigation.GROUP_KHATA),
         Module("REPAYMENT","Repayment Centre","CREDIT",ArthSaathiNavigation.REPAYMENT),
+        Module("REPAYMENT_SCHEDULE","Repayment Schedule","CREDIT",ArthSaathiNavigation.REPAYMENT_SCHEDULE),
         Module("PEOPLE","People & Relationships","PEOPLE",ArthSaathiNavigation.PEOPLE),
+        Module("BORROWER_PROFILE","Borrower / Counterparty Profile","PEOPLE",ArthSaathiNavigation.BORROWER_PROFILE),
+        Module("LOCATION_ADDRESS","PIN / Maps Address","PEOPLE",ArthSaathiNavigation.LOCATION_ADDRESS),
         Module("ASSET_VAULT","Asset Vault","ASSETS",ArthSaathiNavigation.ASSET_VAULT),
         Module("LIABILITY_VAULT","Liability Vault","ASSETS",ArthSaathiNavigation.LIABILITY_VAULT),
         Module("PORTFOLIO","Portfolio & Investments","GROW",ArthSaathiNavigation.PORTFOLIO),
@@ -24,9 +27,11 @@ object ArthSaathiArchitectureRegistry {
         Module("LEGAL","Legal Help","LEGAL",ArthSaathiNavigation.LEGAL),
         Module("ADVOCATES","Advocate Directory","LEGAL",ArthSaathiNavigation.ADVOCATES),
         Module("DOCUMENT_VAULT","Document Vault","INTELLIGENCE",ArthSaathiNavigation.DOCUMENT_VAULT),
+        Module("DOCUMENT_CAPTURE","Document / Invoice Capture","INTELLIGENCE",ArthSaathiNavigation.DOCUMENT_CAPTURE),
         Module("AI_ADVISOR","ArthSaathi AI Advisor","AI",ArthSaathiNavigation.AI_ADVISOR),
         Module("REVENUE","Revenue & Payments","REVENUE",ArthSaathiNavigation.REVENUE),
         Module("SECURITY_CONSENT","Security & Consent","PLATFORM",ArthSaathiNavigation.SECURITY_CONSENT),
+        Module("OTP_CONSENT","OTP / Consent Gateway","PLATFORM",ArthSaathiNavigation.OTP_CONSENT),
         Module("INTEGRATIONS","Integrations","PLATFORM",ArthSaathiNavigation.INTEGRATIONS)
     )
 
