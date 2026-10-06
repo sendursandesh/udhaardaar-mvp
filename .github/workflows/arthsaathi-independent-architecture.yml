@@ -3,7 +3,7 @@ name: ArthSaathi Independent Master 8.0
 on:
   push:
     branches:
-      - arthsaathi-independent-consolidated-master-2026-10-05
+      - arthsaathi-consolidated-implementation-2026-10-06
   workflow_dispatch:
 
 jobs:
