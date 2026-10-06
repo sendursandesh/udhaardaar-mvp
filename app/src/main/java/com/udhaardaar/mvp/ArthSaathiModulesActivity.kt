@@ -1,17 +1,19 @@
-package com.udhaardaar.mvp
+package com.arthsaathi.master
 
-import android.content.Intent
+import android.app.Activity
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 
-/** Compatibility entry point: route all legacy menu launches into the registered V6.2 Financial Centre. */
-class ArthSaathiModulesActivity : AppCompatActivity() {
+/** Canonical module entry. No legacy-version routing is permitted. */
+class ArthSaathiModulesActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val mode = intent.getStringExtra("mode")
-        startActivity(Intent(this, V62ExtendedModulesActivity::class.java).apply {
-            mode?.let { putExtra("mode", it) }
-        })
+        val moduleId = intent.getStringExtra("module") ?: ArthSaathiNavigation.HOME
+        openCanonical(moduleId)
+    }
+
+    private fun openCanonical(moduleId: String) {
+        startActivity(android.content.Intent(this, ArthSaathiMasterModuleActivity::class.java)
+            .putExtra("module", moduleId))
         finish()
     }
 }
