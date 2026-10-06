@@ -4,17 +4,38 @@ plugins {
 }
 
 android {
-    namespace 'com.udhaardaar.mvp'
+    namespace 'com.arthsaathi.master'
     compileSdk 35
+
     defaultConfig {
-        applicationId 'com.udhaardaar.mvp'
+        applicationId 'com.arthsaathi.master'
         minSdk 23
         targetSdk 35
-        versionCode 71
-        versionName '7.1'
+        versionCode 800
+        versionName '8.0'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
-    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+
+    sourceSets {
+        main.java.srcDirs = ['src/main/java']
+        main.java.exclude '**/V*.kt'
+        main.java.exclude '**/MainActivity.kt'
+        main.java.exclude '**/LoginActivity.kt'
+        main.java.exclude '**/DashboardV3Activity.kt'
+        main.java.exclude '**/AddUdhaarActivity.kt'
+        main.java.exclude '**/RecordsActivity.kt'
+        main.java.exclude '**/RegisterCreditV3Activity.kt'
+        main.java.exclude '**/UdhaarDatabaseHelper.kt'
+        main.java.exclude '**/V323Activity.kt'
+        main.java.exclude '**/V32Activity.kt'
+        main.java.exclude '**/V32DatabaseHelper.kt'
+        main.java.exclude '**/V32SafeLauncherActivity.kt'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
     kotlinOptions { jvmTarget = '17' }
 }
 
@@ -25,9 +46,4 @@ dependencies {
     implementation 'com.google.mlkit:text-recognition:16.0.1'
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
-    androidTestImplementation 'androidx.test:runner:1.6.2'
-    androidTestImplementation 'androidx.test:rules:1.6.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
-    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
 }
