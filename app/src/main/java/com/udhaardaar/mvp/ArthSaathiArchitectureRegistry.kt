@@ -35,5 +35,18 @@ object ArthSaathiArchitectureRegistry {
         "Formal Loan / Bank Credit", "Other Receivable / Payable"
     )
 
+    /** Runtime architecture guard: one canonical owner per module and route. */
+    init {
+        check(modules.map { it.id }.distinct().size == modules.size) { "Duplicate canonical module id" }
+        check(modules.map { it.route }.distinct().size == modules.size) { "Duplicate canonical route" }
+        check(canonicalModule("REGISTER_CREDIT")?.area == "RECORD")
+        check(canonicalModule("LOANS_UDHAAR")?.area == "CREDIT")
+        check(canonicalModule("REPAYMENT")?.area == "CREDIT")
+        check(canonicalModule("MIS")?.area == "INTELLIGENCE")
+        check(canonicalModule("GROUP_KHATA")?.title?.contains("Group Khata") == true)
+    }
+
     fun canonicalModule(id: String): Module? = modules.firstOrNull { it.id == id && it.canonical }
+
+    fun topLevelAreas(): List<String> = modules.map { it.area }.distinct()
 }
