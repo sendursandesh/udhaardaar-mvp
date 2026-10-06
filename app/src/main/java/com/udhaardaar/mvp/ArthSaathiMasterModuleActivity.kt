@@ -83,7 +83,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
 
     private fun registerCredit(body: LinearLayout) {
         body.addView(TextView(this).apply {
-            text = "NEW CREDIT ONLY\nIdentify party → nature → credit-specific fields → method → repayment → guarantor → digital document → consent/OTP → registration."
+            text = "NEW CREDIT ONLY\nIdentify party → nature → credit-specific fields → method → repayment → guarantor → document → consent."
             textSize = 16f
         })
         val party = field(body,"Borrower / counterparty name")
@@ -93,28 +93,25 @@ class ArthSaathiMasterModuleActivity : Activity() {
         }
         val amount = field(body,"Principal / amount",true)
         val roi = field(body,"ROI % (not used for lease)",true)
-        val method = field(body,"Method: Cash / UPI / NEFT / Other")
+        val method = field(body,"Method: Cash / UPI / NEFT / Bank Transfer / Other")
         val terms = field(body,"Repayment method / terms")
         val guarantor = field(body,"Guarantor (optional)")
         val due = field(body,"Due date"); due.setOnClickListener { pickDate(due) }
         val doc = field(body,"Digital document / agreement reference")
+        val leaseDoc = field(body,"Lease agreement reference (required for Rental / Lease)")
         body.addView(Button(this).apply {
             text = "REGISTER CREDIT"
             setOnClickListener {
-                if(party.text.toString().trim().isEmpty()){ party.error="Required"; return@setOnClickListener }
-                if(amount.text.toString().trim().isEmpty()){ amount.error="Required"; return@setOnClickListener }
-                val lease = nature.selectedItem.toString().contains("Rental")
-                val o=JSONObject()
-                o.put("id","CR-"+System.currentTimeMillis()); o.put("type","CREDIT")
-                o.put("party",party.text.toString().trim()); o.put("mobile",mobile.text.toString())
-                o.put("nature",nature.selectedItem.toString()); o.put("amount",amount.text.toString().toDoubleOrNull()?:0.0)
-                o.put("roi",if(lease)0.0 else (roi.text.toString().toDoubleOrNull()?:0.0))
-                o.put("method",method.text.toString()); o.put("repaymentTerms",terms.text.toString())
-                o.put("guarantor",guarantor.text.toString()); o.put("dueDate",due.text.toString())
-                o.put("document",doc.text.toString()); o.put("paid",0.0); o.put("status","ACTIVE")
-                o.put("consentStatus","PENDING"); o.put("createdAt",System.currentTimeMillis())
-                ArthSaathiDataStore.append(o)
-                Toast.makeText(this@ArthSaathiMasterModuleActivity,"Recorded. Production OTP/consent remains required for protected registration.",Toast.LENGTH_LONG).show()
+                val result=ArthSaathiDomainEngine.registerCredit(mapOf(
+                    "party" to party.text.toString(),"mobile" to mobile.text.toString(),
+                    "nature" to nature.selectedItem.toString(),"amount" to amount.text.toString(),
+                    "roi" to roi.text.toString(),"method" to method.text.toString(),
+                    "repaymentMethod" to terms.text.toString(),"guarantor" to guarantor.text.toString(),
+                    "dueDate" to due.text.toString(),"document" to doc.text.toString(),
+                    "leaseDocument" to leaseDoc.text.toString()
+                ))
+                if(!result.ok) { Toast.makeText(this@ArthSaathiMasterModuleActivity,result.message,Toast.LENGTH_LONG).show(); return@setOnClickListener }
+                Toast.makeText(this@ArthSaathiMasterModuleActivity,"Saved as PENDING CONSENT. OTP/authorization must be completed before protected activation.",Toast.LENGTH_LONG).show()
                 render(ArthSaathiNavigation.LOANS_UDHAAR)
             }
         })
@@ -143,29 +140,37 @@ class ArthSaathiMasterModuleActivity : Activity() {
     }
 
     private fun repayment(body:LinearLayout){
-        body.addView(TextView(this).apply{text="SINGLE REPAYMENT ENGINE\nProduction repayment changes must be consent-gated.";textSize=16f})
+        body.addView(TextView(this).apply{text="SINGLE REPAYMENT ENGINE\nAuthorization is required before any balance/status change.";textSize=16f})
         for(i in 0 until records.length()){
             val o=records.getJSONObject(i); if(o.optString("type")!="CREDIT"||o.optString("status")=="CLOSED") continue
-            body.addView(Button(this).apply{text="Record repayment • "+o.optString("party");setOnClickListener{
+            body.addView(Button(this).apply{text="Record repayment • "+o.optString("party")+" • Outstanding ₹"+money(ArthSaathiDomainEngine.outstanding(o.optString("id")));setOnClickListener{
                 val e=EditText(this@ArthSaathiMasterModuleActivity).apply{hint="Repayment amount";inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL}
-                AlertDialog.Builder(this@ArthSaathiMasterModuleActivity).setTitle("Consent-gated repayment").setView(e).setNegativeButton("CANCEL",null).setPositiveButton("CONFIRM"){_,_->
-                    val paid=(o.optDouble("paid")+(e.text.toString().toDoubleOrNull()?:0.0)).coerceAtMost(o.optDouble("amount"))
-                    o.put("paid",paid); if(paid>=o.optDouble("amount"))o.put("status","CLOSED"); ArthSaathiDataStore.replace(records)
-                    Toast.makeText(this@ArthSaathiMasterModuleActivity,"Saved; production OTP authorization must be connected.",Toast.LENGTH_LONG).show(); render(ArthSaathiNavigation.REPAYMENT)
-                }.show()
+                AlertDialog.Builder(this@ArthSaathiMasterModuleActivity).setTitle("Consent-gated repayment").setView(e)
+                    .setNegativeButton("CANCEL",null).setPositiveButton("AUTHORIZE & SAVE"){_,_->
+                        val result=ArthSaathiDomainEngine.recordRepayment(o.optString("id"),e.text.toString().toDoubleOrNull()?:0.0,true)
+                        Toast.makeText(this@ArthSaathiMasterModuleActivity,result.message,Toast.LENGTH_LONG).show()
+                        if(result.ok) render(ArthSaathiNavigation.REPAYMENT)
+                    }.show()
             }})
         }
     }
 
     private fun mis(body:LinearLayout){
-        var credit=0.0;var paid=0.0;var group=0.0;var assets=0.0;var benefits=0.0
-        for(i in 0 until records.length()){val o=records.getJSONObject(i);when(o.optString("type")){
-            "CREDIT"->{credit+=o.optDouble("amount");paid+=o.optDouble("paid")}
-            "GROUP_EXPENSE"->group+=o.optDouble("f1")
-            "ASSET","PORTFOLIO"->assets+=o.optDouble("f2",o.optDouble("f3"))
-            "BENEFIT"->benefits+=o.optDouble("f2")
-        }}
-        body.addView(TextView(this).apply{text="MIS / MONEY REPORT\n\nACTUAL RECORDED NUMBERS FIRST\nCredits registered: ₹"+money(credit)+"\nRepayments recorded: ₹"+money(paid)+"\nCredit outstanding: ₹"+money((credit-paid).coerceAtLeast(0.0))+"\nGroup expenses: ₹"+money(group)+"\nAssets / portfolio: ₹"+money(assets)+"\nBenefits / refunds value generated: ₹"+money(benefits)+"\n\nCharts are presentation layers over recorded values.";textSize=16f})
+        val m=ArthSaathiDomainEngine.mis(records)
+        body.addView(TextView(this).apply{
+            text="MIS / MONEY REPORT\n\nACTUAL RECORDED VALUES\n"+
+                "Credits registered: ₹"+money(m["CREDIT_GIVEN"]?:0.0)+"\n"+
+                "Repayments recorded: ₹"+money(m["REPAYMENT"]?:0.0)+"\n"+
+                "Credit outstanding: ₹"+money(m["OUTSTANDING"]?:0.0)+"\n"+
+                "Assets / portfolio: ₹"+money(m["ASSETS"]?:0.0)+"\n"+
+                "Liabilities: ₹"+money(m["LIABILITIES"]?:0.0)+"\n"+
+                "Indicative net position: ₹"+money((m["ASSETS"]?:0.0)-(m["LIABILITIES"]?:0.0))+"\n"+
+                "Benefits / refunds received: ₹"+money(m["BENEFITS"]?:0.0)+"\n"+
+                "Group dues: ₹"+money(m["GROUP_DUES"]?:0.0)+"\n"+
+                "Revenue: ₹"+money(m["REVENUE"]?:0.0)
+            textSize=16f
+        })
+        body.addView(TextView(this).apply{text="\nCharts are presentation layers over these live stored values.";textSize=14f})
     }
 
     private fun switchAnalysis(body:LinearLayout){
