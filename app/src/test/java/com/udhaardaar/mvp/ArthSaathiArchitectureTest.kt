@@ -1,7 +1,7 @@
 package com.udhaardaar.mvp
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotNull\nimport org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ArthSaathiArchitectureTest {
@@ -26,6 +26,6 @@ class ArthSaathiArchitectureTest {
     @Test fun requiredMasterAreasExist() {
         val areas = ArthSaathiArchitectureRegistry.topLevelAreas().toSet()
         listOf("HOME","RECORD","CREDIT","ASSETS","GROW","PROTECT","CLAIM_LEGACY","LEGAL","PEOPLE","INTELLIGENCE","AI","REVENUE","PLATFORM")
-            .forEach { assert(areas.contains(it)) { "Missing master area: $it" } }
+            .forEach { assertTrue("Missing master area: $it", areas.contains(it)) }
     }
 }
