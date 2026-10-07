@@ -146,7 +146,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 AlertDialog.Builder(this@ArthSaathiMasterModuleActivity).setTitle("Consent-gated repayment").setView(e).setNegativeButton("CANCEL",null).setPositiveButton("CONFIRM"){_,_->
                     val paid=(o.optDouble("paid")+(e.text.toString().toDoubleOrNull()?:0.0)).coerceAtMost(o.optDouble("amount"))
                     val consent = o.optString("consentStatus")
-                    if (consent != "CONSENTED") { ArthSaathiCoreEngine.requestConsent(o.optString("id"), "user"); ArthSaathiCoreEngine.confirmConsent(o.optString("id"), "123456", "user") }
+                    if (consent != "CONSENTED") { Toast.makeText(this@ArthSaathiMasterModuleActivity,"Consent is required before repayment. Use Security & Consent first.",Toast.LENGTH_LONG).show(); return@setPositiveButton }
                     val result = ArthSaathiCoreEngine.repayment(o.optString("id"), e.text.toString().toDoubleOrNull() ?: 0.0, "USER_ENTERED", "user")
                     Toast.makeText(this@ArthSaathiMasterModuleActivity,result.message,Toast.LENGTH_LONG).show(); render(ArthSaathiNavigation.REPAYMENT)
                 }.show()
