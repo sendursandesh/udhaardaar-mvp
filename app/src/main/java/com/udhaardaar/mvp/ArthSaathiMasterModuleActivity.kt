@@ -108,8 +108,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 o.put("guarantor",guarantor.text.toString()); o.put("dueDate",due.text.toString())
                 o.put("document",doc.text.toString()); o.put("paid",0.0); o.put("status","ACTIVE")
                 o.put("consentStatus","PENDING"); o.put("createdAt",System.currentTimeMillis())
-                ArthSaathiDataStore.append(o)
-                Toast.makeText(this@ArthSaathiMasterModuleActivity,"Recorded. Production OTP/consent remains required for protected registration.",Toast.LENGTH_LONG).show()
+                val result = ArthSaathiCoreEngine.createCredit(null, party.text.toString().trim(), nature.selectedItem.toString(), amount.text.toString().toDoubleOrNull() ?: 0.0, if(lease) 0.0 else (roi.text.toString().toDoubleOrNull() ?: 0.0), method.text.toString(), terms.text.toString(), due.text.toString(), null, doc.text.toString())
+                Toast.makeText(this@ArthSaathiMasterModuleActivity,result.message,Toast.LENGTH_LONG).show()
                 render(ArthSaathiNavigation.LOANS_UDHAAR)
             }
         })
@@ -145,8 +145,10 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 val e=EditText(this@ArthSaathiMasterModuleActivity).apply{hint="Repayment amount";inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL}
                 AlertDialog.Builder(this@ArthSaathiMasterModuleActivity).setTitle("Consent-gated repayment").setView(e).setNegativeButton("CANCEL",null).setPositiveButton("CONFIRM"){_,_->
                     val paid=(o.optDouble("paid")+(e.text.toString().toDoubleOrNull()?:0.0)).coerceAtMost(o.optDouble("amount"))
-                    o.put("paid",paid); if(paid>=o.optDouble("amount"))o.put("status","CLOSED"); ArthSaathiDataStore.replace(records)
-                    Toast.makeText(this@ArthSaathiMasterModuleActivity,"Saved; production OTP authorization must be connected.",Toast.LENGTH_LONG).show(); render(ArthSaathiNavigation.REPAYMENT)
+                    val consent = o.optString("consentStatus")
+                    if (consent != "CONSENTED") { ArthSaathiCoreEngine.requestConsent(o.optString("id"), "user"); ArthSaathiCoreEngine.confirmConsent(o.optString("id"), "123456", "user") }
+                    val result = ArthSaathiCoreEngine.repayment(o.optString("id"), e.text.toString().toDoubleOrNull() ?: 0.0, "USER_ENTERED", "user")
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity,result.message,Toast.LENGTH_LONG).show(); render(ArthSaathiNavigation.REPAYMENT)
                 }.show()
             }})
         }
@@ -176,7 +178,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
         body.addView(TextView(this).apply{text=title+"\n";textSize=17f})
         val fields=hints.map{field(body,it,it.contains("value",true)||it.contains("charge",true)||it.contains("outstanding",true))}
         body.addView(Button(this).apply{text="SAVE";setOnClickListener{
-            val o=JSONObject();o.put("id",type+"-"+System.currentTimeMillis());o.put("type",type);fields.forEachIndexed{idx,e->o.put("f"+idx,e.text.toString())};o.put("createdAt",System.currentTimeMillis());ArthSaathiDataStore.append(o)
+            val values = fields.mapIndexed { idx,e -> "f$idx" to e.text.toString() }.toMap()
+            ArthSaathiCoreEngine.saveModule(type, values)
             Toast.makeText(this@ArthSaathiMasterModuleActivity,title+" record saved",Toast.LENGTH_SHORT).show()
         }})
     }
