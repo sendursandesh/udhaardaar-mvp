@@ -265,11 +265,12 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             null, "Consent QA", "Personal Loan / Hand Loan", 5000.0, 5.0,
             "UPI", "Monthly", "", null, null, "9876501166", "QA Guarantor"
         )
-        val requested = ArthSaathiCoreEngine.requestConsent(created.id!!, "lender")
+        val createdId = requireNotNull(created.id)
+        val requested = ArthSaathiCoreEngine.requestConsent(createdId, "lender")
         assertFalse("Consent request must not pretend an OTP was sent", requested.ok)
-        val confirmed = ArthSaathiCoreEngine.confirmConsent(created.id, "123456", "borrower")
+        val confirmed = ArthSaathiCoreEngine.confirmConsent(createdId, "123456", "borrower")
         assertFalse("A typed numeric code must not bypass provider verification", confirmed.ok)
-        assertEquals("PENDING", ArthSaathiCoreEngine.find(created.id)!!.optString("consentStatus"))
+        assertEquals("PENDING", ArthSaathiCoreEngine.find(createdId)!!.optString("consentStatus"))
     }
 
     @Test fun consentCanOnlyBeConfirmedAfterProviderVerifiesTheChallenge() {
@@ -283,11 +284,12 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             null, "Verified Consent QA", "Personal Loan / Hand Loan", 5000.0, 5.0,
             "UPI", "Monthly", "", null, null, "9876501165", "QA Guarantor"
         )
-        assertTrue(ArthSaathiCoreEngine.requestConsent(created.id!!, "lender").ok)
-        assertFalse(ArthSaathiCoreEngine.confirmConsent(created.id, "123456", "borrower").ok)
-        assertEquals("REQUESTED", ArthSaathiCoreEngine.find(created.id)!!.optString("consentStatus"))
-        assertTrue(ArthSaathiCoreEngine.confirmConsent(created.id, "654321", "borrower").ok)
-        assertEquals("CONSENTED", ArthSaathiCoreEngine.find(created.id)!!.optString("consentStatus"))
+        val createdId = requireNotNull(created.id)
+        assertTrue(ArthSaathiCoreEngine.requestConsent(createdId, "lender").ok)
+        assertFalse(ArthSaathiCoreEngine.confirmConsent(createdId, "123456", "borrower").ok)
+        assertEquals("REQUESTED", ArthSaathiCoreEngine.find(createdId)!!.optString("consentStatus"))
+        assertTrue(ArthSaathiCoreEngine.confirmConsent(createdId, "654321", "borrower").ok)
+        assertEquals("CONSENTED", ArthSaathiCoreEngine.find(createdId)!!.optString("consentStatus"))
     }
 
 }
