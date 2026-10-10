@@ -7,6 +7,14 @@ import org.junit.Test
 import java.util.concurrent.atomic.AtomicInteger
 
 class V7IntegrationContractTest {
+    @Test fun ownerFilteringDeniesOwnerlessAndForeignRecords() {
+        assertTrue(V7Core.ownerVisibleTo("owner-a", "owner-a"))
+        assertFalse(V7Core.ownerVisibleTo("owner-a", "owner-b"))
+        assertFalse(V7Core.ownerVisibleTo("", "owner-a"))
+        assertFalse(V7Core.ownerVisibleTo("owner-a", ""))
+        assertFalse(V7Core.ownerVisibleTo("", ""))
+    }
+
     @Test fun canonicalContractAndEventsArePresent() {
         assertEquals("7.0.1", V7Architecture.CONTRACT_VERSION)
         assertTrue(V7Architecture.Event.values().contains(V7Architecture.Event.CREDIT_CREATED))
