@@ -31,9 +31,15 @@ object V7Core {
     fun id(prefix:String)= prefix + "-" + UUID.randomUUID()
     fun now()=System.currentTimeMillis()
     fun store(c:Context)=V7LocalStore(c.applicationContext)
+    /**
+     * Default-deny access for records without an explicit owner. Legacy ownerless
+     * records must go through a separate authenticated recovery/migration flow.
+     */
+    internal fun ownerVisibleTo(ownerUserId:String, currentUserId:String):Boolean =
+        ownerUserId.isNotBlank() && currentUserId.isNotBlank() && ownerUserId == currentUserId
+
     fun all(c:Context,key:String)=store(c).all(key).filter {
-        val owner = it.optString("ownerUserId")
-        owner.isBlank() || owner == user(c)
+        ownerVisibleTo(it.optString("ownerUserId"), user(c))
     }
     fun find(c:Context,key:String,id:String)=all(c,key).firstOrNull{it.optString("id")==id}
     fun add(c:Context,key:String,o:org.json.JSONObject){
