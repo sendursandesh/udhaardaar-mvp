@@ -46,14 +46,14 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.PORTFOLIO -> simple(body,"PORTFOLIO","Portfolio & Investments",listOf("Investment","Category","Invested value","Current value","Risk / horizon"))
             ArthSaathiNavigation.PROTECTION -> simple(body,"PROTECTION","Insurance & Protection",listOf("Policy / cover","Provider","Coverage","Expiry / renewal","Eligibility"))
             ArthSaathiNavigation.BENEFITS -> simple(body,"BENEFIT","Benefits & Refunds",listOf("Benefit / refund","Source","Value","Status","Evidence"))
-            ArthSaathiNavigation.CHARGECHECK -> simple(body,"CHARGECHECK","ChargeCheck",listOf("Account","Sanctioned charge","Actual charge","Variance","Evidence"))
+            ArthSaathiNavigation.CHARGECHECK -> chargeCheck(body)
             ArthSaathiNavigation.CLAIMS -> simple(body,"CLAIM","Claim Assistance",listOf("Claim / asset","Claimant","Nominee","Status","Evidence / action"))
             ArthSaathiNavigation.WILL_LEGACY -> simple(body,"LEGACY","Will / Inheritance / Legacy",listOf("Asset","Beneficiary","Executor","Instruction","Draft version"))
             ArthSaathiNavigation.LEGAL -> simple(body,"LEGAL_CASE","Legal Help",listOf("Domain","City / locality","Issue","Related module","Status"))
             ArthSaathiNavigation.ADVOCATES -> simple(body,"ADVOCATE","Advocate Directory",listOf("Advocate / firm","Domain","City","Verification","Contact"))
             ArthSaathiNavigation.DOCUMENT_VAULT -> simple(body,"DOCUMENT","Document Vault",listOf("Document","Type","Related account/module","Evidence status","Reference"))
             ArthSaathiNavigation.AI_ADVISOR -> simple(body,"ADVISOR_ALERT","ArthSaathi AI Advisor",listOf("Signal","Reason","Related record","Risk / horizon","User action"))
-            ArthSaathiNavigation.REVENUE -> simple(body,"REVENUE","Revenue & Payments",listOf("Service / transaction","Charge","Payment status","Gateway reference","Notes"))
+            ArthSaathiNavigation.REVENUE -> revenue(body)
             ArthSaathiNavigation.SECURITY_CONSENT -> securityConsent(body)
             ArthSaathiNavigation.INTEGRATIONS -> simple(body,"INTEGRATION","Integrations",listOf("Provider","Capability","Environment","Status","Configuration reference"))
             else -> body.addView(TextView(this).apply { text = "Canonical module"; textSize = 17f })
@@ -239,6 +239,100 @@ class ArthSaathiMasterModuleActivity : Activity() {
                             }
                         }.show()
                 }
+            })
+        }
+    }
+
+    private fun chargeCheck(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "CHARGECHECK — record sanctioned and actual charges. Variance is calculated as actual minus sanctioned; do not enter it manually."
+            textSize = 16f
+        })
+        val account = field(body, "Account / facility")
+        val sanctioned = field(body, "Sanctioned charge", true)
+        val actual = field(body, "Actual charge", true)
+        val evidence = field(body, "Evidence / document reference")
+        body.addView(Button(this).apply {
+            text = "CALCULATE & SAVE VARIANCE"
+            isAllCaps = false
+            setOnClickListener {
+                if (account.text.toString().trim().isEmpty()) { account.error = "Account / facility is required"; return@setOnClickListener }
+                val expected = sanctioned.text.toString().trim().toDoubleOrNull()
+                if (expected == null || !expected.isFinite() || expected < 0.0) { sanctioned.error = "Enter a valid non-negative amount"; return@setOnClickListener }
+                val charged = actual.text.toString().trim().toDoubleOrNull()
+                if (charged == null || !charged.isFinite() || charged < 0.0) { actual.error = "Enter a valid non-negative amount"; return@setOnClickListener }
+                val variance = kotlin.math.round((charged - expected) * 100.0) / 100.0
+                try {
+                    ArthSaathiCoreEngine.saveModule("CHARGECHECK", mapOf(
+                        "f0" to account.text.toString().trim(), "f1" to expected, "f2" to charged,
+                        "f3" to variance, "f4" to evidence.text.toString().trim()
+                    ))
+                    val explanation = if (variance > 0.0) "Excess charge recorded" else if (variance < 0.0) "Actual charge is below sanctioned amount" else "No variance"
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "$explanation: ₹" + money(kotlin.math.abs(variance)), Toast.LENGTH_LONG).show()
+                    render(ArthSaathiNavigation.CHARGECHECK)
+                } catch (e: IllegalStateException) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Sign in again before saving.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "Saved comparisons"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        for (i in 0 until records.length()) {
+            val r = records.optJSONObject(i) ?: continue
+            if (r.optString("type") != "CHARGECHECK") continue
+            val expected = r.optDouble("f1")
+            val charged = r.optDouble("f2")
+            val variance = r.optDouble("f3", charged - expected)
+            body.addView(TextView(this).apply {
+                text = r.optString("f0") + "\nSanctioned ₹" + money(expected) + " • Actual ₹" + money(charged) +
+                    " • Variance ₹" + money(variance) + "\n" + r.optString("f4")
+                setPadding(0, 8, 0, 8)
+            })
+        }
+    }
+
+    private fun revenue(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "REVENUE & PAYMENTS — only PAID records count as collected revenue. This records a payment status; it does not verify gateway settlement until a payment provider is connected."
+            textSize = 16f
+        })
+        val service = field(body, "Service / transaction")
+        val charge = field(body, "Charge amount", true)
+        val status = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("PENDING", "PAID", "FAILED", "REFUNDED"))
+            body.addView(it)
+        }
+        val reference = field(body, "Receipt / gateway reference")
+        val notes = field(body, "Notes")
+        body.addView(Button(this).apply {
+            text = "SAVE PAYMENT RECORD"
+            isAllCaps = false
+            setOnClickListener {
+                if (service.text.toString().trim().isEmpty()) { service.error = "Service / transaction is required"; return@setOnClickListener }
+                val amount = charge.text.toString().trim().toDoubleOrNull()
+                if (amount == null || !amount.isFinite() || amount <= 0.0) { charge.error = "Charge must be greater than zero"; return@setOnClickListener }
+                val paymentStatus = status.selectedItem.toString()
+                if (paymentStatus == "PAID" && reference.text.toString().trim().isEmpty()) {
+                    reference.error = "Enter a receipt or payment reference for a paid record"; return@setOnClickListener
+                }
+                try {
+                    ArthSaathiCoreEngine.saveModule("REVENUE", mapOf(
+                        "f0" to service.text.toString().trim(), "f1" to amount, "f2" to paymentStatus,
+                        "f3" to reference.text.toString().trim(), "f4" to notes.text.toString().trim()
+                    ))
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Payment record saved as $paymentStatus", Toast.LENGTH_SHORT).show()
+                    render(ArthSaathiNavigation.REVENUE)
+                } catch (e: IllegalStateException) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Sign in again before saving.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "Recorded service charges"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        for (i in 0 until records.length()) {
+            val r = records.optJSONObject(i) ?: continue
+            if (r.optString("type") != "REVENUE") continue
+            body.addView(TextView(this).apply {
+                text = r.optString("f0") + " • ₹" + money(r.optDouble("f1")) + " • " + r.optString("f2") + "\n" + r.optString("f3")
+                setPadding(0, 8, 0, 8)
             })
         }
     }
