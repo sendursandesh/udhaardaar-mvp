@@ -54,26 +54,52 @@ class ArthSaathiHomeActivity : Activity() {
         }, LinearLayout.LayoutParams(dp(58), dp(58)))
         val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), 0, 0, 0) }
         brand.addView(TextView(this).apply {
-            text = "ArthSaathi"
+            val wordmark = android.text.SpannableString("ArthSaathi")
+            wordmark.setSpan(android.text.style.ForegroundColorSpan(navy), 0, 4,
+                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            wordmark.setSpan(android.text.style.ForegroundColorSpan(gold), 4, wordmark.length,
+                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            text = wordmark
             textSize = 25f
             typeface = Typeface.create("sans-serif", Typeface.BOLD)
-            setTextColor(navy)
         })
         brand.addView(TextView(this).apply {
-            text = "Your Financial-Life Command Centre"
+            text = "Navigate Your Financial Journey"
             textSize = 12f
             setTextColor(muted)
         })
-        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
-        header.addView(TextView(this).apply {
-            text = "PROFILE"
+        brand.addView(TextView(this).apply {
+            text = "Plan • Protect • Grow • Nominate"
             textSize = 10f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(navy)
-            gravity = Gravity.CENTER
-            setPadding(dp(9), dp(9), dp(9), dp(9))
-            background = rounded(navy, 28)
+            setTextColor(gold)
+            setPadding(0, dp(3), 0, 0)
         })
+        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
+        val accountPrefs = getSharedPreferences("udhaardaar_accounts", MODE_PRIVATE)
+        val activeMobile = accountPrefs.getString("current_mobile", ArthSaathiSession.mobile(this).orEmpty()).orEmpty()
+        val displayName = accountPrefs.getString("name_$activeMobile", "User").orEmpty().ifBlank { "User" }
+        val photoUri = listOf("profile_photo_uri", "user_photo_uri", "photo_uri")
+            .firstNotNullOfOrNull { key -> accountPrefs.getString(key, null)?.takeIf { it.isNotBlank() } }
+        val profileView: View = if (photoUri != null) {
+            ImageView(this).apply {
+                contentDescription = "$displayName profile photo"
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                background = rounded(Color.rgb(255, 244, 207), 28)
+                runCatching { setImageURI(android.net.Uri.parse(photoUri)) }
+                    .onFailure { setImageResource(R.drawable.arthsaathi_logo) }
+            }
+        } else {
+            TextView(this).apply {
+                text = displayName.trim().firstOrNull()?.uppercase() ?: "U"
+                textSize = 16f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(navy)
+                gravity = Gravity.CENTER
+                background = rounded(Color.rgb(255, 244, 207), 28)
+                contentDescription = "$displayName profile"
+            }
+        }
+        header.addView(profileView, LinearLayout.LayoutParams(dp(42), dp(42)))
         root.addView(header)
 
         val accent = View(this).apply { setBackgroundColor(gold) }

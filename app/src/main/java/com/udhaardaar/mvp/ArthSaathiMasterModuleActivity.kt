@@ -308,6 +308,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 "\n\nCharts are presentation layers over recorded values."
             textSize = 16f
         })
+        // Render actual MIS values in visual form, not just a text-only report.
+        body.addView(ArthSaathiMisChartsView(this, metrics))
     }
 
     private fun switchAnalysis(body:LinearLayout){
