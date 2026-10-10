@@ -96,21 +96,49 @@ class ArthSaathiMasterModuleActivity : Activity() {
         body.addView(Button(this).apply {
             text = "REGISTER CREDIT"
             setOnClickListener {
-                if(party.text.toString().trim().isEmpty()){ party.error="Required"; return@setOnClickListener }
-                if(amount.text.toString().trim().isEmpty()){ amount.error="Required"; return@setOnClickListener }
-                val lease = nature.selectedItem.toString().contains("Rental")
-                val o=JSONObject()
-                o.put("id","CR-"+System.currentTimeMillis()); o.put("type","CREDIT")
-                o.put("party",party.text.toString().trim()); o.put("mobile",mobile.text.toString())
-                o.put("nature",nature.selectedItem.toString()); o.put("amount",amount.text.toString().toDoubleOrNull()?:0.0)
-                o.put("roi",if(lease)0.0 else (roi.text.toString().toDoubleOrNull()?:0.0))
-                o.put("method",method.text.toString()); o.put("repaymentTerms",terms.text.toString())
-                o.put("guarantor",guarantor.text.toString()); o.put("dueDate",due.text.toString())
-                o.put("document",doc.text.toString()); o.put("paid",0.0); o.put("status","ACTIVE")
-                o.put("consentStatus","PENDING"); o.put("createdAt",System.currentTimeMillis())
-                val result = ArthSaathiCoreEngine.createCredit(null, party.text.toString().trim(), nature.selectedItem.toString(), amount.text.toString().toDoubleOrNull() ?: 0.0, if(lease) 0.0 else (roi.text.toString().toDoubleOrNull() ?: 0.0), method.text.toString(), terms.text.toString(), due.text.toString(), null, doc.text.toString())
-                Toast.makeText(this@ArthSaathiMasterModuleActivity,result.message,Toast.LENGTH_LONG).show()
-                render(ArthSaathiNavigation.LOANS_UDHAAR)
+                val partyName = party.text.toString().trim()
+                if (partyName.isEmpty()) { party.error = "Required"; return@setOnClickListener }
+                val partyMobile = mobile.text.toString().trim()
+                if (partyMobile.isNotEmpty() && !ArthSaathiCoreEngine.validateMobile(partyMobile)) {
+                    mobile.error = "Enter a 10-digit mobile number"; return@setOnClickListener
+                }
+                val principal = amount.text.toString().trim().toDoubleOrNull()
+                if (principal == null || !principal.isFinite() || principal <= 0.0) {
+                    amount.error = "Enter an amount greater than zero"; return@setOnClickListener
+                }
+                val lease = nature.selectedItem.toString().contains("Rental", true) ||
+                    nature.selectedItem.toString().contains("Lease", true)
+                val rate = if (lease) 0.0 else roi.text.toString().trim().toDoubleOrNull()
+                if (rate == null || !rate.isFinite() || rate < 0.0 || rate > 100.0) {
+                    roi.error = "ROI must be between 0 and 100%"; return@setOnClickListener
+                }
+                if (method.text.toString().trim().isEmpty()) {
+                    method.error = "Enter how the credit was given"; return@setOnClickListener
+                }
+                if (terms.text.toString().trim().isEmpty()) {
+                    terms.error = "Enter repayment terms"; return@setOnClickListener
+                }
+                try {
+                    val result = ArthSaathiCoreEngine.createCredit(
+                        null, partyName, nature.selectedItem.toString(), principal, rate,
+                        method.text.toString().trim(), terms.text.toString().trim(),
+                        due.text.toString().trim(), null, doc.text.toString().trim()
+                    )
+                    if (!result.ok) {
+                        Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
+                        return@setOnClickListener
+                    }
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                        "Credit registered. Consent is still pending; repayment updates remain locked until verified consent.",
+                        Toast.LENGTH_LONG).show()
+                    render(ArthSaathiNavigation.LOANS_UDHAAR)
+                } catch (e: IllegalArgumentException) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                        e.message ?: "Please review the credit details.", Toast.LENGTH_LONG).show()
+                } catch (e: IllegalStateException) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                        e.message ?: "Sign in again before saving.", Toast.LENGTH_LONG).show()
+                }
             }
         })
     }
