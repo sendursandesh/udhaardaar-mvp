@@ -229,4 +229,32 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             snapshot.revenue >= 999.0)
     }
 
+
+    @Test fun peopleScreenRejectsMalformedMobileAndPersistsCanonicalPersonFields() {
+        val before = ArthSaathiDataStore.records().length()
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.PEOPLE)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                var root = activity.window.decorView
+                requireNotNull(findEdit(root, "Full name")).setText("People QA")
+                requireNotNull(findEdit(root, "10-digit mobile")).setText("1234567890")
+                requireNotNull(findButton(root, "SAVE PERSON")).performClick()
+                assertEquals("Enter a valid 10-digit mobile number",
+                    findEdit(root, "10-digit mobile")?.error)
+                assertEquals(before, ArthSaathiDataStore.records().length())
+                requireNotNull(findEdit(root, "10-digit mobile")).setText("9876501177")
+                requireNotNull(findEdit(root, "Role / relationship")).setText("Family")
+                requireNotNull(findEdit(root, "Address / PIN")).setText("Ranchi")
+                requireNotNull(findButton(root, "SAVE PERSON")).performClick()
+            }
+        }
+        val after = ArthSaathiDataStore.records()
+        assertTrue((0 until after.length()).mapNotNull { after.optJSONObject(it) }.any {
+            it.optString("type") == "PERSON" && it.optString("name") == "People QA" &&
+                it.optString("mobile") == "9876501177" && it.optString("role") == "Family"
+        })
+    }
+
 }
