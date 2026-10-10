@@ -167,19 +167,79 @@ class ArthSaathiMasterModuleActivity : Activity() {
     }
 
     private fun repayment(body:LinearLayout){
-        body.addView(TextView(this).apply{text="SINGLE REPAYMENT ENGINE\nProduction repayment changes must be consent-gated.";textSize=16f})
+        body.addView(TextView(this).apply {
+            text = "SINGLE REPAYMENT ENGINE\nProduction repayment changes require verified consent and a valid amount/method."
+            textSize = 16f
+        })
         for(i in 0 until records.length()){
-            val o=records.getJSONObject(i); if(o.optString("type")!="CREDIT"||o.optString("status")=="CLOSED") continue
-            body.addView(Button(this).apply{text="Record repayment • "+o.optString("party");setOnClickListener{
-                val e=EditText(this@ArthSaathiMasterModuleActivity).apply{hint="Repayment amount";inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL}
-                AlertDialog.Builder(this@ArthSaathiMasterModuleActivity).setTitle("Consent-gated repayment").setView(e).setNegativeButton("CANCEL",null).setPositiveButton("CONFIRM"){_,_->
-                    val paid=(o.optDouble("paid")+(e.text.toString().toDoubleOrNull()?:0.0)).coerceAtMost(o.optDouble("amount"))
-                    val consent = o.optString("consentStatus")
-                    if (consent != "CONSENTED") { Toast.makeText(this@ArthSaathiMasterModuleActivity,"Consent is required before repayment. Use Security & Consent first.",Toast.LENGTH_LONG).show(); return@setPositiveButton }
-                    val result = ArthSaathiCoreEngine.repayment(o.optString("id"), e.text.toString().toDoubleOrNull() ?: 0.0, "USER_ENTERED", "user")
-                    Toast.makeText(this@ArthSaathiMasterModuleActivity,result.message,Toast.LENGTH_LONG).show(); render(ArthSaathiNavigation.REPAYMENT)
-                }.show()
-            }})
+            val o=records.getJSONObject(i)
+            if(o.optString("type")!="CREDIT" || o.optString("status")=="CLOSED") continue
+            body.addView(Button(this).apply {
+                text="Record repayment • "+o.optString("party")
+                isAllCaps = false
+                setOnClickListener {
+                    val amountField = EditText(this@ArthSaathiMasterModuleActivity).apply {
+                        hint = "Repayment amount"
+                        inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                    }
+                    val methodField = EditText(this@ArthSaathiMasterModuleActivity).apply {
+                        hint = "Method: Cash / UPI / NEFT / Other"
+                    }
+                    val form = LinearLayout(this@ArthSaathiMasterModuleActivity).apply {
+                        orientation = LinearLayout.VERTICAL
+                        setPadding(32, 8, 32, 0)
+                        addView(amountField)
+                        addView(methodField)
+                    }
+                    AlertDialog.Builder(this@ArthSaathiMasterModuleActivity)
+                        .setTitle("Consent-gated repayment")
+                        .setView(form)
+                        .setNegativeButton("CANCEL", null)
+                        .setPositiveButton("CONFIRM") { _, _ ->
+                            val consent = o.optString("consentStatus")
+                            if (consent != "CONSENTED") {
+                                Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                                    "Consent is required before repayment. Use Security & Consent first.",
+                                    Toast.LENGTH_LONG).show()
+                                return@setPositiveButton
+                            }
+                            val amount = amountField.text.toString().trim().toDoubleOrNull()
+                            if (amount == null || !amount.isFinite() || amount <= 0.0) {
+                                Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                                    "Enter a repayment amount greater than zero.", Toast.LENGTH_LONG).show()
+                                return@setPositiveButton
+                            }
+                            val outstanding = (o.optDouble("amount") - o.optDouble("paid")).coerceAtLeast(0.0)
+                            if (amount > outstanding + 0.005) {
+                                Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                                    "Repayment exceeds outstanding ₹" + money(outstanding) + ".", Toast.LENGTH_LONG).show()
+                                return@setPositiveButton
+                            }
+                            val method = methodField.text.toString().trim()
+                            if (method.isEmpty()) {
+                                Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                                    "Enter the repayment method.", Toast.LENGTH_LONG).show()
+                                return@setPositiveButton
+                            }
+                            try {
+                                val result = ArthSaathiCoreEngine.repayment(
+                                    o.optString("id"), amount, method, "user"
+                                )
+                                Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                                    result.message, Toast.LENGTH_LONG).show()
+                                render(ArthSaathiNavigation.REPAYMENT)
+                            } catch (e: IllegalArgumentException) {
+                                Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                                    e.message ?: "Repayment was rejected; no change was made.",
+                                    Toast.LENGTH_LONG).show()
+                            } catch (e: IllegalStateException) {
+                                Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                                    e.message ?: "Sign in again before recording repayment.",
+                                    Toast.LENGTH_LONG).show()
+                            }
+                        }.show()
+                }
+            })
         }
     }
 
@@ -209,6 +269,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                     val code = field(body, "OTP for " + party, false, 8)
                     body.addView(Button(this).apply {
                         text = "VERIFY CONSENT • " + party
+                        isAllCaps = false
                         setOnClickListener {
                             val result = ArthSaathiCoreEngine.confirmConsent(
                                 record.optString("id"), code.text.toString().trim(), "borrower"
@@ -220,6 +281,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 }
                 body.addView(Button(this).apply {
                     text = if (status == "REQUESTED") "RESEND CONSENT OTP • " + party else "REQUEST CONSENT OTP • " + party
+                    isAllCaps = false
                     setOnClickListener {
                         val result = ArthSaathiCoreEngine.requestConsent(record.optString("id"), "lender")
                         Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
