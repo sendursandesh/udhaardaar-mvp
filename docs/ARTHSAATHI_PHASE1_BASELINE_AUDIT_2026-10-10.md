@@ -24,7 +24,7 @@ Status: IN PROGRESS — baseline branch created; release baseline not yet certif
 
 The consolidated architecture states that it reconciles the five earlier architecture layers and is the source of truth for subsequent coding and QA. The V6.2 logo freeze identifies `app/src/main/res/drawable/arthsaathi_logo.xml` as the canonical logo resource and prohibits silent redesign.
 
-The user's referenced 53-section “ARTHSAATHI — MASTER VISION & SUCCESS BLUEPRINT” was not identified by that title in the repository tree inspected during this audit. It must be located in the repository or Library and cross-referenced before the requirement register is declared exhaustive. Do not recreate or overwrite it from memory.
+The user's Library contains `ArthSaathi_Master_Version_Requirements.txt` / `ArthSaathi_Master_Version_Requirements(1).txt` and `ArthSaathi_Final_Non_Regulatory_Build_Architecture.docx`. The requirements file describes the master vision, modules, architecture principles, ten development gates, ten-round real-world testing and the no-regression rule. The non-regulatory build architecture further describes the intended first-release scope. These are retained Library artifacts and were not modified. The exact 53-section artifact mentioned in conversation has not yet been conclusively matched to a repository file; do not recreate or overwrite it from memory. Phase 2 must map the repository architecture against both the repository specifications and these Library baselines, documenting any unresolved conflict instead of silently choosing one.
 
 ## 3. Known release blockers from the inspected CI run
 The GitHub Actions run associated with the source commit failed at Kotlin compilation on 2026-10-07. The available log reports:
@@ -46,10 +46,10 @@ These are confirmed blockers in that run; the exact current state must be rechec
 - [x] Isolated hardening branch created from that exact commit.
 - [x] Canonical architecture and logo-freeze documents identified.
 - [x] Known compilation blockers recorded.
-- [ ] Locate and verify the full 53-section master vision.
+- [x] Locate the master version requirements and final non-regulatory architecture in the Library; exact match to the referenced 53-section artifact remains unconfirmed.
 - [ ] Identify the last known-good APK and its exact source commit/hash, if available.
 - [ ] Confirm canonical approved visual assets and compare them to the source resources.
-- [ ] Complete repository-wide inventory of source, resources, tests, workflows and existing artifacts.
+- [x] Inventory top-level specification files, canonical logo resource, architecture registries, build workflows and existing unit/instrumentation test files from the source tree. Full resource-by-resource visual comparison remains pending.
 - [ ] Establish branch protection and required checks where permissions/settings allow.
 
-Phase 2 requirement-to-code mapping must not be marked exhaustive until the remaining unchecked source-baseline items are resolved or explicitly documented as unavailable.
+Phase 1 is PARTIALLY COMPLETE: the baseline is recorded and isolated, but release certification is blocked until a known-good APK/commit is found or explicitly recorded as unavailable, canonical assets are compared visually, and branch-protection settings are applied by a repository administrator. The latest 20 visible Actions runs inspected for the recent master-build/consolidated branches were failures; this is not proof that no older successful artifact exists. Phase 2 can start using this protected baseline while the remaining Phase 1 release-evidence items stay open.
