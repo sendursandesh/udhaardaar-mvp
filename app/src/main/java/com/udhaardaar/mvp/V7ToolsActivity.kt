@@ -8,8 +8,8 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.view.View
 import android.widget.*
-import com.journeyapps.barcodescanner.IntentIntegrator
-import com.journeyapps.barcodescanner.IntentResult
+import com.google.zxing.integration.android.IntentIntegrator
+import com.google.zxing.integration.android.IntentResult
 import androidx.appcompat.app.AppCompatActivity
 
 class V7ToolsActivity : V7SessionActivity() {
