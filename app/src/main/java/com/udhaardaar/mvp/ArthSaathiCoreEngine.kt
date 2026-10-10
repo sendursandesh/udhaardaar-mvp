@@ -29,8 +29,29 @@ object ArthSaathiCoreEngine {
   val o=JSONObject().apply{put("id",id("CR"));put("type","CREDIT");put("partyId",partyId?:"");put("party",partyName);put("partyMobile",partyMobile);put("nature",nature);put("amount",m(amount));put("roi",m(roi));put("method",method);put("terms",terms);put("dueDate",dueDate);put("guarantorId",guarantorId?:"");put("guarantorName",guarantorName);put("documentId",documentId?:"");put("paid",0.0);put("status","ACTIVE");put("consentStatus","PENDING");put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_CREDIT");return Result(true,o.getString("id"),"Credit created")
  }
- fun requestConsent(recordId:String,actor:String):Result{val o=find(recordId)?:return Result(false,message="Record not found");o.put("consentStatus","REQUESTED");o.put("consentActor",actor);o.put("consentRequestedAt",n());replace(o);audit(recordId,"CONSENT_REQUESTED",actor);return Result(true,recordId,"Consent requested")}
- fun confirmConsent(recordId:String,otp:String,actor:String):Result{require(otp.matches(Regex("\\d{4,8}")));val o=find(recordId)?:return Result(false,message="Record not found");require(o.optString("consentStatus")=="REQUESTED");o.put("consentStatus","CONSENTED");o.put("consentActor",actor);o.put("consentAt",n());replace(o);audit(recordId,"CONSENT_CONFIRMED",actor);return Result(true,recordId,"Consent confirmed")}
+ fun requestConsent(recordId:String,actor:String):Result {
+  val o=find(recordId)?:return Result(false,message="Record not found")
+  if(o.optString("type")!="CREDIT")return Result(false,message="Consent is supported for credit records only")
+  val mobile=o.optString("partyMobile")
+  if(!validateMobile(mobile))return Result(false,message="A valid borrower mobile number is required before requesting consent")
+  val challenge=ArthSaathiOtpService.request(mobile,"CREDIT_CONSENT",recordId)
+      ?:return Result(false,message="OTP service is not configured or the provider could not issue a challenge; no consent was recorded")
+  o.put("consentStatus","REQUESTED");o.put("consentActor",actor);o.put("consentChallengeId",challenge);o.put("consentRequestedAt",n())
+  replace(o);audit(recordId,"CONSENT_REQUESTED",actor)
+  return Result(true,recordId,"Consent OTP requested from the configured provider")
+ }
+ fun confirmConsent(recordId:String,otp:String,actor:String):Result {
+  if(!otp.matches(Regex("\\d{4,8}")))return Result(false,message="Enter the verification code sent by the configured provider")
+  val o=find(recordId)?:return Result(false,message="Record not found")
+  if(o.optString("consentStatus")!="REQUESTED")return Result(false,message="No pending consent challenge exists")
+  val challenge=o.optString("consentChallengeId")
+  if(challenge.isBlank()||!ArthSaathiOtpService.verify(challenge,otp))
+      return Result(false,message="OTP could not be verified; consent remains pending")
+  o.put("consentStatus","CONSENTED");o.put("consentActor",actor);o.put("consentAt",n())
+  o.remove("consentChallengeId")
+  replace(o);audit(recordId,"CONSENT_CONFIRMED",actor)
+  return Result(true,recordId,"Consent confirmed by OTP provider")
+ }
  fun repayment(recordId:String,amount:Double,method:String,actor:String):Result{
   require(amount>0);val o=find(recordId)?:return Result(false,message="Credit not found");require(o.optString("type")=="CREDIT");require(o.optString("consentStatus")=="CONSENTED")
   val out=(o.optDouble("amount")-o.optDouble("paid")).coerceAtLeast(0.0);require(amount<=out+0.005)
