@@ -40,7 +40,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.GROUP_KHATA -> simple(body,"GROUP_EXPENSE","Group Khata / Group Expenses",listOf("Group","Total expense","Members","Purpose / notes"))
             ArthSaathiNavigation.MIS -> mis(body)
             ArthSaathiNavigation.SWITCH_ANALYSIS -> switchAnalysis(body)
-            ArthSaathiNavigation.PEOPLE -> simple(body,"PERSON","People & Relationships",listOf("Name","Mobile","Relationship / role","Address / PIN"))
+            ArthSaathiNavigation.PEOPLE -> people(body)
             ArthSaathiNavigation.ASSET_VAULT -> simple(body,"ASSET","Asset Vault",listOf("Asset","Category","Current value","Nominee / owner","Evidence"))
             ArthSaathiNavigation.LIABILITY_VAULT -> simple(body,"LIABILITY","Liability Vault",listOf("Liability","Lender","Outstanding","Due date","Evidence"))
             ArthSaathiNavigation.PORTFOLIO -> simple(body,"PORTFOLIO","Portfolio & Investments",listOf("Investment","Category","Invested value","Current value","Risk / horizon"))
@@ -203,18 +203,117 @@ class ArthSaathiMasterModuleActivity : Activity() {
         }})
     }
 
+    private fun people(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "Create a person record. Mobile numbers are validated before they are stored."
+            textSize = 15f
+        })
+        val name = field(body, "Full name")
+        val mobile = field(body, "10-digit mobile", false, 10)
+        val role = field(body, "Role / relationship")
+        val address = field(body, "Address / PIN")
+        body.addView(Button(this).apply {
+            text = "SAVE PERSON"
+            setOnClickListener {
+                if (name.text.toString().trim().isEmpty()) {
+                    name.error = "Name is required"; return@setOnClickListener
+                }
+                val phone = mobile.text.toString().trim()
+                if (phone.isNotEmpty() && !ArthSaathiCoreEngine.validateMobile(phone)) {
+                    mobile.error = "Enter a valid 10-digit mobile number"; return@setOnClickListener
+                }
+                try {
+                    val result = ArthSaathiCoreEngine.createPerson(
+                        name.text.toString().trim(), phone, role.text.toString().trim(),
+                        address.text.toString().trim()
+                    )
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_SHORT).show()
+                    render(ArthSaathiNavigation.PEOPLE)
+                } catch (e: IllegalArgumentException) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                        e.message ?: "Review the person details.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "Saved people"; textSize = 18f; setPadding(0, 20, 0, 6) })
+        val saved = records
+        var count = 0
+        for (i in 0 until saved.length()) {
+            val record = saved.optJSONObject(i) ?: continue
+            if (record.optString("type") != "PERSON") continue
+            count++
+            body.addView(TextView(this).apply {
+                text = record.optString("name") + " • " + record.optString("mobile") +
+                    if (record.optString("role").isNotBlank()) " • " + record.optString("role") else ""
+                setPadding(0, 8, 0, 8)
+            })
+        }
+        if (count == 0) body.addView(TextView(this).apply { text = "No people saved yet." })
+    }
+
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
         body.addView(TextView(this).apply{text=title+"\n";textSize=17f})
-        val fields=hints.map{field(body,it,it.contains("value",true)||it.contains("charge",true)||it.contains("outstanding",true))}
+        val fields=hints.map { hint ->
+            val numeric = isNumericHint(hint)
+            val edit = field(body, hint, numeric)
+            if (!numeric && (hint.contains("date", true) || hint.contains("expiry", true) ||
+                    hint.contains("renewal", true) || hint.contains("due", true))) {
+                edit.isFocusable = false
+                edit.isClickable = true
+                edit.setOnClickListener { pickDate(edit) }
+            }
+            edit
+        }
         body.addView(Button(this).apply{text="SAVE";setOnClickListener{
-            val values = fields.mapIndexed { idx,e -> "f$idx" to e.text.toString() }.toMap()
-            ArthSaathiCoreEngine.saveModule(type, values)
-            Toast.makeText(this@ArthSaathiMasterModuleActivity,title+" record saved",Toast.LENGTH_SHORT).show()
+            if (fields.isNotEmpty() && fields[0].text.toString().trim().isEmpty()) {
+                fields[0].error = "Required"; return@setOnClickListener
+            }
+            val values = linkedMapOf<String, Any?>()
+            fields.forEachIndexed { idx, edit ->
+                val value = edit.text.toString().trim()
+                if (isNumericHint(hints[idx])) {
+                    val number = value.toDoubleOrNull()
+                    if (number == null || !number.isFinite()) {
+                        edit.error = "Enter a valid number"; return@setOnClickListener
+                    }
+                    if (number < 0.0 && !hints[idx].contains("variance", true)) {
+                        edit.error = "Value cannot be negative"; return@setOnClickListener
+                    }
+                    if ((hints[idx].contains("rate", true) || hints[idx].contains("ROI", true)) &&
+                        number !in 0.0..100.0) {
+                        edit.error = "Rate must be between 0 and 100%"; return@setOnClickListener
+                    }
+                    values["f$idx"] = number
+                } else {
+                    values["f$idx"] = value
+                }
+            }
+            try {
+                ArthSaathiCoreEngine.saveModule(type, values)
+                Toast.makeText(this@ArthSaathiMasterModuleActivity,title+" record saved",Toast.LENGTH_SHORT).show()
+                render(intent.getStringExtra("module") ?: ArthSaathiNavigation.HOME)
+            } catch (e: IllegalArgumentException) {
+                Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                    e.message ?: "Please review the details.", Toast.LENGTH_LONG).show()
+            } catch (e: IllegalStateException) {
+                Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                    e.message ?: "Sign in again before saving.", Toast.LENGTH_LONG).show()
+            }
         }})
     }
 
+    private fun isNumericHint(hint: String): Boolean =
+        listOf("value", "amount", "principal", "expense", "coverage", "invested",
+            "charge", "outstanding", "original", "rate", "roi", "variance", "total")
+            .any { hint.contains(it, true) }
+
     private fun field(parent:LinearLayout,hint:String,number:Boolean=false,max:Int?=null):EditText{
-        return EditText(this).apply{this.hint=hint;if(number)inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL;if(max!=null)filters=arrayOf(InputFilter.LengthFilter(max));parent.addView(this)}
+        return EditText(this).apply{
+            this.hint=hint
+            if(number) inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED
+            if(max!=null) filters=arrayOf(InputFilter.LengthFilter(max))
+            parent.addView(this)
+        }
     }
     private fun pickDate(target:EditText){val c=Calendar.getInstance();DatePickerDialog(this,{_,y,m,d->target.setText(dateFormat.format(GregorianCalendar(y,m,d).time))},c.get(Calendar.YEAR),c.get(Calendar.MONTH),c.get(Calendar.DAY_OF_MONTH)).show()}
     private fun money(v:Double)=String.format(Locale.US,"%.2f",v)
