@@ -292,4 +292,46 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         assertEquals("CONSENTED", ArthSaathiCoreEngine.find(createdId)!!.optString("consentStatus"))
     }
 
+
+    @Test fun loginCannotAuthenticateWithoutConfiguredOtpProvider() {
+        ArthSaathiSession.logout(context)
+        ArthSaathiOtpService.clearProviderForTests()
+        ActivityScenario.launch<ArthSaathiLoginActivity>(
+            Intent(context, ArthSaathiLoginActivity::class.java)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                requireNotNull(findEdit(activity.window.decorView, "10-digit mobile number")).setText("9876501155")
+                requireNotNull(findButton(activity.window.decorView, "SEND VERIFICATION OTP")).performClick()
+                assertFalse("Mobile-only login must never create a session", ArthSaathiSession.isLoggedIn(context))
+                assertTrue(allText(activity.window.decorView).any { it.contains("not configured", true) })
+            }
+        }
+    }
+
+    @Test fun loginRequiresProviderVerifiedChallengeBeforeCreatingSession() {
+        ArthSaathiSession.logout(context)
+        ArthSaathiOtpService.installProvider(object : ArthSaathiOtpProvider {
+            override fun requestCode(mobile: String, purpose: String, recordId: String): String? =
+                if (mobile == "9876501154" && purpose == "LOGIN") "LOGIN-CHALLENGE" else null
+            override fun verifyCode(challengeId: String, code: String): Boolean =
+                challengeId == "LOGIN-CHALLENGE" && code == "654321"
+        })
+        ActivityScenario.launch<ArthSaathiLoginActivity>(
+            Intent(context, ArthSaathiLoginActivity::class.java)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                requireNotNull(findEdit(activity.window.decorView, "10-digit mobile number")).setText("9876501154")
+                requireNotNull(findButton(activity.window.decorView, "SEND VERIFICATION OTP")).performClick()
+                requireNotNull(findEdit(activity.window.decorView, "Verification code")).setText("111111")
+                requireNotNull(findButton(activity.window.decorView, "VERIFY & SIGN IN")).performClick()
+                assertFalse("Wrong OTP must not authenticate", ArthSaathiSession.isLoggedIn(context))
+                requireNotNull(findEdit(activity.window.decorView, "Verification code")).setText("654321")
+                requireNotNull(findButton(activity.window.decorView, "VERIFY & SIGN IN")).performClick()
+            }
+        }
+        assertTrue("Correct provider-verified OTP should create a session", ArthSaathiSession.isLoggedIn(context))
+        assertEquals("9876501154", ArthSaathiSession.mobile(context))
+        ArthSaathiSession.logout(context)
+    }
+
 }
