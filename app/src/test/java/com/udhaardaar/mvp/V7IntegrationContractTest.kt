@@ -6,7 +6,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.atomic.AtomicInteger
 
-class V7IntegrationContractTest {
+class V7IntegrationContractTest {    @Test fun masterStoreOwnerIsolationDeniesLegacyAndForeignRows() {
+        assertTrue(ArthSaathiDataStore.ownerCanRead("9876507711", "9876507711"))
+        assertFalse(ArthSaathiDataStore.ownerCanRead("9876507711", "9876507722"))
+        assertFalse(ArthSaathiDataStore.ownerCanRead("", "9876507711"))
+        assertFalse(ArthSaathiDataStore.ownerCanRead(null, "9876507711"))
+        assertFalse(ArthSaathiDataStore.ownerCanRead("9876507711", null))
+    }
+
+
     @Test fun ownerFilteringDeniesOwnerlessAndForeignRecords() {
         assertTrue(V7Core.ownerVisibleTo("owner-a", "owner-a"))
         assertFalse(V7Core.ownerVisibleTo("owner-a", "owner-b"))
