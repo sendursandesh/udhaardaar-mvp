@@ -211,4 +211,22 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         throw NoSuchElementException("Credit type spinner missing")
     }
 
+
+    @Test fun misReconcilesCurrentPortfolioValueAndRevenueFieldsFromCanonicalScreens() {
+        val marker = System.currentTimeMillis().toString()
+        ArthSaathiCoreEngine.saveModule("PORTFOLIO", mapOf(
+            "f0" to "QA Portfolio $marker", "f1" to "Mutual Fund",
+            "f2" to "1000.00", "f3" to "1450.00", "f4" to "Moderate"
+        ))
+        ArthSaathiCoreEngine.saveModule("REVENUE", mapOf(
+            "f0" to "QA Service $marker", "f1" to "999.00",
+            "f2" to "Paid", "f3" to "QA-GATEWAY-$marker"
+        ))
+        val snapshot = ArthSaathiCoreEngine.mis()
+        assertTrue("MIS should use current portfolio value, not invested value: $snapshot",
+            snapshot.assets >= 1450.0)
+        assertTrue("MIS should include the charge field recorded by Revenue & Payments: $snapshot",
+            snapshot.revenue >= 999.0)
+    }
+
 }
