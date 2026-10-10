@@ -271,6 +271,9 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         val confirmed = ArthSaathiCoreEngine.confirmConsent(createdId, "123456", "borrower")
         assertFalse("A typed numeric code must not bypass provider verification", confirmed.ok)
         assertEquals("PENDING", ArthSaathiCoreEngine.find(createdId)!!.optString("consentStatus"))
+        val forged = ArthSaathiCoreEngine.update(createdId, mapOf("consentStatus" to "CONSENTED"))
+        assertFalse("Generic record updates must not forge borrower consent", forged.ok)
+        assertEquals("PENDING", ArthSaathiCoreEngine.find(createdId)!!.optString("consentStatus"))
     }
 
     @Test fun consentCanOnlyBeConfirmedAfterProviderVerifiesTheChallenge() {
