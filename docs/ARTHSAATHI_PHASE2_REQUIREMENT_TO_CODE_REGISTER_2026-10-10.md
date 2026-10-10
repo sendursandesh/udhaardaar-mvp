@@ -74,3 +74,19 @@ Register status: INITIAL INVENTORY + source-risk audit committed. Implementation
 - [ ] Mark no item Verified without a passing test on the current hardening commit.
 
 This register is deliberately conservative: source files and navigation tiles are evidence of implementation attempts, not proof that the feature is complete or reliable.
+
+
+## Rectification update — 2026-10-10
+The following changes are committed on the hardening branch; their build/test evidence remains pending until the new branch-specific CI run finishes.
+
+| Requirement ID | Rectification evidence | Verification status |
+|---|---|---|
+| AS-002 / AS-008 | Master record access now depends on the active session owner; login UI still accepts mobile number without OTP and remains a release-blocking authentication gap. | Partial / NOT VERIFIED |
+| AS-003 | ArthSaathiDataStore tags newly appended rows with the active owner, filters reads to that owner, preserves other owners on replacement, and rejects writes without a session or for another owner. | Code committed / CI pending |
+| AS-005 | Fixed ArthSaathiCoreEngine.saveModule JSON field receiver and canonical credit-type registry reference. | Code committed / CI pending |
+| AS-010 | Corrected ZXing IntentIntegrator / IntentResult imports to the integration package. | Code committed / CI pending |
+| AS-001 | Canonical arthsaathi_logo.xml exists; pixel/visual comparison against the approved design is not yet completed. | Partial / NOT VERIFIED |
+
+Commits: 84e737151daa91f8aaf7a72c75cbb75c19e862ee, 9ee94f13e524006f954f6a9a354936b703d1a97d, 3f7df0c22649d4f415560cf8c980b6dbc7480ae7, 1dd62f26237698032192c7670d5a480ddc5e713f, 6e003717d210a3b541f6bcf59cd910df2b4c5ce5.
+
+A dedicated branch CI workflow now runs clean :app:testDebugUnitTest :app:assembleDebug, verifies the APK archive, records SHA-256 and uploads the APK/test results. Do not mark any row VERIFIED until the run for the exact final commit passes. Authentication remains release-blocking until an actual OTP service/provider is configured and invalid/expired/replayed challenge tests pass. The source-only change is not proof of secure authentication.
