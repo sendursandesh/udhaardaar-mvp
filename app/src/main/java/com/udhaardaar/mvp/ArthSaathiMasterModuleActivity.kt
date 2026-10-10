@@ -54,7 +54,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.DOCUMENT_VAULT -> simple(body,"DOCUMENT","Document Vault",listOf("Document","Type","Related account/module","Evidence status","Reference"))
             ArthSaathiNavigation.AI_ADVISOR -> simple(body,"ADVISOR_ALERT","ArthSaathi AI Advisor",listOf("Signal","Reason","Related record","Risk / horizon","User action"))
             ArthSaathiNavigation.REVENUE -> simple(body,"REVENUE","Revenue & Payments",listOf("Service / transaction","Charge","Payment status","Gateway reference","Notes"))
-            ArthSaathiNavigation.SECURITY_CONSENT -> simple(body,"CONSENT","Security & Consent",listOf("Protected action","Subject","Consent status","Timestamp","Audit reference"))
+            ArthSaathiNavigation.SECURITY_CONSENT -> securityConsent(body)
             ArthSaathiNavigation.INTEGRATIONS -> simple(body,"INTEGRATION","Integrations",listOf("Provider","Capability","Environment","Status","Configuration reference"))
             else -> body.addView(TextView(this).apply { text = "Canonical module"; textSize = 17f })
         }
@@ -160,8 +160,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val out=(o.optDouble("amount")-o.optDouble("paid")).coerceAtLeast(0.0)
         AlertDialog.Builder(this).setTitle("Account "+o.optString("id")).setMessage(
             "Party: "+o.optString("party")+"\nNature: "+o.optString("nature")+"\nAmount: ₹"+money(o.optDouble("amount"))+
-            "\nROI: "+o.optDouble("roi")+"%\nMethod: "+o.optString("method")+"\nTerms: "+o.optString("repaymentTerms")+
-            "\nGuarantor: "+o.optString("guarantor")+"\nDue: "+o.optString("dueDate")+"\nDocument: "+o.optString("document")+
+            "\nROI: "+o.optDouble("roi")+"%\nMethod: "+o.optString("method")+"\nTerms: "+o.optString("terms", o.optString("repaymentTerms"))+
+            "\nGuarantor: "+o.optString("guarantorName", o.optString("guarantor"))+"\nDue: "+o.optString("dueDate")+"\nDocument: "+o.optString("documentId", o.optString("document"))+
             "\nPaid: ₹"+money(o.optDouble("paid"))+"\nOutstanding: ₹"+money(out)+"\nConsent: "+o.optString("consentStatus")+"\nStatus: "+o.optString("status")
         ).setPositiveButton("OK",null).show()
     }
@@ -183,15 +183,64 @@ class ArthSaathiMasterModuleActivity : Activity() {
         }
     }
 
+    /** Consent is a real provider-backed workflow, not a generic editable status field. */
+    private fun securityConsent(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "SECURITY & CONSENT\nRequest a trusted-provider OTP for the borrower and verify it here. A typed status alone never grants consent."
+            textSize = 16f
+        })
+        val credits = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "CREDIT" }
+        if (credits.isEmpty()) {
+            body.addView(TextView(this).apply { text = "No credit records are available for consent." })
+            return
+        }
+        credits.forEach { record ->
+            val party = record.optString("party", "Borrower")
+            val status = record.optString("consentStatus", "PENDING")
+            body.addView(TextView(this).apply {
+                text = "\n" + party + " • " + record.optString("nature") +
+                    "\nMobile: " + record.optString("partyMobile", "Not provided") +
+                    "\nConsent status: " + status
+                textSize = 14f
+            })
+            if (status != "CONSENTED") {
+                if (status == "REQUESTED") {
+                    val code = field(body, "OTP for " + party, false, 8)
+                    body.addView(Button(this).apply {
+                        text = "VERIFY CONSENT • " + party
+                        setOnClickListener {
+                            val result = ArthSaathiCoreEngine.confirmConsent(
+                                record.optString("id"), code.text.toString().trim(), "borrower"
+                            )
+                            Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
+                            if (result.ok) render(ArthSaathiNavigation.SECURITY_CONSENT)
+                        }
+                    })
+                }
+                body.addView(Button(this).apply {
+                    text = if (status == "REQUESTED") "RESEND CONSENT OTP • " + party else "REQUEST CONSENT OTP • " + party
+                    setOnClickListener {
+                        val result = ArthSaathiCoreEngine.requestConsent(record.optString("id"), "lender")
+                        Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
+                        if (result.ok) render(ArthSaathiNavigation.SECURITY_CONSENT)
+                    }
+                })
+            }
+        }
+    }
+
     private fun mis(body:LinearLayout){
-        var credit=0.0;var paid=0.0;var group=0.0;var assets=0.0;var benefits=0.0
+        var credit=0.0;var paid=0.0;var group=0.0;var assets=0.0;var liabilities=0.0;var benefits=0.0
         for(i in 0 until records.length()){val o=records.getJSONObject(i);when(o.optString("type")){
             "CREDIT"->{credit+=o.optDouble("amount");paid+=o.optDouble("paid")}
-            "GROUP_EXPENSE"->group+=o.optDouble("f1")
-            "ASSET","PORTFOLIO"->assets+=o.optDouble("f2",o.optDouble("f3"))
-            "BENEFIT"->benefits+=o.optDouble("f2")
+            "GROUP_EXPENSE"->group+=o.optDouble("f1",o.optDouble("total",0.0))
+            "ASSET"->assets+=o.optDouble("f2",o.optDouble("currentValue",0.0))
+            "PORTFOLIO"->assets+=o.optDouble("f3",o.optDouble("currentValue",o.optDouble("f2",0.0)))
+            "LIABILITY"->liabilities+=o.optDouble("f2",o.optDouble("outstanding",0.0))
+            "BENEFIT"->benefits+=o.optDouble("f2",o.optDouble("value",0.0))
         }}
-        body.addView(TextView(this).apply{text="MIS / MONEY REPORT\n\nACTUAL RECORDED NUMBERS FIRST\nCredits registered: ₹"+money(credit)+"\nRepayments recorded: ₹"+money(paid)+"\nCredit outstanding: ₹"+money((credit-paid).coerceAtLeast(0.0))+"\nGroup expenses: ₹"+money(group)+"\nAssets / portfolio: ₹"+money(assets)+"\nBenefits / refunds value generated: ₹"+money(benefits)+"\n\nCharts are presentation layers over recorded values.";textSize=16f})
+        body.addView(TextView(this).apply{text="MIS / MONEY REPORT\n\nACTUAL RECORDED NUMBERS FIRST\nCredits registered: ₹"+money(credit)+"\nRepayments recorded: ₹"+money(paid)+"\nCredit outstanding: ₹"+money((credit-paid).coerceAtLeast(0.0))+"\nGroup expenses: ₹"+money(group)+"\nAssets / portfolio (current value): ₹"+money(assets)+"\nLiabilities recorded: ₹"+money(liabilities)+"\nBenefits / refunds value generated: ₹"+money(benefits)+"\n\nCharts are presentation layers over recorded values.";textSize=16f})
     }
 
     private fun switchAnalysis(body:LinearLayout){
