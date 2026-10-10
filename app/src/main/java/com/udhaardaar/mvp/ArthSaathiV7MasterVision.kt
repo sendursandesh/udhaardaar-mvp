@@ -17,7 +17,7 @@ object ArthSaathiV7MasterVision {
         Tile("More Services","Documents, MIS, benefits, ChargeCheck & payments","•••","MORE")
     )
 
-    val creditTypes = ArthSaathiMasterArchitecture.creditNatureOptions
+    val creditTypes = ArthSaathiArchitectureRegistry.creditNatureOptions
 
     val moreSections = listOf(
         "People & Records" to listOf(
