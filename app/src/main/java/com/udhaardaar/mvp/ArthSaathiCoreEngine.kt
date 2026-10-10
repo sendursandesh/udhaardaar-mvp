@@ -43,7 +43,28 @@ object ArthSaathiCoreEngine {
  fun update(id:String,fields:Map<String,Any?>,actor:String="user"):Result{val o=find(id)?:return Result(false,message="Record not found");fields.forEach{(k,v)->o.put(k,v)};o.put("updatedAt",n());o.put("updatedBy",actor);replace(o);audit(id,"UPDATE",actor);return Result(true,id,"Updated")}
  fun find(id:String):JSONObject?{val a=ArthSaathiDataStore.records();for(i in 0 until a.length())if(a.optJSONObject(i)?.optString("id")==id)return a.getJSONObject(i);return null}
  fun linked(id:String):List<JSONObject>{val out=mutableListOf<JSONObject>();val a=ArthSaathiDataStore.records();for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("recordId")==id||o.optString("partyId")==id||o.optString("relatedId")==id||o.optString("parentId")==id)out+=o};return out}
- fun mis():Mis{val a=ArthSaathiDataStore.records();var c=0.0;var p=0.0;var asst=0.0;var liab=0.0;var ben=0.0;var grp=0.0;var rev=0.0;for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;when(o.optString("type")){"CREDIT"->c+=o.optDouble("amount");"REPAYMENT"->p+=o.optDouble("amount");"ASSET","PORTFOLIO"->asst+=o.optDouble("value",o.optDouble("currentValue",0.0));"LIABILITY"->liab+=o.optDouble("outstanding",o.optDouble("value",0.0));"BENEFIT"->ben+=o.optDouble("value",0.0);"GROUP_EXPENSE"->grp+=o.optDouble("total",o.optDouble("value",0.0));"REVENUE"->rev+=o.optDouble("amount",o.optDouble("value",0.0))}};return Mis(m(c),m(p),m((c-p).coerceAtLeast(0.0)),m(asst),m(liab),m(ben),m(grp),m(rev))}
+ fun mis():Mis{
+  val a=ArthSaathiDataStore.records()
+  var c=0.0;var p=0.0;var asst=0.0;var liab=0.0;var ben=0.0;var grp=0.0;var rev=0.0
+  fun amount(o:JSONObject,vararg keys:String):Double {
+   for(key in keys){if(o.has(key)&&!o.isNull(key)){val v=o.optDouble(key,Double.NaN);if(v.isFinite())return v}}
+   return 0.0
+  }
+  for(i in 0 until a.length()){
+   val o=a.optJSONObject(i)?:continue
+   when(o.optString("type")){
+    "CREDIT"->c+=amount(o,"amount")
+    "REPAYMENT"->p+=amount(o,"amount")
+    "ASSET"->asst+=amount(o,"value","f2","currentValue")
+    "PORTFOLIO"->asst+=amount(o,"currentValue","f3","value","f2")
+    "LIABILITY"->liab+=amount(o,"outstanding","f2","value")
+    "BENEFIT"->ben+=amount(o,"value","f2")
+    "GROUP_EXPENSE"->grp+=amount(o,"total","f1","value")
+    "REVENUE"->rev+=amount(o,"amount","f1","value")
+   }
+  }
+  return Mis(m(c),m(p),m((c-p).coerceAtLeast(0.0)),m(asst),m(liab),m(ben),m(grp),m(rev))
+ }
  fun switchAnalysis(value:Double,currentReturn:Double,alternativeReturn:Double,currentCost:Double,alternativeCost:Double)=JSONObject().apply{val d=alternativeReturn-currentReturn;val cd=alternativeCost-currentCost;put("returnDifferencePct",m(d));put("annualOpportunityDifference",m(value*d/100));put("costDifference",m(cd));put("netIndicativeDifference",m(value*d/100-cd));put("requiresRiskReview",true);put("requiresUserDecision",true)}
  fun audit(recordId:String,action:String,actor:String){ArthSaathiDataStore.append(JSONObject().apply{put("id",id("AUD"));put("type","AUDIT");put("recordId",recordId);put("action",action);put("actor",actor);put("createdAt",n())})}
  private fun save(o:JSONObject,action:String){ArthSaathiDataStore.append(o);audit(o.getString("id"),action,"system")}
