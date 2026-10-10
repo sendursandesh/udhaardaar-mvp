@@ -9,7 +9,7 @@ import kotlin.math.round
 
 object ArthSaathiCoreEngine {
  data class Result(val ok:Boolean,val id:String?=null,val message:String="")
- data class Mis(val credits:Double,val repayments:Double,val outstanding:Double,val assets:Double,val liabilities:Double,val benefits:Double,val groupExpenses:Double,val revenue:Double)
+ data class Mis(val credits:Double,val repayments:Double,val outstanding:Double,val assets:Double,val liabilities:Double,val benefits:Double,val groupExpenses:Double,val revenue:Double,val actualCharges:Double,val chargeVariance:Double)
  private fun id(p:String)=p+"-"+UUID.randomUUID().toString().take(8).uppercase()
  private fun n()=System.currentTimeMillis()
  private fun m(v:Double)=round(v*100)/100
@@ -77,25 +77,32 @@ object ArthSaathiCoreEngine {
  fun linked(id:String):List<JSONObject>{val out=mutableListOf<JSONObject>();val a=ArthSaathiDataStore.records();for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("recordId")==id||o.optString("partyId")==id||o.optString("relatedId")==id||o.optString("parentId")==id)out+=o};return out}
  fun mis():Mis{
   val a=ArthSaathiDataStore.records()
-  var c=0.0;var p=0.0;var asst=0.0;var liab=0.0;var ben=0.0;var grp=0.0;var rev=0.0
+  var c=0.0;var p=0.0;var outstanding=0.0;var asst=0.0;var liab=0.0;var ben=0.0;var grp=0.0;var rev=0.0;var charges=0.0;var chargeVariance=0.0
   fun amount(o:JSONObject,vararg keys:String):Double {
    for(key in keys){if(o.has(key)&&!o.isNull(key)){val v=o.optDouble(key,Double.NaN);if(v.isFinite())return v}}
    return 0.0
   }
+  fun status(o:JSONObject,vararg keys:String):String {
+   for(key in keys){val v=o.optString(key).trim();if(v.isNotBlank())return v.uppercase(Locale.US)}
+   return ""
+  }
+  val receivedStatuses=setOf("PAID","COMPLETED","SUCCESS","SETTLED","RECEIVED","COLLECTED")
+  val completedBenefitStatuses=receivedStatuses+setOf("CLAIMED","APPROVED","REFUNDED")
   for(i in 0 until a.length()){
    val o=a.optJSONObject(i)?:continue
    when(o.optString("type")){
-    "CREDIT"->c+=amount(o,"amount")
+    "CREDIT"->{val principal=amount(o,"amount");c+=principal;outstanding+=(principal-amount(o,"paid")).coerceAtLeast(0.0)}
     "REPAYMENT"->p+=amount(o,"amount")
     "ASSET"->asst+=amount(o,"value","f2","currentValue")
     "PORTFOLIO"->asst+=amount(o,"currentValue","f3","value","f2")
     "LIABILITY"->liab+=amount(o,"outstanding","f2","value")
-    "BENEFIT"->ben+=amount(o,"value","f2")
+    "BENEFIT"->{if(status(o,"status","f3") in completedBenefitStatuses)ben+=amount(o,"value","f2")}
     "GROUP_EXPENSE"->grp+=amount(o,"total","f1","value")
-    "REVENUE"->rev+=amount(o,"amount","f1","value")
+    "REVENUE"->{val state=status(o,"paymentStatus","f2","status");val value=amount(o,"amount","f1","value");if(state in receivedStatuses)rev+=value else if(state=="REFUNDED")rev-=value}
+    "CHARGECHECK"->{charges+=amount(o,"actualCharge","f2");chargeVariance+=if(o.has("variance"))amount(o,"variance") else if(o.has("f3"))amount(o,"f3") else amount(o,"f2")-amount(o,"f1")}
    }
   }
-  return Mis(m(c),m(p),m((c-p).coerceAtLeast(0.0)),m(asst),m(liab),m(ben),m(grp),m(rev))
+  return Mis(m(c),m(p),m(outstanding),m(asst),m(liab),m(ben),m(grp),m(rev),m(charges),m(chargeVariance))
  }
  fun switchAnalysis(value:Double,currentReturn:Double,alternativeReturn:Double,currentCost:Double,alternativeCost:Double)=JSONObject().apply{val d=alternativeReturn-currentReturn;val cd=alternativeCost-currentCost;put("returnDifferencePct",m(d));put("annualOpportunityDifference",m(value*d/100));put("costDifference",m(cd));put("netIndicativeDifference",m(value*d/100-cd));put("requiresRiskReview",true);put("requiresUserDecision",true)}
  fun audit(recordId:String,action:String,actor:String){ArthSaathiDataStore.append(JSONObject().apply{put("id",id("AUD"));put("type","AUDIT");put("recordId",recordId);put("action",action);put("actor",actor);put("createdAt",n())})}

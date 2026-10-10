@@ -398,7 +398,9 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 "\nAssets / portfolio (current value): ₹" + money(metrics.assets) +
                 "\nLiabilities recorded: ₹" + money(metrics.liabilities) +
                 "\nBenefits / refunds value generated: ₹" + money(metrics.benefits) +
-                "\nArthSaathi service revenue: ₹" + money(metrics.revenue) +
+                "\nArthSaathi service revenue (net of refunds): ₹" + money(metrics.revenue) +
+                "\nActual charges checked: ₹" + money(metrics.actualCharges) +
+                "\nNet charge variance (actual − sanctioned): ₹" + money(metrics.chargeVariance) +
                 "\n\nCharts are presentation layers over recorded values."
             textSize = 16f
         })

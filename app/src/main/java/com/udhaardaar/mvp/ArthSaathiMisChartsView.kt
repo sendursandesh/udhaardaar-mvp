@@ -31,7 +31,9 @@ class ArthSaathiMisChartsView(context: Context, private val metrics: ArthSaathiC
         "Liabilities" to metrics.liabilities,
         "Benefits / refunds" to metrics.benefits,
         "Group expenses" to metrics.groupExpenses,
-        "Service revenue" to metrics.revenue
+        "Service revenue (net)" to metrics.revenue,
+        "Actual charges" to metrics.actualCharges,
+        "Charge variance" to metrics.chargeVariance
     )
     private val palette = intArrayOf(navy, teal, orange, gold, blue, green, muted, navy)
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -49,7 +51,7 @@ class ArthSaathiMisChartsView(context: Context, private val metrics: ArthSaathiC
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = track; strokeWidth = dp(1f) }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val desiredHeight = dp(458f).toInt()
+        val desiredHeight = dp(500f).toInt()
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), resolveSize(desiredHeight, heightMeasureSpec))
     }
 

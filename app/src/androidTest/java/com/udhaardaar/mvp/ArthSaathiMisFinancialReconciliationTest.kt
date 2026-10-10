@@ -25,12 +25,16 @@ class ArthSaathiMisFinancialReconciliationTest {
         ArthSaathiCoreEngine.saveModule("REPAYMENT", mapOf("amount" to 500.0))
         ArthSaathiCoreEngine.saveModule("REVENUE", mapOf("f1" to 777.0, "f2" to "PENDING"))
         ArthSaathiCoreEngine.saveModule("REVENUE", mapOf("f1" to 250.0, "f2" to "PAID"))
+        ArthSaathiCoreEngine.saveModule("REVENUE", mapOf("f1" to 40.0, "f2" to "REFUNDED"))
+        ArthSaathiCoreEngine.saveModule("CHARGECHECK", mapOf("f1" to 100.0, "f2" to 125.0, "f3" to 25.0))
         ArthSaathiCoreEngine.saveModule("BENEFIT", mapOf("f2" to 888.0, "f3" to "PENDING"))
         ArthSaathiCoreEngine.saveModule("BENEFIT", mapOf("f2" to 333.0, "f3" to "COMPLETED"))
 
         val after = ArthSaathiCoreEngine.mis()
         assertEquals(1000.0, after.outstanding - before.outstanding, 0.005)
-        assertEquals(1027.0, after.revenue - before.revenue, 0.005)
+        assertEquals(210.0, after.revenue - before.revenue, 0.005)
+        assertEquals(125.0, after.actualCharges - before.actualCharges, 0.005)
+        assertEquals(25.0, after.chargeVariance - before.chargeVariance, 0.005)
         assertEquals(333.0, after.benefits - before.benefits, 0.005)
     }
 }
