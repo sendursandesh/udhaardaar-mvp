@@ -130,4 +130,85 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         }
         assertTrue("Write without session must be rejected", rejected)
     }
+
+    @Test fun creditRegistrationRejectsInvalidValuesWithoutCrashingAndPersistsValidCredit() {
+        val before = ArthSaathiDataStore.records().length()
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.REGISTER_CREDIT)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                requireNotNull(findEdit(root, "Borrower / counterparty name")).setText("Credit QA Person")
+                requireNotNull(findEdit(root, "Counterparty mobile (10 digits)")).setText("9876501188")
+                requireNotNull(findEdit(root, "Principal / amount")).setText("0")
+                requireNotNull(findEdit(root, "ROI % (not used for lease)")).setText("150")
+                requireNotNull(findEdit(root, "Method: Cash / UPI / NEFT / Other")).setText("UPI")
+                requireNotNull(findEdit(root, "Repayment method / terms")).setText("Monthly")
+                requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
+                assertEquals("Enter an amount greater than zero",
+                    findEdit(root, "Principal / amount")?.error)
+                assertEquals(before, ArthSaathiDataStore.records().length())
+                requireNotNull(findEdit(root, "Principal / amount")).setText("15000")
+                requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
+                assertEquals("ROI must be between 0 and 100%",
+                    findEdit(root, "ROI % (not used for lease)")?.error)
+                assertEquals(before, ArthSaathiDataStore.records().length())
+                requireNotNull(findEdit(root, "ROI % (not used for lease)")).setText("12.5")
+                requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
+            }
+        }
+        val after = ArthSaathiDataStore.records()
+        assertTrue("Valid credit was not committed",
+            (0 until after.length()).mapNotNull { after.optJSONObject(it) }.any {
+                it.optString("type") == "CREDIT" && it.optString("party") == "Credit QA Person" &&
+                    it.optDouble("amount") == 15000.0 && it.optDouble("roi") == 12.5 &&
+                    it.optString("consentStatus") == "PENDING"
+            })
+    }
+
+    @Test fun leaseCreditForcesZeroInterestAndInvalidMobileIsRejected() {
+        val before = ArthSaathiDataStore.records().length()
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.REGISTER_CREDIT)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                requireNotNull(findEdit(root, "Borrower / counterparty name")).setText("Lease QA")
+                requireNotNull(findEdit(root, "Counterparty mobile (10 digits)")).setText("123")
+                requireNotNull(findEdit(root, "Principal / amount")).setText("10000")
+                requireNotNull(findEdit(root, "ROI % (not used for lease)")).setText("0")
+                requireNotNull(findEdit(root, "Method: Cash / UPI / NEFT / Other")).setText("BANK")
+                requireNotNull(findEdit(root, "Repayment method / terms")).setText("Monthly rent")
+                requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
+                assertEquals("Enter a 10-digit mobile number",
+                    findEdit(root, "Counterparty mobile (10 digits)")?.error)
+                assertEquals(before, ArthSaathiDataStore.records().length())
+                requireNotNull(findEdit(root, "Counterparty mobile (10 digits)")).setText("9876501187")
+                val spinner = activity.findViewById<android.widget.Spinner>(android.R.id.content)
+                // The credit type spinner is selected explicitly by its canonical visible option.
+                val sp = findSpinner(activity.window.decorView)
+                val leaseIndex = (0 until sp.count).firstOrNull {
+                    sp.getItemAtPosition(it).toString().contains("Rental", true)
+                }
+                if (leaseIndex != null) sp.setSelection(leaseIndex)
+                requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
+            }
+        }
+        val after = ArthSaathiDataStore.records()
+        assertTrue((0 until after.length()).mapNotNull { after.optJSONObject(it) }.any {
+            it.optString("type") == "CREDIT" && it.optString("party") == "Lease QA" &&
+                it.optDouble("roi") == 0.0
+        })
+    }
+
+    private fun findSpinner(root: View): android.widget.Spinner {
+        if (root is android.widget.Spinner) return root
+        if (root is ViewGroup) for (i in 0 until root.childCount) {
+            try { return findSpinner(root.getChildAt(i)) } catch (_: NoSuchElementException) { }
+        }
+        throw NoSuchElementException("Credit type spinner missing")
+    }
+
 }
