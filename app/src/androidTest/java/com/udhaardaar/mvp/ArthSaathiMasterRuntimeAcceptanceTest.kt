@@ -27,10 +27,12 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         ArthSaathiSession.logout(context)
         ArthSaathiDataStore.initialize(context)
+        ArthSaathiOtpService.clearProviderForTests()
         ArthSaathiSession.login(context, mobile)
     }
 
     @After fun tearDown() {
+        ArthSaathiOtpService.clearProviderForTests()
         ArthSaathiSession.logout(context)
     }
 
@@ -255,6 +257,37 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             it.optString("type") == "PERSON" && it.optString("name") == "People QA" &&
                 it.optString("mobile") == "9876501177" && it.optString("role") == "Family"
         })
+    }
+
+
+    @Test fun consentFailsClosedWhenNoRealOtpProviderIsConfigured() {
+        val created = ArthSaathiCoreEngine.createCredit(
+            null, "Consent QA", "Personal Loan / Hand Loan", 5000.0, 5.0,
+            "UPI", "Monthly", "", null, null, "9876501166", "QA Guarantor"
+        )
+        val requested = ArthSaathiCoreEngine.requestConsent(created.id!!, "lender")
+        assertFalse("Consent request must not pretend an OTP was sent", requested.ok)
+        val confirmed = ArthSaathiCoreEngine.confirmConsent(created.id, "123456", "borrower")
+        assertFalse("A typed numeric code must not bypass provider verification", confirmed.ok)
+        assertEquals("PENDING", ArthSaathiCoreEngine.find(created.id)!!.optString("consentStatus"))
+    }
+
+    @Test fun consentCanOnlyBeConfirmedAfterProviderVerifiesTheChallenge() {
+        ArthSaathiOtpService.installProvider(object : ArthSaathiOtpProvider {
+            override fun requestCode(mobile: String, purpose: String, recordId: String): String? =
+                if (mobile == "9876501165" && purpose == "CREDIT_CONSENT") "TEST-CHALLENGE" else null
+            override fun verifyCode(challengeId: String, code: String): Boolean =
+                challengeId == "TEST-CHALLENGE" && code == "654321"
+        })
+        val created = ArthSaathiCoreEngine.createCredit(
+            null, "Verified Consent QA", "Personal Loan / Hand Loan", 5000.0, 5.0,
+            "UPI", "Monthly", "", null, null, "9876501165", "QA Guarantor"
+        )
+        assertTrue(ArthSaathiCoreEngine.requestConsent(created.id!!, "lender").ok)
+        assertFalse(ArthSaathiCoreEngine.confirmConsent(created.id, "123456", "borrower").ok)
+        assertEquals("REQUESTED", ArthSaathiCoreEngine.find(created.id)!!.optString("consentStatus"))
+        assertTrue(ArthSaathiCoreEngine.confirmConsent(created.id, "654321", "borrower").ok)
+        assertEquals("CONSENTED", ArthSaathiCoreEngine.find(created.id)!!.optString("consentStatus"))
     }
 
 }
