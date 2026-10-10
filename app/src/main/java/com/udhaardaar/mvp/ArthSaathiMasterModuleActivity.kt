@@ -122,7 +122,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
                     val result = ArthSaathiCoreEngine.createCredit(
                         null, partyName, nature.selectedItem.toString(), principal, rate,
                         method.text.toString().trim(), terms.text.toString().trim(),
-                        due.text.toString().trim(), null, doc.text.toString().trim()
+                        due.text.toString().trim(), null, doc.text.toString().trim(),
+                        partyMobile, guarantor.text.toString().trim()
                     )
                     if (!result.ok) {
                         Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
