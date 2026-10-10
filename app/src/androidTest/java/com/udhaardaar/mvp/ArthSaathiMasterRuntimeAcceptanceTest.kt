@@ -1,0 +1,133 @@
+package com.udhaardaar.mvp
+
+import android.content.Context
+import android.content.Intent
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
+import androidx.test.core.app.ActivityScenario
+import androidx.test.platform.app.InstrumentationRegistry
+import org.json.JSONArray
+import org.junit.After
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
+
+/**
+ * Tests the actually configured ArthSaathi 8.0 launcher architecture, rather
+ * than relying only on the historical V7 module-router test surface.
+ */
+class ArthSaathiMasterRuntimeAcceptanceTest {
+    private lateinit var context: Context
+    private val mobile = "9876501199"
+
+    @Before fun setUp() {
+        context = InstrumentationRegistry.getInstrumentation().targetContext
+        ArthSaathiSession.logout(context)
+        ArthSaathiDataStore.initialize(context)
+        ArthSaathiSession.login(context, mobile)
+    }
+
+    @After fun tearDown() {
+        ArthSaathiSession.logout(context)
+    }
+
+    private fun allText(view: View): List<String> {
+        val result = mutableListOf<String>()
+        if (view is TextView) result += view.text?.toString().orEmpty()
+        if (view is ViewGroup) for (i in 0 until view.childCount) result += allText(view.getChildAt(i))
+        return result
+    }
+
+    private fun findEdit(root: View, hint: String): EditText? {
+        if (root is EditText && root.hint?.toString() == hint) return root
+        if (root is ViewGroup) for (i in 0 until root.childCount) {
+            findEdit(root.getChildAt(i), hint)?.let { return it }
+        }
+        return null
+    }
+
+    private fun findButton(root: View, label: String): Button? {
+        if (root is Button && root.text?.toString() == label) return root
+        if (root is ViewGroup) for (i in 0 until root.childCount) {
+            findButton(root.getChildAt(i), label)?.let { return it }
+        }
+        return null
+    }
+
+    @Test fun everyConfiguredCanonicalModuleOpensAndShowsItsExpectedTitle() {
+        assertEquals("Module ids must be unique", ArthSaathiArchitectureRegistry.modules.size,
+            ArthSaathiArchitectureRegistry.modules.map { it.id }.toSet().size)
+        assertEquals("Routes must be unique", ArthSaathiArchitectureRegistry.modules.size,
+            ArthSaathiArchitectureRegistry.modules.map { it.route }.toSet().size)
+
+        ArthSaathiArchitectureRegistry.modules.forEach { module ->
+            ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+                Intent(context, ArthSaathiMasterModuleActivity::class.java).putExtra("module", module.id)
+            ).use { scenario ->
+                scenario.onActivity { activity ->
+                    assertTrue("Screen did not become visible: ${module.id}", activity.window.decorView.isShown)
+                    val text = allText(activity.window.decorView).joinToString(" | ")
+                    assertTrue("Expected title '${module.title}' missing on ${module.id}: $text",
+                        text.contains(module.title))
+                    assertTrue("Home/back control missing on ${module.id}",
+                        text.contains("← Home"))
+                }
+            }
+        }
+    }
+
+    @Test fun assetSavePersistsAndMisReflectsSameRecordedValue() {
+        val assetName = "QA Asset Runtime ${System.currentTimeMillis()}"
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.ASSET_VAULT)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                requireNotNull(findEdit(root, "Asset")).setText(assetName)
+                requireNotNull(findEdit(root, "Category")).setText("PROPERTY")
+                requireNotNull(findEdit(root, "Current value")).setText("12345.67")
+                requireNotNull(findEdit(root, "Nominee / owner")).setText("QA Owner")
+                requireNotNull(findEdit(root, "Evidence")).setText("QA evidence reference")
+                requireNotNull(findButton(root, "SAVE")).performClick()
+            }
+        }
+
+        val saved = ArthSaathiDataStore.records()
+        assertTrue("Saved asset was not persisted",
+            (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }.any {
+                it.optString("type") == "ASSET" && it.optString("f0") == assetName &&
+                    it.optDouble("f2") == 12345.67
+            })
+
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.MIS)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val text = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("MIS did not reflect the saved asset value: $text", text.contains("12345.67"))
+            }
+        }
+
+        // Ensure the owner-filtered store can still read the committed record after a fresh activity.
+        val afterRelaunch = ArthSaathiDataStore.records()
+        assertTrue((0 until afterRelaunch.length()).mapNotNull { afterRelaunch.optJSONObject(it) }
+            .any { it.optString("f0") == assetName && it.optDouble("f2") == 12345.67 })
+    }
+
+    @Test fun recordsCannotBeReadOrWrittenWithoutAnAuthenticatedSession() {
+        ArthSaathiSession.logout(context)
+        assertEquals(0, ArthSaathiDataStore.records().length())
+        var rejected = false
+        try {
+            ArthSaathiDataStore.append(org.json.JSONObject().put("type", "ASSET").put("f0", "No session"))
+        } catch (_: IllegalStateException) {
+            rejected = true
+        }
+        assertTrue("Write without session must be rejected", rejected)
+    }
+}
