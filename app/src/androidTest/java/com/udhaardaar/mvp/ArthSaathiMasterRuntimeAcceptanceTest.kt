@@ -293,6 +293,52 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
     }
 
 
+    @Test fun consentUiConnectsProviderVerificationToRepaymentAndMis() {
+        val party = "UI Consent QA " + System.currentTimeMillis()
+        val created = ArthSaathiCoreEngine.createCredit(
+            null, party, "Personal Loan / Hand Loan", 1000.0, 0.0,
+            "UPI", "Monthly", "", null, null, "9876501164", "QA Guarantor"
+        )
+        val id = requireNotNull(created.id)
+        ArthSaathiOtpService.installProvider(object : ArthSaathiOtpProvider {
+            override fun requestCode(mobile: String, purpose: String, recordId: String): String? =
+                if (mobile == "9876501164" && purpose == "CREDIT_CONSENT" && recordId == id)
+                    "UI-CONSENT-CHALLENGE" else null
+            override fun verifyCode(challengeId: String, code: String): Boolean =
+                challengeId == "UI-CONSENT-CHALLENGE" && code == "654321"
+        })
+
+        var blockedBeforeConsent = false
+        try {
+            ArthSaathiCoreEngine.repayment(id, 100.0, "UPI", "QA")
+        } catch (_: IllegalArgumentException) {
+            blockedBeforeConsent = true
+        }
+        assertTrue("Repayment must be blocked before verified consent", blockedBeforeConsent)
+
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.SECURITY_CONSENT)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                var root = activity.window.decorView
+                requireNotNull(findButton(root, "REQUEST CONSENT OTP • " + party)).performClick()
+                root = activity.window.decorView
+                requireNotNull(findEdit(root, "OTP for " + party)).setText("111111")
+                requireNotNull(findButton(root, "VERIFY CONSENT • " + party)).performClick()
+                assertEquals("REQUESTED", ArthSaathiCoreEngine.find(id)!!.optString("consentStatus"))
+                requireNotNull(findEdit(activity.window.decorView, "OTP for " + party)).setText("654321")
+                requireNotNull(findButton(activity.window.decorView, "VERIFY CONSENT • " + party)).performClick()
+            }
+        }
+
+        assertEquals("CONSENTED", ArthSaathiCoreEngine.find(id)!!.optString("consentStatus"))
+        val repayment = ArthSaathiCoreEngine.repayment(id, 100.0, "UPI", "QA")
+        assertTrue("Verified consent should unlock a valid repayment", repayment.ok)
+        assertTrue("MIS must reflect the repayment ledger entry",
+            ArthSaathiCoreEngine.mis().repayments >= 100.0)
+    }
+
     @Test fun loginCannotAuthenticateWithoutConfiguredOtpProvider() {
         ArthSaathiSession.logout(context)
         ArthSaathiOtpService.clearProviderForTests()
