@@ -163,6 +163,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             (0 until after.length()).mapNotNull { after.optJSONObject(it) }.any {
                 it.optString("type") == "CREDIT" && it.optString("party") == "Credit QA Person" &&
                     it.optDouble("amount") == 15000.0 && it.optDouble("roi") == 12.5 &&
+                    it.optString("partyMobile") == "9876501188" &&
                     it.optString("consentStatus") == "PENDING"
             })
     }
@@ -186,7 +187,6 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                     findEdit(root, "Counterparty mobile (10 digits)")?.error)
                 assertEquals(before, ArthSaathiDataStore.records().length())
                 requireNotNull(findEdit(root, "Counterparty mobile (10 digits)")).setText("9876501187")
-                val spinner = activity.findViewById<android.widget.Spinner>(android.R.id.content)
                 // The credit type spinner is selected explicitly by its canonical visible option.
                 val sp = findSpinner(activity.window.decorView)
                 val leaseIndex = (0 until sp.count).firstOrNull {
