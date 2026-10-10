@@ -21,10 +21,12 @@ object ArthSaathiCoreEngine {
   val o=JSONObject().apply{put("id",id("PER"));put("type","PERSON");put("name",name.trim());put("mobile",mobile);put("role",role);put("address",address);put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_PERSON");return Result(true,o.getString("id"),"Person saved")
  }
- fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null):Result {
-  require(partyName.isNotBlank());require(nature.isNotBlank());require(amount>0);require(roi>=0)
+ fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String=""):Result {
+  require(partyName.isNotBlank());require(nature.isNotBlank());require(amount.isFinite() && amount>0);require(roi.isFinite() && roi in 0.0..100.0)
+  require(partyMobile.isBlank() || validateMobile(partyMobile))
+  require(method.isNotBlank());require(terms.isNotBlank())
   if(nature.contains("Rental",true)||nature.contains("Lease",true))require(roi==0.0)
-  val o=JSONObject().apply{put("id",id("CR"));put("type","CREDIT");put("partyId",partyId?:"");put("party",partyName);put("nature",nature);put("amount",m(amount));put("roi",m(roi));put("method",method);put("terms",terms);put("dueDate",dueDate);put("guarantorId",guarantorId?:"");put("documentId",documentId?:"");put("paid",0.0);put("status","ACTIVE");put("consentStatus","PENDING");put("createdAt",n());put("updatedAt",n())}
+  val o=JSONObject().apply{put("id",id("CR"));put("type","CREDIT");put("partyId",partyId?:"");put("party",partyName);put("partyMobile",partyMobile);put("nature",nature);put("amount",m(amount));put("roi",m(roi));put("method",method);put("terms",terms);put("dueDate",dueDate);put("guarantorId",guarantorId?:"");put("guarantorName",guarantorName);put("documentId",documentId?:"");put("paid",0.0);put("status","ACTIVE");put("consentStatus","PENDING");put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_CREDIT");return Result(true,o.getString("id"),"Credit created")
  }
  fun requestConsent(recordId:String,actor:String):Result{val o=find(recordId)?:return Result(false,message="Record not found");o.put("consentStatus","REQUESTED");o.put("consentActor",actor);o.put("consentRequestedAt",n());replace(o);audit(recordId,"CONSENT_REQUESTED",actor);return Result(true,recordId,"Consent requested")}
