@@ -84,3 +84,12 @@ Required action: Produce release artifact only after clean build + mandatory uni
 
 ## Phase 2 gate
 The requirement register is an initial 31-area mapping, not yet exhaustive to every sub-requirement in the full master vision. Continue by tracing actual entry points and data paths for each row and linking stable requirement IDs to behaviour tests. Do not mark requirements VERIFIED from file existence, navigation tiles, or a passing architecture-only assertion.
+
+
+## Hardening follow-up — 2026-10-10 (not yet CI-verified)
+After the initial audit, the release-hardening branch was changed to default-deny records whose `ownerUserId` is blank or does not match the active account. The predicate is isolated as `V7Core.ownerVisibleTo` in `app/src/main/java/com/udhaardaar/mvp/V7CoreArchitecture.kt`. A unit test was added for same-owner, foreign-owner, blank-owner and blank-current-user cases in `V7IntegrationContractTest.kt`.
+
+Source commit: `3c1a362d5c26311d6ec32f5bd7faa58b5f623fd7`
+Test commit: `bc4229737e4244ad82a58632ae39249567d3e210`
+
+**Status:** Source-level mitigation committed; the new test has not yet been executed by a confirmed CI run. This does not close F-003 until the current branch builds and the test passes. Legacy ownerless records may now be hidden from ordinary reads; any recovery must be implemented as a separately authenticated migration and must not restore global visibility.
