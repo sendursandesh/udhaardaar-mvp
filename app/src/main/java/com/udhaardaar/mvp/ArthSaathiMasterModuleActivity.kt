@@ -231,16 +231,21 @@ class ArthSaathiMasterModuleActivity : Activity() {
     }
 
     private fun mis(body:LinearLayout){
-        var credit=0.0;var paid=0.0;var group=0.0;var assets=0.0;var liabilities=0.0;var benefits=0.0
-        for(i in 0 until records.length()){val o=records.getJSONObject(i);when(o.optString("type")){
-            "CREDIT"->{credit+=o.optDouble("amount");paid+=o.optDouble("paid")}
-            "GROUP_EXPENSE"->group+=o.optDouble("f1",o.optDouble("total",0.0))
-            "ASSET"->assets+=o.optDouble("f2",o.optDouble("currentValue",0.0))
-            "PORTFOLIO"->assets+=o.optDouble("f3",o.optDouble("currentValue",o.optDouble("f2",0.0)))
-            "LIABILITY"->liabilities+=o.optDouble("f2",o.optDouble("outstanding",0.0))
-            "BENEFIT"->benefits+=o.optDouble("f2",o.optDouble("value",0.0))
-        }}
-        body.addView(TextView(this).apply{text="MIS / MONEY REPORT\n\nACTUAL RECORDED NUMBERS FIRST\nCredits registered: ₹"+money(credit)+"\nRepayments recorded: ₹"+money(paid)+"\nCredit outstanding: ₹"+money((credit-paid).coerceAtLeast(0.0))+"\nGroup expenses: ₹"+money(group)+"\nAssets / portfolio (current value): ₹"+money(assets)+"\nLiabilities recorded: ₹"+money(liabilities)+"\nBenefits / refunds value generated: ₹"+money(benefits)+"\n\nCharts are presentation layers over recorded values.";textSize=16f})
+        // One source of truth: MIS reads the same canonical account-scoped ledger as every module.
+        val metrics = ArthSaathiCoreEngine.mis()
+        body.addView(TextView(this).apply {
+            text = "MIS / MONEY REPORT\n\nACTUAL RECORDED NUMBERS FIRST" +
+                "\nCredits registered: ₹" + money(metrics.credits) +
+                "\nRepayments recorded: ₹" + money(metrics.repayments) +
+                "\nCredit outstanding: ₹" + money(metrics.outstanding) +
+                "\nGroup expenses: ₹" + money(metrics.groupExpenses) +
+                "\nAssets / portfolio (current value): ₹" + money(metrics.assets) +
+                "\nLiabilities recorded: ₹" + money(metrics.liabilities) +
+                "\nBenefits / refunds value generated: ₹" + money(metrics.benefits) +
+                "\nArthSaathi service revenue: ₹" + money(metrics.revenue) +
+                "\n\nCharts are presentation layers over recorded values."
+            textSize = 16f
+        })
     }
 
     private fun switchAnalysis(body:LinearLayout){
