@@ -93,3 +93,12 @@ Source commit: `3c1a362d5c26311d6ec32f5bd7faa58b5f623fd7`
 Test commit: `bc4229737e4244ad82a58632ae39249567d3e210`
 
 **Status:** Source-level mitigation committed; the new test has not yet been executed by a confirmed CI run. This does not close F-003 until the current branch builds and the test passes. Legacy ownerless records may now be hidden from ordinary reads; any recovery must be implemented as a separately authenticated migration and must not restore global visibility.
+
+
+## Build-blocker rectifications committed — awaiting a fresh build
+Three source fixes have now been committed to this isolated hardening branch:
+- `ArthSaathiCoreEngine.saveModule`: JSON field writes now call `o.put(k, v)` on the intended record instead of calling an unresolved receiver method inside map iteration. Commit `84e737151daa91f8aaf7a72c75cbb75c19e862ee`.
+- `ArthSaathiV7MasterVision`: credit-type options now reference the existing `ArthSaathiArchitectureRegistry.creditNatureOptions`, avoiding the unresolved `ArthSaathiMasterArchitecture` reference. Commit `9ee94f13e524006f954f6a9a354936b703d1a97d`.
+- `V7ToolsActivity`: ZXing integration imports now use `com.google.zxing.integration.android.IntentIntegrator` and `IntentResult`. Commit `3f7df0c22649d4f415560cf8c980b6dbc7480ae7`.
+
+These edits address the exact three categories of errors in the 2026-10-07 Actions log, but **they are not yet proven fixed** until a clean build is run on the latest hardening commit. The ownership filter/test commits also remain unverified by CI. No Phase 2 item is being promoted to VERIFIED based on source edits alone.
