@@ -2,7 +2,7 @@
 Date: 2026-10-10
 Branch: `arthsaathi-release-hardening-2026-10-10`
 Baseline commit: `cf9e5ebebfdad16a6551e0f99f53893f3e5f5697`
-Register status: INITIAL INVENTORY — implementation coverage and runtime behaviour remain UNVERIFIED until tests prove them.
+Register status: INITIAL INVENTORY + source-risk audit committed. Implementation coverage and runtime behaviour remain UNVERIFIED until tests prove them. Detailed findings: [Phase 2 Source Findings](ARTHSAATHI_PHASE2_SOURCE_FINDINGS_2026-10-10.md). Confirmed blockers include the failed Kotlin build, ownerless-record cross-account visibility in V7Core.all, unproven production OTP boundary, multiple navigation registries, and document-reference records that are not actual stored attachments.
 
 ## Status definitions
 - **Located**: a plausible source/spec/test file exists; this does not prove feature completeness.
@@ -68,8 +68,8 @@ Register status: INITIAL INVENTORY — implementation coverage and runtime behav
 
 ## Immediate Phase 2 tasks
 - [ ] Resolve the canonical master-vision version and enumerate every requirement/sub-requirement from it without altering the source document.
-- [ ] Inspect every source owner listed above and mark actual call paths, persistence owner, event/update path, and test coverage.
-- [ ] Inspect existing tests for assertions versus superficial source/architecture checks.
+- [x] Inspect representative source owners, persistence, events and current tests; detailed findings are recorded in the linked source findings report. Full tracing for all 31 areas remains open.
+- [x] Inspect representative unit/instrumentation tests; architecture registry assertions do not by themselves prove end-to-end functionality. Full suite execution and test-by-test coverage mapping remain open.
 - [ ] Add stable requirement IDs and link each ID to one or more automated tests.
 - [ ] Mark no item Verified without a passing test on the current hardening commit.
 
