@@ -12,7 +12,7 @@ object ArthSaathiCoreEngine {
  private fun id(p:String)=p+"-"+UUID.randomUUID().toString().take(8).uppercase()
  private fun n()=System.currentTimeMillis()
  private fun m(v:Double)=round(v*100)/100
- fun validateMobile(v:String)=v.matches(Regex("\\d{10}"))
+ fun validateMobile(v:String)=v.matches(Regex("[6-9][0-9]{9}"))
  fun validatePan(v:String)=v.isBlank()||v.matches(Regex("[A-Z]{5}[0-9]{4}[A-Z]"))
  fun validateGstin(v:String)=v.isBlank()||v.matches(Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"))
 
