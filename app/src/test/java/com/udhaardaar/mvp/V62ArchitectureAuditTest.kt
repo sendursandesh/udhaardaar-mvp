@@ -48,11 +48,11 @@ class V62ArchitectureAuditTest {
         val sections = V62ModuleRegistry.moreRoutes.mapNotNull { it.section }
         assertEquals(
             setOf("FORMAL","FUNDING","CHARGECHECK","QR_KHATA","TTMM","CREDIT_INTELLIGENCE",
-                "LIABILITY","PEOPLE","ADDRESS","BENEFITS","DOCUMENTS","REPORTS","RENTAL"),
+                "LIABILITY","PEOPLE","ADDRESS","BENEFITS","DOCUMENTS","REPORTS"),
             sections.toSet()
         )
         assertEquals(sections.size, sections.toSet().size)
-        assertFalse(sections.contains("MIS"))
+        assertEquals(V62ModuleRegistry.Surface.FLOW_ONLY, V62ModuleRegistry.route("RENTAL")?.surface)\n        assertFalse(sections.contains("MIS"))
         assertFalse(sections.contains("ASSET_VAULT"))
         assertFalse(sections.contains("INSURANCE"))
         assertFalse(sections.contains("LEGACY"))
