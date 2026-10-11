@@ -95,7 +95,7 @@ jobs:
           sudo unzip -q /tmp/gradle.zip -d /opt
           echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
 
-      - name: Run Android instrumentation suite on API 35 emulator
+      - name: Run Android instrumentation suite on API 34 emulator
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -106,7 +106,6 @@ jobs:
           emulator-options: -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader -memory 2048 -cores 2
           disable-animations: true
           script: |
-            set -o pipefail
             gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace || {
               echo 'Instrumentation failed; collecting emulator and application diagnostics.'
               adb devices -l || true
