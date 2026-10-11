@@ -100,6 +100,7 @@ jobs:
         timeout-minutes: 30
         run: |
           set -euo pipefail
+          export PATH="${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator:${ANDROID_HOME}/cmdline-tools/latest/bin:${PATH}"
           SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" --install "platform-tools" "platforms;android-34" "build-tools;35.0.0" "emulator" "system-images;android-34;google_apis;x86_64"
