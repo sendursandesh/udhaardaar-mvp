@@ -75,7 +75,7 @@ jobs:
 
   emulator-test:
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: 40
     steps:
       - name: Checkout exact revision
         uses: actions/checkout@v4
@@ -96,17 +96,23 @@ jobs:
           echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
 
       - name: Run Android instrumentation suite on API 34 emulator
+        timeout-minutes: 30
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 34
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          emulator-boot-timeout: 1200
+          emulator-boot-timeout: 600
           emulator-options: -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader -memory 2048 -cores 2
           disable-animations: true
           script: |
-            timeout 25m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace || {
+            set -eu
+            echo 'Emulator booted; checking ADB and Android boot state.'
+            adb devices -l
+            adb shell getprop sys.boot_completed
+            echo 'Starting API 34 instrumentation suite (18-minute command limit).'
+            timeout 18m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace || {
               echo 'Instrumentation failed; collecting emulator and application diagnostics.'
               adb devices -l || true
               adb shell getprop sys.boot_completed || true
