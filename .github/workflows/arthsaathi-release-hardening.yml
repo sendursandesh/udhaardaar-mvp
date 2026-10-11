@@ -103,7 +103,7 @@ jobs:
           SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" --install "platform-tools" "platforms;android-34" "build-tools;35.0.0" "emulator" "system-images;android-34;google_apis;x86_64"
-          echo no | avdmanager create avd --force -n arthsaathi-ci -k "system-images;android-34;google_apis;x86_64" -d "pixel_2"
+          echo no | "${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager" create avd --force -n arthsaathi-ci -k "system-images;android-34;google_apis;x86_64" -d "pixel_2"
           emulator -avd arthsaathi-ci -port 5554 -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader -memory 2048 -cores 2 -accel off > /tmp/arthsaathi-emulator.log 2>&1 &
           EMULATOR_PID=$!
           cleanup() {
