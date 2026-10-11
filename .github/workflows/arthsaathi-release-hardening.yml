@@ -106,7 +106,7 @@ jobs:
           emulator-options: -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader -memory 2048 -cores 2
           disable-animations: true
           script: |
-            gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace || {
+            timeout 25m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace || {
               echo 'Instrumentation failed; collecting emulator and application diagnostics.'
               adb devices -l || true
               adb shell getprop sys.boot_completed || true
