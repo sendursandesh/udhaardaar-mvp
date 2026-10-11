@@ -102,17 +102,26 @@ jobs:
           set -euo pipefail
           export PATH="${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator:${ANDROID_HOME}/cmdline-tools/latest/bin:${PATH}"
           SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --install "platform-tools" "platforms;android-34" "build-tools;35.0.0" "emulator" "system-images;android-34;google_apis;x86_64"
+          mkdir -p app/build/qa-diagnostics
+          echo "QA checkpoint: accepting Android SDK licenses"
+          yes | timeout 90 "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          echo "QA checkpoint: installing emulator and API 34 image (8-minute limit)"
+          timeout 8m "$SDKMANAGER" --install "platform-tools" "platforms;android-34" "build-tools;35.0.0" "emulator" "system-images;android-34;google_apis;x86_64"
+          echo "QA checkpoint: creating Android virtual device"
           echo no | "${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager" create avd --force -n arthsaathi-ci -k "system-images;android-34;google_apis;x86_64" -d "pixel_2"
+          echo "QA checkpoint: launching emulator"
           emulator -avd arthsaathi-ci -port 5554 -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader -memory 2048 -cores 2 -accel off > /tmp/arthsaathi-emulator.log 2>&1 &
           EMULATOR_PID=$!
           cleanup() {
             adb -s emulator-5554 emu kill >/dev/null 2>&1 || kill "$EMULATOR_PID" >/dev/null 2>&1 || true
+            mkdir -p app/build/qa-diagnostics
+            cp /tmp/arthsaathi-emulator.log app/build/qa-diagnostics/ 2>/dev/null || true
+            adb logcat -d -t 6000 > app/build/qa-diagnostics/emulator-logcat.txt 2>/dev/null || true
+            adb devices -l > app/build/qa-diagnostics/adb-devices.txt 2>&1 || true
           }
           trap cleanup EXIT
           adb start-server
-          echo "Waiting up to 10 minutes for emulator device..."
+          echo "QA checkpoint: waiting up to 10 minutes for emulator device"
           timeout 600 adb -s emulator-5554 wait-for-device
           booted=0
           for i in $(seq 1 120); do
@@ -127,10 +136,10 @@ jobs:
             exit 1
           fi
           adb devices -l
-          echo "Emulator booted. Running connected Android instrumentation tests."
+          echo "QA checkpoint: emulator booted; running connected Android instrumentation tests (18-minute limit)"
           timeout 18m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace || {
             echo "Instrumentation failed; collecting diagnostics."
-            adb logcat -d -t 6000 || true
+            adb logcat -d -t 6000 > app/build/qa-diagnostics/instrumentation-failure-logcat.txt 2>&1 || true
             cat /tmp/arthsaathi-emulator.log || true
             exit 1
           }
@@ -144,5 +153,6 @@ jobs:
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
             app/build/outputs/apk/androidTest/
+            app/build/qa-diagnostics/
           if-no-files-found: warn
           retention-days: 30
