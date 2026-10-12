@@ -406,4 +406,19 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             baseline + 2345.67, ArthSaathiCoreEngine.mis().benefits, 0.02)
     }
 
+
+    @Test fun switchAnalysisIncludesCostDifferenceInNetOpportunityCalculation() {
+        val result = ArthSaathiCoreEngine.switchAnalysis(
+            value = 100000.0,
+            currentReturn = 5.0,
+            alternativeReturn = 8.0,
+            currentCost = 500.0,
+            alternativeCost = 900.0
+        )
+        assertEquals(3.0, result.optDouble("returnDifferencePct"), 0.001)
+        assertEquals(3000.0, result.optDouble("annualOpportunityDifference"), 0.01)
+        assertEquals(400.0, result.optDouble("costDifference"), 0.01)
+        assertEquals(2600.0, result.optDouble("netIndicativeDifference"), 0.01)
+    }
+
 }
