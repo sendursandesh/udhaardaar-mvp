@@ -611,6 +611,35 @@ class ArthSaathiMasterModuleActivity : Activity() {
                     e.message ?: "Sign in again before saving.", Toast.LENGTH_LONG).show()
             }
         }})
+        body.addView(TextView(this).apply {
+            text = "\\nSAVED RECORDS"
+            textSize = 19f
+            setPadding(0, 24, 0, 8)
+        })
+        var savedCount = 0
+        for (i in 0 until records.length()) {
+            val record = records.optJSONObject(i) ?: continue
+            if (record.optString("type") != type) continue
+            savedCount++
+            val lines = hints.mapIndexedNotNull { idx, hint ->
+                if (!record.has("f$idx") || record.isNull("f$idx")) null
+                else {
+                    val value = record.opt("f$idx")
+                    val display = if (value is Number) money(value.toDouble()) else value.toString()
+                    hint + ": " + display
+                }
+            }
+            val heading = record.optString("f0", record.optString("name", title + " record"))
+            body.addView(TextView(this).apply {
+                text = heading + (if (lines.isEmpty()) "" else "\\n" + lines.drop(1).joinToString("\\n"))
+                textSize = 15f
+                setPadding(8, 12, 8, 12)
+            })
+        }
+        if (savedCount == 0) body.addView(TextView(this).apply {
+            text = "No saved records yet."
+            setPadding(0, 8, 0, 8)
+        })
     }
 
     private fun isNumericHint(hint: String): Boolean =
