@@ -109,6 +109,14 @@ jobs:
           timeout 8m "$SDKMANAGER" --install "platform-tools" "platforms;android-34" "build-tools;35.0.0" "emulator" "system-images;android-34;google_apis;x86_64"
           echo "QA checkpoint: creating Android virtual device"
           echo no | "${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager" create avd --force -n arthsaathi-ci -k "system-images;android-34;google_apis;x86_64" -d "pixel_2"
+          echo "QA checkpoint: enabling hardware acceleration for the emulator"
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            ls -l /dev/kvm
+          else
+            echo "ERROR: /dev/kvm is unavailable on this runner; x86_64 Android emulator cannot start without hardware acceleration."
+            exit 1
+          fi
           echo "QA checkpoint: launching emulator"
           emulator -avd arthsaathi-ci -port 5554 -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader_indirect -memory 3072 -cores 2 > /tmp/arthsaathi-emulator.log 2>&1 &
           EMULATOR_PID=$!
