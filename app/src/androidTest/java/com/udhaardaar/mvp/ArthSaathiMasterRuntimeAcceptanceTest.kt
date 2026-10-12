@@ -121,6 +121,36 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             .any { it.optString("f0") == assetName && it.optDouble("f2") == 12345.67 })
     }
 
+    @Test fun groupKhataCalculatesPersistsAndDisplaysEqualExpenseShares() {
+        val groupName = "QA Group Runtime ${System.currentTimeMillis()}"
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.GROUP_KHATA)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                requireNotNull(findEdit(root, "Group / activity name")).setText(groupName)
+                requireNotNull(findEdit(root, "Total expense (₹)")).setText("5000")
+                requireNotNull(findEdit(root, "Number of members")).setText("10")
+                requireNotNull(findEdit(root, "Purpose / notes")).setText("Gully cricket")
+                requireNotNull(findButton(root, "CALCULATE EQUAL SHARE")).performClick()
+                assertTrue(allText(root).joinToString(" | ").contains("Equal share per member: ₹500.00"))
+                requireNotNull(findButton(root, "SAVE GROUP EXPENSE")).performClick()
+                val refreshed = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("Saved group expense not displayed after save: $refreshed", refreshed.contains(groupName))
+                assertTrue("Saved equal share not displayed: $refreshed", refreshed.contains("Equal share: ₹500.00"))
+            }
+        }
+        val saved = ArthSaathiDataStore.records()
+        assertTrue("Group expense did not persist or MIS-compatible fields were lost",
+            (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }.any {
+                it.optString("type") == "GROUP_EXPENSE" && it.optString("f0") == groupName &&
+                    it.optDouble("f1") == 5000.0 && it.optInt("f2") == 10
+            })
+        assertEquals("MIS group expense total must use saved total", 5000.0,
+            ArthSaathiCoreEngine.mis().groupExpenses, 0.001)
+    }
+
     @Test fun recordsCannotBeReadOrWrittenWithoutAnAuthenticatedSession() {
         ArthSaathiSession.logout(context)
         assertEquals(0, ArthSaathiDataStore.records().length())
