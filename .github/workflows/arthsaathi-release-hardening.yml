@@ -110,7 +110,7 @@ jobs:
           echo "QA checkpoint: creating Android virtual device"
           echo no | "${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager" create avd --force -n arthsaathi-ci -k "system-images;android-34;google_apis;x86_64" -d "pixel_2"
           echo "QA checkpoint: launching emulator"
-          emulator -avd arthsaathi-ci -port 5554 -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader -memory 2048 -cores 2 -accel off > /tmp/arthsaathi-emulator.log 2>&1 &
+          emulator -avd arthsaathi-ci -port 5554 -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader_indirect -memory 4096 -cores 4 > /tmp/arthsaathi-emulator.log 2>&1 &
           EMULATOR_PID=$!
           cleanup() {
             adb -s emulator-5554 emu kill >/dev/null 2>&1 || kill "$EMULATOR_PID" >/dev/null 2>&1 || true
@@ -136,8 +136,8 @@ jobs:
             exit 1
           fi
           adb devices -l
-          echo "QA checkpoint: emulator booted; running connected Android instrumentation tests (18-minute limit)"
-          timeout 18m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace || {
+          echo "QA checkpoint: emulator booted; running connected Android instrumentation tests (25-minute limit)"
+          timeout 25m gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace || {
             echo "Instrumentation failed; collecting diagnostics."
             adb logcat -d -t 6000 > app/build/qa-diagnostics/instrumentation-failure-logcat.txt 2>&1 || true
             cat /tmp/arthsaathi-emulator.log || true
