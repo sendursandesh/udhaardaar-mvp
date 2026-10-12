@@ -383,4 +383,27 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         ArthSaathiSession.logout(context)
     }
 
+
+    @Test fun misCountsOnlyCompletedBenefitsAndNotMerelyApprovedClaims() {
+        val baseline = ArthSaathiCoreEngine.mis().benefits
+        val marker = System.currentTimeMillis().toString()
+        ArthSaathiCoreEngine.saveModule("BENEFIT", mapOf(
+            "f0" to "QA approved-but-unpaid benefit $marker",
+            "f1" to "QA",
+            "f2" to 1234.56,
+            "f3" to "APPROVED"
+        ))
+        assertEquals("Approved but not received benefits must not count as generated value",
+            baseline, ArthSaathiCoreEngine.mis().benefits, 0.001)
+
+        ArthSaathiCoreEngine.saveModule("BENEFIT", mapOf(
+            "f0" to "QA completed benefit $marker",
+            "f1" to "QA",
+            "f2" to 2345.67,
+            "f3" to "COMPLETED"
+        ))
+        assertEquals("Completed benefit should be reflected in MIS",
+            baseline + 2345.67, ArthSaathiCoreEngine.mis().benefits, 0.02)
+    }
+
 }
