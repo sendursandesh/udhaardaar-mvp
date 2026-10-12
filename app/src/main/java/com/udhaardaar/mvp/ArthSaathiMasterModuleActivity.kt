@@ -534,6 +534,32 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 }
             }
         })
+        body.addView(TextView(this).apply {
+            text = "\\nSAVED GROUP EXPENSES"
+            textSize = 19f
+            setPadding(0, 24, 0, 8)
+        })
+        var savedCount = 0
+        for (i in 0 until records.length()) {
+            val record = records.optJSONObject(i) ?: continue
+            if (record.optString("type") != "GROUP_EXPENSE") continue
+            savedCount++
+            val total = record.optDouble("total", record.optDouble("f1", record.optDouble("value", 0.0)))
+            val members = record.optInt("f2", record.optInt("members", 0))
+            val name = record.optString("f0", record.optString("group", "Group expense"))
+            val description = name + "\\nTotal: ₹" + money(total) +
+                (if (members > 0) "\\nMembers: " + members + " • Equal share: ₹" + money(total / members) else "") +
+                (if (record.optString("f3").isNotBlank()) "\\n" + record.optString("f3") else "")
+            body.addView(TextView(this).apply {
+                text = description
+                textSize = 15f
+                setPadding(8, 12, 8, 12)
+            })
+        }
+        if (savedCount == 0) body.addView(TextView(this).apply {
+            text = "No group expenses saved yet."
+            setPadding(0, 8, 0, 8)
+        })
     }
 
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
