@@ -123,6 +123,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
 
     @Test fun groupKhataCalculatesPersistsAndDisplaysEqualExpenseShares() {
         val groupName = "QA Group Runtime ${System.currentTimeMillis()}"
+        val groupExpensesBefore = ArthSaathiCoreEngine.mis().groupExpenses
         ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
             Intent(context, ArthSaathiMasterModuleActivity::class.java)
                 .putExtra("module", ArthSaathiNavigation.GROUP_KHATA)
@@ -147,7 +148,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 it.optString("type") == "GROUP_EXPENSE" && it.optString("f0") == groupName &&
                     it.optDouble("f1") == 5000.0 && it.optInt("f2") == 10
             })
-        assertEquals("MIS group expense total must use saved total", 5000.0,
+        assertEquals("MIS group expense total must use saved total", groupExpensesBefore + 5000.0,
             ArthSaathiCoreEngine.mis().groupExpenses, 0.001)
     }
 
