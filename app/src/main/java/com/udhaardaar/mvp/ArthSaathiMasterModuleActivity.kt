@@ -37,7 +37,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.LOANS_UDHAAR -> loans(body)
             ArthSaathiNavigation.REPAYMENT -> repayment(body)
             ArthSaathiNavigation.QR_KHATA -> simple(body,"QR_KHATA","QR Khata",listOf("Merchant / customer","Amount","QR / invoice reference","Note"))
-            ArthSaathiNavigation.GROUP_KHATA -> simple(body,"GROUP_EXPENSE","Group Khata / Group Expenses",listOf("Group","Total expense","Members","Purpose / notes"))
+            ArthSaathiNavigation.GROUP_KHATA -> groupKhata(body)
             ArthSaathiNavigation.MIS -> mis(body)
             ArthSaathiNavigation.SWITCH_ANALYSIS -> switchAnalysis(body)
             ArthSaathiNavigation.PEOPLE -> people(body)
@@ -485,6 +485,55 @@ class ArthSaathiMasterModuleActivity : Activity() {
             })
         }
         if (count == 0) body.addView(TextView(this).apply { text = "No people saved yet." })
+    }
+
+    private fun groupKhata(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "GROUP KHATA • shared expense register\nEnter the total and number of members to calculate an equal indicative share. This does not record individual payments or settlements."
+            textSize = 16f
+        })
+        val group = field(body, "Group / activity name")
+        val totalField = field(body, "Total expense (₹)", true)
+        val membersField = field(body, "Number of members", true)
+        membersField.inputType = InputType.TYPE_CLASS_NUMBER
+        val purpose = field(body, "Purpose / notes")
+        val share = TextView(this).apply { text = "Equal share per member: —"; textSize = 18f; setPadding(0, 16, 0, 16) }
+        body.addView(share)
+        val calculate = Button(this).apply {
+            text = "CALCULATE EQUAL SHARE"
+            setOnClickListener {
+                val total = totalField.text.toString().trim().toDoubleOrNull()
+                val count = membersField.text.toString().trim().toIntOrNull()
+                if (group.text.toString().trim().isEmpty()) { group.error = "Enter a group or activity"; return@setOnClickListener }
+                if (total == null || !total.isFinite() || total <= 0.0) { totalField.error = "Enter an expense greater than zero"; return@setOnClickListener }
+                if (count == null || count <= 0 || count > 100000) { membersField.error = "Enter a valid positive member count"; return@setOnClickListener }
+                share.text = "Total: ₹" + money(total) + "\\nMembers: " + count + "\\nEqual share per member: ₹" + money(total / count)
+            }
+        }
+        body.addView(calculate)
+        body.addView(Button(this).apply {
+            text = "SAVE GROUP EXPENSE"
+            setOnClickListener {
+                val groupName = group.text.toString().trim()
+                val total = totalField.text.toString().trim().toDoubleOrNull()
+                val count = membersField.text.toString().trim().toIntOrNull()
+                if (groupName.isEmpty()) { group.error = "Enter a group or activity"; return@setOnClickListener }
+                if (total == null || !total.isFinite() || total <= 0.0) { totalField.error = "Enter an expense greater than zero"; return@setOnClickListener }
+                if (count == null || count <= 0 || count > 100000) { membersField.error = "Enter a valid positive member count"; return@setOnClickListener }
+                try {
+                    ArthSaathiCoreEngine.saveModule("GROUP_EXPENSE", linkedMapOf(
+                        "f0" to groupName, "f1" to total, "f2" to count, "f3" to purpose.text.toString().trim()
+                    ))
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                        "Group expense saved. Equal share: ₹" + money(total / count), Toast.LENGTH_LONG).show()
+                    render(ArthSaathiNavigation.GROUP_KHATA)
+                } catch (e: IllegalArgumentException) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Please review the details.", Toast.LENGTH_LONG).show()
+                } catch (e: IllegalStateException) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Sign in again before saving.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
     }
 
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
