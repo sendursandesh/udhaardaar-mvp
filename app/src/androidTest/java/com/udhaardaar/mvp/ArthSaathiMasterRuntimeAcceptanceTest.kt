@@ -95,6 +95,9 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Nominee / owner")).setText("QA Owner")
                 requireNotNull(findEdit(root, "Evidence")).setText("QA evidence reference")
                 requireNotNull(findButton(root, "SAVE")).performClick()
+                val refreshed = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("Saved generic-module record should appear on the same module screen: $refreshed",
+                    refreshed.contains(assetName))
             }
         }
 
