@@ -413,6 +413,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val current=field(body,"Current annual return %",true)
         val alternative=field(body,"Alternative annual return %",true)
         val value=field(body,"Amount considered",true)
+        val currentCost=field(body,"Current annual fees / costs (₹)",true)
+        val alternativeCost=field(body,"Alternative annual fees / costs (₹)",true)
         body.addView(Button(this).apply{text="CALCULATE OPPORTUNITY COST";isAllCaps=false;setOnClickListener{
             val c=current.text.toString().trim().toDoubleOrNull()
             if(c==null||!c.isFinite()||c !in 0.0..100.0){current.error="Enter a return from 0 to 100%";return@setOnClickListener}
@@ -420,13 +422,19 @@ class ArthSaathiMasterModuleActivity : Activity() {
             if(a==null||!a.isFinite()||a !in 0.0..100.0){alternative.error="Enter a return from 0 to 100%";return@setOnClickListener}
             val v=value.text.toString().trim().toDoubleOrNull()
             if(v==null||!v.isFinite()||v<=0.0){value.error="Enter an amount greater than zero";return@setOnClickListener}
-            val analysis=ArthSaathiCoreEngine.switchAnalysis(v,c,a,0.0,0.0)
+            val cc=currentCost.text.toString().trim().toDoubleOrNull()
+            if(cc==null||!cc.isFinite()||cc<0.0){currentCost.error="Enter a non-negative annual cost";return@setOnClickListener}
+            val ac=alternativeCost.text.toString().trim().toDoubleOrNull()
+            if(ac==null||!ac.isFinite()||ac<0.0){alternativeCost.error="Enter a non-negative annual cost";return@setOnClickListener}
+            val analysis=ArthSaathiCoreEngine.switchAnalysis(v,c,a,cc,ac)
             AlertDialog.Builder(this@ArthSaathiMasterModuleActivity).setTitle("Explainable comparison").setMessage(
                 "Current annual return: "+String.format(Locale.US,"%.2f%%",c)+
                 "\nAlternative annual return: "+String.format(Locale.US,"%.2f%%",a)+
                 "\nReturn difference: "+String.format(Locale.US,"%.2f",analysis.optDouble("returnDifferencePct"))+" percentage points"+
-                "\nIndicative annual opportunity difference: ₹"+money(analysis.optDouble("annualOpportunityDifference"))+
-                "\nRisk, fees, tax, liquidity and eligibility still require review. This is not a guaranteed return or an instruction to switch."
+                "\nGross annual opportunity difference: ₹"+money(analysis.optDouble("annualOpportunityDifference"))+
+                "\nAlternative minus current annual cost: ₹"+money(analysis.optDouble("costDifference"))+
+                "\nIndicative annual difference after entered costs: ₹"+money(analysis.optDouble("netIndicativeDifference"))+
+                "\nRisk, tax, liquidity, exit fees and eligibility still require review. This is not a guaranteed return or an instruction to switch."
             ).setPositiveButton("OK",null).show()
         }})
     }
