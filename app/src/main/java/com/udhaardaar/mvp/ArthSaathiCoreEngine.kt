@@ -87,7 +87,7 @@ object ArthSaathiCoreEngine {
    return ""
   }
   val receivedStatuses=setOf("PAID","COMPLETED","SUCCESS","SETTLED","RECEIVED","COLLECTED")
-  val completedBenefitStatuses=receivedStatuses+setOf("CLAIMED","APPROVED","REFUNDED")
+  val completedBenefitStatuses=receivedStatuses+setOf("CLAIMED","REFUNDED")
   for(i in 0 until a.length()){
    val o=a.optJSONObject(i)?:continue
    when(o.optString("type")){
