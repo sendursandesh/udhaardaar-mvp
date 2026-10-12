@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: arthsaathi-hardening-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-test:
@@ -96,61 +96,23 @@ jobs:
           echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
 
       - name: Run Android instrumentation suite on API 34 emulator
-        shell: bash
+        uses: reactivecircus/android-emulator-runner@v2
         timeout-minutes: 30
-        run: |
-          set -euo pipefail
-          export PATH="${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator:${ANDROID_HOME}/cmdline-tools/latest/bin:${PATH}"
-          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
-          mkdir -p app/build/qa-diagnostics
-          echo "QA checkpoint: accepting Android SDK licenses"
-          yes | timeout 90 "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-          echo "QA checkpoint: installing emulator and API 34 image (8-minute limit)"
-          timeout 8m "$SDKMANAGER" --install "platform-tools" "platforms;android-34" "build-tools;35.0.0" "emulator" "system-images;android-34;google_apis;x86_64"
-          echo "QA checkpoint: creating Android virtual device"
-          echo no | "${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager" create avd --force -n arthsaathi-ci -k "system-images;android-34;google_apis;x86_64" -d "pixel_2"
-          echo "QA checkpoint: enabling hardware acceleration for the emulator"
-          if [ -e /dev/kvm ]; then
-            sudo chmod 666 /dev/kvm
-            ls -l /dev/kvm
-          else
-            echo "ERROR: /dev/kvm is unavailable on this runner; x86_64 Android emulator cannot start without hardware acceleration."
-            exit 1
-          fi
-          echo "QA checkpoint: launching emulator"
-          emulator -avd arthsaathi-ci -port 5554 -no-window -no-snapshot -no-audio -no-boot-anim -gpu swiftshader_indirect -memory 3072 -cores 2 > /tmp/arthsaathi-emulator.log 2>&1 &
-          EMULATOR_PID=$!
-          cleanup() {
-            adb -s emulator-5554 emu kill >/dev/null 2>&1 || kill "$EMULATOR_PID" >/dev/null 2>&1 || true
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -memory 3072 -cores 2
+          disable-animations: true
+          script: |
+            set -euo pipefail
             mkdir -p app/build/qa-diagnostics
-            cp /tmp/arthsaathi-emulator.log app/build/qa-diagnostics/ 2>/dev/null || true
-            adb logcat -d -t 6000 > app/build/qa-diagnostics/emulator-logcat.txt 2>/dev/null || true
-            adb devices -l > app/build/qa-diagnostics/adb-devices.txt 2>&1 || true
-          }
-          trap cleanup EXIT
-          adb start-server
-          echo "QA checkpoint: waiting up to 10 minutes for emulator device"
-          timeout 600 adb -s emulator-5554 wait-for-device
-          booted=0
-          for i in $(seq 1 120); do
-            state="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
-            if [ "$state" = "1" ]; then booted=1; break; fi
-            sleep 5
-          done
-          if [ "$booted" -ne 1 ]; then
-            echo "Emulator did not finish booting."
-            cat /tmp/arthsaathi-emulator.log || true
-            adb devices -l || true
-            exit 1
-          fi
-          adb devices -l
-          echo "QA checkpoint: emulator booted; running connected Android instrumentation tests (25-minute limit)"
-          timeout 25m gradle :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace || {
-            echo "Instrumentation failed; collecting diagnostics."
-            adb logcat -d -t 6000 > app/build/qa-diagnostics/instrumentation-failure-logcat.txt 2>&1 || true
-            cat /tmp/arthsaathi-emulator.log || true
-            exit 1
-          }
+            adb devices -l
+            adb shell getprop sys.boot_completed
+            timeout 25m gradle :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
+            mkdir -p app/build/qa-diagnostics
+            adb logcat -d -t 6000 > app/build/qa-diagnostics/emulator-logcat.txt 2>&1 || true
 
       - name: Upload emulator test reports
         if: always()
