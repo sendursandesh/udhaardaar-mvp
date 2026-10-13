@@ -13,8 +13,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: arthsaathi-hardening-${{ github.ref }}-${{ github.sha }}
-  cancel-in-progress: false
+  group: arthsaathi-hardening-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-test:
