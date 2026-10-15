@@ -1,0 +1,74 @@
+name: ArthSaathi V6.2 Architecture Build
+on:
+  workflow_dispatch:
+  push:
+    branches: [arthsaathi-v6.2-final-golden-c480, arthsaathi-v6.2-locked-final-baseline]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+          accept-android-sdk-licenses: true
+      - name: Install Gradle
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
+      - name: Unit tests
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+      - name: Compile V6.2
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Master architecture and integrity gates
+        run: |
+          set -e
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          APK_SIZE=$(stat -c%s "$apk")
+          echo "APK_SIZE_BYTES=$APK_SIZE"
+          test "$APK_SIZE" -gt 5000000
+          unzip -t "$apk" >/dev/null
+          grep -q "versionCode 64" app/build.gradle
+          grep -q "versionName '6.2'" app/build.gradle
+          grep -q 'V62EventBus' app/src/main/java/com/udhaardaar/mvp/V62EventBus.kt
+          grep -q 'SAVINGS_CHANGED' app/src/main/java/com/udhaardaar/mvp/V62EventBus.kt
+          grep -q 'QR_KHATA_CHANGED' app/src/main/java/com/udhaardaar/mvp/V62EventBus.kt
+          grep -q 'V62ModuleRegistry' app/src/main/java/com/udhaardaar/mvp/V62ModuleRegistry.kt
+          grep -q 'V62DocumentScanner' app/src/main/java/com/udhaardaar/mvp/V62DocumentScanner.kt
+          grep -q 'V62DonutChart' app/src/main/java/com/udhaardaar/mvp/V62Charts.kt
+          grep -q 'V62TTMMActivity' app/src/main/AndroidManifest.xml
+          grep -q 'V62LegacyLegalAIActivity' app/src/main/AndroidManifest.xml
+          grep -q 'QrCreditScannerActivity' app/src/main/AndroidManifest.xml
+          grep -q 'LoginActivity' app/src/main/AndroidManifest.xml
+          grep -q 'arthsaathi_logo' app/src/main/AndroidManifest.xml
+          grep -q 'arthsaathi_logo' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          grep -q 'Theme.ArthSaathi' app/src/main/res/values/styles.xml
+          grep -q 'QR_KHATA' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
+          grep -q 'FORMAL_CREDIT' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
+          grep -q 'CHARGECHECK' app/src/main/java/com/udhaardaar/mvp/V62ArchitectureEngine.kt
+          grep -q 'ACCOUNTING_INTEGRATION' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Domain.kt
+          grep -q 'FUNDING_MARKETPLACE' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Domain.kt
+          grep -q 'TALLY' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Accounting.kt
+          grep -q 'SAP' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Accounting.kt
+          grep -q 'V62AddressService' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Services.kt
+          grep -q 'RECORD KHATA ENTRY — CONSENT + OTP' app/src/main/java/com/udhaardaar/mvp/V62ExtendedModulesActivity.kt
+          grep -q 'FUNDING / LENDING REQUEST' app/src/main/java/com/udhaardaar/mvp/V62ExtendedModulesActivity.kt
+          grep -q 'LIABILITY VAULT' app/src/main/java/com/udhaardaar/mvp/V62ExtendedModulesActivity.kt
+          grep -q 'GOVERNMENT SCHEMES & BENEFITS' app/src/main/java/com/udhaardaar/mvp/V62ExtendedModulesActivity.kt
+          grep -q 'REPORTS & STATEMENTS' app/src/main/java/com/udhaardaar/mvp/V62ExtendedModulesActivity.kt
+          grep -q 'F2B632\|242, 182, 50' app/src/main/java/com/udhaardaar/mvp/ArthSaathiV62Design.kt
+          ! grep -q 'windowSplashScreenAnimatedIcon' app/src/main/res/values/styles.xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArthSaathi-V6.2-Architecture-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
