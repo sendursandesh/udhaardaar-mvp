@@ -15,7 +15,8 @@ import javax.crypto.spec.GCMParameterSpec
 
 /** Encrypted V5 persistence boundary. Existing plaintext records remain readable and become encrypted on next write. */
 class V5LocalStore(context: Context) {
-    private val p=context.getSharedPreferences("v5_store",Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+    private val p=appContext.getSharedPreferences("v5_store",Context.MODE_PRIVATE)
     private val alias="udhaardaar_v5_store_key"
     private fun key():SecretKey{val ks=KeyStore.getInstance("AndroidKeyStore").apply{load(null)};(ks.getKey(alias,null) as? SecretKey)?.let{return it};val kg=KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES,"AndroidKeyStore");kg.init(KeyGenParameterSpec.Builder(alias,KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT).setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).setRandomizedEncryptionRequired(true).build());return kg.generateKey()}
     private fun enc(v:String):String{val c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.ENCRYPT_MODE,key());val raw=c.iv+c.doFinal(v.toByteArray(StandardCharsets.UTF_8));return "ENC:"+Base64.encodeToString(raw,Base64.NO_WRAP)}
@@ -23,7 +24,24 @@ class V5LocalStore(context: Context) {
     private fun read(key:String)=runCatching{JSONArray(dec(p.getString(key,"[]")!!))}.getOrElse{JSONArray()}
     private fun write(key:String,a:JSONArray)=p.edit().putString(key,enc(a.toString())).apply()
     fun add(key:String,value:JSONObject){val a=read(key);a.put(value);write(key,a)}
-    fun all(key:String):List<JSONObject>{val a=read(key);return(0 until a.length()).mapNotNull{a.optJSONObject(it)}}
+
+    /**
+     * V6.2 records are account-scoped at the persistence read boundary as a defence-in-depth
+     * measure. Older V5/V4/V3 keys are untouched. Counterparties and funding requests use their
+     * historical ownership field names; every other V6.2 domain record must carry ownerUserId.
+     */
+    fun all(key:String):List<JSONObject>{
+        val a=read(key)
+        val rows=(0 until a.length()).mapNotNull{a.optJSONObject(it)}
+        if(!key.startsWith("v62_")) return rows
+        if(key=="v62_users") return rows
+        val current=appContext.getSharedPreferences("udhaardaar_accounts",Context.MODE_PRIVATE).getString("current_mobile","")?.trim().orEmpty().ifBlank{"self"}
+        return when(key){
+            "v62_counterparties" -> rows.filter{it.optString("createdBy","")==current}
+            "v62_funding_requests" -> rows.filter{it.optString("requesterId","")==current || it.optString("ownerUserId","")==current}
+            else -> rows.filter{it.optString("ownerUserId","")==current}
+        }
+    }
     fun find(key:String,id:String)=all(key).firstOrNull{it.optString("id")==id}
     fun replace(key:String,value:JSONObject){val a=read(key);for(i in 0 until a.length())if(a.optJSONObject(i)?.optString("id")==value.optString("id")){a.put(i,value);write(key,a);return};a.put(value);write(key,a)}
     fun remove(key:String,id:String){val a=read(key);for(i in a.length()-1 downTo 0)if(a.optJSONObject(i)?.optString("id")==id)a.remove(i);write(key,a)}

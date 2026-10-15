@@ -1,45 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-
-    <!-- A-shaped protective frame. The complete tree/asset ecosystem stays inside the A. -->
-    <path
-        android:fillColor="#0A6248"
-        android:fillType="evenOdd"
-        android:pathData="M8,92 L36,22 Q42,9 54,7 Q66,9 72,22 L100,92 L82,92 L54,30 L26,92 Z M35,80 L54,39 L73,80 L65,80 L54,56 L43,80 Z" />
-
-    <!-- Central golden trunk / growth line -->
-    <path
-        android:fillColor="#D6A51A"
-        android:pathData="M51,32 L57,32 L57,77 L51,77 Z" />
-    <path
-        android:fillColor="#D6A51A"
-        android:pathData="M54,24 L60,31 L54,39 L48,31 Z" />
-
-    <!-- Asset nodes -->
-    <path
-        android:fillColor="#E7B52A"
-        android:pathData="M54,48 A6,6 0,1 0,54.1,48 Z" />
-    <path
-        android:fillColor="#E7B52A"
-        android:pathData="M54,75 A5,5 0,1 0,54.1,75 Z" />
-
-    <!-- Leaves / asset categories, all enclosed by the A -->
-    <path android:fillColor="#118260" android:pathData="M48,44 Q37,35 28,44 Q38,52 48,48 Z" />
-    <path android:fillColor="#118260" android:pathData="M60,44 Q71,35 80,44 Q70,52 60,48 Z" />
-    <path android:fillColor="#15906A" android:pathData="M48,57 Q36,48 27,58 Q38,66 48,61 Z" />
-    <path android:fillColor="#15906A" android:pathData="M60,57 Q72,48 81,58 Q70,66 60,61 Z" />
-    <path android:fillColor="#1B9A70" android:pathData="M49,70 Q39,63 31,71 Q40,77 49,74 Z" />
-    <path android:fillColor="#1B9A70" android:pathData="M59,70 Q69,63 77,71 Q68,77 59,74 Z" />
-
-    <!-- Ground / foundation -->
-    <path
-        android:fillColor="#D6A51A"
-        android:pathData="M18,91 Q54,76 90,91 Q54,86 18,91 Z" />
-    <path
-        android:fillColor="#F1C94C"
-        android:pathData="M29,89 L54,80 L79,89 L54,86 Z" />
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- ArthSaathi approved radiant-gold journey mark. Kept as the compatibility alias with identical geometry. -->
+    <path android:fillColor="#F2B632" android:fillType="evenOdd" android:pathData="M54,5 A49,49 0,1 0,54,103 A49,49 0,1 0,54,5 M54,14 A40,40 0,1 1,54,94 A40,40 0,1 1,54,14" />
+    <path android:fillColor="#174B83" android:pathData="M17,75 A40,40 0,0 1,29,31 L37,39 A29,29 0,0 0,28,69 Z" />
+    <path android:fillColor="#102D52" android:pathData="M91,75 A40,40 0,0 0,79,31 L71,39 A29,29 0,0 1,80,69 Z" />
+    <path android:fillColor="#102D52" android:pathData="M27,86 L48,30 L54,18 L81,86 L68,86 L54,48 L40,86 Z" />
+    <path android:fillColor="#D89408" android:pathData="M50,86 C49,72 50,59 55,49 C58,43 61,37 66,31 L72,44 C66,51 62,60 62,70 C62,77 65,82 68,86 Z" />
+    <path android:fillColor="#FFE28A" android:pathData="M55,86 C53,73 54,61 59,51 L63,57 C59,66 60,77 64,86 Z" />
+    <path android:fillColor="#FFD34E" android:pathData="M54,5 L57,13 L65,16 L57,19 L54,28 L51,19 L43,16 L51,13 Z" />
+    <path android:fillColor="#FFF1AE" android:pathData="M54,8 L56,14 L62,16 L56,18 L54,24 L52,18 L46,16 L52,14 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M55,37 A5,5 0,1 0,55,47 A5,5 0,1 0,55,37 Z" />
+    <path android:fillColor="#F2B632" android:pathData="M55,40 A2,2 0,1 0,55,44 A2,2 0,1 0,55,40 Z" />
+    <path android:fillColor="#174B83" android:pathData="M18,91 Q54,82 90,91 Q54,87 18,91 Z" />
 </vector>
