@@ -1,70 +1,108 @@
 package com.udhaardaar.mvp
 
-import android.app.AlertDialog
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
-import android.view.View
 import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
 
-/** ArthSaathi V6.2: compact, card-based, rural-friendly command centre. */
-class V62HomeActivity : AppCompatActivity() {
-    private val navy=Color.rgb(18,48,76); private val green=Color.rgb(16,111,72); private val gold=Color.rgb(205,157,28)
-    private val teal=Color.rgb(0,145,135); private val blue=Color.rgb(38,99,235); private val red=Color.rgb(190,65,65)
-    private val bg=Color.rgb(246,249,252); private val muted=Color.rgb(92,108,124); private val border=Color.rgb(220,228,236)
-    private val prefs by lazy{getSharedPreferences("udhaardaar_accounts",MODE_PRIVATE)}; private val photoRequest=6201
-    private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
-    private fun text(s:String,size:Float,color:Int=navy,bold:Boolean=false)=TextView(this).apply{text=s;textSize=size;setTextColor(color);typeface=Typeface.create("sans-serif",if(bold)Typeface.BOLD else Typeface.NORMAL)}
-    private fun card(fill:Int=Color.WHITE,radius:Int=16)=GradientDrawable().apply{setColor(fill);cornerRadius=dp(radius).toFloat();setStroke(dp(1),border)}
-    private fun action(label:String,accent:Int,click:()->Unit)=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;setPadding(dp(8),dp(10),dp(8),dp(10));background=card();setOnClickListener{click()};addView(text(icon(label),24f,accent,true));addView(text(label,13f,navy,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(5)})}
-    private fun icon(label:String)=when{label.contains("Credit")||label.contains("उधार")->"₹";label.contains("Repay")||label.contains("भुगतान")->"↻";label.contains("Vault")||label.contains("संपत्ति")->"◆";else->"✦"}
-    private fun openCore(){startActivity(Intent(this,V61RectifiedActivity::class.java))}
-    override fun onCreate(b:Bundle?){super.onCreate(b);window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);render()}
+class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
+    private val d get()=resources.displayMetrics.density
+    private fun dp(v:Int)=(v*d).toInt()
+    private lateinit var root:LinearLayout
+    private fun add(v:android.view.View,top:Int=7)=ArthSaathiV62Design.add(root,v,top)
+    private fun open(key:String)=startActivity(V62ModuleRegistry.intent(this,key))
+    override fun onCreate(b:Bundle?){super.onCreate(b);render()}
     override fun onResume(){super.onResume();if(!isFinishing)render()}
+
     private fun render(){
-        if(!prefs.getBoolean("logged_in",false)){startActivity(Intent(this,LoginActivity::class.java));finish();return}
-        val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(14),dp(10),dp(14),dp(8));setBackgroundColor(bg)}
-        val m=prefs.getString("current_mobile","")?:"";val name=prefs.getString("name_$m","User")?:"User";val lang=LanguageManager.get(this)
-        val header=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(10),dp(8),dp(8),dp(8));background=card()}
-        val logo=ImageView(this).apply{setImageResource(R.drawable.udhaardaar_logo);scaleType=ImageView.ScaleType.CENTER_INSIDE;contentDescription="ArthSaathi logo";setOnClickListener{pickPhoto()}}
-        prefs.getString("photo_$m",null)?.let{runCatching{logo.setImageURI(Uri.parse(it))}}
-        header.addView(logo,LinearLayout.LayoutParams(dp(54),dp(54)))
-        val hb=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};hb.addView(text(LanguageManager.t(this,"app"),22f,navy,true));hb.addView(text(LanguageManager.t(this,"tagline"),10f,teal,true));hb.addView(text(name,11f,muted,true));header.addView(hb,LinearLayout.LayoutParams(0,-2,1f).apply{leftMargin=dp(10)})
-        header.addView(text(if(lang==LanguageManager.HI)"हि" else "EN",12f,blue,true).apply{gravity=Gravity.CENTER;background=card();setOnClickListener{languageDialog()}},LinearLayout.LayoutParams(dp(42),dp(42)))
-        root.addView(header)
-        val hour=java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);val greet=when(hour){in 5..11->"good_morning";in 12..16->"good_afternoon";in 17..20->"good_evening";else->"good_night"};root.addView(text("${LanguageManager.t(this,greet)}, $name",18f,navy,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
-        root.addView(text(LanguageManager.t(this,"overview"),11f,muted),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(2)})
-        val metrics=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
-        metrics.addView(metric(LanguageManager.t(this,"to_receive"),"₹0",green),LinearLayout.LayoutParams(0,dp(62),1f).apply{rightMargin=dp(4);topMargin=dp(9)})
-        metrics.addView(metric(LanguageManager.t(this,"to_pay"),"₹0",red),LinearLayout.LayoutParams(0,dp(62),1f).apply{leftMargin=dp(4);rightMargin=dp(4);topMargin=dp(9)})
-        metrics.addView(metric("ACTIVE","0",blue),LinearLayout.LayoutParams(0,dp(62),1f).apply{leftMargin=dp(4);topMargin=dp(9)})
-        root.addView(metrics)
-        root.addView(text(LanguageManager.t(this,"quick_actions"),11f,muted,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(12)})
-        val grid=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
-        grid.addView(action(LanguageManager.t(this,"register"),blue){openCore()},LinearLayout.LayoutParams(0,dp(88),1f).apply{rightMargin=dp(4);topMargin=dp(6)})
-        grid.addView(action(LanguageManager.t(this,"repay_title"),green){openCore()},LinearLayout.LayoutParams(0,dp(88),1f).apply{leftMargin=dp(4);rightMargin=dp(4);topMargin=dp(6)})
-        grid.addView(action(LanguageManager.t(this,"vault_title"),teal){openCore()},LinearLayout.LayoutParams(0,dp(88),1f).apply{leftMargin=dp(4);topMargin=dp(6)})
-        root.addView(grid)
-        val ai=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(12),dp(9),dp(12),dp(9));background=card(Color.rgb(239,249,246));setOnClickListener{openCore()}}
-        ai.addView(text("✦",22f,gold,true),LinearLayout.LayoutParams(dp(32),-2));val ab=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};ab.addView(text(LanguageManager.t(this,"ai"),13f,navy,true));ab.addView(text(LanguageManager.t(this,"ai_sub"),10f,muted),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(2)});ai.addView(ab,LinearLayout.LayoutParams(0,-2,1f));ai.addView(text("›",22f,teal,true));root.addView(ai,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(8)})
-        val nav=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER;setPadding(dp(4),dp(5),dp(4),dp(4));background=card()}
-        nav.addView(bottom("⌂",LanguageManager.t(this,"home"),true){render()},LinearLayout.LayoutParams(0,dp(56),1f))
-        nav.addView(bottom("₹",LanguageManager.t(this,"credit"),false){openCore()},LinearLayout.LayoutParams(0,dp(56),1f))
-        nav.addView(bottom("↻",LanguageManager.t(this,"repay"),false){openCore()},LinearLayout.LayoutParams(0,dp(56),1f))
-        nav.addView(bottom("◆",LanguageManager.t(this,"vault"),false){openCore()},LinearLayout.LayoutParams(0,dp(56),1f))
-        nav.addView(bottom("☰",LanguageManager.t(this,"services"),false){servicesDialog()},LinearLayout.LayoutParams(0,dp(56),1f))
-        root.addView(nav,LinearLayout.LayoutParams(-1,dp(66)).apply{topMargin=dp(8)})
-        setContentView(root)
+        val p=getSharedPreferences("udhaardaar_accounts",MODE_PRIVATE)
+        if(!p.getBoolean("logged_in",false)){startActivity(Intent(this,LoginActivity::class.java));finish();return}
+        val mobile=p.getString("current_mobile","").orEmpty()
+        val name=p.getString("name_$mobile","User").orEmpty().ifBlank{"User"}
+
+        root=LinearLayout(this).apply{
+            orientation=LinearLayout.VERTICAL
+            setPadding(dp(14),dp(8),dp(14),dp(22))
+            background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(0xffffe8a6.toInt(),ArthSaathiV62Design.BG,0xfffffdf7.toInt()))
+        }
+        setContentView(ScrollView(this).apply{isFillViewport=true;addView(root)})
+
+        add(ArthSaathiV62Design.masthead(this,false),0)
+
+        val welcome=LinearLayout(this).apply{
+            orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
+            setPadding(dp(10),dp(7),dp(10),dp(7))
+            background=ArthSaathiV62Design.card(0xfffffbef.toInt(),15,d)
+        }
+        val avatar=TextView(this).apply{
+            text=name.trim().firstOrNull()?.uppercase() ?: "U";textSize=12f;setTextColor(ArthSaathiV62Design.NAVY)
+            gravity=Gravity.CENTER;typeface=android.graphics.Typeface.DEFAULT_BOLD
+            background=GradientDrawable().apply{shape=GradientDrawable.OVAL;setColor(ArthSaathiV62Design.GOLD_BRIGHT);setStroke(dp(1),ArthSaathiV62Design.GOLD)}
+        }
+        welcome.addView(avatar,LinearLayout.LayoutParams(dp(34),dp(34)))
+        val wt=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(8),0,0,0)}
+        wt.addView(ArthSaathiV62Design.text(this,"Hello $name,",15f,ArthSaathiV62Design.NAVY,true))
+        wt.addView(ArthSaathiV62Design.text(this,"Good to see you!",9.5f,ArthSaathiV62Design.MUTED),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(2)})
+        welcome.addView(wt,LinearLayout.LayoutParams(0,-2,1f))
+        welcome.addView(ArthSaathiV62Design.script(this,"Plan • Protect • Grow • Nominate",9.5f,ArthSaathiV62Design.GOLD_DARK),LinearLayout.LayoutParams(dp(126),-2))
+        add(welcome,7)
+
+        val hero=LinearLayout(this).apply{
+            orientation=LinearLayout.VERTICAL;setPadding(dp(17),dp(14),dp(17),dp(14))
+            background=GradientDrawable(GradientDrawable.Orientation.TL_BR,intArrayOf(ArthSaathiV62Design.NAVY_2,ArthSaathiV62Design.NAVY,0xff0b1d35.toInt())).apply{cornerRadius=dp(20).toFloat()}
+            elevation=dp(2).toFloat()
+        }
+        hero.addView(ArthSaathiV62Design.text(this,"Plan Today",20f,ArthSaathiV62Design.WHITE,true))
+        hero.addView(ArthSaathiV62Design.text(this,"For a Brighter Tomorrow",12f,ArthSaathiV62Design.GOLD_BRIGHT,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(2)})
+        hero.addView(ArthSaathiV62Design.script(this,"Secure Wealth • Stronger Generations",11f,ArthSaathiV62Design.GOLD_BRIGHT),LinearLayout.LayoutParams(-1,-2).apply{gravity=Gravity.LEFT;topMargin=dp(5)})
+        hero.addView(ArthSaathiV62Design.text(this,"Financial command centre • portfolio • assets • liabilities • value generated",11.5f,ArthSaathiV62Design.GOLD_BRIGHT),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+        add(hero,8)
+
+        // Primary home actions match the approved design board: six actions only.
+        fun tileRow(items:List<Pair<String,()->Unit>>) {
+            val row=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
+            items.forEachIndexed { i,item ->
+                row.addView(
+                    ArthSaathiV62Design.featureCard(this,item.first.split("|")[0],item.first.split("|")[1],item.second),
+                    LinearLayout.LayoutParams(0,dp(98),1f).apply { if(i>0) leftMargin=dp(5); if(i<items.lastIndex) rightMargin=dp(5) }
+                )
+            }
+            add(row,7)
+        }
+        tileRow(listOf(
+            "₹|Register Credit" to {open("CREDIT")},
+            "↻|Repayment" to {open("REPAYMENT")},
+            "▣|Asset Vault" to {open("ASSET_VAULT")}
+        ))
+        tileRow(listOf(
+            "◆|Protect" to {open("INSURANCE")},
+            "◉|MIS & Analytics" to {open("MIS")},
+            "♙|Legacy & Claims" to {open("LEGACY")}
+        ))
+        add(ArthSaathiV62Design.text(this,"All other services are organised inside More so the Home screen stays simple.",11.5f,ArthSaathiV62Design.MUTED),8)
+
+        add(ArthSaathiV62Design.bottomNav(this,"Home",mapOf(
+            "Home" to {},
+            "Profile" to {showProfile()},
+            "Alerts" to {showAlerts()},
+            "More" to { startActivity(Intent(this,V62ExtendedModulesActivity::class.java)) }
+        )),10)
     }
-    private fun metric(label:String,value:String,color:Int)=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;setPadding(dp(5),dp(5),dp(5),dp(5));background=card();addView(text(label,9f,color,true));addView(text(value,17f,navy,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(3)})}
-    private fun bottom(symbol:String,label:String,selected:Boolean,click:()->Unit)=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;setOnClickListener{click()};addView(text(symbol,20f,if(selected)teal else muted,true));addView(text(label,9f,if(selected)teal else muted,selected),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(2)})}
-    private fun servicesDialog(){val items=arrayOf(LanguageManager.t(this,"insurance"),LanguageManager.t(this,"legacy"),LanguageManager.t(this,"legal"),LanguageManager.t(this,"ttmm"),LanguageManager.t(this,"search"));AlertDialog.Builder(this).setTitle(LanguageManager.t(this,"services")).setItems(items){_,_->openCore()}.setNegativeButton(LanguageManager.t(this,"cancel"),null).show()}
-    private fun languageDialog(){val options=arrayOf(LanguageManager.t(this,"english"),LanguageManager.t(this,"hindi"));val current=if(LanguageManager.get(this)==LanguageManager.HI)1 else 0;AlertDialog.Builder(this).setTitle(LanguageManager.t(this,"choose_language")).setSingleChoiceItems(options,current){d,w->LanguageManager.set(this,if(w==1)LanguageManager.HI else LanguageManager.EN);d.dismiss();render()}.setNegativeButton(LanguageManager.t(this,"cancel"),null).show()}
-    private fun pickPhoto(){startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="image/*";addCategory(Intent.CATEGORY_OPENABLE)},photoRequest)}
-    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){super.onActivityResult(requestCode,resultCode,data);if(requestCode==photoRequest&&resultCode==RESULT_OK){val uri=data?.data?:return;val m=prefs.getString("current_mobile","")?:"";runCatching{contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION)};prefs.edit().putString("photo_$m",uri.toString()).apply();render()}}
+    private fun showProfile() {
+        val p=getSharedPreferences("udhaardaar_accounts",MODE_PRIVATE)
+        val mobile=p.getString("current_mobile","").orEmpty()
+        val name=p.getString("name_$mobile","User").orEmpty().ifBlank{"User"}
+        val msg="Name: "+name+"\nMobile: "+mobile+"\n\nYour identity and account controls are kept separate from financial modules."
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Profile & Identity").setMessage(msg).setPositiveButton("OK",null).show()
+    }
+
+    private fun showAlerts() {
+        val owner=V62Integration.currentUserId(this)
+        val store=V5LocalStore(this)
+        val alerts=store.all(V62Store.ALERTS).filter{it.optString("ownerUserId").isBlank() || it.optString("ownerUserId")==owner}.takeLast(20).reversed()
+        val msg=if(alerts.isEmpty()) "No active alerts." else alerts.joinToString("\n\n"){a -> a.optString("severity","INFO")+": "+a.optString("message")}
+        androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Alerts & Notifications").setMessage(msg).setPositiveButton("OK",null).show()
+    }
+
 }

@@ -2,34 +2,118 @@ package com.udhaardaar.mvp
 
 import android.app.AlertDialog
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputType
 import android.view.Gravity
+import android.view.WindowManager
 import android.widget.*
+import android.graphics.drawable.GradientDrawable
 import androidx.appcompat.app.AppCompatActivity
 import kotlin.random.Random
 
+/** V6.2 account gate styled to the approved ArthSaathi visual master. */
 class LoginActivity : AppCompatActivity() {
     private val prefs by lazy { getSharedPreferences("udhaardaar_accounts", MODE_PRIVATE) }
-    private val navy=Color.rgb(18,48,76); private val teal=Color.rgb(0,145,135); private val blue=Color.rgb(38,99,235); private val bg=Color.rgb(247,249,252); private val muted=Color.rgb(92,108,124); private val border=Color.rgb(218,226,235)
-    private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
-    private fun box(fill:Int=Color.WHITE)=GradientDrawable().apply{setColor(fill);setStroke(dp(1),border);cornerRadius=dp(14).toFloat()}
-    private fun input(h:String,digits:Boolean=false)=EditText(this).apply{hint=h;textSize=16f;setPadding(dp(14),dp(11),dp(14),dp(11));minHeight=dp(54);background=box();setSingleLine(true);imeOptions=android.view.inputmethod.EditorInfo.IME_ACTION_NEXT;if(digits)inputType=InputType.TYPE_CLASS_NUMBER;filters=arrayOf(InputFilter.LengthFilter(if(digits)10 else 80))}
-    private fun button(s:String,fill:Int=blue,click:()->Unit)=TextView(this).apply{text=s;textSize=14f;setTextColor(Color.WHITE);gravity=Gravity.CENTER;typeface=Typeface.DEFAULT_BOLD;minHeight=dp(54);background=box(fill);setOnClickListener{click()}}
-    override fun onCreate(b:Bundle?){super.onCreate(b);window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);login()}
-    private fun shell():LinearLayout=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(20),dp(18),dp(20),dp(28));setBackgroundColor(bg)}
-    private fun screen(r:LinearLayout){setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})}
-    private fun header(r:LinearLayout,title:String,sub:String){val h=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(14),dp(14),dp(14),dp(14));background=box()};val logo=ImageView(this).apply{setImageResource(R.drawable.udhaardaar_logo);contentDescription="ArthSaathi logo"};h.addView(logo,LinearLayout.LayoutParams(dp(64),dp(64)));val b=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};b.addView(TextView(this@LoginActivity).apply{text="ARTHSAATHI";textSize=24f;setTextColor(navy);typeface=Typeface.DEFAULT_BOLD});b.addView(TextView(this@LoginActivity).apply{text="Your Asset. Your Record. Your Right.";textSize=12f;setTextColor(teal);typeface=Typeface.DEFAULT_BOLD});b.addView(TextView(this@LoginActivity).apply{text="$title\n$sub";textSize=12f;setTextColor(muted)});h.addView(b,LinearLayout.LayoutParams(0,-2,1f).apply{leftMargin=dp(12)});r.addView(h)}
-    private fun add(r:LinearLayout,v:android.view.View,top:Int=10){r.addView(v,LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,dp(top),0,0)})}
+    private val d get() = resources.displayMetrics.density
+    private fun dp(v:Int)=(v*d).toInt()
+    private fun input(h:String)=ArthSaathiV62Design.input(this,h).apply{
+        inputType=InputType.TYPE_CLASS_PHONE
+        filters=arrayOf(InputFilter.LengthFilter(10))
+        imeOptions=android.view.inputmethod.EditorInfo.IME_ACTION_NEXT
+    }
+    private fun button(s:String,fill:Int,click:()->Unit)=ArthSaathiV62Design.button(this,s,fill,click)
+
+    override fun onCreate(b:Bundle?){
+        super.onCreate(b)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+        if(prefs.getBoolean("logged_in",false)){openHome();return}
+        showLogin()
+    }
+
+    private fun shell()=LinearLayout(this).apply{
+        orientation=LinearLayout.VERTICAL
+        gravity=Gravity.CENTER_HORIZONTAL
+        isFocusableInTouchMode=true
+        setPadding(dp(20),dp(14),dp(20),dp(26))
+        background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(0xffffe8a6.toInt(),ArthSaathiV62Design.BG,0xfffffdf7.toInt()))
+    }
+
+    private fun install(content:LinearLayout){
+        val scroll=ScrollView(this).apply{
+            isFillViewport=true
+            isFocusableInTouchMode=true
+            descendantFocusability=ScrollView.FOCUS_BEFORE_DESCENDANTS
+            addView(content)
+        }
+        setContentView(scroll)
+        scroll.post { if (hasWindowFocus()) scroll.requestFocus() }
+    }
+
+    private fun logoBlock(r:LinearLayout){ r.addView(ArthSaathiV62Design.masthead(this,true)) }
+
+    private fun tabs(r:LinearLayout){
+        val t=LinearLayout(this).apply{
+            orientation=LinearLayout.HORIZONTAL
+            background=ArthSaathiV62Design.card(0xfffff7df.toInt(),17,d)
+            setPadding(dp(3),dp(3),dp(3),dp(3))
+        }
+        t.addView(button("Login",ArthSaathiV62Design.GOLD_DEEP){showLogin()},LinearLayout.LayoutParams(0,dp(46),1f).apply{rightMargin=dp(2)})
+        t.addView(button("Sign Up",ArthSaathiV62Design.PALE_GOLD){showRegister()},LinearLayout.LayoutParams(0,dp(46),1f).apply{leftMargin=dp(2)})
+        r.addView(t,LinearLayout.LayoutParams(-1,dp(52)).apply{topMargin=dp(10)})
+    }
+
+    private fun showLogin(){
+        val r=shell();logoBlock(r);tabs(r)
+        val m=input("Enter registered mobile number")
+        r.addView(m,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(13)})
+        r.addView(button("SEND OTP",ArthSaathiV62Design.GOLD_DEEP){
+            val x=m.text.toString()
+            if(!validMobile(x)){Toast.makeText(this,"Enter a valid 10-digit Indian mobile number.",Toast.LENGTH_LONG).show();return@button}
+            if(!prefs.contains("name_$x")){showNoAccount(x);return@button}
+            otp("Secure login OTP",x){prefs.edit().putBoolean("logged_in",true).putString("current_mobile",x).apply();openHome()}
+        },LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(9)})
+        r.addView(ArthSaathiV62Design.text(this,"or",10f,ArthSaathiV62Design.MUTED).apply{gravity=Gravity.CENTER},LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(8)})
+        r.addView(button("Continue with Google",ArthSaathiV62Design.WHITE){
+            Toast.makeText(this,"Google sign-in will be connected in the production identity layer.",Toast.LENGTH_SHORT).show()
+        },LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        r.addView(ArthSaathiV62Design.text(this,"By continuing you agree to our Terms & Privacy Policy.",9f,ArthSaathiV62Design.MUTED).apply{gravity=Gravity.CENTER},LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
+        install(r)
+    }
+
+    private fun showNoAccount(mobile:String){
+        AlertDialog.Builder(this).setTitle("Account not found")
+            .setMessage("No ArthSaathi account is registered for $mobile. OTP login cannot create an account. Please create your account first.")
+            .setPositiveButton("CREATE ACCOUNT"){_,_->showRegister(mobile)}
+            .setNegativeButton("CANCEL",null).show()
+    }
+
+    private fun showRegister(prefill:String=""){
+        val r=shell();logoBlock(r);tabs(r)
+        r.addView(ArthSaathiV62Design.text(this,"Create your ArthSaathi account",18f,ArthSaathiV62Design.NAVY,true),LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(12)})
+        val n=ArthSaathiV62Design.input(this,"Full name")
+        val m=input("Mobile number")
+        if(prefill.isNotBlank())m.setText(prefill)
+        r.addView(n,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(8)})
+        r.addView(m,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        r.addView(button("VERIFY MOBILE + CREATE ACCOUNT",ArthSaathiV62Design.GOLD_DEEP){
+            val x=m.text.toString()
+            if(n.text.trim().length<2||!validMobile(x)){Toast.makeText(this,"Enter name and valid 10-digit mobile.",Toast.LENGTH_LONG).show();return@button}
+            if(prefs.contains("name_$x")){Toast.makeText(this,"An account already exists. Please log in.",Toast.LENGTH_LONG).show();return@button}
+            otp("Verify mobile and create account",x){prefs.edit().putString("name_$x",n.text.toString().trim()).putBoolean("logged_in",true).putString("current_mobile",x).apply();openHome()}
+        },LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(9)})
+        r.addView(button("BACK TO LOGIN",ArthSaathiV62Design.NAVY){showLogin()},LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(7)})
+        setContentView(ScrollView(this).apply{isFillViewport=true;addView(r)})
+    }
+
     private fun validMobile(x:String)=x.matches(Regex("[6-9][0-9]{9}"))
-    private fun login(){val r=shell();header(r,"Secure sign in","Credit • assets • insurance • records • legacy");val m=input("Registered mobile number",true);val p=input("4–6 digit PIN",true).apply{inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD;filters=arrayOf(InputFilter.LengthFilter(6))};add(r,m,18);add(r,p);add(r,button("LOGIN WITH PIN + OTP"){val x=m.text.toString();val valid=validMobile(x)&&prefs.getString("pin_$x",null)==p.text.toString();if(valid)otpDialog("Secure login OTP",x){go(x)}else Toast.makeText(this,"Enter a valid registered mobile and PIN",Toast.LENGTH_LONG).show()});add(r,button("CREATE PROFILE / ACCOUNT",teal){register()},10);add(r,button("RESET PIN WITH OTP",Color.rgb(90,105,120)){val x=m.text.toString();if(validMobile(x)&&prefs.contains("pin_$x"))otpDialog("Reset PIN OTP",x){resetPin(x)}else Toast.makeText(this,"Enter a registered mobile first",Toast.LENGTH_LONG).show()},10);add(r,button("हिन्दी / English",teal){languageDialog()},10);screen(r)}
-    private fun languageDialog(){val options=arrayOf("English","हिन्दी");val current=if(LanguageManager.get(this)==LanguageManager.HI)1 else 0;AlertDialog.Builder(this).setTitle("Choose language / भाषा चुनें").setSingleChoiceItems(options,current){d,w->LanguageManager.set(this,if(w==1)LanguageManager.HI else LanguageManager.EN);d.dismiss();login()}.show()}
-    private fun otpDialog(title:String,mobile:String,onVerified:()->Unit){val otp=(100000+Random.nextInt(900000)).toString();val code=input("Enter 6-digit OTP",true).apply{filters=arrayOf(InputFilter.LengthFilter(6))};val d=AlertDialog.Builder(this).setTitle(title).setMessage("Demo OTP: $otp\nProduction SMS gateway is required for live delivery.").setView(code).setNegativeButton("CANCEL",null).setPositiveButton("VERIFY",null).create();d.setOnShowListener{d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{if(code.text.toString()==otp){d.dismiss();onVerified()}else code.error="Incorrect OTP"}};d.show()}
-    private fun go(m:String){prefs.edit().putBoolean("logged_in",true).putString("current_mobile",m).apply();startActivity(Intent(this,V62HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish()}
-    private fun resetPin(x:String){val np=input("New 4–6 digit PIN",true).apply{inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD;filters=arrayOf(InputFilter.LengthFilter(6))};AlertDialog.Builder(this).setTitle("Set new PIN").setView(np).setPositiveButton("SAVE"){_,_->if(np.text.length in 4..6){prefs.edit().putString("pin_$x",np.text.toString()).apply();Toast.makeText(this,"PIN updated",Toast.LENGTH_LONG).show()}else Toast.makeText(this,"PIN must be 4–6 digits",Toast.LENGTH_LONG).show()}.setNegativeButton("CANCEL",null).show()}
-    private fun register(){val r=shell();header(r,"Create your profile","One verified profile for your ArthSaathi records");val n=input("Full name");val m=input("Mobile number",true);val p=input("Create 4–6 digit PIN",true).apply{inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD;filters=arrayOf(InputFilter.LengthFilter(6))};add(r,n,18);add(r,m);add(r,p);add(r,button("VERIFY MOBILE + CREATE ACCOUNT"){val x=m.text.toString();val valid=validMobile(x)&&n.text.toString().trim().length>=2&&p.text.length in 4..6;if(valid)otpDialog("Verify mobile",x){prefs.edit().putString("pin_$x",p.text.toString()).putString("name_$x",n.text.toString().trim()).apply();go(x)}else Toast.makeText(this,"Complete valid profile details",Toast.LENGTH_LONG).show()});add(r,button("BACK TO SIGN IN",Color.rgb(90,105,120)){login()},10);screen(r)}
+
+    private fun otp(title:String,mobile:String,done:()->Unit){
+        val code=(100000+Random.nextInt(900000)).toString()
+        val e=ArthSaathiV62Design.input(this,"Enter 6-digit OTP").apply{inputType=InputType.TYPE_CLASS_NUMBER;filters=arrayOf(InputFilter.LengthFilter(6))}
+        val dialog=AlertDialog.Builder(this).setTitle(title).setMessage("Demo OTP: $code").setView(e).setNegativeButton("CANCEL",null).setPositiveButton("VERIFY",null).create()
+        dialog.setOnShowListener{dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{if(e.text.toString()==code){dialog.dismiss();done()}else e.error="Incorrect OTP"}}
+        dialog.show()
+    }
+    private fun openHome(){startActivity(Intent(this,V62HomeActivity::class.java));finish()}
 }
