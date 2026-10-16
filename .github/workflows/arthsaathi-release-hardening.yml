@@ -130,7 +130,7 @@ jobs:
           disable-animations: true
           verbose: true
           script: |
-            set -euo pipefail
+            set -eu
             mkdir -p app/build/qa-diagnostics
             trap 'adb logcat -d -t 8000 > app/build/qa-diagnostics/emulator-logcat.txt 2>&1 || true; adb devices -l > app/build/qa-diagnostics/adb-devices.txt 2>&1 || true' EXIT
             adb devices -l
