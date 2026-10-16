@@ -21,6 +21,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
     private var qrReferenceField: EditText? = null
     private var qrNoteField: EditText? = null
     private var qrCapturedAtField: EditText? = null
+    private var qrInvoiceDateField: EditText? = null
     private var qrRawPayload: String = ""
     private val records get() = ArthSaathiDataStore.records()
 
@@ -773,6 +774,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         qrAmountField = field(body, "Amount (₹)", true)
         qrReferenceField = field(body, "QR / invoice reference")
         qrNoteField = field(body, "Note / invoice description")
+        qrInvoiceDateField = field(body, "Invoice date (from QR)")
         qrCapturedAtField = field(body, "Captured at (device time)")
         qrCapturedAtField?.setText(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date()))
         body.addView(Button(this).apply {
@@ -790,7 +792,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                         "f0" to merchant, "f1" to amount, "f2" to reference,
                         "f3" to qrNoteField?.text?.toString()?.trim().orEmpty(),
                         "f4" to qrCapturedAtField?.text?.toString()?.trim().orEmpty(),
-                        "f5" to qrRawPayload
+                        "f5" to qrRawPayload, "f6" to qrInvoiceDateField?.text?.toString()?.trim().orEmpty()
                     ))
                     Toast.makeText(this@ArthSaathiMasterModuleActivity, "QR / invoice record saved", Toast.LENGTH_LONG).show()
                     qrRawPayload = ""
@@ -825,6 +827,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (parsed.optString("amount").isNotBlank()) qrAmountField?.setText(parsed.optString("amount"))
                 qrReferenceField?.setText(parsed.optString("reference"))
                 qrNoteField?.setText(parsed.optString("note"))
+                qrInvoiceDateField?.setText(parsed.optString("date"))
                 qrCapturedAtField?.setText(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date()))
                 Toast.makeText(this, "QR read. Review all extracted values before saving.", Toast.LENGTH_LONG).show()
             }
@@ -883,7 +886,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             }
         }})
         body.addView(TextView(this).apply {
-            text = "\\nSAVED RECORDS"
+            text = "\nSAVED RECORDS"
             textSize = 19f
             setPadding(0, 24, 0, 8)
         })
@@ -902,7 +905,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             }
             val heading = record.optString("f0", record.optString("name", title + " record"))
             body.addView(TextView(this).apply {
-                text = heading + (if (lines.isEmpty()) "" else "\\n" + lines.drop(1).joinToString("\\n"))
+                text = heading + (if (lines.isEmpty()) "" else "\n" + lines.drop(1).joinToString("\n"))
                 textSize = 15f
                 setPadding(8, 12, 8, 12)
             })

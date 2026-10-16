@@ -38,7 +38,7 @@ object ArthSaathiCoreEngine {
   val emiAmount=if(!isLease && mode.contains("EMI",true) && tenureMonths>0) emi(amount,roi,tenureMonths) else 0.0
   val totalPayable=when {
     isLease -> amount
-    mode.contains("EMI",true) && tenureMonths>0 -> m(emiAmount*tenureMonths)
+    mode.contains("EMI",true) && tenureMonths>0 -> m(maxOf(amount, emiAmount*tenureMonths))
     mode.contains("Principal + Interest",true) && tenureMonths>0 -> m(amount + amount*roi*tenureMonths/1200.0)
     else -> amount
   }
@@ -70,16 +70,17 @@ object ArthSaathiCoreEngine {
  }
  fun repayment(recordId:String,amount:Double,method:String,actor:String):Result{
   require(amount.isFinite() && amount>0);require(method.isNotBlank())
+  val paymentAmount=m(amount);require(paymentAmount>0.0) { "Repayment must be at least ₹0.01" }
   val o=find(recordId)?:return Result(false,message="Credit not found");require(o.optString("type")=="CREDIT");require(o.optString("consentStatus")=="CONSENTED")
   val payable=o.optDouble("totalPayable",o.optDouble("amount"))
-  val out=(payable-o.optDouble("paid")).coerceAtLeast(0.0);require(amount<=out+0.005)
-  val tx=JSONObject().apply{put("id",id("TX"));put("type","REPAYMENT");put("recordId",recordId);put("amount",m(amount));put("method",method);put("actor",actor);put("createdAt",n())}
-  save(tx,"REPAYMENT");o.put("paid",m(o.optDouble("paid")+amount));if(o.optDouble("paid")+0.005>=payable)o.put("status","CLOSED");o.put("updatedAt",n());replace(o);return Result(true,tx.getString("id"),"Repayment recorded")
+  val out=(payable-o.optDouble("paid")).coerceAtLeast(0.0);require(paymentAmount<=out+0.005)
+  val tx=JSONObject().apply{put("id",id("TX"));put("type","REPAYMENT");put("recordId",recordId);put("amount",paymentAmount);put("method",method);put("actor",actor);put("createdAt",n())}
+  save(tx,"REPAYMENT");o.put("paid",m(o.optDouble("paid")+paymentAmount));if(o.optDouble("paid")+0.005>=payable)o.put("status","CLOSED");o.put("updatedAt",n());replace(o);return Result(true,tx.getString("id"),"Repayment recorded")
  }
  fun emi(p:Double,rate:Double,months:Int):Double{require(p>0&&rate>=0&&months>0);if(rate==0.0)return m(p/months);val r=rate/1200;return m(p*r*(1+r).pow(months)/((1+r).pow(months)-1))}
  fun schedule(p:Double,rate:Double,months:Int):JSONArray{val a=JSONArray();var b=p;val e=emi(p,rate,months);val r=rate/1200;for(i in 1..months){val interest=if(r==0.0)0.0 else b*r;val principal=if(i==months)b else (e-interest).coerceAtLeast(0.0);b=(b-principal).coerceAtLeast(0.0);a.put(JSONObject().apply{put("installment",i);put("emi",m(e));put("interest",m(interest));put("principal",m(principal));put("balance",m(b))})};return a}
  fun parseQrPayload(payload:String):JSONObject {
-  val out=JSONObject().put("merchant","").put("amount","").put("reference","").put("note","")
+  val out=JSONObject().put("merchant","").put("amount","").put("reference","").put("note","").put("date","")
   val raw=payload.trim()
   if(raw.isEmpty()) return out
   try {
@@ -88,10 +89,12 @@ object ArthSaathiCoreEngine {
    val amount=listOf("amount","am","total","value").firstNotNullOfOrNull { k -> json.optString(k).takeIf { it.isNotBlank() && it.toDoubleOrNull()?.let { n -> n.isFinite() && n>0.0 }==true } }
    val reference=listOf("reference","invoice","invoiceNo","transactionId","tr","txnId","id").firstNotNullOfOrNull { k -> json.optString(k).takeIf { it.isNotBlank() } }
    val note=listOf("note","description","tn","purpose","item").firstNotNullOfOrNull { k -> json.optString(k).takeIf { it.isNotBlank() } }
+   val date=listOf("date","invoiceDate","issuedAt","timestamp","ts").firstNotNullOfOrNull { k -> json.optString(k).takeIf { it.isNotBlank() } }
    if(merchant!=null) out.put("merchant",merchant)
    if(amount!=null) out.put("amount",amount)
    if(reference!=null) out.put("reference",reference)
    if(note!=null) out.put("note",note)
+   if(date!=null) out.put("date",date)
    return out
   } catch (_:Exception) {}
   val uri=android.net.Uri.parse(raw)
@@ -101,10 +104,12 @@ object ArthSaathiCoreEngine {
    val amount=uri.getQueryParameter("am") ?: uri.getQueryParameter("amount")
    val ref=uri.getQueryParameter("tr") ?: uri.getQueryParameter("tid") ?: uri.getQueryParameter("invoice")
    val note=uri.getQueryParameter("tn") ?: uri.getQueryParameter("note")
+   val date=uri.getQueryParameter("date") ?: uri.getQueryParameter("invoiceDate") ?: uri.getQueryParameter("timestamp")
    if(!name.isNullOrBlank()) out.put("merchant",name)
    if(!amount.isNullOrBlank() && amount.toDoubleOrNull()?.let { it.isFinite() && it>0.0 }==true) out.put("amount",amount)
    if(!ref.isNullOrBlank()) out.put("reference",ref)
    if(!note.isNullOrBlank()) out.put("note",note)
+   if(!date.isNullOrBlank()) out.put("date",date)
    if(out.optString("reference").isBlank()) uri.getQueryParameter("pa")?.let { out.put("reference",it) }
   }
   return out

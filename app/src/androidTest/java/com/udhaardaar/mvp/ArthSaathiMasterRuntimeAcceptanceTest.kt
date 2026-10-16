@@ -417,6 +417,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 assertNotNull(findButton(root, "SAVE QR / INVOICE RECORD"))
                 assertNotNull(findEdit(root, "Merchant / customer"))
                 assertNotNull(findEdit(root, "QR / invoice reference"))
+                assertNotNull(findEdit(root, "Invoice date (from QR)"))
             }
         }
     }
@@ -432,6 +433,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         assertEquals("75", json.optString("amount"))
         assertEquals("A-12", json.optString("reference"))
         assertEquals("Stationery", json.optString("note"))
+        assertEquals("2026-10-15", json.optString("date"))
     }
 
     @Test fun consentFailsClosedWhenNoRealOtpProviderIsConfigured() {
