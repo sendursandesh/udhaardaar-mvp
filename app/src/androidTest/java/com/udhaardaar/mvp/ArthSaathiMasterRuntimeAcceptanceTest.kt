@@ -294,6 +294,41 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
     }
 
 
+    @Test fun peopleScreenValidatesAndPersistsPanAndGstin() {
+        val personName = "Tax QA " + System.currentTimeMillis()
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.PEOPLE)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                requireNotNull(findEdit(root, "Full name")).setText(personName)
+                requireNotNull(findEdit(root, "10-digit mobile")).setText("9876501178")
+                requireNotNull(findEdit(root, "Role / relationship")).setText("QA")
+                requireNotNull(findEdit(root, "Address / PIN")).setText("Ranchi")
+                val pan = requireNotNull(findEdit(root, "PAN (optional)"))
+                val gstin = requireNotNull(findEdit(root, "GSTIN (optional)"))
+                pan.setText("bad-pan")
+                gstin.setText("20ABCDE1234F1Z5")
+                requireNotNull(findButton(root, "SAVE PERSON")).performClick()
+                assertNotNull("Malformed PAN must be rejected", pan.error)
+                pan.setText("ABCDE1234F")
+                gstin.setText("bad-gstin")
+                requireNotNull(findButton(root, "SAVE PERSON")).performClick()
+                assertNotNull("Malformed GSTIN must be rejected", gstin.error)
+                pan.setText("abcde1234f")
+                gstin.setText("20abcde1234f1z5")
+                requireNotNull(findButton(root, "SAVE PERSON")).performClick()
+            }
+        }
+        val saved = ArthSaathiDataStore.records()
+        assertTrue("Validated PAN/GSTIN must persist with the person record",
+            (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }.any {
+                it.optString("type") == "PERSON" && it.optString("name") == personName &&
+                    it.optString("pan") == "ABCDE1234F" && it.optString("gstin") == "20ABCDE1234F1Z5"
+            })
+    }
+
     @Test fun consentFailsClosedWhenNoRealOtpProviderIsConfigured() {
         val created = ArthSaathiCoreEngine.createCredit(
             null, "Consent QA", "Personal Loan / Hand Loan", 5000.0, 5.0,

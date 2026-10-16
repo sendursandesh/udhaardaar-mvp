@@ -448,6 +448,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val mobile = field(body, "10-digit mobile", false, 10)
         val role = field(body, "Role / relationship")
         val address = field(body, "Address / PIN")
+        val pan = field(body, "PAN (optional)")
+        val gstin = field(body, "GSTIN (optional)")
         body.addView(Button(this).apply {
             text = "SAVE PERSON"
             setOnClickListener {
@@ -458,10 +460,18 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (phone.isNotEmpty() && !ArthSaathiCoreEngine.validateMobile(phone)) {
                     mobile.error = "Enter a valid 10-digit mobile number"; return@setOnClickListener
                 }
+                val panValue = pan.text.toString().trim().uppercase(Locale.US)
+                if (!ArthSaathiCoreEngine.validatePan(panValue)) {
+                    pan.error = "Enter a valid PAN (e.g. ABCDE1234F)"; return@setOnClickListener
+                }
+                val gstinValue = gstin.text.toString().trim().uppercase(Locale.US)
+                if (!ArthSaathiCoreEngine.validateGstin(gstinValue)) {
+                    gstin.error = "Enter a valid 15-character GSTIN"; return@setOnClickListener
+                }
                 try {
                     val result = ArthSaathiCoreEngine.createPerson(
                         name.text.toString().trim(), phone, role.text.toString().trim(),
-                        address.text.toString().trim()
+                        address.text.toString().trim(), panValue, gstinValue
                     )
                     Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_SHORT).show()
                     render(ArthSaathiNavigation.PEOPLE)

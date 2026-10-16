@@ -17,9 +17,13 @@ object ArthSaathiCoreEngine {
  fun validatePan(v:String)=v.isBlank()||v.matches(Regex("[A-Z]{5}[0-9]{4}[A-Z]"))
  fun validateGstin(v:String)=v.isBlank()||v.matches(Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"))
 
- fun createPerson(name:String,mobile:String="",role:String="",address:String=""):Result {
+ fun createPerson(name:String,mobile:String="",role:String="",address:String="",pan:String="",gstin:String=""):Result {
   require(name.isNotBlank());require(mobile.isEmpty()||validateMobile(mobile))
-  val o=JSONObject().apply{put("id",id("PER"));put("type","PERSON");put("name",name.trim());put("mobile",mobile);put("role",role);put("address",address);put("createdAt",n());put("updatedAt",n())}
+  val normalizedPan=pan.trim().uppercase(Locale.US)
+  val normalizedGstin=gstin.trim().uppercase(Locale.US)
+  require(validatePan(normalizedPan)) { "Enter a valid PAN" }
+  require(validateGstin(normalizedGstin)) { "Enter a valid GSTIN" }
+  val o=JSONObject().apply{put("id",id("PER"));put("type","PERSON");put("name",name.trim());put("mobile",mobile);put("role",role);put("address",address);put("pan",normalizedPan);put("gstin",normalizedGstin);put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_PERSON");return Result(true,o.getString("id"),"Person saved")
  }
  fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String=""):Result {
