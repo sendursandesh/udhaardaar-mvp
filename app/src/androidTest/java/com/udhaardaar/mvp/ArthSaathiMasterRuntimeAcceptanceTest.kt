@@ -428,7 +428,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         assertEquals("125.50", upi.optString("amount"))
         assertEquals("INV-9", upi.optString("reference"))
         assertEquals("Groceries", upi.optString("note"))
-        val json = ArthSaathiCoreEngine.parseQrPayload("{\"vendor\":\"Store\",\"total\":\"75\",\"invoiceNo\":\"A-12\",\"description\":\"Stationery\"}")
+        val json = ArthSaathiCoreEngine.parseQrPayload("{\"vendor\":\"Store\",\"total\":\"75\",\"invoiceNo\":\"A-12\",\"description\":\"Stationery\",\"invoiceDate\":\"2026-10-15\"}")
         assertEquals("Store", json.optString("merchant"))
         assertEquals("75", json.optString("amount"))
         assertEquals("A-12", json.optString("reference"))

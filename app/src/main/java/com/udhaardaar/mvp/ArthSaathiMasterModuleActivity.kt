@@ -808,7 +808,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             if (record.optString("type") != "QR_KHATA") continue
             body.addView(TextView(this).apply {
                 text = record.optString("f0") + " • ₹" + money(record.optDouble("f1")) +
-                    "\nReference: " + record.optString("f2") + "\nCaptured: " + record.optString("f4")
+                    "\nReference: " + record.optString("f2") + "\nInvoice date: " + record.optString("f6") + "\nCaptured: " + record.optString("f4")
                 setPadding(8, 8, 8, 8)
             })
         }
