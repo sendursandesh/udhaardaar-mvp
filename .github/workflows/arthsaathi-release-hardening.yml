@@ -135,13 +135,7 @@ jobs:
             trap 'adb logcat -d -t 8000 > app/build/qa-diagnostics/emulator-logcat.txt 2>&1 || true; adb devices -l > app/build/qa-diagnostics/adb-devices.txt 2>&1 || true' EXIT
             adb devices -l
             adb wait-for-device
-            for attempt in $(seq 1 180); do
-              booted="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
-              if [ "$booted" = "1" ]; then
-                break
-              fi
-              sleep 2
-            done
+            attempt=0; while [ "$attempt" -lt 180 ]; do booted="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"; if [ "$booted" = "1" ]; then break; fi; attempt=$((attempt + 1)); sleep 2; done
             test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1"
             adb shell cmd package list packages >/dev/null
             timeout 18m gradle :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
