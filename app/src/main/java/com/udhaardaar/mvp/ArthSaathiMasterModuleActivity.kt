@@ -97,7 +97,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val amount = field(body,"Principal / amount",true)
         val roi = field(body,"ROI % (not used for lease)",true)
         val method = field(body,"Method: Cash / UPI / NEFT / Other")
-        val terms = field(body,"Repayment method / terms")
+        val terms = field(body,"Repayment mode / terms (EMI / Principal + Interest / Bullet / Rental)")
+        val tenure = field(body,"Tenure in months (required for EMI / interest)",true)
         val guarantor = field(body,"Guarantor (optional)")
         val due = field(body,"Due date"); due.setOnClickListener { pickDate(due) }
         val doc = field(body,"Digital document / agreement reference")
@@ -123,15 +124,24 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (method.text.toString().trim().isEmpty()) {
                     method.error = "Enter how the credit was given"; return@setOnClickListener
                 }
-                if (terms.text.toString().trim().isEmpty()) {
+                val repaymentMode = terms.text.toString().trim()
+                if (repaymentMode.isEmpty()) {
                     terms.error = "Enter repayment terms"; return@setOnClickListener
+                }
+                val tenureMonths = tenure.text.toString().trim().toIntOrNull() ?: 0
+                val interestPlan = repaymentMode.contains("EMI", true) || repaymentMode.contains("Principal + Interest", true)
+                if (interestPlan && !lease && tenureMonths <= 0) {
+                    tenure.error = "Enter a positive tenure for EMI / interest calculation"; return@setOnClickListener
+                }
+                if (tenureMonths > 600) {
+                    tenure.error = "Tenure cannot exceed 600 months"; return@setOnClickListener
                 }
                 try {
                     val result = ArthSaathiCoreEngine.createCredit(
                         null, partyName, nature.selectedItem.toString(), principal, rate,
                         method.text.toString().trim(), terms.text.toString().trim(),
                         due.text.toString().trim(), null, doc.text.toString().trim(),
-                        partyMobile, guarantor.text.toString().trim()
+                        partyMobile, guarantor.text.toString().trim(), repaymentMode, tenureMonths
                     )
                     if (!result.ok) {
                         Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
@@ -158,7 +168,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         for(i in 0 until records.length()){
             val o=records.getJSONObject(i); if(o.optString("type")!="CREDIT") continue
             found=true
-            val outstanding=(o.optDouble("amount")-o.optDouble("paid")).coerceAtLeast(0.0)
+            val outstanding=(o.optDouble("totalPayable",o.optDouble("amount"))-o.optDouble("paid")).coerceAtLeast(0.0)
             body.addView(Button(this).apply { text=o.optString("party")+" • "+o.optString("nature")+"\nOutstanding ₹"+money(outstanding); setOnClickListener{detail(o)} })
         }
         if(!found) body.addView(TextView(this).apply{text="\nNo credit accounts registered yet."})
@@ -300,9 +310,65 @@ class ArthSaathiMasterModuleActivity : Activity() {
 
     private fun revenue(body: LinearLayout) {
         body.addView(TextView(this).apply {
-            text = "REVENUE & PAYMENTS — only PAID records count as collected revenue. This records a payment status; it does not verify gateway settlement until a payment provider is connected."
+            text = "REVENUE & PAYMENTS • Local ledger and pre-live setup. Actual gateway settlement/synchronization remains disabled until go-live."
             textSize = 16f
         })
+        body.addView(TextView(this).apply { text = "PAYMENT SETUP (saved locally; no secret keys stored)"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        val provider = field(body, "Gateway provider / payment partner")
+        val merchantId = field(body, "Merchant / account ID (non-secret)")
+        val environment = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("Pre-live / not connected", "Sandbox configured", "Manual collection only"))
+            body.addView(it)
+        }
+        val bankName = field(body, "Bank name")
+        val accountHolder = field(body, "Bank account holder")
+        val accountLast4 = field(body, "Bank account last 4 digits", false, 4)
+        val ifsc = field(body, "IFSC (11 characters)")
+        val settlementRef = field(body, "Settlement account / UPI reference")
+        body.addView(Button(this).apply {
+            text = "SAVE PAYMENT SETUP"
+            isAllCaps = false
+            setOnClickListener {
+                val p = provider.text.toString().trim()
+                val mid = merchantId.text.toString().trim()
+                val bank = bankName.text.toString().trim()
+                val holder = accountHolder.text.toString().trim()
+                val last4 = accountLast4.text.toString().trim()
+                val code = ifsc.text.toString().trim().uppercase(Locale.US)
+                val settlement = settlementRef.text.toString().trim()
+                if (p.isBlank() && bank.isBlank() && settlement.isBlank()) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Enter a gateway provider, bank name or settlement reference.", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+                if (bank.isNotBlank() && (holder.isBlank() || !last4.matches(Regex("[0-9]{4}")) || !code.matches(Regex("[A-Z]{4}0[A-Z0-9]{6}")))) {
+                    if (holder.isBlank()) accountHolder.error = "Required when adding a bank account"
+                    if (!last4.matches(Regex("[0-9]{4}"))) accountLast4.error = "Enter only the final 4 digits"
+                    if (!code.matches(Regex("[A-Z]{4}0[A-Z0-9]{6}"))) ifsc.error = "Enter a valid 11-character IFSC"
+                    return@setOnClickListener
+                }
+                try {
+                    ArthSaathiCoreEngine.saveModule("REVENUE_CONFIG", mapOf(
+                        "gatewayProvider" to p, "merchantId" to mid,
+                        "environment" to environment.selectedItem.toString(),
+                        "bankName" to bank, "accountHolder" to holder, "accountLast4" to last4,
+                        "ifsc" to code, "settlementReference" to settlement,
+                        "gatewayConnected" to false
+                    ))
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Payment setup saved locally. Live gateway connection is deferred until go-live.", Toast.LENGTH_LONG).show()
+                    render(ArthSaathiNavigation.REVENUE)
+                } catch (e: IllegalStateException) { Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Sign in before saving.", Toast.LENGTH_LONG).show() }
+            }
+        })
+        val all = records
+        val config = (0 until all.length()).mapNotNull { all.optJSONObject(it) }.lastOrNull { it.optString("type") == "REVENUE_CONFIG" }
+        if (config != null) body.addView(TextView(this).apply {
+            text = "Saved setup: " + config.optString("gatewayProvider", "Manual") +
+                " • " + config.optString("environment") +
+                (if (config.optString("bankName").isNotBlank()) "\\nBank: " + config.optString("bankName") + " • ****" + config.optString("accountLast4") + " • " + config.optString("ifsc") else "") +
+                "\\nGateway status: Not connected (go-live step pending)"
+            setPadding(8, 8, 8, 12)
+        })
+        body.addView(TextView(this).apply { text = "RECORD A PAYMENT / CHARGE"; textSize = 18f; setPadding(0, 18, 0, 6) })
         val service = field(body, "Service / transaction")
         val charge = field(body, "Charge amount", true)
         val status = Spinner(this).also {
@@ -329,9 +395,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                     ))
                     Toast.makeText(this@ArthSaathiMasterModuleActivity, "Payment record saved as $paymentStatus", Toast.LENGTH_SHORT).show()
                     render(ArthSaathiNavigation.REVENUE)
-                } catch (e: IllegalStateException) {
-                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Sign in again before saving.", Toast.LENGTH_LONG).show()
-                }
+                } catch (e: IllegalStateException) { Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Sign in before saving.", Toast.LENGTH_LONG).show() }
             }
         })
         body.addView(TextView(this).apply { text = "Recorded service charges"; textSize = 18f; setPadding(0, 18, 0, 6) })
@@ -339,7 +403,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             val r = records.optJSONObject(i) ?: continue
             if (r.optString("type") != "REVENUE") continue
             body.addView(TextView(this).apply {
-                text = r.optString("f0") + " • ₹" + money(r.optDouble("f1")) + " • " + r.optString("f2") + "\n" + r.optString("f3")
+                text = r.optString("f0") + " • ₹" + money(r.optDouble("f1")) + " • " + r.optString("f2") + "\\n" + r.optString("f3")
                 setPadding(0, 8, 0, 8)
             })
         }
@@ -466,7 +530,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val name = field(body, "Full name")
         val mobile = field(body, "10-digit mobile", false, 10)
         val role = field(body, "Role / relationship")
-        val address = field(body, "Address / PIN")
+        val address = field(body, "Address / locality")
+        val pin = field(body, "6-digit PIN code (optional)", false, 6)
         val pan = field(body, "PAN (optional)")
         val gstin = field(body, "GSTIN (optional)")
         body.addView(Button(this).apply {
@@ -490,7 +555,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 try {
                     val result = ArthSaathiCoreEngine.createPerson(
                         name.text.toString().trim(), phone, role.text.toString().trim(),
-                        address.text.toString().trim(), panValue, gstinValue
+                        address.text.toString().trim(), panValue, gstinValue, pin.text.toString().trim()
                     )
                     Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_SHORT).show()
                     render(ArthSaathiNavigation.PEOPLE)

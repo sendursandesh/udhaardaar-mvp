@@ -283,7 +283,8 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 assertEquals(before, ArthSaathiDataStore.records().length())
                 requireNotNull(findEdit(root, "10-digit mobile")).setText("9876501177")
                 requireNotNull(findEdit(root, "Role / relationship")).setText("Family")
-                requireNotNull(findEdit(root, "Address / PIN")).setText("Ranchi")
+                requireNotNull(findEdit(root, "Address / locality")).setText("Ranchi")
+                requireNotNull(findEdit(root, "6-digit PIN code (optional)")).setText("834001")
                 requireNotNull(findButton(root, "SAVE PERSON")).performClick()
             }
         }
@@ -326,8 +327,54 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         assertTrue("Validated PAN/GSTIN must persist with the person record",
             (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }.any {
                 it.optString("type") == "PERSON" && it.optString("name") == personName &&
-                    it.optString("pan") == "ABCDE1234F" && it.optString("gstin") == "20ABCDE1234F1Z5"
+                    it.optString("pan") == "ABCDE1234F" && it.optString("gstin") == "20ABCDE1234F1Z5" && it.optString("pin") == "834001"
             })
+    }
+
+    @Test fun creditContractualPayableIncludesConfiguredInterestAndEmi() {
+        val beforeOutstanding = ArthSaathiCoreEngine.mis().outstanding
+        val flat = ArthSaathiCoreEngine.createCredit(
+            null, "Flat interest QA", "Personal Loan / Hand Loan", 10000.0, 12.0,
+            "UPI", "Principal + Interest", "", null, null, "9876501177", "",
+            "Principal + Interest", 12
+        )
+        val flatRecord = requireNotNull(ArthSaathiCoreEngine.find(requireNotNull(flat.id)))
+        assertEquals(11200.0, flatRecord.optDouble("totalPayable"), 0.01)
+        val emiCredit = ArthSaathiCoreEngine.createCredit(
+            null, "EMI QA", "Personal Loan / Hand Loan", 10000.0, 12.0,
+            "UPI", "EMI", "", null, null, "9876501176", "", "EMI", 12
+        )
+        val emiRecord = requireNotNull(ArthSaathiCoreEngine.find(requireNotNull(emiCredit.id)))
+        assertEquals(888.49, emiRecord.optDouble("expectedEmi"), 0.02)
+        assertEquals(10661.88, emiRecord.optDouble("totalPayable"), 0.05)
+        assertEquals(beforeOutstanding + 21861.88, ArthSaathiCoreEngine.mis().outstanding, 0.1)
+    }
+
+    @Test fun paymentSetupSavesOnlyNonSecretPreLiveConfiguration() {
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.REVENUE)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                requireNotNull(findEdit(root, "Gateway provider / payment partner")).setText("Sandbox QA Provider")
+                requireNotNull(findEdit(root, "Merchant / account ID (non-secret)")).setText("MID-QA-001")
+                requireNotNull(findEdit(root, "Bank name")).setText("QA Bank")
+                requireNotNull(findEdit(root, "Bank account holder")).setText("Test Holder")
+                requireNotNull(findEdit(root, "Bank account last 4 digits")).setText("1234")
+                requireNotNull(findEdit(root, "IFSC (11 characters)")).setText("SBIN0001234")
+                requireNotNull(findEdit(root, "Settlement account / UPI reference")).setText("test@upi")
+                requireNotNull(findButton(root, "SAVE PAYMENT SETUP")).performClick()
+            }
+        }
+        val saved = ArthSaathiDataStore.records()
+        val config = (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }
+            .lastOrNull { it.optString("type") == "REVENUE_CONFIG" }
+        assertNotNull(config)
+        assertEquals("Sandbox QA Provider", config!!.optString("gatewayProvider"))
+        assertEquals("1234", config.optString("accountLast4"))
+        assertFalse("Pre-live setup must not claim an active gateway", config.optBoolean("gatewayConnected"))
+        assertFalse("Full bank account number must never be stored", config.has("accountNumber"))
     }
 
     @Test fun qrPayloadParserExtractsUpiAndJsonInvoiceFields() {
