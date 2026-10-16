@@ -525,6 +525,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (group.text.toString().trim().isEmpty()) { group.error = "Enter a group or activity"; return@setOnClickListener }
                 if (total == null || !total.isFinite() || total <= 0.0) { totalField.error = "Enter an expense greater than zero"; return@setOnClickListener }
                 if (count == null || count <= 0 || count > 100000) { membersField.error = "Enter a valid positive member count"; return@setOnClickListener }
+                val names = memberNamesField.text.toString().split(",").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.US) }
+                if (names.size != count) { memberNamesField.error = "Enter exactly $count distinct member names, separated by commas"; return@setOnClickListener }
                 share.text = "Total: ₹" + money(total) + "\\nMembers: " + count + "\\nEqual share per member: ₹" + money(total / count)
             }
         })
@@ -537,6 +539,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (groupName.isEmpty()) { group.error = "Enter a group or activity"; return@setOnClickListener }
                 if (total == null || !total.isFinite() || total <= 0.0) { totalField.error = "Enter an expense greater than zero"; return@setOnClickListener }
                 if (count == null || count <= 0 || count > 100000) { membersField.error = "Enter a valid positive member count"; return@setOnClickListener }
+                val names = memberNamesField.text.toString().split(",").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.US) }
+                if (names.size != count) { memberNamesField.error = "Enter exactly $count distinct member names, separated by commas"; return@setOnClickListener }
                 try {
                     ArthSaathiCoreEngine.saveModule("GROUP_EXPENSE", mapOf(
                         "f0" to groupName, "f1" to total, "f2" to count,
@@ -573,7 +577,6 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 val person = rec.optString("f0").trim()
                 if (person.isNotBlank()) balances[person] = (balances[person] ?: 0.0) + rec.optDouble("f1")
             }
-            balances.keys.toList().forEach { person -> balances[person] = (balances[person] ?: 0.0) - equalShare }
             settlements.forEach { rec ->
                 val payer = rec.optString("f0")
                 val receiver = rec.optString("f1")
