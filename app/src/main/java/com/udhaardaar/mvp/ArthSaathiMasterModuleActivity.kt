@@ -513,6 +513,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val group = field(body, "Group / activity name")
         val totalField = field(body, "Total expense (₹)", true)
         val membersField = field(body, "Number of members", true).apply { inputType = InputType.TYPE_CLASS_NUMBER }
+        val memberNamesField = field(body, "Member names (comma-separated)")
         val purpose = field(body, "Purpose / notes")
         val share = TextView(this).apply { text = "Equal share per member: —"; textSize = 18f; setPadding(0, 16, 0, 16) }
         body.addView(share)
@@ -539,7 +540,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 try {
                     ArthSaathiCoreEngine.saveModule("GROUP_EXPENSE", mapOf(
                         "f0" to groupName, "f1" to total, "f2" to count,
-                        "f3" to purpose.text.toString().trim(), "total" to total, "members" to count
+                        "f3" to purpose.text.toString().trim(), "f4" to memberNamesField.text.toString().trim(), "total" to total, "members" to count
                     ))
                     Toast.makeText(this@ArthSaathiMasterModuleActivity, "Group expense saved. Add contributions below.", Toast.LENGTH_LONG).show()
                     render(ArthSaathiNavigation.GROUP_KHATA)
@@ -567,6 +568,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             val contributions = related.filter { it.optString("type") == "GROUP_CONTRIBUTION" }
             val settlements = related.filter { it.optString("type") == "GROUP_SETTLEMENT" }
             val balances = linkedMapOf<String, Double>()
+            expense.optString("f4").split(",").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.US) }.forEach { balances[it] = -equalShare }
             contributions.forEach { rec ->
                 val person = rec.optString("f0").trim()
                 if (person.isNotBlank()) balances[person] = (balances[person] ?: 0.0) + rec.optDouble("f1")
@@ -634,8 +636,11 @@ class ArthSaathiMasterModuleActivity : Activity() {
                     Toast.makeText(this, "Enter two different members and a positive amount.", Toast.LENGTH_LONG).show(); return@setPositiveButton
                 }
                 val balances = linkedMapOf<String, Double>()
-                contributions.forEach { rec -> val who = rec.optString("f0"); balances[who] = (balances[who] ?: 0.0) + rec.optDouble("f1") }
-                balances.keys.toList().forEach { who -> balances[who] = (balances[who] ?: 0.0) - equalShare }
+                val groupRecord = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+                    .firstOrNull { it.optString("id") == groupId }
+                groupRecord?.optString("f4").orEmpty().split(",").map { it.trim() }.filter { it.isNotBlank() }
+                    .distinctBy { it.lowercase(Locale.US) }.forEach { who -> balances[who] = -equalShare }
+                contributions.forEach { rec -> val who = rec.optString("f0"); balances[who] = (balances[who] ?: -equalShare) + rec.optDouble("f1") }
                 settlements.forEach { rec ->
                     val p = rec.optString("f0"); val r = rec.optString("f1"); val v = rec.optDouble("f2")
                     balances[p] = (balances[p] ?: -equalShare) - v
@@ -653,6 +658,87 @@ class ArthSaathiMasterModuleActivity : Activity() {
                     render(ArthSaathiNavigation.GROUP_KHATA)
                 } catch (e: IllegalStateException) { Toast.makeText(this, e.message ?: "Sign in before saving.", Toast.LENGTH_LONG).show() }
             }.show()
+    }
+
+    private fun qrKhata(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "QR KHATA • Scan locally, review extracted values and save the invoice record. External account sync is deferred until go-live."
+            textSize = 16f
+        })
+        body.addView(Button(this).apply {
+            text = "SCAN QR CODE"
+            isAllCaps = false
+            setOnClickListener {
+                IntentIntegrator(this@ArthSaathiMasterModuleActivity)
+                    .setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
+                    .setPrompt("Scan invoice, merchant or UPI QR")
+                    .setBeepEnabled(false)
+                    .setOrientationLocked(false)
+                    .initiateScan()
+            }
+        })
+        qrMerchantField = field(body, "Merchant / customer")
+        qrAmountField = field(body, "Amount (₹)", true)
+        qrReferenceField = field(body, "QR / invoice reference")
+        qrNoteField = field(body, "Note / invoice description")
+        qrCapturedAtField = field(body, "Captured at (device time)")
+        qrCapturedAtField?.setText(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date()))
+        body.addView(Button(this).apply {
+            text = "SAVE QR / INVOICE RECORD"
+            isAllCaps = false
+            setOnClickListener {
+                val merchant = qrMerchantField?.text?.toString()?.trim().orEmpty()
+                val amount = qrAmountField?.text?.toString()?.trim()?.toDoubleOrNull()
+                if (merchant.isBlank()) { qrMerchantField?.error = "Merchant / customer is required"; return@setOnClickListener }
+                if (amount == null || !amount.isFinite() || amount <= 0.0) { qrAmountField?.error = "Enter a positive amount"; return@setOnClickListener }
+                val reference = qrReferenceField?.text?.toString()?.trim().orEmpty()
+                if (reference.isBlank() && qrRawPayload.isBlank()) { qrReferenceField?.error = "Enter an invoice reference or scan a QR"; return@setOnClickListener }
+                try {
+                    ArthSaathiCoreEngine.saveModule("QR_KHATA", mapOf(
+                        "f0" to merchant, "f1" to amount, "f2" to reference,
+                        "f3" to qrNoteField?.text?.toString()?.trim().orEmpty(),
+                        "f4" to qrCapturedAtField?.text?.toString()?.trim().orEmpty(),
+                        "f5" to qrRawPayload
+                    ))
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "QR / invoice record saved", Toast.LENGTH_LONG).show()
+                    qrRawPayload = ""
+                    render(ArthSaathiNavigation.QR_KHATA)
+                } catch (e: IllegalStateException) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Sign in before saving.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "\\nSaved QR / invoice records"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        for (i in 0 until records.length()) {
+            val record = records.optJSONObject(i) ?: continue
+            if (record.optString("type") != "QR_KHATA") continue
+            body.addView(TextView(this).apply {
+                text = record.optString("f0") + " • ₹" + money(record.optDouble("f1")) +
+                    "\\nReference: " + record.optString("f2") + "\\nCaptured: " + record.optString("f4")
+                setPadding(8, 8, 8, 8)
+            })
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        val result: IntentResult? = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+        if (result != null) {
+            val payload = result.contents
+            if (payload.isNullOrBlank()) {
+                Toast.makeText(this, "QR scan cancelled; no record saved.", Toast.LENGTH_SHORT).show()
+            } else {
+                qrRawPayload = payload
+                val parsed = ArthSaathiCoreEngine.parseQrPayload(payload)
+                qrMerchantField?.setText(parsed.optString("merchant"))
+                if (parsed.optString("amount").isNotBlank()) qrAmountField?.setText(parsed.optString("amount"))
+                qrReferenceField?.setText(parsed.optString("reference"))
+                qrNoteField?.setText(parsed.optString("note"))
+                qrCapturedAtField?.setText(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date()))
+                Toast.makeText(this, "QR read. Review all extracted values before saving.", Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
