@@ -17,21 +17,32 @@ object ArthSaathiCoreEngine {
  fun validatePan(v:String)=v.isBlank()||v.matches(Regex("[A-Z]{5}[0-9]{4}[A-Z]"))
  fun validateGstin(v:String)=v.isBlank()||v.matches(Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"))
 
- fun createPerson(name:String,mobile:String="",role:String="",address:String="",pan:String="",gstin:String=""):Result {
+ fun createPerson(name:String,mobile:String="",role:String="",address:String="",pan:String="",gstin:String="",pin:String=""):Result {
   require(name.isNotBlank());require(mobile.isEmpty()||validateMobile(mobile))
   val normalizedPan=pan.trim().uppercase(Locale.US)
   val normalizedGstin=gstin.trim().uppercase(Locale.US)
+  val normalizedPin=pin.trim()
   require(validatePan(normalizedPan)) { "Enter a valid PAN" }
   require(validateGstin(normalizedGstin)) { "Enter a valid GSTIN" }
-  val o=JSONObject().apply{put("id",id("PER"));put("type","PERSON");put("name",name.trim());put("mobile",mobile);put("role",role);put("address",address);put("pan",normalizedPan);put("gstin",normalizedGstin);put("createdAt",n());put("updatedAt",n())}
+  require(normalizedPin.isBlank() || normalizedPin.matches(Regex("[1-9][0-9]{5}"))) { "Enter a valid 6-digit Indian PIN code" }
+  val o=JSONObject().apply{put("id",id("PER"));put("type","PERSON");put("name",name.trim());put("mobile",mobile);put("role",role);put("address",address);put("pan",normalizedPan);put("gstin",normalizedGstin);put("pin",normalizedPin);put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_PERSON");return Result(true,o.getString("id"),"Person saved")
  }
- fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String=""):Result {
+ fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String="",repaymentMode:String=terms,tenureMonths:Int=0):Result {
   require(partyName.isNotBlank());require(nature.isNotBlank());require(amount.isFinite() && amount>0);require(roi.isFinite() && roi in 0.0..100.0)
   require(partyMobile.isBlank() || validateMobile(partyMobile))
-  require(method.isNotBlank());require(terms.isNotBlank())
+  require(method.isNotBlank());require(terms.isNotBlank());require(tenureMonths>=0)
   if(nature.contains("Rental",true)||nature.contains("Lease",true))require(roi==0.0)
-  val o=JSONObject().apply{put("id",id("CR"));put("type","CREDIT");put("partyId",partyId?:"");put("party",partyName);put("partyMobile",partyMobile);put("nature",nature);put("amount",m(amount));put("roi",m(roi));put("method",method);put("terms",terms);put("dueDate",dueDate);put("guarantorId",guarantorId?:"");put("guarantorName",guarantorName);put("documentId",documentId?:"");put("paid",0.0);put("status","ACTIVE");put("consentStatus","PENDING");put("createdAt",n());put("updatedAt",n())}
+  val mode=repaymentMode.trim().ifBlank { terms.trim() }
+  val isLease=nature.contains("Rental",true)||nature.contains("Lease",true)
+  val emiAmount=if(!isLease && mode.contains("EMI",true) && tenureMonths>0) emi(amount,roi,tenureMonths) else 0.0
+  val totalPayable=when {
+    isLease -> amount
+    mode.contains("EMI",true) && tenureMonths>0 -> m(emiAmount*tenureMonths)
+    mode.contains("Principal + Interest",true) && tenureMonths>0 -> m(amount + amount*roi*tenureMonths/1200.0)
+    else -> amount
+  }
+  val o=JSONObject().apply{put("id",id("CR"));put("type","CREDIT");put("partyId",partyId?:"");put("party",partyName);put("partyMobile",partyMobile);put("nature",nature);put("amount",m(amount));put("roi",m(roi));put("method",method);put("terms",terms);put("repaymentMode",mode);put("tenureMonths",tenureMonths);put("expectedEmi",emiAmount);put("totalPayable",totalPayable);put("dueDate",dueDate);put("guarantorId",guarantorId?:"");put("guarantorName",guarantorName);put("documentId",documentId?:"");put("paid",0.0);put("status","ACTIVE");put("consentStatus","PENDING");put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_CREDIT");return Result(true,o.getString("id"),"Credit created")
  }
  fun requestConsent(recordId:String,actor:String):Result {
@@ -58,10 +69,12 @@ object ArthSaathiCoreEngine {
   return Result(true,recordId,"Consent confirmed by OTP provider")
  }
  fun repayment(recordId:String,amount:Double,method:String,actor:String):Result{
-  require(amount>0);val o=find(recordId)?:return Result(false,message="Credit not found");require(o.optString("type")=="CREDIT");require(o.optString("consentStatus")=="CONSENTED")
-  val out=(o.optDouble("amount")-o.optDouble("paid")).coerceAtLeast(0.0);require(amount<=out+0.005)
+  require(amount.isFinite() && amount>0);require(method.isNotBlank())
+  val o=find(recordId)?:return Result(false,message="Credit not found");require(o.optString("type")=="CREDIT");require(o.optString("consentStatus")=="CONSENTED")
+  val payable=o.optDouble("totalPayable",o.optDouble("amount"))
+  val out=(payable-o.optDouble("paid")).coerceAtLeast(0.0);require(amount<=out+0.005)
   val tx=JSONObject().apply{put("id",id("TX"));put("type","REPAYMENT");put("recordId",recordId);put("amount",m(amount));put("method",method);put("actor",actor);put("createdAt",n())}
-  save(tx,"REPAYMENT");o.put("paid",m(o.optDouble("paid")+amount));if(o.optDouble("paid")+0.005>=o.optDouble("amount"))o.put("status","CLOSED");o.put("updatedAt",n());replace(o);return Result(true,tx.getString("id"),"Repayment recorded")
+  save(tx,"REPAYMENT");o.put("paid",m(o.optDouble("paid")+amount));if(o.optDouble("paid")+0.005>=payable)o.put("status","CLOSED");o.put("updatedAt",n());replace(o);return Result(true,tx.getString("id"),"Repayment recorded")
  }
  fun emi(p:Double,rate:Double,months:Int):Double{require(p>0&&rate>=0&&months>0);if(rate==0.0)return m(p/months);val r=rate/1200;return m(p*r*(1+r).pow(months)/((1+r).pow(months)-1))}
  fun schedule(p:Double,rate:Double,months:Int):JSONArray{val a=JSONArray();var b=p;val e=emi(p,rate,months);val r=rate/1200;for(i in 1..months){val interest=if(r==0.0)0.0 else b*r;val principal=if(i==months)b else (e-interest).coerceAtLeast(0.0);b=(b-principal).coerceAtLeast(0.0);a.put(JSONObject().apply{put("installment",i);put("emi",m(e));put("interest",m(interest));put("principal",m(principal));put("balance",m(b))})};return a}
@@ -126,7 +139,7 @@ object ArthSaathiCoreEngine {
   for(i in 0 until a.length()){
    val o=a.optJSONObject(i)?:continue
    when(o.optString("type")){
-    "CREDIT"->{val principal=amount(o,"amount");c+=principal;outstanding+=(principal-amount(o,"paid")).coerceAtLeast(0.0)}
+    "CREDIT"->{val principal=amount(o,"amount");c+=principal;val payable=amount(o,"totalPayable").takeIf { it>0.0 }?:principal;outstanding+=(payable-amount(o,"paid")).coerceAtLeast(0.0)}
     "REPAYMENT"->p+=amount(o,"amount")
     "ASSET"->asst+=amount(o,"value","f2","currentValue")
     "PORTFOLIO"->asst+=amount(o,"currentValue","f3","value","f2")
