@@ -154,6 +154,30 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             })
         assertEquals("MIS group expense total must use saved total", groupExpensesBefore + 5000.0,
             ArthSaathiCoreEngine.mis().groupExpenses, 0.001)
+        val groupRecord = (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }
+            .first { it.optString("type") == "GROUP_EXPENSE" && it.optString("f0") == groupName }
+        val groupId = groupRecord.optString("id")
+        ArthSaathiCoreEngine.saveModule("GROUP_CONTRIBUTION", mapOf("f0" to "A", "f1" to 5000.0), mapOf("parentId" to groupId))
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java).putExtra("module", ArthSaathiNavigation.GROUP_KHATA)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val text = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("Contributor should be shown as owed the overpayment", text.contains("A: is owed ₹4500.00"))
+                assertTrue("A non-contributor should owe their equal share", text.contains("B: owes ₹500.00"))
+            }
+        }
+        ArthSaathiCoreEngine.saveModule("GROUP_SETTLEMENT",
+            mapOf("f0" to "B", "f1" to "A", "f2" to 500.0), mapOf("parentId" to groupId))
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java).putExtra("module", ArthSaathiNavigation.GROUP_KHATA)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val text = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("Settled debtor balance should return to zero", text.contains("B: owes ₹0.00") || text.contains("B: is owed ₹0.00"))
+                assertTrue("Creditor balance should reduce by settlement", text.contains("A: is owed ₹4000.00"))
+            }
+        }
     }
 
     @Test fun recordsCannotBeReadOrWrittenWithoutAnAuthenticatedSession() {
