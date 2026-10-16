@@ -181,7 +181,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Principal / amount")).setText("0")
                 requireNotNull(findEdit(root, "ROI % (not used for lease)")).setText("150")
                 requireNotNull(findEdit(root, "Method: Cash / UPI / NEFT / Other")).setText("UPI")
-                requireNotNull(findEdit(root, "Repayment method / terms")).setText("Monthly")
+                requireNotNull(findEdit(root, "Repayment mode / terms (EMI / Principal + Interest / Bullet / Rental)")).setText("Monthly")
                 requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
                 assertEquals("Enter an amount greater than zero",
                     findEdit(root, "Principal / amount")?.error)

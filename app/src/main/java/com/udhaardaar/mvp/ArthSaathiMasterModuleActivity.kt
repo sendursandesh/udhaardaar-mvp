@@ -175,10 +175,10 @@ class ArthSaathiMasterModuleActivity : Activity() {
     }
 
     private fun detail(o:JSONObject){
-        val out=(o.optDouble("amount")-o.optDouble("paid")).coerceAtLeast(0.0)
+        val out=(o.optDouble("totalPayable",o.optDouble("amount"))-o.optDouble("paid")).coerceAtLeast(0.0)
         AlertDialog.Builder(this).setTitle("Account "+o.optString("id")).setMessage(
             "Party: "+o.optString("party")+"\nNature: "+o.optString("nature")+"\nAmount: ₹"+money(o.optDouble("amount"))+
-            "\nROI: "+o.optDouble("roi")+"%\nMethod: "+o.optString("method")+"\nTerms: "+o.optString("terms", o.optString("repaymentTerms"))+
+            "\nContractual payable: ₹"+money(o.optDouble("totalPayable",o.optDouble("amount")))+"\nROI: "+o.optDouble("roi")+"%\nRepayment mode: "+o.optString("repaymentMode",o.optString("terms"))+"\nMethod: "+o.optString("method")+"\nTerms: "+o.optString("terms", o.optString("repaymentTerms"))+
             "\nGuarantor: "+o.optString("guarantorName", o.optString("guarantor"))+"\nDue: "+o.optString("dueDate")+"\nDocument: "+o.optString("documentId", o.optString("document"))+
             "\nPaid: ₹"+money(o.optDouble("paid"))+"\nOutstanding: ₹"+money(out)+"\nConsent: "+o.optString("consentStatus")+"\nStatus: "+o.optString("status")
         ).setPositiveButton("OK",null).show()
