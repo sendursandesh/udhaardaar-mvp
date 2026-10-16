@@ -364,8 +364,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
         if (config != null) body.addView(TextView(this).apply {
             text = "Saved setup: " + config.optString("gatewayProvider", "Manual") +
                 " • " + config.optString("environment") +
-                (if (config.optString("bankName").isNotBlank()) "\\nBank: " + config.optString("bankName") + " • ****" + config.optString("accountLast4") + " • " + config.optString("ifsc") else "") +
-                "\\nGateway status: Not connected (go-live step pending)"
+                (if (config.optString("bankName").isNotBlank()) "\nBank: " + config.optString("bankName") + " • ****" + config.optString("accountLast4") + " • " + config.optString("ifsc") else "") +
+                "\nGateway status: Not connected (go-live step pending)"
             setPadding(8, 8, 8, 12)
         })
         body.addView(TextView(this).apply { text = "RECORD A PAYMENT / CHARGE"; textSize = 18f; setPadding(0, 18, 0, 6) })
@@ -403,7 +403,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             val r = records.optJSONObject(i) ?: continue
             if (r.optString("type") != "REVENUE") continue
             body.addView(TextView(this).apply {
-                text = r.optString("f0") + " • ₹" + money(r.optDouble("f1")) + " • " + r.optString("f2") + "\\n" + r.optString("f3")
+                text = r.optString("f0") + " • ₹" + money(r.optDouble("f1")) + " • " + r.optString("f2") + "\n" + r.optString("f3")
                 setPadding(0, 8, 0, 8)
             })
         }
@@ -531,7 +531,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val mobile = field(body, "10-digit mobile", false, 10)
         val role = field(body, "Role / relationship")
         val address = field(body, "Address / locality")
-        val pin = field(body, "6-digit PIN code (optional)", false, 6)
+        val pin = field(body, "6-digit PIN code (optional)", false, 6).apply { inputType = InputType.TYPE_CLASS_NUMBER }
         val pan = field(body, "PAN (optional)")
         val gstin = field(body, "GSTIN (optional)")
         body.addView(Button(this).apply {
@@ -544,6 +544,10 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (phone.isNotEmpty() && !ArthSaathiCoreEngine.validateMobile(phone)) {
                     mobile.error = "Enter a valid 10-digit mobile number"; return@setOnClickListener
                 }
+                val pinValue = pin.text.toString().trim()
+                if (pinValue.isNotBlank() && !pinValue.matches(Regex("[1-9][0-9]{5}"))) {
+                    pin.error = "Enter a valid 6-digit Indian PIN code"; return@setOnClickListener
+                }
                 val panValue = pan.text.toString().trim().uppercase(Locale.US)
                 if (!ArthSaathiCoreEngine.validatePan(panValue)) {
                     pan.error = "Enter a valid PAN (e.g. ABCDE1234F)"; return@setOnClickListener
@@ -555,7 +559,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 try {
                     val result = ArthSaathiCoreEngine.createPerson(
                         name.text.toString().trim(), phone, role.text.toString().trim(),
-                        address.text.toString().trim(), panValue, gstinValue, pin.text.toString().trim()
+                        address.text.toString().trim(), panValue, gstinValue, pinValue
                     )
                     Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_SHORT).show()
                     render(ArthSaathiNavigation.PEOPLE)
@@ -603,7 +607,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (count == null || count <= 0 || count > 100000) { membersField.error = "Enter a valid positive member count"; return@setOnClickListener }
                 val names = memberNamesField.text.toString().split(",").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.US) }
                 if (names.size != count) { memberNamesField.error = "Enter exactly $count distinct member names, separated by commas"; return@setOnClickListener }
-                share.text = "Total: ₹" + money(total) + "\\nMembers: " + count + "\\nEqual share per member: ₹" + money(total / count)
+                share.text = "Total: ₹" + money(total) + "\nMembers: " + count + "\nEqual share per member: ₹" + money(total / count)
             }
         })
         body.addView(Button(this).apply {
@@ -629,7 +633,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 }
             }
         })
-        body.addView(TextView(this).apply { text = "\\nSAVED GROUPS • CONTRIBUTIONS • SETTLEMENTS"; textSize = 19f; setPadding(0, 24, 0, 8) })
+        body.addView(TextView(this).apply { text = "\nSAVED GROUPS • CONTRIBUTIONS • SETTLEMENTS"; textSize = 19f; setPadding(0, 24, 0, 8) })
         for (i in 0 until records.length()) {
             val expense = records.optJSONObject(i) ?: continue
             if (expense.optString("type") != "GROUP_EXPENSE") continue
@@ -639,9 +643,9 @@ class ArthSaathiMasterModuleActivity : Activity() {
             val equalShare = if (members > 0) total / members else 0.0
             val name = expense.optString("f0", expense.optString("group", "Group expense"))
             body.addView(TextView(this).apply {
-                text = name + "\\nTotal: ₹" + money(total) + " • Members: " + members +
-                    "\\nEqual share per member: ₹" + money(equalShare) +
-                    if (expense.optString("f3").isNotBlank()) "\\n" + expense.optString("f3") else ""
+                text = name + "\nTotal: ₹" + money(total) + " • Members: " + members +
+                    "\nEqual share per member: ₹" + money(equalShare) +
+                    if (expense.optString("f3").isNotBlank()) "\n" + expense.optString("f3") else ""
                 textSize = 15f; setPadding(8, 12, 8, 6)
             })
             val related = ArthSaathiCoreEngine.linked(groupId)
@@ -660,7 +664,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 balances[payer] = (balances[payer] ?: -equalShare) - amount
                 balances[receiver] = (balances[receiver] ?: -equalShare) + amount
             }
-            val balanceText = if (balances.isEmpty()) "No individual contributions recorded yet." else balances.entries.joinToString("\\n") {
+            val balanceText = if (balances.isEmpty()) "No individual contributions recorded yet." else balances.entries.joinToString("\n") {
                 it.key + ": " + if (it.value >= 0.0) "is owed ₹" + money(it.value) else "owes ₹" + money(-it.value)
             }
             body.addView(TextView(this).apply { text = balanceText; setPadding(12, 4, 8, 8) })
@@ -787,13 +791,13 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 }
             }
         })
-        body.addView(TextView(this).apply { text = "\\nSaved QR / invoice records"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        body.addView(TextView(this).apply { text = "\nSaved QR / invoice records"; textSize = 18f; setPadding(0, 18, 0, 6) })
         for (i in 0 until records.length()) {
             val record = records.optJSONObject(i) ?: continue
             if (record.optString("type") != "QR_KHATA") continue
             body.addView(TextView(this).apply {
                 text = record.optString("f0") + " • ₹" + money(record.optDouble("f1")) +
-                    "\\nReference: " + record.optString("f2") + "\\nCaptured: " + record.optString("f4")
+                    "\nReference: " + record.optString("f2") + "\nCaptured: " + record.optString("f4")
                 setPadding(8, 8, 8, 8)
             })
         }

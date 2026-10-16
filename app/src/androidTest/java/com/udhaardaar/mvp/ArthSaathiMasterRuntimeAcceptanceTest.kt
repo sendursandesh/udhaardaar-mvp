@@ -218,7 +218,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Principal / amount")).setText("10000")
                 requireNotNull(findEdit(root, "ROI % (not used for lease)")).setText("0")
                 requireNotNull(findEdit(root, "Method: Cash / UPI / NEFT / Other")).setText("BANK")
-                requireNotNull(findEdit(root, "Repayment method / terms")).setText("Monthly rent")
+                requireNotNull(findEdit(root, "Repayment mode / terms (EMI / Principal + Interest / Bullet / Rental)")).setText("Monthly rent")
                 requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
                 assertEquals("Enter a 10-digit mobile number",
                     findEdit(root, "Counterparty mobile (10 digits)")?.error)
@@ -320,6 +320,11 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 assertNotNull("Malformed GSTIN must be rejected", gstin.error)
                 pan.setText("abcde1234f")
                 gstin.setText("20abcde1234f1z5")
+                val pin = requireNotNull(findEdit(root, "6-digit PIN code (optional)"))
+                pin.setText("123")
+                requireNotNull(findButton(root, "SAVE PERSON")).performClick()
+                assertNotNull("Malformed PIN must be rejected", pin.error)
+                pin.setText("834001")
                 requireNotNull(findButton(root, "SAVE PERSON")).performClick()
             }
         }
