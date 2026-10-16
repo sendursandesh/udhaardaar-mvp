@@ -329,6 +329,19 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             })
     }
 
+    @Test fun qrPayloadParserExtractsUpiAndJsonInvoiceFields() {
+        val upi = ArthSaathiCoreEngine.parseQrPayload("upi://pay?pa=shop%40upi&pn=Corner%20Shop&am=125.50&tr=INV-9&tn=Groceries")
+        assertEquals("Corner Shop", upi.optString("merchant"))
+        assertEquals("125.50", upi.optString("amount"))
+        assertEquals("INV-9", upi.optString("reference"))
+        assertEquals("Groceries", upi.optString("note"))
+        val json = ArthSaathiCoreEngine.parseQrPayload("{\"vendor\":\"Store\",\"total\":\"75\",\"invoiceNo\":\"A-12\",\"description\":\"Stationery\"}")
+        assertEquals("Store", json.optString("merchant"))
+        assertEquals("75", json.optString("amount"))
+        assertEquals("A-12", json.optString("reference"))
+        assertEquals("Stationery", json.optString("note"))
+    }
+
     @Test fun consentFailsClosedWhenNoRealOtpProviderIsConfigured() {
         val created = ArthSaathiCoreEngine.createCredit(
             null, "Consent QA", "Personal Loan / Hand Loan", 5000.0, 5.0,

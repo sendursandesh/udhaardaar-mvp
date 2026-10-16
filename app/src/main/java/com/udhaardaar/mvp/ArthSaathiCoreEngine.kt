@@ -65,6 +65,37 @@ object ArthSaathiCoreEngine {
  }
  fun emi(p:Double,rate:Double,months:Int):Double{require(p>0&&rate>=0&&months>0);if(rate==0.0)return m(p/months);val r=rate/1200;return m(p*r*(1+r).pow(months)/((1+r).pow(months)-1))}
  fun schedule(p:Double,rate:Double,months:Int):JSONArray{val a=JSONArray();var b=p;val e=emi(p,rate,months);val r=rate/1200;for(i in 1..months){val interest=if(r==0.0)0.0 else b*r;val principal=if(i==months)b else (e-interest).coerceAtLeast(0.0);b=(b-principal).coerceAtLeast(0.0);a.put(JSONObject().apply{put("installment",i);put("emi",m(e));put("interest",m(interest));put("principal",m(principal));put("balance",m(b))})};return a}
+ fun parseQrPayload(payload:String):JSONObject {
+  val out=JSONObject().put("merchant","").put("amount","").put("reference","").put("note","")
+  val raw=payload.trim()
+  if(raw.isEmpty()) return out
+  try {
+   val json=JSONObject(raw)
+   val merchant=listOf("merchant","vendor","payeeName","pn","name","customer").firstNotNullOfOrNull { k -> json.optString(k).takeIf { it.isNotBlank() } }
+   val amount=listOf("amount","am","total","value").firstNotNullOfOrNull { k -> json.optString(k).takeIf { it.isNotBlank() && it.toDoubleOrNull()?.let { n -> n.isFinite() && n>0.0 }==true } }
+   val reference=listOf("reference","invoice","invoiceNo","transactionId","tr","txnId","id").firstNotNullOfOrNull { k -> json.optString(k).takeIf { it.isNotBlank() } }
+   val note=listOf("note","description","tn","purpose","item").firstNotNullOfOrNull { k -> json.optString(k).takeIf { it.isNotBlank() } }
+   if(merchant!=null) out.put("merchant",merchant)
+   if(amount!=null) out.put("amount",amount)
+   if(reference!=null) out.put("reference",reference)
+   if(note!=null) out.put("note",note)
+   return out
+  } catch (_:Exception) {}
+  val uri=android.net.Uri.parse(raw)
+  val queryNames=listOf("pn","am","tr","tn","pa","mc","tid")
+  if(uri.scheme.equals("upi",true) || uri.scheme.equals("http",true) || uri.scheme.equals("https",true)) {
+   val name=uri.getQueryParameter("pn") ?: uri.getQueryParameter("merchant") ?: uri.getQueryParameter("name")
+   val amount=uri.getQueryParameter("am") ?: uri.getQueryParameter("amount")
+   val ref=uri.getQueryParameter("tr") ?: uri.getQueryParameter("tid") ?: uri.getQueryParameter("invoice")
+   val note=uri.getQueryParameter("tn") ?: uri.getQueryParameter("note")
+   if(!name.isNullOrBlank()) out.put("merchant",name)
+   if(!amount.isNullOrBlank() && amount.toDoubleOrNull()?.let { it.isFinite() && it>0.0 }==true) out.put("amount",amount)
+   if(!ref.isNullOrBlank()) out.put("reference",ref)
+   if(!note.isNullOrBlank()) out.put("note",note)
+   if(out.optString("reference").isBlank()) uri.getQueryParameter("pa")?.let { out.put("reference",it) }
+  }
+  return out
+ }
  fun saveModule(type:String,fields:Map<String,Any?>,links:Map<String,String> = emptyMap()):Result{val o=JSONObject().apply{put("id",id(type.take(8).uppercase()));put("type",type);put("createdAt",n());put("updatedAt",n())};fields.forEach{(k,v)->o.put(k,v)};links.forEach{(k,v)->o.put(k,v)};save(o,"CREATE_$type");return Result(true,o.getString("id"),"$type saved")}
  fun update(id:String,fields:Map<String,Any?>,actor:String="user"):Result{
   val o=find(id)?:return Result(false,message="Record not found")

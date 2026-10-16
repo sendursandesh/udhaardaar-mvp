@@ -7,6 +7,8 @@ import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputType
 import android.widget.*
+import com.google.zxing.integration.android.IntentIntegrator
+import com.google.zxing.integration.android.IntentResult
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
@@ -14,6 +16,12 @@ import java.util.*
 /** Canonical executable surface for the consolidated ArthSaathi architecture. */
 class ArthSaathiMasterModuleActivity : Activity() {
     private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+    private var qrMerchantField: EditText? = null
+    private var qrAmountField: EditText? = null
+    private var qrReferenceField: EditText? = null
+    private var qrNoteField: EditText? = null
+    private var qrCapturedAtField: EditText? = null
+    private var qrRawPayload: String = ""
     private val records get() = ArthSaathiDataStore.records()
 
     override fun onCreate(state: Bundle?) {
@@ -36,7 +44,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.REGISTER_CREDIT -> registerCredit(body)
             ArthSaathiNavigation.LOANS_UDHAAR -> loans(body)
             ArthSaathiNavigation.REPAYMENT -> repayment(body)
-            ArthSaathiNavigation.QR_KHATA -> simple(body,"QR_KHATA","QR Khata",listOf("Merchant / customer","Amount","QR / invoice reference","Note"))
+            ArthSaathiNavigation.QR_KHATA -> qrKhata(body)
             ArthSaathiNavigation.GROUP_KHATA -> groupKhata(body)
             ArthSaathiNavigation.MIS -> mis(body)
             ArthSaathiNavigation.SWITCH_ANALYSIS -> switchAnalysis(body)
@@ -499,17 +507,16 @@ class ArthSaathiMasterModuleActivity : Activity() {
 
     private fun groupKhata(body: LinearLayout) {
         body.addView(TextView(this).apply {
-            text = "GROUP KHATA • shared expense register\nEnter the total and number of members to calculate an equal indicative share. This does not record individual payments or settlements."
+            text = "GROUP KHATA • shared expenses, individual contributions and settlements. All records stay in this signed-in account."
             textSize = 16f
         })
         val group = field(body, "Group / activity name")
         val totalField = field(body, "Total expense (₹)", true)
-        val membersField = field(body, "Number of members", true)
-        membersField.inputType = InputType.TYPE_CLASS_NUMBER
+        val membersField = field(body, "Number of members", true).apply { inputType = InputType.TYPE_CLASS_NUMBER }
         val purpose = field(body, "Purpose / notes")
         val share = TextView(this).apply { text = "Equal share per member: —"; textSize = 18f; setPadding(0, 16, 0, 16) }
         body.addView(share)
-        val calculate = Button(this).apply {
+        body.addView(Button(this).apply {
             text = "CALCULATE EQUAL SHARE"
             setOnClickListener {
                 val total = totalField.text.toString().trim().toDoubleOrNull()
@@ -519,8 +526,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (count == null || count <= 0 || count > 100000) { membersField.error = "Enter a valid positive member count"; return@setOnClickListener }
                 share.text = "Total: ₹" + money(total) + "\\nMembers: " + count + "\\nEqual share per member: ₹" + money(total / count)
             }
-        }
-        body.addView(calculate)
+        })
         body.addView(Button(this).apply {
             text = "SAVE GROUP EXPENSE"
             setOnClickListener {
@@ -531,45 +537,122 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (total == null || !total.isFinite() || total <= 0.0) { totalField.error = "Enter an expense greater than zero"; return@setOnClickListener }
                 if (count == null || count <= 0 || count > 100000) { membersField.error = "Enter a valid positive member count"; return@setOnClickListener }
                 try {
-                    ArthSaathiCoreEngine.saveModule("GROUP_EXPENSE", linkedMapOf(
-                        "f0" to groupName, "f1" to total, "f2" to count, "f3" to purpose.text.toString().trim()
+                    ArthSaathiCoreEngine.saveModule("GROUP_EXPENSE", mapOf(
+                        "f0" to groupName, "f1" to total, "f2" to count,
+                        "f3" to purpose.text.toString().trim(), "total" to total, "members" to count
                     ))
-                    Toast.makeText(this@ArthSaathiMasterModuleActivity,
-                        "Group expense saved. Equal share: ₹" + money(total / count), Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Group expense saved. Add contributions below.", Toast.LENGTH_LONG).show()
                     render(ArthSaathiNavigation.GROUP_KHATA)
-                } catch (e: IllegalArgumentException) {
-                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Please review the details.", Toast.LENGTH_LONG).show()
                 } catch (e: IllegalStateException) {
-                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Sign in again before saving.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Sign in before saving.", Toast.LENGTH_LONG).show()
                 }
             }
         })
-        body.addView(TextView(this).apply {
-            text = "\\nSAVED GROUP EXPENSES"
-            textSize = 19f
-            setPadding(0, 24, 0, 8)
-        })
-        var savedCount = 0
+        body.addView(TextView(this).apply { text = "\\nSAVED GROUPS • CONTRIBUTIONS • SETTLEMENTS"; textSize = 19f; setPadding(0, 24, 0, 8) })
         for (i in 0 until records.length()) {
-            val record = records.optJSONObject(i) ?: continue
-            if (record.optString("type") != "GROUP_EXPENSE") continue
-            savedCount++
-            val total = record.optDouble("total", record.optDouble("f1", record.optDouble("value", 0.0)))
-            val members = record.optInt("f2", record.optInt("members", 0))
-            val name = record.optString("f0", record.optString("group", "Group expense"))
-            val description = name + "\\nTotal: ₹" + money(total) +
-                (if (members > 0) "\\nMembers: " + members + " • Equal share: ₹" + money(total / members) else "") +
-                (if (record.optString("f3").isNotBlank()) "\\n" + record.optString("f3") else "")
+            val expense = records.optJSONObject(i) ?: continue
+            if (expense.optString("type") != "GROUP_EXPENSE") continue
+            val groupId = expense.optString("id")
+            val total = expense.optDouble("total", expense.optDouble("f1", 0.0))
+            val members = expense.optInt("members", expense.optInt("f2", 0))
+            val equalShare = if (members > 0) total / members else 0.0
+            val name = expense.optString("f0", expense.optString("group", "Group expense"))
             body.addView(TextView(this).apply {
-                text = description
-                textSize = 15f
-                setPadding(8, 12, 8, 12)
+                text = name + "\\nTotal: ₹" + money(total) + " • Members: " + members +
+                    "\\nEqual share per member: ₹" + money(equalShare) +
+                    if (expense.optString("f3").isNotBlank()) "\\n" + expense.optString("f3") else ""
+                textSize = 15f; setPadding(8, 12, 8, 6)
+            })
+            val related = ArthSaathiCoreEngine.linked(groupId)
+            val contributions = related.filter { it.optString("type") == "GROUP_CONTRIBUTION" }
+            val settlements = related.filter { it.optString("type") == "GROUP_SETTLEMENT" }
+            val balances = linkedMapOf<String, Double>()
+            contributions.forEach { rec ->
+                val person = rec.optString("f0").trim()
+                if (person.isNotBlank()) balances[person] = (balances[person] ?: 0.0) + rec.optDouble("f1")
+            }
+            balances.keys.toList().forEach { person -> balances[person] = (balances[person] ?: 0.0) - equalShare }
+            settlements.forEach { rec ->
+                val payer = rec.optString("f0")
+                val receiver = rec.optString("f1")
+                val amount = rec.optDouble("f2")
+                balances[payer] = (balances[payer] ?: -equalShare) - amount
+                balances[receiver] = (balances[receiver] ?: -equalShare) + amount
+            }
+            val balanceText = if (balances.isEmpty()) "No individual contributions recorded yet." else balances.entries.joinToString("\\n") {
+                it.key + ": " + if (it.value >= 0.0) "is owed ₹" + money(it.value) else "owes ₹" + money(-it.value)
+            }
+            body.addView(TextView(this).apply { text = balanceText; setPadding(12, 4, 8, 8) })
+            body.addView(Button(this).apply {
+                text = "ADD CONTRIBUTION • " + name
+                isAllCaps = false
+                setOnClickListener { showContributionDialog(groupId, name) }
+            })
+            body.addView(Button(this).apply {
+                text = "RECORD SETTLEMENT • " + name
+                isAllCaps = false
+                isEnabled = balances.values.any { it > 0.005 } && balances.values.any { it < -0.005 }
+                setOnClickListener { showSettlementDialog(groupId, name, equalShare, contributions, settlements) }
             })
         }
-        if (savedCount == 0) body.addView(TextView(this).apply {
-            text = "No group expenses saved yet."
-            setPadding(0, 8, 0, 8)
-        })
+    }
+
+    private fun showContributionDialog(groupId: String, groupName: String) {
+        val person = EditText(this).apply { hint = "Member name" }
+        val amount = EditText(this).apply { hint = "Contribution amount"; inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL }
+        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(32, 8, 32, 0); addView(person); addView(amount) }
+        AlertDialog.Builder(this).setTitle("Add contribution • " + groupName).setView(layout)
+            .setNegativeButton("CANCEL", null).setPositiveButton("SAVE") { _, _ ->
+                val p = person.text.toString().trim()
+                val a = amount.text.toString().trim().toDoubleOrNull()
+                if (p.isBlank() || a == null || !a.isFinite() || a <= 0.0) {
+                    Toast.makeText(this, "Enter a member name and positive amount.", Toast.LENGTH_LONG).show(); return@setPositiveButton
+                }
+                try {
+                    ArthSaathiCoreEngine.saveModule("GROUP_CONTRIBUTION",
+                        mapOf("f0" to p, "f1" to a, "groupName" to groupName),
+                        mapOf("parentId" to groupId))
+                    render(ArthSaathiNavigation.GROUP_KHATA)
+                } catch (e: IllegalStateException) { Toast.makeText(this, e.message ?: "Sign in before saving.", Toast.LENGTH_LONG).show() }
+            }.show()
+    }
+
+    private fun showSettlementDialog(
+        groupId: String, groupName: String, equalShare: Double,
+        contributions: List<JSONObject>, settlements: List<JSONObject>
+    ) {
+        val payer = EditText(this).apply { hint = "Member who pays (creditor)" }
+        val receiver = EditText(this).apply { hint = "Member who receives (debtor)" }
+        val amount = EditText(this).apply { hint = "Settlement amount"; inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL }
+        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(32, 8, 32, 0); addView(payer); addView(receiver); addView(amount) }
+        AlertDialog.Builder(this).setTitle("Settle • " + groupName).setView(layout)
+            .setNegativeButton("CANCEL", null).setPositiveButton("RECORD") { _, _ ->
+                val from = payer.text.toString().trim()
+                val to = receiver.text.toString().trim()
+                val value = amount.text.toString().trim().toDoubleOrNull()
+                if (from.isBlank() || to.isBlank() || from.equals(to, true) || value == null || !value.isFinite() || value <= 0.0) {
+                    Toast.makeText(this, "Enter two different members and a positive amount.", Toast.LENGTH_LONG).show(); return@setPositiveButton
+                }
+                val balances = linkedMapOf<String, Double>()
+                contributions.forEach { rec -> val who = rec.optString("f0"); balances[who] = (balances[who] ?: 0.0) + rec.optDouble("f1") }
+                balances.keys.toList().forEach { who -> balances[who] = (balances[who] ?: 0.0) - equalShare }
+                settlements.forEach { rec ->
+                    val p = rec.optString("f0"); val r = rec.optString("f1"); val v = rec.optDouble("f2")
+                    balances[p] = (balances[p] ?: -equalShare) - v
+                    balances[r] = (balances[r] ?: -equalShare) + v
+                }
+                val credit = balances[from] ?: 0.0
+                val debt = balances[to] ?: 0.0
+                if (credit <= 0.005 || debt >= -0.005 || value > credit + 0.005 || value > -debt + 0.005) {
+                    Toast.makeText(this, "Settlement exceeds the recorded net balance. Check contributions and member names.", Toast.LENGTH_LONG).show(); return@setPositiveButton
+                }
+                try {
+                    ArthSaathiCoreEngine.saveModule("GROUP_SETTLEMENT",
+                        mapOf("f0" to from, "f1" to to, "f2" to value, "groupName" to groupName),
+                        mapOf("parentId" to groupId))
+                    render(ArthSaathiNavigation.GROUP_KHATA)
+                } catch (e: IllegalStateException) { Toast.makeText(this, e.message ?: "Sign in before saving.", Toast.LENGTH_LONG).show() }
+            }.show()
     }
 
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
