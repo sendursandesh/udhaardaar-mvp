@@ -752,6 +752,87 @@ class ArthSaathiMasterModuleActivity : Activity() {
         return balances
     }
 
+    private fun qrKhata(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "QR KHATA • Scan locally, review extracted values and save the invoice record. External account sync is deferred until go-live."
+            textSize = 16f
+        })
+        body.addView(Button(this).apply {
+            text = "SCAN QR CODE"
+            isAllCaps = false
+            setOnClickListener {
+                IntentIntegrator(this@ArthSaathiMasterModuleActivity)
+                    .setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
+                    .setPrompt("Scan invoice, merchant or UPI QR")
+                    .setBeepEnabled(false)
+                    .setOrientationLocked(false)
+                    .initiateScan()
+            }
+        })
+        qrMerchantField = field(body, "Merchant / customer")
+        qrAmountField = field(body, "Amount (₹)", true)
+        qrReferenceField = field(body, "QR / invoice reference")
+        qrNoteField = field(body, "Note / invoice description")
+        qrCapturedAtField = field(body, "Captured at (device time)")
+        qrCapturedAtField?.setText(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date()))
+        body.addView(Button(this).apply {
+            text = "SAVE QR / INVOICE RECORD"
+            isAllCaps = false
+            setOnClickListener {
+                val merchant = qrMerchantField?.text?.toString()?.trim().orEmpty()
+                val amount = qrAmountField?.text?.toString()?.trim()?.toDoubleOrNull()
+                if (merchant.isBlank()) { qrMerchantField?.error = "Merchant / customer is required"; return@setOnClickListener }
+                if (amount == null || !amount.isFinite() || amount <= 0.0) { qrAmountField?.error = "Enter a positive amount"; return@setOnClickListener }
+                val reference = qrReferenceField?.text?.toString()?.trim().orEmpty()
+                if (reference.isBlank() && qrRawPayload.isBlank()) { qrReferenceField?.error = "Enter an invoice reference or scan a QR"; return@setOnClickListener }
+                try {
+                    ArthSaathiCoreEngine.saveModule("QR_KHATA", mapOf(
+                        "f0" to merchant, "f1" to amount, "f2" to reference,
+                        "f3" to qrNoteField?.text?.toString()?.trim().orEmpty(),
+                        "f4" to qrCapturedAtField?.text?.toString()?.trim().orEmpty(),
+                        "f5" to qrRawPayload
+                    ))
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "QR / invoice record saved", Toast.LENGTH_LONG).show()
+                    qrRawPayload = ""
+                    render(ArthSaathiNavigation.QR_KHATA)
+                } catch (e: IllegalStateException) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Sign in before saving.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "\nSaved QR / invoice records"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        for (i in 0 until records.length()) {
+            val record = records.optJSONObject(i) ?: continue
+            if (record.optString("type") != "QR_KHATA") continue
+            body.addView(TextView(this).apply {
+                text = record.optString("f0") + " • ₹" + money(record.optDouble("f1")) +
+                    "\nReference: " + record.optString("f2") + "\nCaptured: " + record.optString("f4")
+                setPadding(8, 8, 8, 8)
+            })
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        val result: IntentResult? = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+        if (result != null) {
+            val payload = result.contents
+            if (payload.isNullOrBlank()) {
+                Toast.makeText(this, "QR scan cancelled; no record saved.", Toast.LENGTH_SHORT).show()
+            } else {
+                qrRawPayload = payload
+                val parsed = ArthSaathiCoreEngine.parseQrPayload(payload)
+                qrMerchantField?.setText(parsed.optString("merchant"))
+                if (parsed.optString("amount").isNotBlank()) qrAmountField?.setText(parsed.optString("amount"))
+                qrReferenceField?.setText(parsed.optString("reference"))
+                qrNoteField?.setText(parsed.optString("note"))
+                qrCapturedAtField?.setText(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date()))
+                Toast.makeText(this, "QR read. Review all extracted values before saving.", Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
         body.addView(TextView(this).apply{text=title+"\n";textSize=17f})
         val fields=hints.map { hint ->

@@ -406,6 +406,21 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         assertFalse("Full bank account number must never be stored", config.has("accountNumber"))
     }
 
+    @Test fun qrKhataScreenExposesScannerAndLocalSaveControls() {
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.QR_KHATA)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                assertNotNull(findButton(root, "SCAN QR CODE"))
+                assertNotNull(findButton(root, "SAVE QR / INVOICE RECORD"))
+                assertNotNull(findEdit(root, "Merchant / customer"))
+                assertNotNull(findEdit(root, "QR / invoice reference"))
+            }
+        }
+    }
+
     @Test fun qrPayloadParserExtractsUpiAndJsonInvoiceFields() {
         val upi = ArthSaathiCoreEngine.parseQrPayload("upi://pay?pa=shop%40upi&pn=Corner%20Shop&am=125.50&tr=INV-9&tn=Groceries")
         assertEquals("Corner Shop", upi.optString("merchant"))
