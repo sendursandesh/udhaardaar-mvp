@@ -136,13 +136,14 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Group / activity name")).setText(groupName)
                 requireNotNull(findEdit(root, "Total expense (₹)")).setText("5000")
                 requireNotNull(findEdit(root, "Number of members")).setText("10")
+                requireNotNull(findEdit(root, "Member names (comma-separated)")).setText("A, B, C, D, E, F, G, H, I, J")
                 requireNotNull(findEdit(root, "Purpose / notes")).setText("Gully cricket")
                 requireNotNull(findButton(root, "CALCULATE EQUAL SHARE")).performClick()
                 assertTrue(allText(root).joinToString(" | ").contains("Equal share per member: ₹500.00"))
                 requireNotNull(findButton(root, "SAVE GROUP EXPENSE")).performClick()
                 val refreshed = allText(activity.window.decorView).joinToString(" | ")
                 assertTrue("Saved group expense not displayed after save: $refreshed", refreshed.contains(groupName))
-                assertTrue("Saved equal share not displayed: $refreshed", refreshed.contains("Equal share: ₹500.00"))
+                assertTrue("Saved equal share not displayed: $refreshed", refreshed.contains("Equal share per member: ₹500.00"))
             }
         }
         val saved = ArthSaathiDataStore.records()

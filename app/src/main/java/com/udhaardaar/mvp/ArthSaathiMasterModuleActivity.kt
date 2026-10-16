@@ -395,24 +395,35 @@ class ArthSaathiMasterModuleActivity : Activity() {
     }
 
     private fun mis(body:LinearLayout){
-        // One source of truth: MIS reads the same canonical account-scoped ledger as every module.
         val metrics = ArthSaathiCoreEngine.mis()
         body.addView(TextView(this).apply {
-            text = "MIS / MONEY REPORT\n\nACTUAL RECORDED NUMBERS FIRST" +
-                "\nCredits registered: ₹" + money(metrics.credits) +
-                "\nRepayments recorded: ₹" + money(metrics.repayments) +
-                "\nCredit outstanding: ₹" + money(metrics.outstanding) +
-                "\nGroup expenses: ₹" + money(metrics.groupExpenses) +
-                "\nAssets / portfolio (current value): ₹" + money(metrics.assets) +
-                "\nLiabilities recorded: ₹" + money(metrics.liabilities) +
-                "\nBenefits / refunds value generated: ₹" + money(metrics.benefits) +
-                "\nArthSaathi service revenue (net of refunds): ₹" + money(metrics.revenue) +
-                "\nActual charges checked: ₹" + money(metrics.actualCharges) +
-                "\nNet charge variance (actual − sanctioned): ₹" + money(metrics.chargeVariance) +
-                "\n\nCharts are presentation layers over recorded values."
-            textSize = 16f
+            text = "MIS / MONEY REPORT • ACTUAL RECORDED VALUES"
+            textSize = 18f
         })
-        // Render actual MIS values in visual form, not just a text-only report.
+        val rows = listOf(
+            "Credits registered" to metrics.credits,
+            "Repayments recorded" to metrics.repayments,
+            "Credit outstanding" to metrics.outstanding,
+            "Group expenses" to metrics.groupExpenses,
+            "Assets / portfolio (current value)" to metrics.assets,
+            "Liabilities recorded" to metrics.liabilities,
+            "Benefits / refunds value generated" to metrics.benefits,
+            "ArthSaathi service revenue (net of refunds)" to metrics.revenue,
+            "Actual charges checked" to metrics.actualCharges,
+            "Net charge variance (actual − sanctioned)" to metrics.chargeVariance
+        )
+        rows.forEach { (label, value) ->
+            body.addView(TextView(this).apply {
+                text = label + ": ₹" + money(value)
+                textSize = 15f
+                setPadding(0, 8, 0, 8)
+                contentDescription = label + " " + money(value)
+            })
+        }
+        body.addView(TextView(this).apply {
+            text = "Charts below are derived from these same account-scoped ledger values."
+            textSize = 12f
+        })
         body.addView(ArthSaathiMisChartsView(this, metrics))
     }
 

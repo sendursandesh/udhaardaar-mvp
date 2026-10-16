@@ -17,6 +17,9 @@ android {
     }
 
     sourceSets {
+        androidTest.java.srcDirs = ['src/androidTest/java']
+        androidTest.java.exclude '**/V7*.kt'
+        androidTest.java.exclude '**/ArthSaathiV62SmokeTest.kt'
         main.java.srcDirs = ['src/main/java']
         main.java.exclude '**/V*.kt'
         main.java.exclude '**/MainActivity.kt'
