@@ -3,11 +3,24 @@ package com.udhaardaar.mvp
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.*
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 
 class V7Step1To5IntegrationInstrumentedTest {
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
+    private val testOwner = "9876501091"
+
+    @Before fun setUpAuthenticatedOwner() {
+        V7AccountStore.logout(context)
+        if (V7AccountStore.account(context, testOwner) == null) V7AccountStore.create(context, "V7 Step 1–5 QA", testOwner)
+        V7AccountStore.login(context, testOwner)
+    }
+
+    @After fun clearAuthenticatedOwner() {
+        V7AccountStore.logout(context)
+    }
 
     @Test fun canonicalRecordConsentRepaymentAndMetricsFlow() {
         val store = V7LocalStore(context)
