@@ -3,11 +3,24 @@ package com.udhaardaar.mvp
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.*
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 
 class V7Step6NativeMigrationInstrumentedTest {
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
+    private val testOwner = "9876501092"
+
+    @Before fun setUpAuthenticatedOwner() {
+        V7AccountStore.logout(context)
+        if (V7AccountStore.account(context, testOwner) == null) V7AccountStore.create(context, "V7 Step 6 QA", testOwner)
+        V7AccountStore.login(context, testOwner)
+    }
+
+    @After fun clearAuthenticatedOwner() {
+        V7AccountStore.logout(context)
+    }
 
     @Test fun registryOnlyMarksImplementedNativeModules() {
         val native = V7MasterVisionRegistry.native().map { it.key }.toSet()
