@@ -130,42 +130,66 @@ jobs:
           disable-animations: true
           verbose: true
           script: |
-            set -eu
+            set -u
             mkdir -p app/build/qa-diagnostics
             trap 'adb logcat -d -t 8000 > app/build/qa-diagnostics/emulator-logcat.txt 2>&1 || true; adb devices -l > app/build/qa-diagnostics/adb-devices.txt 2>&1 || true' EXIT
             adb devices -l
             adb wait-for-device
-            attempt=0; while [ "$attempt" -lt 180 ]; do booted="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"; if [ "$booted" = "1" ]; then break; fi; attempt=$((attempt + 1)); sleep 2; done
-            test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1"
+            attempt=0
+            while [ "$attempt" -lt 180 ]; do
+              booted="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+              [ "$booted" = "1" ] && break
+              attempt=$((attempt + 1))
+              sleep 2
+            done
+            test "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1"
             adb shell cmd package list packages >/dev/null
+            set +e
             timeout 18m gradle :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
+            gradle_exit=$?
+            set -e
             python3 - <<'PY'
             import glob
             import sys
             import xml.etree.ElementTree as ET
-  
-            reports = glob.glob("app/build/outputs/androidTest-results/**/*.xml", recursive=True)
+
+            reports = sorted(set(glob.glob("app/build/outputs/androidTest-results/**/*.xml", recursive=True)))
             reports = [p for p in reports if p.lower().endswith(".xml")]
             if not reports:
-                sys.exit("FAIL: no instrumentation XML reports were generated")
+                print("FAIL: no instrumentation XML reports were generated")
+                sys.exit(2)
+
             total_tests = total_failures = total_errors = 0
+            parsed_reports = 0
             for path in reports:
                 try:
                     root = ET.parse(path).getroot()
-                except ET.ParseError:
+                except (ET.ParseError, OSError) as exc:
+                    print(f"WARNING: could not parse {path}: {exc}")
                     continue
+                parsed_reports += 1
                 suites = [root] if root.tag == "testsuite" else list(root.iter("testsuite"))
                 for suite in suites:
                     total_tests += int(suite.attrib.get("tests", "0"))
                     total_failures += int(suite.attrib.get("failures", "0"))
                     total_errors += int(suite.attrib.get("errors", "0"))
-            print(f"Instrumentation report totals: tests={total_tests}, failures={total_failures}, errors={total_errors}")
-            if total_tests < 1:
-                sys.exit("FAIL: reports exist but contain no executed tests")
-            if total_failures or total_errors:
-                sys.exit("FAIL: instrumentation tests reported failures or errors")
-            PY
 
+            print(f"Instrumentation report totals: tests={total_tests}, failures={total_failures}, errors={total_errors}, reports={parsed_reports}")
+            if parsed_reports == 0 or total_tests < 1:
+                print("FAIL: reports were absent, unreadable, or contained no executed tests")
+                sys.exit(2)
+            if total_failures or total_errors:
+                print("FAIL: instrumentation tests reported failures or errors")
+                sys.exit(1)
+            PY
+            report_exit=$?
+            if [ "$gradle_exit" -ne 0 ]; then
+              echo "FAIL: connectedDebugAndroidTest exited with status $gradle_exit"
+              exit "$gradle_exit"
+            fi
+            if [ "$report_exit" -ne 0 ]; then
+              exit "$report_exit"
+            fi
       - name: Upload emulator test reports and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
