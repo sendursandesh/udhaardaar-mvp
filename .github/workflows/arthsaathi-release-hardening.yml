@@ -164,7 +164,7 @@ jobs:
               sys.exit("FAIL: reports exist but contain no executed tests")
           if total_failures or total_errors:
               sys.exit("FAIL: instrumentation tests reported failures or errors")
-            PY
+          PY
 
       - name: Upload emulator test reports and diagnostics
         if: always()
