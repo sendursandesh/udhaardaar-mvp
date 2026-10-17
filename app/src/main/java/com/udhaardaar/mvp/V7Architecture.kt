@@ -96,6 +96,14 @@ object V7Architecture {
 
         override fun grant(consentId: String, otpVerified: Boolean): ConsentRecord? {
             val existing = V7Core.find(context, key, consentId) ?: return null
+            val now = System.currentTimeMillis()
+            if (existing.optLong("expiresAt", 0L) <= now) {
+                existing.put("status", ConsentRecord.Status.EXPIRED.name)
+                existing.put("verified", false)
+                V7Core.replace(context, key, existing)
+                return null
+            }
+            if (existing.optString("status") != ConsentRecord.Status.PENDING.name) return null
             val requestedOtp = existing.optBoolean("otpRequired", true)
             if (requestedOtp && !otpVerified) return null
             existing.put("status", "GRANTED")
