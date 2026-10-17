@@ -331,7 +331,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Full name")).setText(personName)
                 requireNotNull(findEdit(root, "10-digit mobile")).setText("9876501178")
                 requireNotNull(findEdit(root, "Role / relationship")).setText("QA")
-                requireNotNull(findEdit(root, "Address / PIN")).setText("Ranchi")
+                requireNotNull(findEdit(root, "Address / locality")).setText("Ranchi")
                 val pan = requireNotNull(findEdit(root, "PAN (optional)"))
                 val gstin = requireNotNull(findEdit(root, "GSTIN (optional)"))
                 pan.setText("bad-pan")
