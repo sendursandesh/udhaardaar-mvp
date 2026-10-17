@@ -485,6 +485,28 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 contentDescription = label + " " + money(value)
             })
         }
+        // Keep the aggregate reconciliation and the underlying recorded positions visible together.
+        // This lets a user trace the MIS total to each actual asset/portfolio entry.
+        val records = ArthSaathiDataStore.records()
+        for (i in 0 until records.length()) {
+            val record = records.optJSONObject(i) ?: continue
+            val kind = record.optString("type")
+            if (kind != "ASSET" && kind != "PORTFOLIO") continue
+            val name = record.optString("f0").ifBlank {
+                record.optString("name").ifBlank { record.optString("assetName").ifBlank { kind } }
+            }
+            val value = if (kind == "PORTFOLIO") {
+                record.optDouble("currentValue", record.optDouble("f3", record.optDouble("value", record.optDouble("f2", 0.0))))
+            } else {
+                record.optDouble("value", record.optDouble("f2", record.optDouble("currentValue", 0.0)))
+            }
+            body.addView(TextView(this).apply {
+                text = "$kind detail — $name: ₹" + money(value)
+                textSize = 13f
+                setPadding(0, 3, 0, 3)
+                contentDescription = "$kind $name " + money(value)
+            })
+        }
         body.addView(TextView(this).apply {
             text = "Charts below are derived from these same account-scoped ledger values."
             textSize = 12f
