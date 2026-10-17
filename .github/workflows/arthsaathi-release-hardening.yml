@@ -140,30 +140,30 @@ jobs:
             adb shell cmd package list packages >/dev/null
             timeout 18m gradle :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
             python3 - <<'PY'
-            import glob
-            import sys
-            import xml.etree.ElementTree as ET
+          import glob
+          import sys
+          import xml.etree.ElementTree as ET
 
-            reports = glob.glob("app/build/outputs/androidTest-results/**/*.xml", recursive=True)
-            reports = [p for p in reports if p.lower().endswith(".xml")]
-            if not reports:
-                sys.exit("FAIL: no instrumentation XML reports were generated")
-            total_tests = total_failures = total_errors = 0
-            for path in reports:
-                try:
-                    root = ET.parse(path).getroot()
-                except ET.ParseError:
-                    continue
-                suites = [root] if root.tag == "testsuite" else list(root.iter("testsuite"))
-                for suite in suites:
-                    total_tests += int(suite.attrib.get("tests", "0"))
-                    total_failures += int(suite.attrib.get("failures", "0"))
-                    total_errors += int(suite.attrib.get("errors", "0"))
-            print(f"Instrumentation report totals: tests={total_tests}, failures={total_failures}, errors={total_errors}")
-            if total_tests < 1:
-                sys.exit("FAIL: reports exist but contain no executed tests")
-            if total_failures or total_errors:
-                sys.exit("FAIL: instrumentation tests reported failures or errors")
+          reports = glob.glob("app/build/outputs/androidTest-results/**/*.xml", recursive=True)
+          reports = [p for p in reports if p.lower().endswith(".xml")]
+          if not reports:
+              sys.exit("FAIL: no instrumentation XML reports were generated")
+          total_tests = total_failures = total_errors = 0
+          for path in reports:
+              try:
+                  root = ET.parse(path).getroot()
+              except ET.ParseError:
+                  continue
+              suites = [root] if root.tag == "testsuite" else list(root.iter("testsuite"))
+              for suite in suites:
+                  total_tests += int(suite.attrib.get("tests", "0"))
+                  total_failures += int(suite.attrib.get("failures", "0"))
+                  total_errors += int(suite.attrib.get("errors", "0"))
+          print(f"Instrumentation report totals: tests={total_tests}, failures={total_failures}, errors={total_errors}")
+          if total_tests < 1:
+              sys.exit("FAIL: reports exist but contain no executed tests")
+          if total_failures or total_errors:
+              sys.exit("FAIL: instrumentation tests reported failures or errors")
             PY
 
       - name: Upload emulator test reports and diagnostics
