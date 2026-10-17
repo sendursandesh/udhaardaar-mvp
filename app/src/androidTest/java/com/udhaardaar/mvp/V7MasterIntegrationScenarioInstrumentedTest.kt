@@ -3,6 +3,8 @@ package com.udhaardaar.mvp
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.*
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 
 /**
@@ -11,6 +13,17 @@ import org.junit.Test
  */
 class V7MasterIntegrationScenarioInstrumentedTest {
     private val c: Context get() = ApplicationProvider.getApplicationContext()
+    private val testOwner = "9876501000"
+
+    @Before fun setUpAuthenticatedOwner() {
+        V7AccountStore.logout(c)
+        if (V7AccountStore.account(c, testOwner) == null) V7AccountStore.create(c, "V7 Integration QA", testOwner)
+        V7AccountStore.login(c, testOwner)
+    }
+
+    @After fun clearAuthenticatedOwner() {
+        V7AccountStore.logout(c)
+    }
 
     @Test fun everyMasterModuleHasAnExplicitOwner() {
         val modules = V7MasterVisionRegistry.all()
@@ -102,12 +115,28 @@ class V7MasterIntegrationScenarioInstrumentedTest {
     }
 
     @Test fun legacyProjectionIsIdempotentForRepresentativeRecords() {
-        val result1 = V7LegacyProjectionSync.sync(c)
-        val result2 = V7LegacyProjectionSync.sync(c)
-        assertTrue(result2.people >= 0)
-        assertTrue(result2.relationships >= 0)
-        assertTrue(result2.assets >= 0)
-        assertTrue(result1.repayments >= 0)
-        assertTrue(V7Core.all(c, V7Core.Keys.AUDIT).isNotEmpty())
+        val sourceId = V62Store.id("QA_CP")
+        val source = org.json.JSONObject().apply {
+            put("id", sourceId)
+            put("name", "Projection QA " + System.currentTimeMillis())
+            put("mobile", "9876501099")
+            put("createdBy", V62Integration.currentUserId(c))
+            put("createdAt", System.currentTimeMillis())
+        }
+        V5LocalStore(c).add(V62Store.COUNTERPARTIES, source)
+        try {
+            val first = V7LegacyProjectionSync.sync(c)
+            val projected = V7Core.all(c, V7Core.Keys.PEOPLE).firstOrNull {
+                it.optString("sourceSystem") == "V5_V62_PROJECTION" &&
+                    it.optString("sourceRecordId") == sourceId
+            }
+            val second = V7LegacyProjectionSync.sync(c)
+            assertTrue("Expected one legacy person to be projected", first.people >= 1)
+            assertNotNull("Projected person must be visible to the authenticated V7 owner", projected)
+            assertEquals("Projection must not duplicate a source record", 0, second.people)
+            assertTrue("Projection must create an audit record", V7Core.all(c, V7Core.Keys.AUDIT).isNotEmpty())
+        } finally {
+            V5LocalStore(c).remove(V62Store.COUNTERPARTIES, sourceId)
+        }
     }
 }
