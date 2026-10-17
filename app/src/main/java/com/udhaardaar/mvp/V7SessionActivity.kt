@@ -37,6 +37,11 @@ abstract class V7SessionActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Financial records and identity screens must not appear in screenshots or task previews.
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SECURE,
+            android.view.WindowManager.LayoutParams.FLAG_SECURE
+        )
         if (!V7AccountStore.isLoggedIn(this) || expired()) {
             forceLogout()
             return
