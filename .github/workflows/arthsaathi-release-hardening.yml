@@ -147,7 +147,7 @@ jobs:
             set +e
             timeout 18m gradle :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
             gradle_exit=$?
-            set -e
+            set +e
             python3 - <<'PY'
             import glob
             import sys
@@ -183,6 +183,7 @@ jobs:
                 sys.exit(1)
             PY
             report_exit=$?
+            set -e
             if [ "$gradle_exit" -ne 0 ]; then
               echo "FAIL: connectedDebugAndroidTest exited with status $gradle_exit"
               exit "$gradle_exit"
