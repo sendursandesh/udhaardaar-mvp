@@ -93,7 +93,7 @@ class V7Step1To5IntegrationInstrumentedTest {
                 expiresAt = System.currentTimeMillis() - 1_000L
             )
         )
-        assertNotNull(service.grant(consent.id, true))
+        assertNull("Expired consent must not be grantable", service.grant(consent.id, true))
         assertFalse(V7Core.hasConsent(context, person.optString("id"), "HISTORY_VIEW"))
         assertNull(service.getActive(person.optString("id"), "HISTORY_VIEW"))
     }
