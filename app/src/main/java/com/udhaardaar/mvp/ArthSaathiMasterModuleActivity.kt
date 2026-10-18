@@ -231,23 +231,32 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (method.text.toString().trim().isEmpty()) {
                     method.error = "Enter how the credit was given"; return@setOnClickListener
                 }
-                val repaymentMode = terms.text.toString().trim()
-                if (repaymentMode.isEmpty()) {
-                    terms.error = "Enter repayment terms"; return@setOnClickListener
+                val repaymentTerms = terms.text.toString().trim()
+                if (repaymentTerms.isEmpty()) {
+                    terms.error = "Enter repayment frequency / terms"; return@setOnClickListener
                 }
+                val repaymentMode = repaymentModeSpinner.selectedItem?.toString().orEmpty()
                 val tenureMonths = tenure.text.toString().trim().toIntOrNull() ?: 0
-                val interestPlan = repaymentMode.contains("EMI", true) ||
-                    repaymentMode.contains("Principal + Interest", true) || repaymentMode.contains("Bullet", true)
-                if (interestPlan && !lease && tenureMonths <= 0) {
-                    tenure.error = "Enter a positive tenure for EMI / interest calculation"; return@setOnClickListener
+                if (tenureMonths <= 0 || tenureMonths > 600) {
+                    tenure.error = if (lease) "Enter lease duration from 1 to 600 months" else "Enter tenure from 1 to 600 months"
+                    return@setOnClickListener
                 }
-                if (tenureMonths < 0 || tenureMonths > 600) {
-                    tenure.error = "Tenure cannot exceed 600 months"; return@setOnClickListener
+                if (lease) {
+                    val reference = doc.text.toString().trim()
+                    if (reference.isEmpty()) { doc.error = "Store the lease agreement in Document Vault and enter its title / ID"; return@setOnClickListener }
+                    val linkedDocument = (0 until records.length()).mapNotNull { records.optJSONObject(it) }.any { record ->
+                        record.optString("type") == "DOCUMENT" &&
+                            (record.optString("id") == reference || record.optString("f0").equals(reference, true))
+                    }
+                    if (!linkedDocument) {
+                        doc.error = "No saved Document Vault item matches this title / ID"
+                        return@setOnClickListener
+                    }
                 }
                 try {
                     val result = ArthSaathiCoreEngine.createCredit(
                         null, partyName, nature.selectedItem.toString(), principal, rate,
-                        method.text.toString().trim(), terms.text.toString().trim(),
+                        method.text.toString().trim(), repaymentTerms,
                         due.text.toString().trim(), null, doc.text.toString().trim(),
                         partyMobile, guarantor.text.toString().trim(), repaymentMode, tenureMonths
                     )
