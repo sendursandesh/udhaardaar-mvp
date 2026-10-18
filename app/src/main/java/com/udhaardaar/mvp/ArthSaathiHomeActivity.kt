@@ -20,10 +20,11 @@ import android.widget.TextView
  * single canonical module registry.
  */
 class ArthSaathiHomeActivity : Activity() {
-    private val navy = Color.rgb(18, 58, 106)
-    private val gold = Color.rgb(201, 138, 10)
-    private val ink = Color.rgb(34, 48, 67)
-    private val muted = Color.rgb(100, 116, 139)
+    // Use the frozen brand palette everywhere; do not fork colours in the launcher shell.
+    private val navy = ArthSaathiV7Design.NAVY
+    private val gold = ArthSaathiV7Design.GOLD
+    private val ink = ArthSaathiV7Design.INK
+    private val muted = ArthSaathiV7Design.MUTED
     private val canvas = ArthSaathiV7Design.CREAM
     private lateinit var body: LinearLayout
     private lateinit var nav: LinearLayout
