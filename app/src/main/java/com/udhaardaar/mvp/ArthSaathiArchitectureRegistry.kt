@@ -27,7 +27,18 @@ object ArthSaathiArchitectureRegistry {
         Module("AI_ADVISOR","ArthSaathi AI Advisor","AI",ArthSaathiNavigation.AI_ADVISOR),
         Module("REVENUE","Revenue & Payments","REVENUE",ArthSaathiNavigation.REVENUE),
         Module("SECURITY_CONSENT","Security & Consent","PLATFORM",ArthSaathiNavigation.SECURITY_CONSENT),
-        Module("INTEGRATIONS","Integrations","PLATFORM",ArthSaathiNavigation.INTEGRATIONS)
+        Module("INTEGRATIONS","Integrations","PLATFORM",ArthSaathiNavigation.INTEGRATIONS),
+        Module("PROFILE","Profile & Identity","PEOPLE",ArthSaathiNavigation.PROFILE),
+        Module("FAMILY","Family & Nominees","PEOPLE",ArthSaathiNavigation.FAMILY),
+        Module("ADDRESS","Address & Geolocation","PEOPLE",ArthSaathiNavigation.ADDRESS),
+        Module("CREDIT_INTELLIGENCE","Credit Intelligence & Score","CREDIT",ArthSaathiNavigation.CREDIT_INTELLIGENCE),
+        Module("TRADE_CREDIT","Trade Credit","RECORD",ArthSaathiNavigation.TRADE_CREDIT),
+        Module("ACCOUNTING","Accounting & ERP Adapters","PLATFORM",ArthSaathiNavigation.ACCOUNTING),
+        Module("FORMAL_CREDIT","Formal Credit & Charge Review","CREDIT",ArthSaathiNavigation.FORMAL_CREDIT),
+        Module("FUNDING","Funding Marketplace","GROW",ArthSaathiNavigation.FUNDING),
+        Module("GUARANTOR","Guarantor Records","PEOPLE",ArthSaathiNavigation.GUARANTOR),
+        Module("RENTAL","Rental & Lease","RECORD",ArthSaathiNavigation.RENTAL),
+        Module("ALERTS","Alerts & Notifications","PLATFORM",ArthSaathiNavigation.ALERTS)
     )
 
     val creditNatureOptions = listOf(
