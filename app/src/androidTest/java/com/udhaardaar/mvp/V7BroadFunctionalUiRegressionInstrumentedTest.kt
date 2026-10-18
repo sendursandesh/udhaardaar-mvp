@@ -76,18 +76,18 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
         ).use { scenario ->
             scenario.onActivity { a ->
                 val root = a.window.decorView
-                val spinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner }
+                val spinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner && (it.adapter?.count ?: 0) == 10 }
                 requireNotNull(spinner)
-                val peopleLabels = (0 until spinner.count).map { spinner.getItemAtPosition(it).toString() }
-                spinner.setSelection(peopleLabels.indexOfFirst { it.startsWith("Credit UI • 9876504322") })
-                edit(root, "Amount").setText("10000")
-                val roiSpinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner && (it.adapter?.count ?: 0) == 10 }\n                requireNotNull(roiSpinner).setSelection(9)\n                edit(root, "Custom ROI %").setText("120")
+                val peopleSpinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner && (it.adapter?.count ?: 0) == 1 }
+                requireNotNull(peopleSpinner)
+                peopleSpinner.setSelection(0)
+                edit(root, "Amount / Rent due (₹)").setText("10000")
+                spinner.setSelection(9)
+                edit(root, "Custom ROI %").setText("120")
                 button(root, "Register Credit").performClick()
-                assertEquals("ROI must be between 0 and 100%", edit(root, "ROI %").error)
-                edit(root, "ROI %").setText("12")
-                edit(root, "Purpose").setText("UI QA")
-                edit(root, "Repayment structure (EMI / Principal + Interest)").setText("PRINCIPAL_PLUS_INTEREST")
-                button(root, "Register Credit in V7").performClick()
+                assertEquals("ROI must be 0–100%", edit(root, "Custom ROI %").error)
+                edit(root, "Custom ROI %").setText("12")
+                button(root, "Register Credit").performClick()
                 assertTrue(V7Core.all(context, V7Core.Keys.RELATIONSHIPS).any {
                     it.optString("partyId") == person.optString("id") && it.optDouble("amount") == 10000.0
                 })
