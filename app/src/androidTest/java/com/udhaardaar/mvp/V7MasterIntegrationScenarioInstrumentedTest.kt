@@ -115,15 +115,15 @@ class V7MasterIntegrationScenarioInstrumentedTest {
     }
 
     @Test fun legacyProjectionIsIdempotentForRepresentativeRecords() {
-        val sourceId = V62Store.id("QA_CP")
-        val source = org.json.JSONObject().apply {
-            put("id", sourceId)
-            put("name", "Projection QA " + System.currentTimeMillis())
-            put("mobile", "9876501099")
-            put("createdBy", V62Integration.currentUserId(c))
-            put("createdAt", System.currentTimeMillis())
-        }
-        V5LocalStore(c).add(V62Store.COUNTERPARTIES, source)
+        val source = requireNotNull(
+            V62Integration.createCounterparty(
+                c,
+                name = "Projection QA " + System.currentTimeMillis(),
+                mobile = "9876501099",
+                transactionContext = "emulator-projection-regression"
+            )
+        )
+        val sourceId = source.optString("id")
         try {
             val first = V7LegacyProjectionSync.sync(c)
             val projected = V7Core.all(c, V7Core.Keys.PEOPLE).firstOrNull {
