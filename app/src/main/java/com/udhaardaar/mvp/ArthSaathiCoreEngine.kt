@@ -29,19 +29,20 @@ object ArthSaathiCoreEngine {
   save(o,"CREATE_PERSON");return Result(true,o.getString("id"),"Person saved")
  }
  fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String="",repaymentMode:String=terms,tenureMonths:Int=0):Result {
-  require(partyName.isNotBlank());require(nature.isNotBlank());require(amount.isFinite() && amount>0);require(roi.isFinite() && roi in 0.0..100.0)
+  require(partyName.isNotBlank());require(nature.isNotBlank());require(amount.isFinite() && amount in 0.01..1.0e15) { "Amount must be between ₹0.01 and ₹1,000,000,000,000,000" };require(roi.isFinite() && roi in 0.0..100.0)
   require(partyMobile.isBlank() || validateMobile(partyMobile))
-  require(method.isNotBlank());require(terms.isNotBlank());require(tenureMonths>=0)
+  require(method.isNotBlank());require(terms.isNotBlank());require(tenureMonths in 0..600) { "Tenure must be between 1 and 600 months for a scheduled plan" }
   if(nature.contains("Rental",true)||nature.contains("Lease",true))require(roi==0.0)
   val mode=repaymentMode.trim().ifBlank { terms.trim() }
   val isLease=nature.contains("Rental",true)||nature.contains("Lease",true)
   val emiAmount=if(!isLease && mode.contains("EMI",true) && tenureMonths>0) emi(amount,roi,tenureMonths) else 0.0
   val totalPayable=when {
     isLease -> amount
-    mode.contains("EMI",true) && tenureMonths>0 -> m(maxOf(amount, emiAmount*tenureMonths))
+    mode.contains("EMI",true) && tenureMonths>0 -> m((0 until schedule(amount, roi, tenureMonths).length()).sumOf { schedule(amount, roi, tenureMonths).optJSONObject(it)?.optDouble("emi") ?: 0.0 })
     mode.contains("Principal + Interest",true) && tenureMonths>0 -> m(amount + amount*roi*tenureMonths/1200.0)
     else -> amount
   }
+  require(totalPayable.isFinite() && totalPayable >= amount) { "Calculated payable amount is outside the supported range" }
   val o=JSONObject().apply{put("id",id("CR"));put("type","CREDIT");put("partyId",partyId?:"");put("party",partyName);put("partyMobile",partyMobile);put("nature",nature);put("amount",m(amount));put("roi",m(roi));put("method",method);put("terms",terms);put("repaymentMode",mode);put("tenureMonths",tenureMonths);put("expectedEmi",emiAmount);put("totalPayable",totalPayable);put("dueDate",dueDate);put("guarantorId",guarantorId?:"");put("guarantorName",guarantorName);put("documentId",documentId?:"");put("paid",0.0);put("status","ACTIVE");put("consentStatus","PENDING");put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_CREDIT");return Result(true,o.getString("id"),"Credit created")
  }
@@ -77,8 +78,8 @@ object ArthSaathiCoreEngine {
   val tx=JSONObject().apply{put("id",id("TX"));put("type","REPAYMENT");put("recordId",recordId);put("amount",paymentAmount);put("method",method);put("actor",actor);put("createdAt",n())}
   save(tx,"REPAYMENT");o.put("paid",m(o.optDouble("paid")+paymentAmount));if(o.optDouble("paid")+0.005>=payable)o.put("status","CLOSED");o.put("updatedAt",n());replace(o);return Result(true,tx.getString("id"),"Repayment recorded")
  }
- fun emi(p:Double,rate:Double,months:Int):Double{require(p>0&&rate>=0&&months>0);if(rate==0.0)return m(p/months);val r=rate/1200;return m(p*r*(1+r).pow(months)/((1+r).pow(months)-1))}
- fun schedule(p:Double,rate:Double,months:Int):JSONArray{val a=JSONArray();var b=p;val e=emi(p,rate,months);val r=rate/1200;for(i in 1..months){val interest=if(r==0.0)0.0 else b*r;val principal=if(i==months)b else (e-interest).coerceAtLeast(0.0);b=(b-principal).coerceAtLeast(0.0);a.put(JSONObject().apply{put("installment",i);put("emi",m(e));put("interest",m(interest));put("principal",m(principal));put("balance",m(b))})};return a}
+ fun emi(p:Double,rate:Double,months:Int):Double{require(p.isFinite() && p in 0.01..1.0e15) { "Principal must be between ₹0.01 and ₹1,000,000,000,000,000" };require(rate.isFinite() && rate in 0.0..100.0) { "Annual rate must be between 0 and 100%" };require(months in 1..600) { "Tenure must be between 1 and 600 months" };if(rate==0.0)return maxOf(m(p/months),0.01);val r=rate/1200.0;val discount=(1.0+r).pow(-months.toDouble());val raw=p*r/(1.0-discount);require(raw.isFinite() && raw>0.0) { "EMI calculation exceeded the supported range" };return maxOf(m(raw),0.01)}
+ fun schedule(p:Double,rate:Double,months:Int):JSONArray{val a=JSONArray();var balance=p;val payment=emi(p,rate,months);val r=rate/1200.0;for(i in 1..months){val interest=if(r==0.0)0.0 else m(balance*r);val last=i==months;val principal=if(last)m(balance) else m((payment-interest).coerceAtLeast(0.0).coerceAtMost(balance));val due=if(last)m(principal+interest) else payment;balance=if(last)0.0 else m((balance-principal).coerceAtLeast(0.0));a.put(JSONObject().apply{put("installment",i);put("emi",due);put("interest",interest);put("principal",principal);put("balance",balance)})};return a}
  fun parseQrPayload(payload:String):JSONObject {
   val out=JSONObject().put("merchant","").put("amount","").put("reference","").put("note","").put("date","")
   val raw=payload.trim()
