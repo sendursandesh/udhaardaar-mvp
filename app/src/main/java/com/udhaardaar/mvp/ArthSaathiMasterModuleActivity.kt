@@ -3,10 +3,13 @@ package com.udhaardaar.mvp
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputType
 import android.widget.*
+import androidx.core.content.FileProvider
 import com.google.zxing.integration.android.IntentIntegrator
 import com.google.zxing.integration.android.IntentResult
 import org.json.JSONObject
@@ -23,6 +26,10 @@ class ArthSaathiMasterModuleActivity : Activity() {
     private var qrCapturedAtField: EditText? = null
     private var qrInvoiceDateField: EditText? = null
     private var qrRawPayload: String = ""
+    private var documentTitleField: EditText? = null
+    private var documentTypeField: EditText? = null
+    private var documentRelatedField: EditText? = null
+    private val requestPickDocument = 8124
     private val records get() = ArthSaathiDataStore.records()
 
     override fun onCreate(state: Bundle?) {
@@ -100,7 +107,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.WILL_LEGACY -> simple(body,"LEGACY","Will / Inheritance / Legacy",listOf("Asset","Beneficiary","Executor","Instruction","Draft version"))
             ArthSaathiNavigation.LEGAL -> simple(body,"LEGAL_CASE","Legal Help",listOf("Domain","City / locality","Issue","Related module","Status"))
             ArthSaathiNavigation.ADVOCATES -> simple(body,"ADVOCATE","Advocate Directory",listOf("Advocate / firm","Domain","City","Verification","Contact"))
-            ArthSaathiNavigation.DOCUMENT_VAULT -> simple(body,"DOCUMENT","Document Vault",listOf("Document","Type","Related account/module","Evidence status","Reference"))
+            ArthSaathiNavigation.DOCUMENT_VAULT -> documentVault(body)
             ArthSaathiNavigation.AI_ADVISOR -> simple(body,"ADVISOR_ALERT","ArthSaathi AI Advisor",listOf("Signal","Reason","Related record","Risk / horizon","User action"))
             ArthSaathiNavigation.REVENUE -> revenue(body)
             ArthSaathiNavigation.SECURITY_CONSENT -> securityConsent(body)
@@ -1002,6 +1009,121 @@ class ArthSaathiMasterModuleActivity : Activity() {
             return
         }
         super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    private fun documentVault(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "DOCUMENT VAULT • Store evidence privately on this device. Files are encrypted with an Android Keystore AES-GCM key; the original SHA-256 is retained for integrity checks."
+            textSize = 14f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 12)
+        })
+        documentTitleField = field(body, "Document title")
+        documentTypeField = field(body, "Document type (agreement / invoice / policy / identity / other)")
+        documentRelatedField = field(body, "Related account / module (optional)")
+        body.addView(Button(this).apply {
+            text = "CHOOSE & STORE DOCUMENT"
+            setOnClickListener {
+                if (documentTitleField?.text?.toString()?.trim().isNullOrEmpty()) {
+                    documentTitleField?.error = "Enter a document title first"
+                    return@setOnClickListener
+                }
+                val picker = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                }
+                startActivityForResult(picker, requestPickDocument)
+            }
+        })
+        body.addView(TextView(this).apply {
+            text = "\nSAVED DOCUMENTS"
+            textSize = 18f
+            setTextColor(ArthSaathiV7Design.NAVY)
+            setPadding(0, 18, 0, 6)
+        })
+        var count = 0
+        for (i in 0 until records.length()) {
+            val record = records.optJSONObject(i) ?: continue
+            if (record.optString("type") != "DOCUMENT") continue
+            count++
+            body.addView(TextView(this).apply {
+                text = record.optString("f0", "Document") + "\n" +
+                    record.optString("f1", "Unclassified") + " • " +
+                    record.optLong("sizeBytes").let { String.format(java.util.Locale.US, "%,d bytes", it) } +
+                    "\nSHA-256: " + record.optString("f4").take(16) + "…"
+                textSize = 13f
+                setPadding(8, 10, 8, 4)
+            })
+            body.addView(Button(this).apply {
+                text = "OPEN • " + record.optString("f0", "DOCUMENT")
+                isAllCaps = false
+                setOnClickListener { openStoredDocument(record) }
+            })
+        }
+        if (count == 0) body.addView(TextView(this).apply {
+            text = "No documents stored yet. Select a file above to add the first encrypted record."
+            textSize = 13f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 8, 0, 8)
+        })
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != requestPickDocument || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        try {
+            val originalName = contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getString(0) else null
+                } ?: "document.bin"
+            val mimeType = contentResolver.getType(uri) ?: "application/octet-stream"
+            val input = contentResolver.openInputStream(uri)
+                ?: throw IllegalStateException("The selected document could not be opened.")
+            val stored = ArthSaathiDocumentStorage.store(this, input, originalName)
+            val title = documentTitleField?.text?.toString()?.trim().orEmpty().ifBlank {
+                originalName.substringBeforeLast('.', originalName)
+            }
+            val documentType = documentTypeField?.text?.toString()?.trim().orEmpty().ifBlank { "Other" }
+            val related = documentRelatedField?.text?.toString()?.trim().orEmpty()
+            ArthSaathiCoreEngine.saveModule(
+                "DOCUMENT",
+                mapOf(
+                    "f0" to title,
+                    "f1" to documentType,
+                    "f2" to related,
+                    "f3" to stored.fileName,
+                    "f4" to stored.sha256,
+                    "sizeBytes" to stored.sizeBytes,
+                    "extension" to stored.extension,
+                    "mimeType" to mimeType,
+                    "encrypted" to true,
+                    "storage" to "ANDROID_KEYSTORE_AES_GCM"
+                )
+            )
+            Toast.makeText(this, "Document encrypted and saved. SHA-256 integrity reference recorded.", Toast.LENGTH_LONG).show()
+            render(ArthSaathiNavigation.DOCUMENT_VAULT)
+        } catch (e: Exception) {
+            Toast.makeText(this, e.message ?: "Could not store the selected document.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun openStoredDocument(record: JSONObject) {
+        try {
+            val preview = ArthSaathiDocumentStorage.decryptToCache(
+                this, record.optString("f3"), record.optString("extension", "bin")
+            )
+            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", preview)
+            val viewer = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, record.optString("mimeType", "application/octet-stream"))
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(viewer)
+        } catch (e: android.content.ActivityNotFoundException) {
+            Toast.makeText(this, "No installed app can open this document type.", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, e.message ?: "Document could not be opened.", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
