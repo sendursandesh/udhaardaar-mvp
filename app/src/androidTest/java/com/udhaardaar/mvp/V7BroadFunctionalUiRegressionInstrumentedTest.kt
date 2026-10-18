@@ -61,7 +61,7 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
                 edit(root, "PAN (optional)").setText("ABCDE1234F")
                 edit(root, "Aadhaar (optional)").setText("123456789012")
                 edit(root, "GSTIN (optional)").setText("10ABCDE1234F1Z5")
-                button(root, "Save Person in V7").performClick()
+                button(root, "Create Profile").performClick()
                 assertTrue(V7Core.all(context, V7Core.Keys.PEOPLE).any {
                     it.optString("name") == "UI Person" && it.optString("mobile") == "9876504321"
                 })
