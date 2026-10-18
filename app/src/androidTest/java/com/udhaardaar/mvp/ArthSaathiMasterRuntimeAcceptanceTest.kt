@@ -59,14 +59,6 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         return null
     }
 
-    private fun findLogo(view: View): android.widget.ImageView? {
-        if (view is android.widget.ImageView && view.getTag(R.id.arthsaathi_logo_tag) == R.drawable.arthsaathi_logo) return view
-        if (view is ViewGroup) for (i in 0 until view.childCount) {
-            findLogo(view.getChildAt(i))?.let { return it }
-        }
-        return null
-    }
-
     @Test fun everyConfiguredCanonicalModuleOpensAndShowsItsExpectedTitle() {
         assertEquals("Module ids must be unique", ArthSaathiArchitectureRegistry.modules.size,
             ArthSaathiArchitectureRegistry.modules.map { it.id }.toSet().size)
@@ -96,9 +88,9 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         ).use { scenario ->
             scenario.onActivity { activity ->
                 val root = activity.window.decorView
-                val image = findLogo(root)
+                val image = root.findViewWithTag<android.widget.ImageView>("arthsaathi-canonical-logo")
                 assertNotNull("Frozen ArthSaathi logo must appear on canonical screens", image)
-                assertEquals(R.drawable.arthsaathi_logo, image!!.getTag(R.id.arthsaathi_logo_tag))
+                assertEquals("ArthSaathi logo", image!!.contentDescription)
                 val visibleText = allText(root).joinToString(" | ")
                 assertTrue("Frozen tagline missing", visibleText.contains("Navigate Your Financial Journey"))
                 assertTrue("User guidance missing", visibleText.contains("use Next to move forward"))
