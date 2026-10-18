@@ -107,6 +107,29 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.INTEGRATIONS -> simple(body,"INTEGRATION","Integrations",listOf("Provider","Capability","Environment","Status","Configuration reference"))
             else -> body.addView(TextView(this).apply { text = "Canonical module"; textSize = 17f })
         }
+        styleActionButtons(body)
+    }
+
+    private fun styleActionButtons(parent: android.view.ViewGroup) {
+        for (index in 0 until parent.childCount) {
+            val child = parent.getChildAt(index)
+            if (child is Button) {
+                child.isAllCaps = false
+                child.textSize = 14f
+                child.typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
+                child.minHeight = ArthSaathiV7Design.dp(this, 46)
+                child.setTextColor(android.graphics.Color.WHITE)
+                child.background = android.graphics.drawable.GradientDrawable(
+                    android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                    intArrayOf(ArthSaathiV7Design.TEAL, ArthSaathiV7Design.NAVY_3)
+                ).apply {
+                    cornerRadius = ArthSaathiV7Design.dp(this@ArthSaathiMasterModuleActivity, 13).toFloat()
+                }
+                child.elevation = ArthSaathiV7Design.dp(this, 2).toFloat()
+            } else if (child is android.view.ViewGroup) {
+                styleActionButtons(child)
+            }
+        }
     }
 
     private fun home(body: LinearLayout) {
@@ -986,6 +1009,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
     private fun field(parent:LinearLayout,hint:String,number:Boolean=false,max:Int?=null):EditText{
         val edit = EditText(this).apply {
             this.hint = hint
+            setSingleLine(true)
             textSize = 16f
             setTextColor(ArthSaathiV7Design.NAVY)
             setHintTextColor(ArthSaathiV7Design.MUTED)
