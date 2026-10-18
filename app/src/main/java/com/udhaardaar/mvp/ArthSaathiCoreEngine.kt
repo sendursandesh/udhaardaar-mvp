@@ -10,7 +10,7 @@ import kotlin.math.round
 
 object ArthSaathiCoreEngine {
  data class Result(val ok:Boolean,val id:String?=null,val message:String="")
- data class Mis(val credits:Double,val repayments:Double,val outstanding:Double,val assets:Double,val liabilities:Double,val benefits:Double,val groupExpenses:Double,val revenue:Double,val actualCharges:Double,val chargeVariance:Double)
+ data class Mis(val credits:Double,val repayments:Double,val outstanding:Double,val assets:Double,val liabilities:Double,val benefits:Double,val groupExpenses:Double,val revenue:Double,val actualCharges:Double,val chargeVariance:Double,val financialAssets:Double=0.0,val nonFinancialAssets:Double=0.0,val portfolioValue:Double=0.0)
  private fun id(p:String)=p+"-"+UUID.randomUUID().toString().take(8).uppercase()
  private fun n()=System.currentTimeMillis()
  private fun m(v:Double)=round(v*100)/100
@@ -18,17 +18,41 @@ object ArthSaathiCoreEngine {
  fun validateEmail(v:String)=v.isBlank() || v.trim().matches(Regex("(?i)[A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,}"))
  fun validatePan(v:String)=v.isBlank()||v.matches(Regex("[A-Z]{5}[0-9]{4}[A-Z]"))
  fun validateGstin(v:String)=v.isBlank()||v.matches(Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"))
+ fun validateAadhaar(v:String)=v.isBlank()||v.matches(Regex("[2-9][0-9]{11}"))
 
- fun createPerson(name:String,mobile:String="",role:String="",address:String="",pan:String="",gstin:String="",pin:String="",email:String=""):Result {
+ fun createPerson(name:String,mobile:String="",role:String="",address:String="",pan:String="",gstin:String="",pin:String="",email:String="",aadhaar:String=""):Result {
   require(name.isNotBlank());require(mobile.isEmpty()||validateMobile(mobile));require(validateEmail(email)) { "Enter a valid email address" }
   val normalizedPan=pan.trim().uppercase(Locale.US)
   val normalizedGstin=gstin.trim().uppercase(Locale.US)
   val normalizedPin=pin.trim()
+  val normalizedAadhaar=aadhaar.trim()
+  require(validateAadhaar(normalizedAadhaar)) { "Aadhaar must contain 12 digits and cannot start with 0 or 1" }
   require(validatePan(normalizedPan)) { "Enter a valid PAN" }
   require(validateGstin(normalizedGstin)) { "Enter a valid GSTIN" }
   require(normalizedPin.isBlank() || normalizedPin.matches(Regex("[1-9][0-9]{5}"))) { "Enter a valid 6-digit Indian PIN code" }
-  val o=JSONObject().apply{put("id",id("PER"));put("type","PERSON");put("name",name.trim());put("mobile",mobile);put("role",role);put("address",address);put("pan",normalizedPan);put("gstin",normalizedGstin);put("pin",normalizedPin);put("email",email.trim());put("createdAt",n());put("updatedAt",n())}
+  val o=JSONObject().apply{put("id",id("PER"));put("type","PERSON");put("name",name.trim());put("mobile",mobile);put("role",role);put("address",address);put("pan",normalizedPan);put("gstin",normalizedGstin);put("pin",normalizedPin);put("email",email.trim());put("aadhaar",normalizedAadhaar);put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_PERSON");return Result(true,o.getString("id"),"Person saved")
+ }
+ fun findPersonByIdentity(query:String):JSONObject? {
+  val q=query.trim()
+  if(q.isBlank()) return null
+  val people=ArthSaathiDataStore.records()
+  for(i in 0 until people.length()){
+   val person=people.optJSONObject(i)?:continue
+   if(person.optString("type")!="PERSON") continue
+   if(person.optString("id").equals(q,true) ||
+      person.optString("name").equals(q,true) ||
+      person.optString("mobile")==q ||
+      person.optString("pan").equals(q,true) ||
+      person.optString("aadhaar")==q) return person
+  }
+  val qLower=q.lowercase(Locale.US)
+  for(i in 0 until people.length()){
+   val person=people.optJSONObject(i)?:continue
+   if(person.optString("type")!="PERSON") continue
+   if(person.optString("name").lowercase(Locale.US).contains(qLower)) return person
+  }
+  return null
  }
  fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String="",repaymentMode:String=terms,tenureMonths:Int=0):Result {
   require(partyName.isNotBlank());require(nature.isNotBlank());require(amount.isFinite() && amount in 0.01..1.0e15) { "Amount must be between ₹0.01 and ₹1,000,000,000,000,000" };require(roi.isFinite() && roi in 0.0..100.0)
@@ -152,7 +176,7 @@ object ArthSaathiCoreEngine {
  fun linked(id:String):List<JSONObject>{val out=mutableListOf<JSONObject>();val a=ArthSaathiDataStore.records();for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("recordId")==id||o.optString("partyId")==id||o.optString("relatedId")==id||o.optString("parentId")==id)out+=o};return out}
  fun mis():Mis{
   val a=ArthSaathiDataStore.records()
-  var c=0.0;var p=0.0;var outstanding=0.0;var asst=0.0;var liab=0.0;var ben=0.0;var grp=0.0;var rev=0.0;var charges=0.0;var chargeVariance=0.0
+  var c=0.0;var p=0.0;var outstanding=0.0;var asst=0.0;var liab=0.0;var ben=0.0;var grp=0.0;var rev=0.0;var charges=0.0;var chargeVariance=0.0;var financialAssets=0.0;var nonFinancialAssets=0.0;var portfolioValue=0.0
   fun amount(o:JSONObject,vararg keys:String):Double {
    for(key in keys){if(o.has(key)&&!o.isNull(key)){val v=o.optDouble(key,Double.NaN);if(v.isFinite())return v}}
    return 0.0
@@ -168,8 +192,8 @@ object ArthSaathiCoreEngine {
    when(o.optString("type")){
     "CREDIT"->{if(status(o,"status") in setOf("ACTIVE","CLOSED")){val principal=amount(o,"amount");c+=principal;val payable=amount(o,"totalPayable").takeIf { it>0.0 }?:principal;outstanding+=(payable-amount(o,"paid")).coerceAtLeast(0.0)}}
     "REPAYMENT"->p+=amount(o,"amount")
-    "ASSET"->asst+=amount(o,"value","f2","currentValue")
-    "PORTFOLIO"->asst+=amount(o,"currentValue","f3","value","f2")
+    "ASSET"->{val value=amount(o,"value","f2","currentValue");asst+=value;if(status(o,"category","f1").contains("FINANCIAL"))financialAssets+=value else nonFinancialAssets+=value}
+    "PORTFOLIO"->{val value=amount(o,"currentValue","f3","value","f2");asst+=value;portfolioValue+=value}
     "LIABILITY"->liab+=amount(o,"outstanding","f2","value")
     "BENEFIT"->{if(status(o,"status","f3") in completedBenefitStatuses)ben+=amount(o,"value","f2")}
     "GROUP_EXPENSE"->grp+=amount(o,"total","f1","value")
@@ -177,7 +201,7 @@ object ArthSaathiCoreEngine {
     "CHARGECHECK"->{charges+=amount(o,"actualCharge","f2");chargeVariance+=if(o.has("variance"))amount(o,"variance") else if(o.has("f3"))amount(o,"f3") else amount(o,"f2")-amount(o,"f1")}
    }
   }
-  return Mis(m(c),m(p),m(outstanding),m(asst),m(liab),m(ben),m(grp),m(rev),m(charges),m(chargeVariance))
+  return Mis(m(c),m(p),m(outstanding),m(asst),m(liab),m(ben),m(grp),m(rev),m(charges),m(chargeVariance),m(financialAssets),m(nonFinancialAssets),m(portfolioValue))
  }
  fun switchAnalysis(value:Double,currentReturn:Double,alternativeReturn:Double,currentCost:Double,alternativeCost:Double)=JSONObject().apply{val d=alternativeReturn-currentReturn;val cd=alternativeCost-currentCost;put("returnDifferencePct",m(d));put("annualOpportunityDifference",m(value*d/100));put("costDifference",m(cd));put("netIndicativeDifference",m(value*d/100-cd));put("requiresRiskReview",true);put("requiresUserDecision",true)}
  fun audit(recordId:String,action:String,actor:String){ArthSaathiDataStore.append(JSONObject().apply{put("id",id("AUD"));put("type","AUDIT");put("recordId",recordId);put("action",action);put("actor",actor);put("createdAt",n())})}
