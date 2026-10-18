@@ -78,7 +78,7 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
                 val root = a.window.decorView
                 val spinner = find<android.widget.Spinner>(root) { view -> view is android.widget.Spinner && (0 until (view.adapter?.count ?: 0)).any { index -> view.adapter?.getItem(index)?.toString() == "Custom" } }
                 requireNotNull(spinner)
-                val peopleSpinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner && (it.adapter?.count ?: 0) == 1 }
+                val peopleSpinner = find<android.widget.Spinner>(root) { view -> view is android.widget.Spinner && (0 until (view.adapter?.count ?: 0)).any { index -> view.adapter?.getItem(index)?.toString()?.contains("Credit UI") == true } }
                 requireNotNull(peopleSpinner)
                 peopleSpinner.setSelection(0)
                 edit(root, "Amount / Rent due (₹)").setText("10000")
