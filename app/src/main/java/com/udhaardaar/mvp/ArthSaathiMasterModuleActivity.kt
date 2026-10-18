@@ -14,6 +14,7 @@ import com.google.zxing.integration.android.IntentIntegrator
 import com.google.zxing.integration.android.IntentResult
 import org.json.JSONObject
 import java.text.SimpleDateFormat
+import java.io.ByteArrayInputStream
 import java.util.*
 
 /** Canonical executable surface for the consolidated ArthSaathi architecture. */
@@ -103,8 +104,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.PROTECTION -> simple(body,"PROTECTION","Insurance & Protection",listOf("Policy / cover","Provider","Coverage","Expiry / renewal","Eligibility"))
             ArthSaathiNavigation.BENEFITS -> simple(body,"BENEFIT","Benefits & Refunds",listOf("Benefit / refund","Source","Value","Status","Evidence"))
             ArthSaathiNavigation.CHARGECHECK -> chargeCheck(body)
-            ArthSaathiNavigation.CLAIMS -> simple(body,"CLAIM","Claim Assistance",listOf("Claim / asset","Claimant","Nominee","Status","Evidence / action"))
-            ArthSaathiNavigation.WILL_LEGACY -> simple(body,"LEGACY","Will / Inheritance / Legacy",listOf("Asset","Beneficiary","Executor","Instruction","Draft version"))
+            ArthSaathiNavigation.CLAIMS -> claims(body)
+            ArthSaathiNavigation.WILL_LEGACY -> willLegacy(body)
             ArthSaathiNavigation.LEGAL -> simple(body,"LEGAL_CASE","Legal Help",listOf("Domain","City / locality","Issue","Related module","Status"))
             ArthSaathiNavigation.ADVOCATES -> advocateDirectory(body)
             ArthSaathiNavigation.DOCUMENT_VAULT -> documentVault(body)
@@ -1307,6 +1308,156 @@ class ArthSaathiMasterModuleActivity : Activity() {
             } catch (_: Exception) { }
         }
         return null
+    }
+
+    private fun claims(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "CLAIM ASSISTANCE • Track an asset, benefit or recovery through clear stages. Keep evidence references with the claim; approval and legal entitlement must be confirmed by the relevant institution or professional."
+            textSize = 14f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 12)
+        })
+        val claimName = field(body, "Claim / asset / benefit")
+        val claimant = field(body, "Claimant / nominee / authorised person")
+        val institution = field(body, "Institution / source")
+        val evidence = field(body, "Evidence / document references")
+        val stages = listOf("IDENTIFIED", "DOCUMENTS_PENDING", "READY_TO_SUBMIT", "SUBMITTED", "FOLLOW_UP", "APPROVED", "REJECTED", "CLOSED")
+        val status = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, stages)
+            body.addView(it)
+        }
+        body.addView(Button(this).apply {
+            text = "SAVE CLAIM / UPDATE RECORD"
+            setOnClickListener {
+                if (claimName.text.toString().trim().isEmpty()) { claimName.error = "Enter the claim or asset"; return@setOnClickListener }
+                if (claimant.text.toString().trim().isEmpty()) { claimant.error = "Enter claimant / authorised person"; return@setOnClickListener }
+                try {
+                    ArthSaathiCoreEngine.saveModule("CLAIM", mapOf(
+                        "f0" to claimName.text.toString().trim(),
+                        "f1" to claimant.text.toString().trim(),
+                        "f2" to institution.text.toString().trim(),
+                        "f3" to status.selectedItem.toString(),
+                        "f4" to evidence.text.toString().trim()
+                    ))
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Claim stage saved.", Toast.LENGTH_SHORT).show()
+                    render(ArthSaathiNavigation.CLAIMS)
+                } catch (e: Exception) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Could not save claim.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "\nCLAIM TRACKER"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        for (i in 0 until records.length()) {
+            val record = records.optJSONObject(i) ?: continue
+            if (record.optString("type") != "CLAIM") continue
+            body.addView(TextView(this).apply {
+                text = record.optString("f0") + "\nClaimant: " + record.optString("f1") +
+                    "\nInstitution: " + record.optString("f2") + "\nStage: " + record.optString("f3") +
+                    "\nEvidence: " + record.optString("f4")
+                textSize = 14f
+                setPadding(8, 12, 8, 4)
+            })
+            val current = record.optString("f3")
+            val next = when (current) {
+                "IDENTIFIED" -> "DOCUMENTS_PENDING"
+                "DOCUMENTS_PENDING" -> "READY_TO_SUBMIT"
+                "READY_TO_SUBMIT" -> "SUBMITTED"
+                "SUBMITTED" -> "FOLLOW_UP"
+                "FOLLOW_UP" -> "APPROVED"
+                "APPROVED" -> "CLOSED"
+                else -> ""
+            }
+            if (next.isNotBlank()) body.addView(Button(this).apply {
+                text = "ADVANCE TO " + next.replace('_', ' ')
+                isAllCaps = false
+                setOnClickListener {
+                    val result = ArthSaathiCoreEngine.update(record.optString("id"), mapOf("f3" to next), "user")
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_SHORT).show()
+                    if (result.ok) render(ArthSaathiNavigation.CLAIMS)
+                }
+            })
+        }
+    }
+
+    private fun willLegacy(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "WILL / INHERITANCE / LEGACY • This creates a structured planning record and a draft summary only—not a legally executed Will or legal advice. Obtain independent legal review and follow applicable signing / witness requirements."
+            textSize = 14f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 12)
+        })
+        val asset = field(body, "Asset / property / account")
+        val beneficiary = field(body, "Intended beneficiary / nominee")
+        val executor = field(body, "Proposed executor / trusted person")
+        val instruction = field(body, "Instructions / wishes (optional)")
+        val version = field(body, "Draft version (e.g. 1)").apply { setText("1") }
+        body.addView(Button(this).apply {
+            text = "SAVE DRAFT & CREATE SUMMARY DOCUMENT"
+            setOnClickListener {
+                if (asset.text.toString().trim().isEmpty()) { asset.error = "Enter an asset or property"; return@setOnClickListener }
+                if (beneficiary.text.toString().trim().isEmpty()) { beneficiary.error = "Enter intended beneficiary"; return@setOnClickListener }
+                if (executor.text.toString().trim().isEmpty()) { executor.error = "Enter proposed executor / trusted person"; return@setOnClickListener }
+                try {
+                    val assetName = asset.text.toString().trim()
+                    val beneficiaryName = beneficiary.text.toString().trim()
+                    val executorName = executor.text.toString().trim()
+                    val wishes = instruction.text.toString().trim()
+                    val draftVersion = version.text.toString().trim().ifBlank { "1" }
+                    val legacy = ArthSaathiCoreEngine.saveModule("LEGACY", mapOf(
+                        "f0" to assetName,
+                        "f1" to beneficiaryName,
+                        "f2" to executorName,
+                        "f3" to wishes,
+                        "f4" to draftVersion,
+                        "draftStatus" to "DRAFT_REQUIRES_LEGAL_REVIEW"
+                    ))
+                    val draftText = "ARTHSAATHI — LEGACY PLANNING DRAFT SUMMARY\n\n" +
+                        "Status: DRAFT ONLY — NOT A LEGALLY EXECUTED WILL\n" +
+                        "Draft version: " + draftVersion + "\nAsset / property / account: " + assetName +
+                        "\nIntended beneficiary / nominee: " + beneficiaryName +
+                        "\nProposed executor / trusted person: " + executorName +
+                        "\nInstructions / wishes: " + wishes +
+                        "\n\nIMPORTANT: This summary records the user's stated planning intentions only. It is not legal advice, does not establish ownership or inheritance rights, and does not replace a legally valid Will, nomination, trust or other instrument. Obtain independent legal review and comply with applicable execution and witness requirements."
+                    val stored = ArthSaathiDocumentStorage.store(
+                        this@ArthSaathiMasterModuleActivity,
+                        ByteArrayInputStream(draftText.toByteArray(Charsets.UTF_8)),
+                        "legacy-draft.txt"
+                    )
+                    ArthSaathiCoreEngine.saveModule(
+                        "DOCUMENT",
+                        mapOf(
+                            "f0" to "Legacy draft summary — " + assetName,
+                            "f1" to "Will / Legacy draft summary",
+                            "f2" to "DRAFT_REQUIRES_LEGAL_REVIEW",
+                            "f3" to stored.fileName,
+                            "f4" to stored.sha256,
+                            "sizeBytes" to stored.sizeBytes,
+                            "extension" to stored.extension,
+                            "mimeType" to "text/plain",
+                            "encrypted" to true,
+                            "storage" to "ANDROID_KEYSTORE_AES_GCM"
+                        ),
+                        mapOf("relatedId" to (legacy.id ?: ""))
+                    )
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Draft summary encrypted and stored. Legal review is required.", Toast.LENGTH_LONG).show()
+                    render(ArthSaathiNavigation.WILL_LEGACY)
+                } catch (e: Exception) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Could not create legacy draft.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "\nSAVED LEGACY PLANS"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        for (i in 0 until records.length()) {
+            val record = records.optJSONObject(i) ?: continue
+            if (record.optString("type") != "LEGACY") continue
+            body.addView(TextView(this).apply {
+                text = record.optString("f0") + "\nBeneficiary: " + record.optString("f1") +
+                    "\nExecutor: " + record.optString("f2") + "\nDraft version: " + record.optString("f4") +
+                    "\nStatus: " + record.optString("draftStatus", "DRAFT_REQUIRES_LEGAL_REVIEW")
+                textSize = 14f
+                setPadding(8, 12, 8, 8)
+            })
+        }
     }
 
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
