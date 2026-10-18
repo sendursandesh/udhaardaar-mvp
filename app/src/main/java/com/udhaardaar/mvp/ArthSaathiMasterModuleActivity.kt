@@ -167,13 +167,48 @@ class ArthSaathiMasterModuleActivity : Activity() {
             it.adapter = ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,ArthSaathiArchitectureRegistry.creditNatureOptions); body.addView(it)
         }
         val amount = field(body,"Principal / amount",true)
-        val roi = field(body,"ROI % (not used for lease)",true)
+        val roi = field(body,"ROI %",true)
         val method = field(body,"Method: Cash / UPI / NEFT / Other")
-        val terms = field(body,"Repayment mode / terms (EMI / Principal + Interest / Bullet / Rental)")
+        val terms = field(body,"Repayment frequency / terms (Monthly / Quarterly / Annual)")
+        val repaymentModes = listOf("EMI (reducing balance)", "Principal + Interest (simple interest)", "Bullet / Full at End", "Rental / Lease")
+        body.addView(TextView(this).apply {
+            text = "REPAYMENT CALCULATION METHOD"
+            textSize = 12f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(4, 10, 0, 2)
+        })
+        val repaymentModeSpinner = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, repaymentModes)
+            body.addView(it)
+        }
         val tenure = field(body,"Tenure in months (required for EMI / interest)",true)
         val guarantor = field(body,"Guarantor (optional)")
         val due = field(body,"Due date"); due.setOnClickListener { pickDate(due) }
         val doc = field(body,"Digital document / agreement reference")
+        nature.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                val selectedNature = parent?.getItemAtPosition(position)?.toString().orEmpty()
+                val leaseSelected = selectedNature.contains("Rental", true) || selectedNature.contains("Lease", true)
+                if (leaseSelected) {
+                    amount.hint = "Rent amount per period"
+                    roi.visibility = android.view.View.GONE
+                    terms.hint = "Rental frequency / terms (Monthly / Quarterly / Annual)"
+                    tenure.hint = "Lease duration in months (required)"
+                    doc.hint = "Lease agreement document title / ID (required)"
+                    val rentalIndex = repaymentModes.indexOfFirst { it.contains("Rental", true) || it.contains("Lease", true) }
+                    if (rentalIndex >= 0 && repaymentModeSpinner.selectedItemPosition != rentalIndex) repaymentModeSpinner.setSelection(rentalIndex)
+                    if (terms.text.isNullOrBlank()) terms.setText("Monthly")
+                } else {
+                    amount.hint = "Principal / amount"
+                    roi.visibility = android.view.View.VISIBLE
+                    terms.hint = "Repayment frequency / terms (Monthly / Quarterly / Annual)"
+                    tenure.hint = "Tenure in months (required for EMI / interest)"
+                    doc.hint = "Digital document / agreement reference"
+                    if (repaymentModeSpinner.selectedItemPosition == repaymentModes.lastIndex) repaymentModeSpinner.setSelection(0)
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
         body.addView(Button(this).apply {
             text = "REGISTER CREDIT"
             setOnClickListener {
