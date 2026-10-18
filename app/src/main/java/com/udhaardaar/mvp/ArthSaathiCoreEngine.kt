@@ -31,14 +31,15 @@ object ArthSaathiCoreEngine {
  fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String="",repaymentMode:String=terms,tenureMonths:Int=0):Result {
   require(partyName.isNotBlank());require(nature.isNotBlank());require(amount.isFinite() && amount in 0.01..1.0e15) { "Amount must be between ₹0.01 and ₹1,000,000,000,000,000" };require(roi.isFinite() && roi in 0.0..100.0)
   require(partyMobile.isBlank() || validateMobile(partyMobile))
-  require(method.isNotBlank());require(terms.isNotBlank());require(tenureMonths in 0..600) { "Tenure must be between 1 and 600 months for a scheduled plan" }
+  require(method.isNotBlank());require(terms.isNotBlank());require(tenureMonths in 0..600) { "Tenure cannot exceed 600 months" }
   if(nature.contains("Rental",true)||nature.contains("Lease",true))require(roi==0.0)
   val mode=repaymentMode.trim().ifBlank { terms.trim() }
   val isLease=nature.contains("Rental",true)||nature.contains("Lease",true)
+  if (!isLease && (mode.contains("EMI",true) || mode.contains("Principal + Interest",true))) require(tenureMonths in 1..600) { "Enter a tenure from 1 to 600 months for this repayment plan" }
   val emiAmount=if(!isLease && mode.contains("EMI",true) && tenureMonths>0) emi(amount,roi,tenureMonths) else 0.0
   val totalPayable=when {
     isLease -> amount
-    mode.contains("EMI",true) && tenureMonths>0 -> m((0 until schedule(amount, roi, tenureMonths).length()).sumOf { schedule(amount, roi, tenureMonths).optJSONObject(it)?.optDouble("emi") ?: 0.0 })
+    mode.contains("EMI",true) && tenureMonths>0 -> schedule(amount, roi, tenureMonths).let { plan -> m((0 until plan.length()).sumOf { plan.optJSONObject(it)?.optDouble("emi") ?: 0.0 }) }
     mode.contains("Principal + Interest",true) && tenureMonths>0 -> m(amount + amount*roi*tenureMonths/1200.0)
     else -> amount
   }
@@ -79,7 +80,7 @@ object ArthSaathiCoreEngine {
   save(tx,"REPAYMENT");o.put("paid",m(o.optDouble("paid")+paymentAmount));if(o.optDouble("paid")+0.005>=payable)o.put("status","CLOSED");o.put("updatedAt",n());replace(o);return Result(true,tx.getString("id"),"Repayment recorded")
  }
  fun emi(p:Double,rate:Double,months:Int):Double{require(p.isFinite() && p in 0.01..1.0e15) { "Principal must be between ₹0.01 and ₹1,000,000,000,000,000" };require(rate.isFinite() && rate in 0.0..100.0) { "Annual rate must be between 0 and 100%" };require(months in 1..600) { "Tenure must be between 1 and 600 months" };if(rate==0.0)return maxOf(m(p/months),0.01);val r=rate/1200.0;val discount=(1.0+r).pow(-months.toDouble());val raw=p*r/(1.0-discount);require(raw.isFinite() && raw>0.0) { "EMI calculation exceeded the supported range" };return maxOf(m(raw),0.01)}
- fun schedule(p:Double,rate:Double,months:Int):JSONArray{val a=JSONArray();var balance=p;val payment=emi(p,rate,months);val r=rate/1200.0;for(i in 1..months){val interest=if(r==0.0)0.0 else m(balance*r);val last=i==months;val principal=if(last)m(balance) else m((payment-interest).coerceAtLeast(0.0).coerceAtMost(balance));val due=if(last)m(principal+interest) else payment;balance=if(last)0.0 else m((balance-principal).coerceAtLeast(0.0));a.put(JSONObject().apply{put("installment",i);put("emi",due);put("interest",interest);put("principal",principal);put("balance",balance)})};return a}
+ fun schedule(p:Double,rate:Double,months:Int):JSONArray{val a=JSONArray();var balance=p;val payment=emi(p,rate,months);val r=rate/1200.0;for(i in 1..months){val interest=if(r==0.0)0.0 else m(balance*r);val last=i==months;val due=if(last||payment>=balance+interest)m(balance+interest) else payment;val principal=if(balance<=0.0)0.0 else if(last||due>=balance+interest)m(balance) else m((due-interest).coerceAtLeast(0.0).coerceAtMost(balance));balance=if(principal>=balance-0.005)0.0 else m((balance-principal).coerceAtLeast(0.0));a.put(JSONObject().apply{put("installment",i);put("emi",due);put("interest",interest);put("principal",principal);put("balance",balance)})};return a}
  fun parseQrPayload(payload:String):JSONObject {
   val out=JSONObject().put("merchant","").put("amount","").put("reference","").put("note","").put("date","")
   val raw=payload.trim()
