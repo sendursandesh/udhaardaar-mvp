@@ -59,6 +59,14 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         return null
     }
 
+    private fun findLogo(view: View): android.widget.ImageView? {
+        if (view is android.widget.ImageView && view.getTag(R.id.arthsaathi_logo_tag) == R.drawable.arthsaathi_logo) return view
+        if (view is ViewGroup) for (i in 0 until view.childCount) {
+            findLogo(view.getChildAt(i))?.let { return it }
+        }
+        return null
+    }
+
     @Test fun everyConfiguredCanonicalModuleOpensAndShowsItsExpectedTitle() {
         assertEquals("Module ids must be unique", ArthSaathiArchitectureRegistry.modules.size,
             ArthSaathiArchitectureRegistry.modules.map { it.id }.toSet().size)
@@ -77,6 +85,32 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                     assertTrue("Home/back control missing on ${module.id}",
                         text.contains("← Home"))
                 }
+            }
+        }
+    }
+
+    @Test fun canonicalShellShowsFrozenBrandAndGuidedKeyboardSafeCreditForm() {
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.REGISTER_CREDIT)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                val image = findLogo(root)
+                assertNotNull("Frozen ArthSaathi logo must appear on canonical screens", image)
+                assertEquals(R.drawable.arthsaathi_logo, image!!.getTag(R.id.arthsaathi_logo_tag))
+                val visibleText = allText(root).joinToString(" | ")
+                assertTrue("Frozen tagline missing", visibleText.contains("Navigate Your Financial Journey"))
+                assertTrue("User guidance missing", visibleText.contains("use Next to move forward"))
+                val name = requireNotNull(findEdit(root, "Borrower / counterparty name"))
+                val mobileField = requireNotNull(findEdit(root, "Counterparty mobile (10 digits)"))
+                assertEquals("All form fields should use next-field keyboard navigation",
+                    android.view.inputmethod.EditorInfo.IME_ACTION_NEXT, name.imeOptions and android.view.inputmethod.EditorInfo.IME_MASK_ACTION)
+                assertEquals("Mobile must remain capped at 10 characters", 10,
+                    (mobileField.filters.filterIsInstance<android.text.InputFilter.LengthFilter>().firstOrNull()?.max ?: -1))
+                name.requestFocus()
+                name.onEditorAction(android.view.inputmethod.EditorInfo.IME_ACTION_NEXT)
+                assertTrue("Next action should move focus to the next field", mobileField.hasFocus())
             }
         }
     }
