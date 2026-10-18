@@ -176,7 +176,9 @@ class V7Step1To5IntegrationInstrumentedTest {
     }
 
     @Test fun netWorthReconcilesAssetVaultPortfolioCreditAndLiabilityDeltas() {
-        val before = V7Core.metrics(context).optDouble("netWorth")
+        val beforeMetrics = V7Core.metrics(context)
+        val before = beforeMetrics.optDouble("netWorth")
+        val beforePortfolio = beforeMetrics.optDouble("portfolioValue")
         val person = V7Records.person(context, "V7 Net Worth QA", "9876543291")
         V7Records.asset(context, person.optString("id"), "PROPERTY", "QA House", 500000.0)
         V7Records.liability(context, person.optString("id"), "HOME_LOAN", 300000.0, 200000.0, 8.5)
@@ -190,8 +192,8 @@ class V7Step1To5IntegrationInstrumentedTest {
         val after = V7Core.metrics(context)
         assertEquals("Asset + current holdings + receivable - payable - outstanding liability",
             440000.0, after.optDouble("netWorth") - before, 0.02)
-        assertEquals(120000.0, after.optDouble("portfolioValue") -
-            (before.let { V7Core.metrics(context).optDouble("portfolioValue") - 120000.0 }), 0.02)
+        assertEquals("Portfolio subtotal includes current holding value",
+            120000.0, after.optDouble("portfolioValue") - beforePortfolio, 0.02)
     }
 
     @Test fun expiredConsentIsNotActive() {
