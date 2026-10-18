@@ -998,6 +998,10 @@ class ArthSaathiMasterModuleActivity : Activity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        if (requestCode == requestPickDocument) {
+            if (resultCode == RESULT_OK) handleDocumentPickerResult(data)
+            return
+        }
         val result: IntentResult? = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
         if (result != null) {
             val payload = result.contents
@@ -1076,9 +1080,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         })
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != requestPickDocument || resultCode != RESULT_OK) return
+    private fun handleDocumentPickerResult(data: android.content.Intent?) {
         val uri = data?.data ?: return
         try {
             val originalName = contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
