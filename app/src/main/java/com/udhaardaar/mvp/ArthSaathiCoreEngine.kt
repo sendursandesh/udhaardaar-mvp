@@ -77,7 +77,7 @@ object ArthSaathiCoreEngine {
  fun repayment(recordId:String,amount:Double,method:String,actor:String):Result{
   require(amount.isFinite() && amount>0);require(method.isNotBlank())
   val paymentAmount=m(amount);require(paymentAmount>0.0) { "Repayment must be at least ₹0.01" }
-  val o=find(recordId)?:return Result(false,message="Credit not found");require(o.optString("type")=="CREDIT");require(o.optString("consentStatus")=="CONSENTED")
+  val o=find(recordId)?:return Result(false,message="Credit not found");require(o.optString("type")=="CREDIT");require(o.optString("status")=="ACTIVE") { "Credit is not registered and active" };require(o.optString("consentStatus")=="CONSENTED")
   val payable=o.optDouble("totalPayable",o.optDouble("amount"))
   val out=(payable-o.optDouble("paid")).coerceAtLeast(0.0);require(paymentAmount<=out+0.005)
   val tx=JSONObject().apply{put("id",id("TX"));put("type","REPAYMENT");put("recordId",recordId);put("amount",paymentAmount);put("method",method);put("actor",actor);put("createdAt",n())}
