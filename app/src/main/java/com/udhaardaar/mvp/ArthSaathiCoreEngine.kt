@@ -5,6 +5,7 @@ import org.json.JSONObject
 import java.util.UUID
 import java.util.Locale
 import kotlin.math.pow
+import kotlin.math.ceil
 import kotlin.math.round
 
 object ArthSaathiCoreEngine {
@@ -39,12 +40,27 @@ object ArthSaathiCoreEngine {
   val isEmi = mode.contains("EMI", true)
   val isPrincipalInterest = mode.contains("Principal + Interest", true)
   val isBullet = mode.contains("Bullet", true)
-  if (!isLease && (isEmi || isPrincipalInterest || isBullet)) require(tenureMonths in 1..600) { "Enter a tenure from 1 to 600 months for this repayment plan" }
-  val emiAmount=if(!isLease && isEmi && tenureMonths>0) emi(amount,roi,tenureMonths) else 0.0
+  val isRentalMode = mode.contains("Rental", true) || mode.contains("Lease", true)
+  if (isLease) {
+   require(isRentalMode) { "Rental / lease credit must use the rental calculation method" }
+   require(tenureMonths in 1..600) { "Enter the lease duration in months (1 to 600)" }
+   require(!documentId.isNullOrBlank()) { "A lease agreement document reference is required" }
+  } else {
+   require(!isRentalMode) { "Select a credit nature that matches the rental / lease method" }
+   require(isEmi || isPrincipalInterest || isBullet) { "Select EMI, Principal + Interest, or Bullet repayment calculation" }
+   require(tenureMonths in 1..600) { "Enter a tenure from 1 to 600 months for this repayment plan" }
+  }
+  val emiAmount=if(!isLease && isEmi) emi(amount,roi,tenureMonths) else 0.0
+  val leasePeriods = when {
+   terms.contains("Annual", true) || terms.contains("Yearly", true) -> ceil(tenureMonths / 12.0).toInt()
+   terms.contains("Half-yearly", true) || terms.contains("Semi-annual", true) -> ceil(tenureMonths / 6.0).toInt()
+   terms.contains("Quarterly", true) -> ceil(tenureMonths / 3.0).toInt()
+   else -> tenureMonths
+  }.coerceAtLeast(1)
   val totalPayable=when {
-    isLease -> amount
-    isEmi && tenureMonths>0 -> schedule(amount, roi, tenureMonths).let { plan -> m((0 until plan.length()).sumOf { plan.optJSONObject(it)?.optDouble("emi") ?: 0.0 }) }
-    (isPrincipalInterest || isBullet) && tenureMonths>0 -> m(amount + amount*roi*tenureMonths/1200.0)
+    isLease -> m(amount * leasePeriods)
+    isEmi -> schedule(amount, roi, tenureMonths).let { plan -> m((0 until plan.length()).sumOf { plan.optJSONObject(it)?.optDouble("emi") ?: 0.0 }) }
+    isPrincipalInterest || isBullet -> m(amount + amount*roi*tenureMonths/1200.0)
     else -> amount
   }
   require(totalPayable.isFinite() && totalPayable >= amount) { "Calculated payable amount is outside the supported range" }
