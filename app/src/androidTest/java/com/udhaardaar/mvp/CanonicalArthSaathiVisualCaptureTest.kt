@@ -25,8 +25,9 @@ class CanonicalArthSaathiVisualCaptureTest {
     @Before fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        // Use app-scoped external storage so screenshot writes work under scoped-storage Android versions.
-        captureDir = File(requireNotNull(context.getExternalFilesDir(null)), "arthsaathi_canonical")
+        // Store evidence in app-internal files so CI can retrieve it reliably via adb run-as,
+        // without depending on Android/data visibility rules on the host shell.
+        captureDir = File(context.filesDir, "arthsaathi_canonical")
         captureDir.deleteRecursively()
         check(captureDir.mkdirs() || captureDir.isDirectory) { "Could not create screenshot evidence directory: $captureDir" }
         ArthSaathiSession.logout(context)
