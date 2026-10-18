@@ -66,6 +66,9 @@ class CanonicalArthSaathiVisualCaptureTest {
                 scenario.onActivity { activity ->
                     assertTrue("Screen not visible during visual capture: ${module.id}",
                         activity.window.decorView.isShown)
+                    val pageTitle = activity.window.decorView.findViewWithTag<android.widget.TextView>("canonical-page-title")
+                    assertTrue("Canonical title missing or incorrect on ${module.id}: expected ${module.title}, got ${pageTitle?.text}",
+                        pageTitle != null && pageTitle.text.toString() == module.title)
                     assertTrue("Canonical logo missing on ${module.id}",
                         activity.window.decorView.findViewWithTag<android.widget.ImageView>(
                             "arthsaathi-canonical-logo") != null)
