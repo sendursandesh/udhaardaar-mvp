@@ -42,13 +42,39 @@ object V7Core {
         ownerVisibleTo(it.optString("ownerUserId"), user(c))
     }
     fun find(c:Context,key:String,id:String)=all(c,key).firstOrNull{it.optString("id")==id}
-    fun add(c:Context,key:String,o:org.json.JSONObject){
-        o.put("ownerUserId",user(c));o.put("updatedAt",now());store(c).add(key,o)
-        audit(c,"CREATE",key,o.optString("id"),"");publish(key,o.optString("id"))
+    /** Persist only for an authenticated, explicitly scoped account. */
+    fun add(c:Context,key:String,o:org.json.JSONObject):Boolean {
+        val currentUser = user(c)
+        if (currentUser.isBlank()) return false
+        val requestedOwner = o.optString("ownerUserId")
+        if (requestedOwner.isNotBlank() && requestedOwner != currentUser) return false
+        o.put("ownerUserId",currentUser)
+        o.put("updatedAt",now())
+        store(c).add(key,o)
+        audit(c,"CREATE",key,o.optString("id"),"")
+        publish(key,o.optString("id"))
+        return true
     }
-    fun replace(c:Context,key:String,o:org.json.JSONObject){
-        if(o.optString("ownerUserId").isBlank())o.put("ownerUserId",user(c))
-        o.put("updatedAt",now());store(c).replace(key,o);audit(c,"UPDATE",key,o.optString("id"),"");publish(key,o.optString("id"))
+
+    /**
+     * Prevents a record id from being used to overwrite another account's row.
+     * Callers must not treat a rejected update as a successful transaction.
+     */
+    fun replace(c:Context,key:String,o:org.json.JSONObject):Boolean {
+        val currentUser = user(c)
+        if (currentUser.isBlank()) return false
+        val requestedOwner = o.optString("ownerUserId")
+        if (requestedOwner.isNotBlank() && requestedOwner != currentUser) return false
+        val id = o.optString("id")
+        if (id.isBlank()) return false
+        val existing = store(c).all(key).firstOrNull { it.optString("id") == id }
+        if (existing != null && !ownerVisibleTo(existing.optString("ownerUserId"), currentUser)) return false
+        if (requestedOwner.isBlank()) o.put("ownerUserId",currentUser)
+        o.put("updatedAt",now())
+        store(c).replace(key,o)
+        audit(c,"UPDATE",key,id,"")
+        publish(key,id)
+        return true
     }
     fun publish(entity:String,id:String){
         val mapped = when(entity) {
@@ -228,17 +254,33 @@ object V7RevenueEngine {
     fun payment(c:Context,invoiceId:String,amount:Double,gateway:String,reference:String,status:PaymentStatus)=org.json.JSONObject().apply{
         put("id",V7Core.id("PAY"));put("invoiceId",invoiceId);put("amount",amount);put("gateway",gateway);put("reference",reference);put("status",status.name);put("timestamp",V7Core.now())
     }.also{V7Core.add(c,V7Core.Keys.PAYMENTS,it)}
-    fun reconcile(c:Context,paymentId:String,settlementReference:String){
-        V7Core.find(c,V7Core.Keys.PAYMENTS,paymentId)?.apply{
-            put("status",PaymentStatus.RECONCILED.name);put("settlementReference",settlementReference);put("reconciledAt",V7Core.now());V7Core.replace(c,V7Core.Keys.PAYMENTS,this)
-            val reconciledAmount = optDouble("amount", 0.0)
+    /**
+     * Idempotent settlement: only a successful payment can be reconciled, and a
+     * repeated callback for the same settlement must never double-count revenue.
+     */
+    fun reconcile(c:Context,paymentId:String,settlementReference:String):Boolean {
+        if (paymentId.isBlank() || settlementReference.isBlank()) return false
+        val payment = V7Core.find(c,V7Core.Keys.PAYMENTS,paymentId) ?: return false
+        val status = payment.optString("status")
+        if (status == PaymentStatus.RECONCILED.name) {
+            return payment.optString("settlementReference") == settlementReference &&
+                V7Core.all(c,V7Core.Keys.REVENUE).any { it.optString("paymentId") == paymentId }
+        }
+        if (status != PaymentStatus.SUCCESS.name) return false
+        payment.put("status",PaymentStatus.RECONCILED.name)
+        payment.put("settlementReference",settlementReference)
+        payment.put("reconciledAt",V7Core.now())
+        if (!V7Core.replace(c,V7Core.Keys.PAYMENTS,payment)) return false
+        val revenueAlreadyRecorded = V7Core.all(c,V7Core.Keys.REVENUE).any { it.optString("paymentId") == paymentId }
+        if (!revenueAlreadyRecorded) {
             V7Core.add(c,V7Core.Keys.REVENUE,org.json.JSONObject().apply{
                 put("id",V7Core.id("REV"))
                 put("paymentId",paymentId)
-                put("amount",reconciledAmount)
+                put("amount",payment.optDouble("amount",0.0))
                 put("settlementReference",settlementReference)
             })
         }
+        return true
     }
 }
 
