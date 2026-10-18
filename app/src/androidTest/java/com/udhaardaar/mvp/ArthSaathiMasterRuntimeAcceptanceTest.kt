@@ -143,6 +143,57 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         }
     }
 
+    @Test fun claimsCanAdvanceThroughAuditedLifecycleStages() {
+        val claimName = "Claim lifecycle QA " + System.currentTimeMillis()
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.CLAIMS)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                requireNotNull(findEdit(root, "Claim / asset / benefit")).setText(claimName)
+                requireNotNull(findEdit(root, "Claimant / nominee / authorised person")).setText("QA Claimant")
+                requireNotNull(findEdit(root, "Institution / source")).setText("QA Institution")
+                requireNotNull(findEdit(root, "Evidence / document references")).setText("evidence-ref-001")
+                requireNotNull(findButton(root, "SAVE CLAIM / UPDATE RECORD")).performClick()
+                assertTrue(allText(activity.window.decorView).joinToString(" | ").contains("IDENTIFIED"))
+                requireNotNull(findButton(activity.window.decorView, "ADVANCE TO DOCUMENTS PENDING")).performClick()
+                assertTrue("Claim stage should update in the shared record", allText(activity.window.decorView).joinToString(" | ").contains("DOCUMENTS_PENDING"))
+            }
+        }
+        val saved = ArthSaathiDataStore.records()
+        assertTrue((0 until saved.length()).mapNotNull { saved.optJSONObject(it) }.any {
+            it.optString("type") == "CLAIM" && it.optString("f0") == claimName && it.optString("f3") == "DOCUMENTS_PENDING"
+        })
+    }
+
+    @Test fun legacyPlanningCreatesExplicitDraftAndEncryptedSummaryDocument() {
+        val assetName = "Legacy QA asset " + System.currentTimeMillis()
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.WILL_LEGACY)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                requireNotNull(findEdit(root, "Asset / property / account")).setText(assetName)
+                requireNotNull(findEdit(root, "Intended beneficiary / nominee")).setText("QA Beneficiary")
+                requireNotNull(findEdit(root, "Proposed executor / trusted person")).setText("QA Executor")
+                requireNotNull(findEdit(root, "Instructions / wishes (optional)")).setText("Review with counsel")
+                requireNotNull(findButton(root, "SAVE DRAFT & CREATE SUMMARY DOCUMENT")).performClick()
+                val visible = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("Legacy screen must disclose draft-only status", visible.contains("DRAFT_REQUIRES_LEGAL_REVIEW"))
+                assertTrue("Saved plan must appear on the same screen", visible.contains(assetName))
+            }
+        }
+        val saved = ArthSaathiDataStore.records()
+        val legacy = (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }
+            .first { it.optString("type") == "LEGACY" && it.optString("f0") == assetName }
+        val document = (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }
+            .first { it.optString("type") == "DOCUMENT" && it.optString("relatedId") == legacy.optString("id") }
+        assertEquals("ANDROID_KEYSTORE_AES_GCM", document.optString("storage"))
+        assertTrue(File(context.filesDir, "arthsaathi_documents/" + document.optString("f3")).isFile)
+    }
+
     @Test fun emiScheduleReconcilesPrincipalInterestAndFinalPaymentOnAndroidRuntime() {
         val schedule = ArthSaathiCoreEngine.schedule(100000.0, 12.0, 12)
         assertEquals(12, schedule.length())
