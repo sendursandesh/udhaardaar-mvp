@@ -30,7 +30,17 @@ set -e
 
 echo "=== Pulling canonical ArthSaathi visual evidence ==="
 mkdir -p app/build/qa-diagnostics/visual-captures
-if adb pull /sdcard/Android/data/com.arthsaathi.master/files/arthsaathi_canonical app/build/qa-diagnostics/visual-captures; then
+package_name="com.arthsaathi.master"
+if adb shell run-as "$package_name" test -d files/arthsaathi_canonical; then
+  screenshot_names=$(adb shell run-as "$package_name" ls files/arthsaathi_canonical | tr -d '\r')
+  while IFS= read -r screenshot_name; do
+    [[ -n "$screenshot_name" ]] || continue
+    [[ "$screenshot_name" == *.png ]] || continue
+    if ! adb exec-out run-as "$package_name" cat "files/arthsaathi_canonical/$screenshot_name" > "app/build/qa-diagnostics/visual-captures/$screenshot_name"; then
+      echo "FAIL: unable to extract canonical screenshot: $screenshot_name"
+      exit 3
+    fi
+  done <<< "$screenshot_names"
   screenshot_count=$(find app/build/qa-diagnostics/visual-captures -type f -name '*.png' | wc -l)
   echo "Canonical screenshots captured: $screenshot_count"
   if (( screenshot_count < 20 )); then
@@ -38,7 +48,8 @@ if adb pull /sdcard/Android/data/com.arthsaathi.master/files/arthsaathi_canonica
     exit 3
   fi
 else
-  echo "FAIL: unable to pull canonical screenshots from emulator"
+  echo "FAIL: canonical screenshot directory is absent from app-private storage"
+  adb shell run-as "$package_name" ls files || true
   exit 3
 fi
 
