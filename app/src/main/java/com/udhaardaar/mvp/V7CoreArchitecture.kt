@@ -168,7 +168,10 @@ object V7Records {
             val partyId = relationship.optString("partyId").orEmpty()
             val activeConsent = partyId.isNotBlank() && V7Core.hasConsent(c, partyId, "REPAYMENT_UPDATE", "relationship:"+relationshipId)
             val validMethod = repayment.optString("method") in setOf("CASH","UPI","NEFT","BANK_TRANSFER","NACH","CHEQUE","OTHER")
-            val validAmounts = amount > 0.0 && principal >= 0.0 && interest >= 0.0 && principal + interest <= amount + 0.005
+            // The recorded total must reconcile exactly to principal + interest;
+            // accepting a mismatch would make transaction history disagree with balances.
+            val validAmounts = amount > 0.0 && principal >= 0.0 && interest >= 0.0 &&
+                kotlin.math.abs((principal + interest) - amount) <= 0.005
             val outstanding = relationship.optDouble("outstanding",relationship.optDouble("amount",0.0))
             val validPrincipal = principal <= outstanding + 0.005
             if (!consentVerified || (consentRequired && !activeConsent) || !validMethod || !validAmounts || !validPrincipal) return@also
@@ -289,7 +292,27 @@ object V7AlertEngine {
         put("id",V7Core.id("ALERT"));put("type",type);put("message",message);put("entityId",entityId);put("priority",priority);put("status","OPEN");put("createdAt",V7Core.now())
     }.also{V7Core.add(c,V7Core.Keys.ALERTS,it)}
     fun evaluate(c:Context){
-        V7Core.all(c,V7Core.Keys.LIABILITIES).filter{it.optDouble("outstanding")>0&&it.optString("dueDate").isNotBlank()}.forEach{create(c,"LIABILITY_DUE","Payment due: "+it.optString("type"),it.optString("id"),"HIGH")}
-        V7Core.all(c,V7Core.Keys.POLICIES).filter{it.optString("renewalDate").isNotBlank()}.forEach{create(c,"INSURANCE_RENEWAL","Insurance renewal: "+it.optString("policyNumber"),it.optString("id"),"HIGH")}
+        V7Core.all(c,V7Core.Keys.LIABILITIES)
+            .filter{it.optDouble("outstanding")>0&&it.optString("dueDate").isNotBlank()}
+            .forEach { liability ->
+                val entityId = liability.optString("id")
+                val alreadyOpen = V7Core.all(c,V7Core.Keys.ALERTS).any {
+                    it.optString("type") == "LIABILITY_DUE" &&
+                        it.optString("entityId") == entityId &&
+                        it.optString("status") == "OPEN"
+                }
+                if (!alreadyOpen) create(c,"LIABILITY_DUE","Payment due: "+liability.optString("type"),entityId,"HIGH")
+            }
+        V7Core.all(c,V7Core.Keys.POLICIES)
+            .filter{it.optString("renewalDate").isNotBlank()}
+            .forEach { policy ->
+                val entityId = policy.optString("id")
+                val alreadyOpen = V7Core.all(c,V7Core.Keys.ALERTS).any {
+                    it.optString("type") == "INSURANCE_RENEWAL" &&
+                        it.optString("entityId") == entityId &&
+                        it.optString("status") == "OPEN"
+                }
+                if (!alreadyOpen) create(c,"INSURANCE_RENEWAL","Insurance renewal: "+policy.optString("policyNumber"),entityId,"HIGH")
+            }
     }
 }
