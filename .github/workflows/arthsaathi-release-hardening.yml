@@ -75,7 +75,7 @@ jobs:
 
   emulator-test:
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - name: Checkout exact revision
         uses: actions/checkout@v4
@@ -116,7 +116,7 @@ jobs:
 
       - name: Run Android instrumentation suite on API 34 emulator
         uses: reactivecircus/android-emulator-runner@v2
-        timeout-minutes: 50
+        timeout-minutes: 25
         with:
           api-level: 34
           target: google_apis
@@ -125,27 +125,27 @@ jobs:
           cores: 2
           ram-size: 2048M
           heap-size: 512M
-          emulator-boot-timeout: 1800
+          emulator-boot-timeout: 300
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -camera-back none
           disable-animations: true
-          verbose: true
           script: |
             set -u
             mkdir -p app/build/qa-diagnostics
             trap 'adb logcat -d -t 8000 > app/build/qa-diagnostics/emulator-logcat.txt 2>&1 || true; adb devices -l > app/build/qa-diagnostics/adb-devices.txt 2>&1 || true' EXIT
             adb devices -l
             adb wait-for-device
-            attempt=0
-            while [ "$attempt" -lt 180 ]; do
-              booted="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
-              [ "$booted" = "1" ] && break
-              attempt=$((attempt + 1))
-              sleep 2
-            done
-            test "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1"
+            # Fail quickly if Android does not finish booting; keep the loop inside bash
+            # so the action's /bin/sh wrapper cannot mis-parse the multi-line loop.
+            if ! timeout 120s bash -c 'until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" = "1" ]; do sleep 2; done'; then
+              echo "FAIL: emulator did not reach sys.boot_completed=1 within 120 seconds"
+              adb devices -l || true
+              adb logcat -d -t 3000 || true
+              exit 124
+            fi
+            adb shell cmd package list packages >/dev/null
             adb shell cmd package list packages >/dev/null
             set +e
-            timeout 18m gradle :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
+            timeout 12m gradle :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
             gradle_exit=$?
             set +e
             python3 - <<'PY'
