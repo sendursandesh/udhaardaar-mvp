@@ -400,9 +400,10 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Borrower / counterparty name")).setText("Credit QA Person")
                 requireNotNull(findEdit(root, "Counterparty mobile (10 digits)")).setText("9876501188")
                 requireNotNull(findEdit(root, "Principal / amount")).setText("0")
-                requireNotNull(findEdit(root, "ROI % (not used for lease)")).setText("150")
+                requireNotNull(findEdit(root, "ROI %")).setText("150")
                 requireNotNull(findEdit(root, "Method: Cash / UPI / NEFT / Other")).setText("UPI")
-                requireNotNull(findEdit(root, "Repayment mode / terms (EMI / Principal + Interest / Bullet / Rental)")).setText("Monthly")
+                requireNotNull(findEdit(root, "Repayment frequency / terms (Monthly / Quarterly / Annual)")).setText("Monthly")
+                requireNotNull(findEdit(root, "Tenure in months (required for EMI / interest)")).setText("12")
                 requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
                 assertEquals("Enter an amount greater than zero",
                     findEdit(root, "Principal / amount")?.error)
@@ -410,9 +411,9 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Principal / amount")).setText("15000")
                 requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
                 assertEquals("ROI must be between 0 and 100%",
-                    findEdit(root, "ROI % (not used for lease)")?.error)
+                    findEdit(root, "ROI %")?.error)
                 assertEquals(before, ArthSaathiDataStore.records().length())
-                requireNotNull(findEdit(root, "ROI % (not used for lease)")).setText("12.5")
+                requireNotNull(findEdit(root, "ROI %")).setText("12.5")
                 requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
             }
         }
@@ -427,6 +428,14 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
     }
 
     @Test fun leaseCreditForcesZeroInterestAndInvalidMobileIsRejected() {
+        val agreementBytes = "lease agreement acceptance fixture".toByteArray(Charsets.UTF_8)
+        val agreementFile = ArthSaathiDocumentStorage.store(context, ByteArrayInputStream(agreementBytes), "lease-agreement.txt")
+        ArthSaathiCoreEngine.saveModule("DOCUMENT", mapOf(
+            "f0" to "Lease Agreement QA", "f1" to "Lease agreement",
+            "f3" to agreementFile.fileName, "f4" to agreementFile.sha256,
+            "sizeBytes" to agreementFile.sizeBytes, "extension" to agreementFile.extension,
+            "mimeType" to "text/plain", "encrypted" to true, "storage" to "ANDROID_KEYSTORE_AES_GCM"
+        ))
         val before = ArthSaathiDataStore.records().length()
         ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
             Intent(context, ArthSaathiMasterModuleActivity::class.java)
@@ -437,9 +446,11 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Borrower / counterparty name")).setText("Lease QA")
                 requireNotNull(findEdit(root, "Counterparty mobile (10 digits)")).setText("123")
                 requireNotNull(findEdit(root, "Principal / amount")).setText("10000")
-                requireNotNull(findEdit(root, "ROI % (not used for lease)")).setText("0")
+                requireNotNull(findEdit(root, "ROI %")).setText("0")
                 requireNotNull(findEdit(root, "Method: Cash / UPI / NEFT / Other")).setText("BANK")
-                requireNotNull(findEdit(root, "Repayment mode / terms (EMI / Principal + Interest / Bullet / Rental)")).setText("Monthly rent")
+                requireNotNull(findEdit(root, "Repayment frequency / terms (Monthly / Quarterly / Annual)")).setText("Monthly")
+                requireNotNull(findEdit(root, "Tenure in months (required for EMI / interest)")).setText("12")
+                requireNotNull(findEdit(root, "Digital document / agreement reference")).setText("Lease Agreement QA")
                 requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
                 assertEquals("A valid 10-digit mobile number is required for borrower consent",
                     findEdit(root, "Counterparty mobile (10 digits)")?.error)
@@ -457,7 +468,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         val after = ArthSaathiDataStore.records()
         assertTrue((0 until after.length()).mapNotNull { after.optJSONObject(it) }.any {
             it.optString("type") == "CREDIT" && it.optString("party") == "Lease QA" &&
-                it.optDouble("roi") == 0.0
+                it.optDouble("roi") == 0.0 && it.optDouble("totalPayable") == 120000.0
         })
     }
 
@@ -644,7 +655,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
     @Test fun consentFailsClosedWhenNoRealOtpProviderIsConfigured() {
         val created = ArthSaathiCoreEngine.createCredit(
             null, "Consent QA", "Personal Loan / Hand Loan", 5000.0, 5.0,
-            "UPI", "Monthly", "", null, null, "9876501166", "QA Guarantor"
+            "UPI", "Monthly", "", null, null, "9876501166", "QA Guarantor", "Principal + Interest", 12
         )
         val createdId = requireNotNull(created.id)
         val requested = ArthSaathiCoreEngine.requestConsent(createdId, "lender")
@@ -666,7 +677,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         })
         val created = ArthSaathiCoreEngine.createCredit(
             null, "Verified Consent QA", "Personal Loan / Hand Loan", 5000.0, 5.0,
-            "UPI", "Monthly", "", null, null, "9876501165", "QA Guarantor"
+            "UPI", "Monthly", "", null, null, "9876501165", "QA Guarantor", "Principal + Interest", 12
         )
         val createdId = requireNotNull(created.id)
         assertTrue(ArthSaathiCoreEngine.requestConsent(createdId, "lender").ok)
@@ -683,7 +694,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         val party = "UI Consent QA " + System.currentTimeMillis()
         val created = ArthSaathiCoreEngine.createCredit(
             null, party, "Personal Loan / Hand Loan", 1000.0, 0.0,
-            "UPI", "Monthly", "", null, null, "9876501164", "QA Guarantor"
+            "UPI", "Monthly", "", null, null, "9876501164", "QA Guarantor", "EMI", 12
         )
         val id = requireNotNull(created.id)
         ArthSaathiOtpService.installProvider(object : ArthSaathiOtpProvider {
