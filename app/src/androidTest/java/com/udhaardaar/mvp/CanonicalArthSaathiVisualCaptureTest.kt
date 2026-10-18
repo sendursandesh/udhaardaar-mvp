@@ -25,13 +25,13 @@ class CanonicalArthSaathiVisualCaptureTest {
     @Before fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        // Use emulator shell-owned shared storage for evidence; CI can pull it after test teardown.
-        captureDir = File("/sdcard/arthsaathi_canonical")
-        device.executeShellCommand("rm -rf /sdcard/arthsaathi_canonical && mkdir -p /sdcard/arthsaathi_canonical")
+        // Use app-scoped external storage so screenshot writes work under scoped-storage Android versions.
+        captureDir = File(requireNotNull(context.getExternalFilesDir(null)), "arthsaathi_canonical")
+        captureDir.deleteRecursively()
+        check(captureDir.mkdirs() || captureDir.isDirectory) { "Could not create screenshot evidence directory: $captureDir" }
         ArthSaathiSession.logout(context)
         ArthSaathiDataStore.initialize(context)
         ArthSaathiSession.login(context, mobile)
-        device.executeShellCommand("mkdir -p /sdcard/arthsaathi_canonical")
     }
 
     @After fun tearDown() {
@@ -54,9 +54,8 @@ class CanonicalArthSaathiVisualCaptureTest {
             }
             device.waitForIdle()
             val target = File(captureDir, "LOGIN.png")
-            device.executeShellCommand("screencap -p ${target.absolutePath}")
-            val bytes = device.executeShellCommand("stat -c %s ${target.absolutePath}").trim().toLongOrNull() ?: 0L
-            assertTrue("Login screenshot missing or empty", bytes > 0L)
+            assertTrue("Could not capture login screenshot", device.takeScreenshot(target))
+            assertTrue("Login screenshot missing or empty", target.isFile && target.length() > 0L)
         }
         ArthSaathiSession.login(context, mobile)
         modules.forEach { module ->
@@ -75,9 +74,8 @@ class CanonicalArthSaathiVisualCaptureTest {
                 // show the previous task instead of the module under review.
                 device.waitForIdle()
                 val target = File(captureDir, "${module.id}.png")
-                device.executeShellCommand("screencap -p ${target.absolutePath}")
-                val bytes = device.executeShellCommand("stat -c %s ${target.absolutePath}").trim().toLongOrNull() ?: 0L
-                assertTrue("Screenshot missing or empty for ${module.id}", bytes > 0L)
+                assertTrue("Could not capture screenshot for ${module.id}", device.takeScreenshot(target))
+                assertTrue("Screenshot missing or empty for ${module.id}", target.isFile && target.length() > 0L)
             }
         }
         // Also capture the real signed-in launcher home; module-only captures are not a substitute
@@ -94,11 +92,11 @@ class CanonicalArthSaathiVisualCaptureTest {
             }
             device.waitForIdle()
             val target = File(captureDir, "LAUNCHER_HOME.png")
-            device.executeShellCommand("screencap -p ${target.absolutePath}")
-            val bytes = device.executeShellCommand("stat -c %s ${target.absolutePath}").trim().toLongOrNull() ?: 0L
-            assertTrue("Real launcher home screenshot is missing or empty", bytes > 0L)
+            assertTrue("Could not capture launcher home screenshot", device.takeScreenshot(target))
+            assertTrue("Real launcher home screenshot is missing or empty", target.isFile && target.length() > 0L)
         }
+        val screenshots = captureDir.listFiles()?.filter { it.isFile && it.extension == "png" }.orEmpty()
         assertTrue("Expected one screenshot for every canonical module plus real launcher home",
-            device.executeShellCommand("ls /sdcard/arthsaathi_canonical").lineSequence().count { it.trim().endsWith(".png") } == modules.size + 2)
+            screenshots.size == modules.size + 2)
     }
 }
