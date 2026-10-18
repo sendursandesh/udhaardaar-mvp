@@ -1511,6 +1511,155 @@ class ArthSaathiMasterModuleActivity : Activity() {
         }
     }
 
+    private fun assetVault(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "ASSET VAULT • Record financial and non-financial assets, with owner and nominee links to People & Relationships. Evidence should be stored in Document Vault."
+            textSize = 14f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 12)
+        })
+        val assetName = field(body, "Asset / account / property name")
+        val categoryOptions = listOf("Financial Asset", "Non-financial Asset")
+        val category = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, categoryOptions)
+            body.addView(TextView(this).apply { text = "ASSET CATEGORY"; textSize = 12f; setTextColor(ArthSaathiV7Design.MUTED) })
+            body.addView(it)
+        }
+        val value = field(body, "Current value (₹)", true)
+        val people = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "PERSON" }
+        fun personLabel(person: JSONObject): String =
+            person.optString("name") + if (person.optString("mobile").isBlank()) "" else " • " + person.optString("mobile")
+        val ownerLabels = listOf("Primary user / not linked") + people.map { personLabel(it) }
+        val owner = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ownerLabels)
+            body.addView(TextView(this).apply { text = "OWNER / RESPONSIBLE PERSON"; textSize = 12f; setTextColor(ArthSaathiV7Design.MUTED })
+            body.addView(it)
+        }
+        val nomineeLabels = listOf("No nominee recorded") + people.map { personLabel(it) }
+        val nominee = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, nomineeLabels)
+            body.addView(TextView(this).apply { text = "NOMINEE / BENEFICIARY"; textSize = 12f; setTextColor(ArthSaathiV7Design.MUTED })
+            body.addView(it)
+        }
+        val evidence = field(body, "Document Vault title / ID (optional)")
+        body.addView(Button(this).apply {
+            text = "SAVE ASSET"
+            setOnClickListener {
+                val name = assetName.text.toString().trim()
+                val amount = value.text.toString().trim().toDoubleOrNull()
+                if (name.isBlank()) { assetName.error = "Enter an asset name"; return@setOnClickListener }
+                if (amount == null || !amount.isFinite() || amount < 0.0) { value.error = "Enter a valid non-negative value"; return@setOnClickListener }
+                val ownerPerson = people.getOrNull(owner.selectedItemPosition - 1)
+                val nomineePerson = people.getOrNull(nominee.selectedItemPosition - 1)
+                val links = linkedMapOf<String, String>()
+                ownerPerson?.optString("id")?.takeIf { it.isNotBlank() }?.let { links["ownerPersonId"] = it }
+                nomineePerson?.optString("id")?.takeIf { it.isNotBlank() }?.let { links["nomineePersonId"] = it }
+                try {
+                    ArthSaathiCoreEngine.saveModule("ASSET", mapOf(
+                        "f0" to name, "f1" to category.selectedItem.toString(),
+                        "f2" to amount, "value" to amount,
+                        "f3" to (ownerPerson?.optString("name") ?: "Primary user"),
+                        "f4" to evidence.text.toString().trim(),
+                        "ownerPersonId" to (ownerPerson?.optString("id") ?: ""),
+                        "nomineePersonId" to (nomineePerson?.optString("id") ?: ""),
+                        "nomineeName" to (nomineePerson?.optString("name") ?: "")
+                    ), links)
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Asset saved and linked to selected people.", Toast.LENGTH_SHORT).show()
+                    render(ArthSaathiNavigation.ASSET_VAULT)
+                } catch (e: Exception) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Could not save asset.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "\nSAVED ASSETS"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        var count = 0
+        for (i in 0 until records.length()) {
+            val record = records.optJSONObject(i) ?: continue
+            if (record.optString("type") != "ASSET") continue
+            count++
+            body.addView(TextView(this).apply {
+                text = record.optString("f0") + " • " + record.optString("f1") +
+                    "\nCurrent value: ₹" + money(record.optDouble("value", record.optDouble("f2"))) +
+                    "\nOwner: " + record.optString("f3", "Primary user") +
+                    (if (record.optString("nomineeName").isBlank()) "" else "\nNominee: " + record.optString("nomineeName")) +
+                    (if (record.optString("f4").isBlank()) "" else "\nEvidence: " + record.optString("f4"))
+                textSize = 14f
+                setPadding(8, 12, 8, 8)
+            })
+        }
+        if (count == 0) body.addView(TextView(this).apply { text = "No assets recorded yet." })
+    }
+
+    private fun liabilityVault(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "LIABILITY VAULT • Record balances and due dates, and link the responsible person from People & Relationships."
+            textSize = 14f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 12)
+        })
+        val liabilityName = field(body, "Liability / loan / obligation")
+        val lender = field(body, "Lender / institution")
+        val outstanding = field(body, "Outstanding balance (₹)", true)
+        val due = field(body, "Due date (optional)").apply {
+            isFocusable = false
+            isClickable = true
+            setOnClickListener { pickDate(this) }
+        }
+        val people = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "PERSON" }
+        val personLabels = listOf("Primary user / not linked") + people.map {
+            it.optString("name") + if (it.optString("mobile").isBlank()) "" else " • " + it.optString("mobile")
+        }
+        val responsible = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, personLabels)
+            body.addView(TextView(this).apply { text = "RESPONSIBLE PERSON"; textSize = 12f; setTextColor(ArthSaathiV7Design.MUTED) })
+            body.addView(it)
+        }
+        val evidence = field(body, "Document Vault title / ID (optional)")
+        body.addView(Button(this).apply {
+            text = "SAVE LIABILITY"
+            setOnClickListener {
+                val name = liabilityName.text.toString().trim()
+                val amount = outstanding.text.toString().trim().toDoubleOrNull()
+                if (name.isBlank()) { liabilityName.error = "Enter the liability"; return@setOnClickListener }
+                if (amount == null || !amount.isFinite() || amount < 0.0) { outstanding.error = "Enter a valid non-negative balance"; return@setOnClickListener }
+                val person = people.getOrNull(responsible.selectedItemPosition - 1)
+                val links = linkedMapOf<String, String>()
+                person?.optString("id")?.takeIf { it.isNotBlank() }?.let { links["responsiblePersonId"] = it }
+                try {
+                    ArthSaathiCoreEngine.saveModule("LIABILITY", mapOf(
+                        "f0" to name, "f1" to lender.text.toString().trim(),
+                        "f2" to amount, "outstanding" to amount, "f3" to due.text.toString().trim(),
+                        "f4" to evidence.text.toString().trim(),
+                        "responsiblePersonId" to (person?.optString("id") ?: ""),
+                        "responsiblePersonName" to (person?.optString("name") ?: "Primary user")
+                    ), links)
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Liability saved and linked.", Toast.LENGTH_SHORT).show()
+                    render(ArthSaathiNavigation.LIABILITY_VAULT)
+                } catch (e: Exception) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Could not save liability.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "\nSAVED LIABILITIES"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        var count = 0
+        for (i in 0 until records.length()) {
+            val record = records.optJSONObject(i) ?: continue
+            if (record.optString("type") != "LIABILITY") continue
+            count++
+            body.addView(TextView(this).apply {
+                text = record.optString("f0") + "\nLender: " + record.optString("f1") +
+                    "\nOutstanding: ₹" + money(record.optDouble("outstanding", record.optDouble("f2"))) +
+                    "\nDue: " + record.optString("f3") +
+                    "\nResponsible: " + record.optString("responsiblePersonName", "Primary user")
+                textSize = 14f
+                setPadding(8, 12, 8, 8)
+            })
+        }
+        if (count == 0) body.addView(TextView(this).apply { text = "No liabilities recorded yet." })
+    }
+
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
         body.addView(TextView(this).apply{text=title+"\n";textSize=17f})
         val fields=hints.map { hint ->
