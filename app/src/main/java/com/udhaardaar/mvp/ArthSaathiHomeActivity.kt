@@ -57,7 +57,7 @@ class ArthSaathiHomeActivity : Activity() {
         val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), 0, 0, 0) }
         brand.addView(TextView(this).apply {
             val wordmark = android.text.SpannableString("ArthSaathi")
-            wordmark.setSpan(android.text.style.ForegroundColorSpan(navy), 0, 4,
+            wordmark.setSpan(android.text.style.ForegroundColorSpan(Color.WHITE), 0, 4,
                 android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             wordmark.setSpan(android.text.style.ForegroundColorSpan(ArthSaathiV7Design.GOLD_2), 4, wordmark.length,
                 android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -203,7 +203,7 @@ class ArthSaathiHomeActivity : Activity() {
             val allRecords = ArthSaathiDataStore.records()
             val activeCredits = (0 until allRecords.length()).count { index ->
                 val record = allRecords.optJSONObject(index)
-                record?.optString("type") == "CREDIT" && record.optString("status") == "ACTIVE"
+                record != null && record.optString("type") == "CREDIT" && record.optString("status") == "ACTIVE"
             }
             fun addMetricRow(items: List<Triple<String, String, Int>>) {
                 val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
