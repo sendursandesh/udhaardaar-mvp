@@ -63,7 +63,24 @@ class V7ApkVisualCaptureInstrumentedTest {
                     target.exists() && target.length() > 0)
             }
         }
-        assertTrue("Expected one screenshot for every canonical module",
-            (captureDir.listFiles()?.count { it.extension.equals("png", true) } ?: 0) == modules.size)
+        // Also capture the real signed-in launcher home; module-only captures are not a substitute
+        // for the screen users see immediately after authentication.
+        ActivityScenario.launch<ArthSaathiHomeActivity>(
+            Intent(context, ArthSaathiHomeActivity::class.java)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                assertTrue("Real launcher home did not become visible", activity.window.decorView.isShown)
+                val logo = activity.window.decorView.findViewWithTag<android.widget.ImageView>(
+                    "arthsaathi-canonical-logo")
+                assertTrue("Canonical logo missing from real launcher home",
+                    logo != null && logo.contentDescription == "ArthSaathi approved journey logo")
+            }
+            device.waitForIdle()
+            val target = File(captureDir, "LAUNCHER_HOME.png")
+            assertTrue("Screenshot capture failed for real launcher home", device.takeScreenshot(target))
+            assertTrue("Real launcher home screenshot is missing or empty", target.exists() && target.length() > 0)
+        }
+        assertTrue("Expected one screenshot for every canonical module plus real launcher home",
+            (captureDir.listFiles()?.count { it.extension.equals("png", true) } ?: 0) == modules.size + 1)
     }
 }
