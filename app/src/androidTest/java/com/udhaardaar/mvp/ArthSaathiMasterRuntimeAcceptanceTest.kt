@@ -517,9 +517,9 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
     @Test fun personIdentityLookupSupportsMobilePanAadhaarAndCreditLinkage() {
         val marker = System.currentTimeMillis().toString()
         val name = "Identity QA $marker"
-        val mobileNumber = "9876501211"
-        val pan = "ABCDE1234F"
-        val aadhaar = "234567890123"
+        val mobileNumber = "98765" + marker.takeLast(5)
+        val pan = "QATST" + marker.takeLast(4) + "A"
+        val aadhaar = "23" + marker.takeLast(10)
         val person = ArthSaathiCoreEngine.createPerson(
             name = name, mobile = mobileNumber, role = "Borrower",
             pan = pan, aadhaar = aadhaar
@@ -542,11 +542,11 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
     @Test fun registrationSearchesExistingPersonByAadhaarAndLinksCreditWithoutShowingHistory() {
         val marker = System.currentTimeMillis().toString()
         val name = "Borrower Aadhaar QA $marker"
-        val aadhaar = "234567890124"
-        val mobileNumber = "9876501212"
+        val aadhaar = "23" + marker.takeLast(10)
+        val mobileNumber = "98765" + marker.takeLast(5)
         val person = ArthSaathiCoreEngine.createPerson(
             name = name, mobile = mobileNumber, role = "Borrower",
-            pan = "PQRSX1234A", aadhaar = aadhaar
+            pan = "PQRSX" + marker.takeLast(4) + "A", aadhaar = aadhaar
         )
         ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
             Intent(context, ArthSaathiMasterModuleActivity::class.java)
