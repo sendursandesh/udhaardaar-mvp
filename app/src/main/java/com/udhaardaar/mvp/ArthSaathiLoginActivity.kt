@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputType
@@ -12,6 +13,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 
@@ -21,9 +23,9 @@ import android.widget.Toast
  * trusted OTP provider. No local/demo OTP is accepted.
  */
 class ArthSaathiLoginActivity : Activity() {
-    private val navy = Color.rgb(18, 58, 106)
-    private val gold = Color.rgb(201, 138, 10)
-    private val muted = Color.rgb(100, 116, 139)
+    private val navy = ArthSaathiV7Design.NAVY
+    private val gold = ArthSaathiV7Design.GOLD
+    private val muted = ArthSaathiV7Design.MUTED
     private var pendingMobile: String? = null
     private var pendingChallenge: String? = null
     private lateinit var mobile: EditText
@@ -34,13 +36,14 @@ class ArthSaathiLoginActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         if (ArthSaathiSession.isLoggedIn(this)) { openHome(); return }
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(dp(28), dp(32), dp(28), dp(28))
-            setBackgroundColor(Color.rgb(245, 248, 252))
+            setBackgroundColor(ArthSaathiV7Design.CREAM)
         }
         root.addView(ImageView(this).apply {
             setImageResource(R.drawable.arthsaathi_logo)
@@ -48,43 +51,63 @@ class ArthSaathiLoginActivity : Activity() {
             scaleType = ImageView.ScaleType.FIT_CENTER
         }, LinearLayout.LayoutParams(dp(96), dp(96)))
         root.addView(TextView(this).apply {
-            text = "ArthSaathi"
+            val wordmark = android.text.SpannableString("ArthSaathi")
+            wordmark.setSpan(android.text.style.ForegroundColorSpan(navy), 0, 4, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            wordmark.setSpan(android.text.style.ForegroundColorSpan(gold), 4, wordmark.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            text = wordmark
             textSize = 29f
             typeface = Typeface.create("sans-serif", Typeface.BOLD)
-            setTextColor(navy)
             gravity = Gravity.CENTER
         })
         root.addView(TextView(this).apply {
-            text = "Your Financial-Life Command Centre"
+            text = "Navigate Your Financial Journey"
             textSize = 13f
+            setTextColor(navy)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(4), 0, dp(5))
+        })
+        root.addView(TextView(this).apply {
+            text = "Plan • Protect • Grow • Nominate"
+            textSize = 11f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(gold)
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(5))
+        })
+        root.addView(TextView(this).apply {
+            text = "Your Asset. Your Record. Your Right."
+            textSize = 11f
             setTextColor(muted)
             gravity = Gravity.CENTER
-            setPadding(0, dp(4), 0, dp(24))
+            setPadding(0, 0, 0, dp(22))
         })
         mobile = EditText(this).apply {
             hint = "10-digit mobile number"
             inputType = InputType.TYPE_CLASS_PHONE
             filters = arrayOf(InputFilter.LengthFilter(10))
             setSingleLine(true)
+            textSize = 16f
+            setTextColor(navy)
+            setPadding(dp(14), dp(8), dp(14), dp(8))
+            background = ArthSaathiV7Design.card(this@ArthSaathiLoginActivity, Color.WHITE, 12)
         }
         root.addView(mobile, LinearLayout.LayoutParams(-1, dp(54)))
-        sendButton = Button(this).apply {
-            text = "SEND VERIFICATION OTP"
-            setOnClickListener { requestLoginOtp() }
-        }
+        sendButton = ArthSaathiV7Design.goldButton(this, "SEND VERIFICATION OTP") { requestLoginOtp() }
         root.addView(sendButton, LinearLayout.LayoutParams(-1, dp(52)))
         otp = EditText(this).apply {
             hint = "Verification code"
             inputType = InputType.TYPE_CLASS_NUMBER
             filters = arrayOf(InputFilter.LengthFilter(8))
             setSingleLine(true)
+            textSize = 16f
+            setTextColor(navy)
+            setPadding(dp(14), dp(8), dp(14), dp(8))
+            background = ArthSaathiV7Design.card(this@ArthSaathiLoginActivity, Color.WHITE, 12)
             visibility = android.view.View.GONE
         }
         root.addView(otp, LinearLayout.LayoutParams(-1, dp(54)))
-        verifyButton = Button(this).apply {
-            text = "VERIFY & SIGN IN"
+        verifyButton = ArthSaathiV7Design.goldButton(this, "VERIFY & SIGN IN") { verifyLoginOtp() }.apply {
             visibility = android.view.View.GONE
-            setOnClickListener { verifyLoginOtp() }
         }
         root.addView(verifyButton, LinearLayout.LayoutParams(-1, dp(52)))
         status = TextView(this).apply {
@@ -101,7 +124,7 @@ class ArthSaathiLoginActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(0, dp(18), 0, 0)
         })
-        setContentView(root)
+        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
     }
 
     private fun requestLoginOtp() {
