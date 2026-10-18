@@ -1,6 +1,9 @@
 package com.udhaardaar.mvp
 
+import android.content.ContentValues
 import android.content.Context
+import android.os.Environment
+import android.provider.MediaStore
 import android.content.Intent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
@@ -39,6 +42,31 @@ class CanonicalArthSaathiVisualCaptureTest {
         ArthSaathiSession.logout(context)
     }
 
+    /** Export visual evidence to shared Pictures storage so it survives test-runner app cleanup. */
+    private fun exportScreenshotForHost(source: File) {
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, source.name)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/arthsaathi_canonical")
+            put(MediaStore.Images.Media.IS_PENDING, 1)
+        }
+        val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            ?: error("Could not create shared screenshot record for ${source.name}")
+        try {
+            val output = context.contentResolver.openOutputStream(uri)
+                ?: error("Could not open shared screenshot output for ${source.name}")
+            output.use { stream ->
+                source.inputStream().use { input -> input.copyTo(stream) }
+            }
+            context.contentResolver.update(uri, ContentValues().apply {
+                put(MediaStore.Images.Media.IS_PENDING, 0)
+            }, null, null)
+        } catch (failure: Throwable) {
+            context.contentResolver.delete(uri, null, null)
+            throw failure
+        }
+    }
+
     @Test fun captureEveryCanonicalArthSaathiModuleScreen() {
         val modules = ArthSaathiArchitectureRegistry.modules
         assertTrue("Canonical module registry must not be empty", modules.isNotEmpty())
@@ -57,6 +85,7 @@ class CanonicalArthSaathiVisualCaptureTest {
             val target = File(captureDir, "LOGIN.png")
             assertTrue("Could not capture login screenshot", device.takeScreenshot(target))
             assertTrue("Login screenshot missing or empty", target.isFile && target.length() > 0L)
+            exportScreenshotForHost(target)
         }
         ArthSaathiSession.login(context, mobile)
         modules.forEach { module ->
@@ -80,6 +109,7 @@ class CanonicalArthSaathiVisualCaptureTest {
                 val target = File(captureDir, "${module.id}.png")
                 assertTrue("Could not capture screenshot for ${module.id}", device.takeScreenshot(target))
                 assertTrue("Screenshot missing or empty for ${module.id}", target.isFile && target.length() > 0L)
+                exportScreenshotForHost(target)
             }
         }
         // Also capture the real signed-in launcher home; module-only captures are not a substitute
@@ -98,6 +128,7 @@ class CanonicalArthSaathiVisualCaptureTest {
             val target = File(captureDir, "LAUNCHER_HOME.png")
             assertTrue("Could not capture launcher home screenshot", device.takeScreenshot(target))
             assertTrue("Real launcher home screenshot is missing or empty", target.isFile && target.length() > 0L)
+            exportScreenshotForHost(target)
         }
         val screenshots = captureDir.listFiles()?.filter { it.isFile && it.extension == "png" }.orEmpty()
         assertTrue("Expected one screenshot for every canonical module plus real launcher home",
