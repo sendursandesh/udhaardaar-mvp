@@ -118,6 +118,7 @@ object ArthSaathiV7Design {
         val words = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_VERTICAL }
         words.addView(brand(c, 25f, true))
         words.addView(text(c, TAGLINE, 9.5f, GOLD_PALE, false))
+        words.addView(text(c, PROMISE, 8.5f, GOLD_PALE, false))
         box.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
 
         // Identity is a global V7 concern: show the signed-in user's name and
