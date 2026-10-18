@@ -71,6 +71,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
             setPadding(4, 14, 4, 2)
             contentDescription = "Current page title"
+            tag = "canonical-page-title"
         })
         root.addView(TextView(this).apply {
             text = "Step-by-step guidance • Complete each field and use Next to move forward. Your entries are validated before saving."
