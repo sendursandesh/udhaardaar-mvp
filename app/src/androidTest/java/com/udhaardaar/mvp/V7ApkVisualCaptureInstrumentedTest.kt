@@ -20,11 +20,14 @@ class V7ApkVisualCaptureInstrumentedTest {
     private lateinit var context: Context
     private lateinit var device: UiDevice
     private val mobile = "9876507788"
-    private val captureDir = File("/sdcard/arthsaathi_canonical")
+    private lateinit var captureDir: File
 
     @Before fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        // Android 11+ scoped storage blocks writing arbitrary directories directly under /sdcard.
+        // App-specific external storage remains writable by the instrumentation process and pullable by adb.
+        captureDir = File(context.getExternalFilesDir(null) ?: context.filesDir, "arthsaathi_canonical")
         ArthSaathiSession.logout(context)
         ArthSaathiDataStore.initialize(context)
         ArthSaathiSession.login(context, mobile)
