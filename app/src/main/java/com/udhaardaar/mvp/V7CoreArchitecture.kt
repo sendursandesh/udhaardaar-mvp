@@ -124,8 +124,9 @@ object V7Core {
         val payable=r.filter{it.optString("direction")=="PAYABLE"&&it.optString("status")!="CLOSED"}.sumOf{it.optDouble("outstanding",0.0)}
         return org.json.JSONObject().apply{
             put("assets",assets);put("invested",invested);put("portfolioValue",current);put("portfolioGain",current-invested)
-            // Portfolio holdings are financial assets; do not double-count them in net worth.
-            put("liabilities",liabilities);put("netWorth",assets+receivable-payable-liabilities);put("receivables",receivable);put("payables",payable)
+            // Asset Vault and Portfolio are separate canonical stores. Include current
+            // portfolio holdings once in net worth while keeping their subtotal separate.
+            put("liabilities",liabilities);put("netWorth",assets+current+receivable-payable-liabilities);put("receivables",receivable);put("payables",payable)
             put("activeCredits",r.count{it.optString("status")!="CLOSED"});put("policies",pol.size);put("claimsPending",claims.count{it.optString("status") !in setOf("CLOSED","RESOLVED")})
             put("documents",docs.size);put("payments",p.sumOf{it.optDouble("amount",0.0)})
         }
