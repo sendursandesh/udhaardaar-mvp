@@ -56,7 +56,7 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
                 mobileField.setText("987650432109876")
                 assertEquals("9876504321", mobileField.text.toString())
                 edit(root, "PAN (optional)").setText("BADPAN")
-                button(root, "Save Person in V7").performClick()
+                button(root, "Create Profile").performClick()
                 assertEquals("Enter a valid PAN", edit(root, "PAN (optional)").error)
                 edit(root, "PAN (optional)").setText("ABCDE1234F")
                 edit(root, "Aadhaar (optional)").setText("123456789012")
@@ -72,7 +72,7 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
     @Test fun nativeCreditRejectsOutOfRangeRoiAndPersistsValidCredit() {
         val person = V7Records.person(context, "Credit UI", "9876504322")
         ActivityScenario.launch<Activity>(
-            Intent(context, V7NativeModuleActivity::class.java).putExtra("module", "CREDIT")
+            Intent(context, V7NativeModuleActivity::class.java).putExtra("module", "CREDIT_REGISTER")
         ).use { scenario ->
             scenario.onActivity { a ->
                 val root = a.window.decorView
@@ -81,8 +81,8 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
                 val peopleLabels = (0 until spinner.count).map { spinner.getItemAtPosition(it).toString() }
                 spinner.setSelection(peopleLabels.indexOfFirst { it.startsWith("Credit UI • 9876504322") })
                 edit(root, "Amount").setText("10000")
-                edit(root, "ROI %").setText("120")
-                button(root, "Register Credit in V7").performClick()
+                val roiSpinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner && (it.adapter?.count ?: 0) == 10 }\n                requireNotNull(roiSpinner).setSelection(9)\n                edit(root, "Custom ROI %").setText("120")
+                button(root, "Register Credit").performClick()
                 assertEquals("ROI must be between 0 and 100%", edit(root, "ROI %").error)
                 edit(root, "ROI %").setText("12")
                 edit(root, "Purpose").setText("UI QA")
