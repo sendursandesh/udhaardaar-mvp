@@ -59,6 +59,18 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         return null
     }
 
+    @Test fun emiScheduleReconcilesPrincipalInterestAndFinalPaymentOnAndroidRuntime() {
+        val schedule = ArthSaathiCoreEngine.schedule(100000.0, 12.0, 12)
+        assertEquals(12, schedule.length())
+        assertEquals(0.0, schedule.getJSONObject(11).optDouble("balance"), 0.001)
+        val paid = (0 until schedule.length()).sumOf { schedule.getJSONObject(it).optDouble("emi") }
+        val principal = (0 until schedule.length()).sumOf { schedule.getJSONObject(it).optDouble("principal") }
+        val interest = (0 until schedule.length()).sumOf { schedule.getJSONObject(it).optDouble("interest") }
+        assertEquals(100000.0, principal, 0.02)
+        assertEquals(paid, principal + interest, 0.03)
+        assertTrue(schedule.getJSONObject(11).optDouble("emi") > 0.0)
+    }
+
     @Test fun installedAppLauncherUsesCanonicalSecureArthSaathiEntryPoint() {
         val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
         assertNotNull("App must expose one launcher entry point", launch)
