@@ -291,7 +291,10 @@ class ArthSaathiMasterModuleActivity : Activity() {
                                     "Enter a repayment amount greater than zero.", Toast.LENGTH_LONG).show()
                                 return@setPositiveButton
                             }
-                            val outstanding = (o.optDouble("amount") - o.optDouble("paid")).coerceAtLeast(0.0)
+                            // Repayment validation must use contractual payable (principal + applicable interest),
+                            // matching the canonical repayment engine and the account-centre balance.
+                            val outstanding = (o.optDouble("totalPayable", o.optDouble("amount")) -
+                                o.optDouble("paid")).coerceAtLeast(0.0)
                             if (amount > outstanding + 0.005) {
                                 Toast.makeText(this@ArthSaathiMasterModuleActivity,
                                     "Repayment exceeds outstanding ₹" + money(outstanding) + ".", Toast.LENGTH_LONG).show()
@@ -618,6 +621,75 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val role = field(body, "Role / relationship")
         val address = field(body, "Address / locality")
         val pin = field(body, "6-digit PIN code (optional)", false, 6).apply { inputType = InputType.TYPE_CLASS_NUMBER }
+        val district = field(body, "District / city (PIN lookup)")
+        val state = field(body, "State (PIN lookup)")
+        var lastPinLookupRequested = ""
+        fun lookupPin(force: Boolean = false) {
+            val pinValue = pin.text.toString().trim()
+            if (!pinValue.matches(Regex("[1-9][0-9]{5}"))) {
+                pin.error = "Enter a valid 6-digit Indian PIN code"
+                return
+            }
+            if (!force && lastPinLookupRequested == pinValue) return
+            lastPinLookupRequested = pinValue
+            Toast.makeText(this@ArthSaathiMasterModuleActivity, "Looking up PIN code…", Toast.LENGTH_SHORT).show()
+            Thread {
+                var districtValue = ""
+                var stateValue = ""
+                var localityValue = ""
+                var failure = ""
+                try {
+                    val connection = java.net.URL("https://api.postalpincode.in/pincode/$pinValue")
+                        .openConnection() as javax.net.ssl.HttpsURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 6000
+                    connection.readTimeout = 6000
+                    connection.setRequestProperty("Accept", "application/json")
+                    try {
+                        val code = connection.responseCode
+                        if (code !in 200..299) throw IllegalStateException("PIN lookup service returned HTTP $code")
+                        val payload = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                        val results = org.json.JSONArray(payload)
+                        val first = results.optJSONObject(0)
+                        val offices = first?.optJSONArray("PostOffice")
+                        val office = if (first?.optString("Status") == "Success" && offices != null && offices.length() > 0) offices.optJSONObject(0) else null
+                        if (office == null) throw IllegalStateException("No post office found for this PIN code")
+                        districtValue = office.optString("District")
+                        stateValue = office.optString("State")
+                        localityValue = listOf(office.optString("Name"), office.optString("Block"))
+                            .filter { it.isNotBlank() && it != "NA" }.distinct().joinToString(", ")
+                    } finally {
+                        connection.disconnect()
+                    }
+                } catch (e: Exception) {
+                    failure = e.message ?: "PIN lookup unavailable; enter the address manually"
+                }
+                runOnUiThread {
+                    if (pin.text.toString().trim() != pinValue) return@runOnUiThread
+                    if (failure.isNotBlank()) {
+                        Toast.makeText(this@ArthSaathiMasterModuleActivity, failure, Toast.LENGTH_LONG).show()
+                    } else {
+                        district.setText(districtValue)
+                        state.setText(stateValue)
+                        if (address.text.toString().isBlank() && localityValue.isNotBlank()) address.setText(localityValue)
+                        Toast.makeText(this@ArthSaathiMasterModuleActivity, "District, state and locality filled from PIN code", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }.start()
+        }
+        pin.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val value = s?.toString().orEmpty()
+                if (value.length != 6) lastPinLookupRequested = ""
+                if (value.matches(Regex("[1-9][0-9]{5}")) && value != lastPinLookupRequested) lookupPin()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) = Unit
+        })
+        body.addView(Button(this).apply {
+            text = "LOOK UP PIN / RETRY"
+            setOnClickListener { lookupPin(force = true) }
+        })
         val pan = field(body, "PAN (optional)")
         val gstin = field(body, "GSTIN (optional)")
         body.addView(Button(this).apply {
@@ -634,6 +706,9 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (pinValue.isNotBlank() && !pinValue.matches(Regex("[1-9][0-9]{5}"))) {
                     pin.error = "Enter a valid 6-digit Indian PIN code"; return@setOnClickListener
                 }
+                if (pinValue.isNotBlank() && (district.text.toString().isBlank() || state.text.toString().isBlank())) {
+                    pin.error = "Wait for PIN lookup or tap LOOK UP PIN / RETRY"; return@setOnClickListener
+                }
                 val panValue = pan.text.toString().trim().uppercase(Locale.US)
                 if (!ArthSaathiCoreEngine.validatePan(panValue)) {
                     pan.error = "Enter a valid PAN (e.g. ABCDE1234F)"; return@setOnClickListener
@@ -645,7 +720,9 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 try {
                     val result = ArthSaathiCoreEngine.createPerson(
                         name.text.toString().trim(), phone, role.text.toString().trim(),
-                        address.text.toString().trim(), panValue, gstinValue, pinValue
+                        address.text.toString().trim() +
+                            listOf(district.text.toString().trim(), state.text.toString().trim()).filter { it.isNotBlank() }.joinToString(", ", prefix = if (address.text.toString().isBlank()) "" else ", "),
+                        panValue, gstinValue, pinValue
                     )
                     Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_SHORT).show()
                     render(ArthSaathiNavigation.PEOPLE)
