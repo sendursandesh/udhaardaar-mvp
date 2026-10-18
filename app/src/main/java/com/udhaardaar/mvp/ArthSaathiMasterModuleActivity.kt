@@ -98,8 +98,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.MIS -> mis(body)
             ArthSaathiNavigation.SWITCH_ANALYSIS -> switchAnalysis(body)
             ArthSaathiNavigation.PEOPLE -> people(body)
-            ArthSaathiNavigation.ASSET_VAULT -> simple(body,"ASSET","Asset Vault",listOf("Asset","Category","Current value","Nominee / owner","Evidence"))
-            ArthSaathiNavigation.LIABILITY_VAULT -> simple(body,"LIABILITY","Liability Vault",listOf("Liability","Lender","Outstanding","Due date","Evidence"))
+            ArthSaathiNavigation.ASSET_VAULT -> assetVault(body)
+            ArthSaathiNavigation.LIABILITY_VAULT -> liabilityVault(body)
             ArthSaathiNavigation.PORTFOLIO -> simple(body,"PORTFOLIO","Portfolio & Investments",listOf("Investment","Category","Invested value","Current value","Risk / horizon"))
             ArthSaathiNavigation.PROTECTION -> simple(body,"PROTECTION","Insurance & Protection",listOf("Policy / cover","Provider","Coverage","Expiry / renewal","Eligibility"))
             ArthSaathiNavigation.BENEFITS -> simple(body,"BENEFIT","Benefits & Refunds",listOf("Benefit / refund","Source","Value","Status","Evidence"))
@@ -751,6 +751,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         })
         val email = field(body, "Email (optional)")
         val pan = field(body, "PAN (optional)")
+        val aadhaar = field(body, "Aadhaar (12 digits, optional)", true, 12).apply { inputType = InputType.TYPE_CLASS_NUMBER }
         val gstin = field(body, "GSTIN (optional)")
         body.addView(Button(this).apply {
             text = "SAVE PERSON"
@@ -778,6 +779,10 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (!ArthSaathiCoreEngine.validatePan(panValue)) {
                     pan.error = "Enter a valid PAN (e.g. ABCDE1234F)"; return@setOnClickListener
                 }
+                val aadhaarValue = aadhaar.text.toString().trim()
+                if (!ArthSaathiCoreEngine.validateAadhaar(aadhaarValue)) {
+                    aadhaar.error = "Enter 12 digits; Aadhaar cannot start with 0 or 1"; return@setOnClickListener
+                }
                 val gstinValue = gstin.text.toString().trim().uppercase(Locale.US)
                 if (!ArthSaathiCoreEngine.validateGstin(gstinValue)) {
                     gstin.error = "Enter a valid 15-character GSTIN"; return@setOnClickListener
@@ -787,7 +792,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                         name.text.toString().trim(), phone, role.text.toString().trim(),
                         address.text.toString().trim() +
                             listOf(district.text.toString().trim(), state.text.toString().trim()).filter { it.isNotBlank() }.joinToString(", ", prefix = if (address.text.toString().isBlank()) "" else ", "),
-                        panValue, gstinValue, pinValue, emailValue
+                        panValue, gstinValue, pinValue, emailValue, aadhaarValue
                     )
                     Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_SHORT).show()
                     render(ArthSaathiNavigation.PEOPLE)
