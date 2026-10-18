@@ -76,7 +76,7 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
         ).use { scenario ->
             scenario.onActivity { a ->
                 val root = a.window.decorView
-                val spinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner && (it.adapter?.count ?: 0) == 10 }
+                val spinner = find<android.widget.Spinner>(root) { view -> view is android.widget.Spinner && (0 until (view.adapter?.count ?: 0)).any { index -> view.adapter?.getItem(index)?.toString() == "Custom" } }
                 requireNotNull(spinner)
                 val peopleSpinner = find<android.widget.Spinner>(root) { it is android.widget.Spinner && (it.adapter?.count ?: 0) == 1 }
                 requireNotNull(peopleSpinner)
