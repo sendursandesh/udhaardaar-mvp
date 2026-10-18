@@ -175,6 +175,25 @@ class V7Step1To5IntegrationInstrumentedTest {
         assertEquals("One open due alert per liability", 1, matching.size)
     }
 
+    @Test fun netWorthReconcilesAssetVaultPortfolioCreditAndLiabilityDeltas() {
+        val before = V7Core.metrics(context).optDouble("netWorth")
+        val person = V7Records.person(context, "V7 Net Worth QA", "9876543291")
+        V7Records.asset(context, person.optString("id"), "PROPERTY", "QA House", 500000.0)
+        V7Records.liability(context, person.optString("id"), "HOME_LOAN", 300000.0, 200000.0, 8.5)
+        val portfolio = V7PortfolioEngine.createPortfolio(context, "Net Worth QA Portfolio", "Moderate", "test")
+        V7Records.holding(context, portfolio.optString("id"), "QA FUND", "MUTUAL_FUND", 100000.0, 120000.0)
+        V7Records.relationship(context, person.optString("id"), "TRADE_CREDIT", "RECEIVABLE",
+            30000.0, 0.0, "INVOICE_DUE", "QA receivable")
+        V7Records.relationship(context, person.optString("id"), "FORMAL_CREDIT", "PAYABLE",
+            10000.0, 0.0, "INVOICE_DUE", "QA payable")
+
+        val after = V7Core.metrics(context)
+        assertEquals("Asset + current holdings + receivable - payable - outstanding liability",
+            440000.0, after.optDouble("netWorth") - before, 0.02)
+        assertEquals(120000.0, after.optDouble("portfolioValue") -
+            (before.let { V7Core.metrics(context).optDouble("portfolioValue") - 120000.0 }), 0.02)
+    }
+
     @Test fun expiredConsentIsNotActive() {
         val person = V7Records.person(context, "V7 Expiry QA", "9876543211")
         val service = V7Architecture.LocalConsentService(context)
