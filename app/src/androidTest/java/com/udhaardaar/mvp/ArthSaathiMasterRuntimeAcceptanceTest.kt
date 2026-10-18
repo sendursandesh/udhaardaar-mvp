@@ -194,6 +194,20 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         assertTrue(File(context.filesDir, "arthsaathi_documents/" + document.optString("f3")).isFile)
     }
 
+    @Test fun financialRecordsAreEncryptedAtRestAndRemainReadableAfterReinitialization() {
+        val marker = "PLAINTEXT_MARKER_" + System.currentTimeMillis()
+        ArthSaathiCoreEngine.saveModule("ASSET", mapOf("f0" to marker, "value" to 456.78, "f2" to 456.78))
+        val prefs = context.getSharedPreferences("arthsaathi_master_data", Context.MODE_PRIVATE)
+        val encrypted = prefs.getString("records_encrypted_v1", null)
+        assertTrue("Encrypted record payload must exist", !encrypted.isNullOrBlank())
+        assertFalse("Financial record contents must not be visible in plaintext preferences", encrypted!!.contains(marker))
+        assertEquals("Legacy plaintext preference must be removed after migration/write", null, prefs.getString("records", null))
+        ArthSaathiDataStore.initialize(context)
+        assertTrue("Encrypted records must decrypt after store reinitialization",
+            (0 until ArthSaathiDataStore.records().length()).mapNotNull { ArthSaathiDataStore.records().optJSONObject(it) }
+                .any { it.optString("f0") == marker })
+    }
+
     @Test fun emiScheduleReconcilesPrincipalInterestAndFinalPaymentOnAndroidRuntime() {
         val schedule = ArthSaathiCoreEngine.schedule(100000.0, 12.0, 12)
         assertEquals(12, schedule.length())
