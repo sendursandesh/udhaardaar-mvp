@@ -186,7 +186,7 @@ object ArthSaathiCoreEngine {
    when(o.optString("type")){
     "CREDIT"->{if(status(o,"status") in setOf("ACTIVE","CLOSED")){val principal=amount(o,"amount");c+=principal;val payable=amount(o,"totalPayable").takeIf { it>0.0 }?:principal;outstanding+=(payable-amount(o,"paid")).coerceAtLeast(0.0)}}
     "REPAYMENT"->p+=amount(o,"amount")
-    "ASSET"->{val value=amount(o,"value","f2","currentValue");asst+=value;if(status(o,"category","f1").contains("FINANCIAL"))financialAssets+=value else nonFinancialAssets+=value}
+    "ASSET"->{val value=amount(o,"value","f2","currentValue");asst+=value;val category=status(o,"category","f1");if(category.contains("NON-FINANCIAL")||category.contains("NONFINANCIAL"))nonFinancialAssets+=value else if(category.contains("FINANCIAL"))financialAssets+=value else nonFinancialAssets+=value}
     "PORTFOLIO"->{val value=amount(o,"currentValue","f3","value","f2");asst+=value;portfolioValue+=value}
     "LIABILITY"->liab+=amount(o,"outstanding","f2","value")
     "BENEFIT"->{if(status(o,"status","f3") in completedBenefitStatuses)ben+=amount(o,"value","f2")}
