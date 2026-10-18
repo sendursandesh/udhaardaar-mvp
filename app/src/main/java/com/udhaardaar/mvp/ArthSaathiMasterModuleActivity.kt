@@ -179,8 +179,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 val partyName = party.text.toString().trim()
                 if (partyName.isEmpty()) { party.error = "Required"; return@setOnClickListener }
                 val partyMobile = mobile.text.toString().trim()
-                if (partyMobile.isNotEmpty() && !ArthSaathiCoreEngine.validateMobile(partyMobile)) {
-                    mobile.error = "Enter a 10-digit mobile number"; return@setOnClickListener
+                if (!ArthSaathiCoreEngine.validateMobile(partyMobile)) {
+                    mobile.error = "A valid 10-digit mobile number is required for borrower consent"; return@setOnClickListener
                 }
                 val principal = amount.text.toString().trim().toDoubleOrNull()
                 if (principal == null || !principal.isFinite() || principal <= 0.0) {
