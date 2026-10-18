@@ -158,18 +158,82 @@ class ArthSaathiMasterModuleActivity : Activity() {
 
     private fun registerCredit(body: LinearLayout) {
         body.addView(TextView(this).apply {
-            text = "NEW CREDIT ONLY\nIdentify party → nature → credit-specific fields → method → repayment → guarantor → digital document → consent/OTP → registration."
-            textSize = 16f
+            text = "NEW CREDIT ONLY\nIdentify party → nature → credit-specific fields → method → repayment → guarantor → document → consent / OTP → registration."
+            textSize = 15f
         })
-        val party = field(body,"Borrower / counterparty name")
-        val mobile = field(body,"Counterparty mobile (10 digits)",false,10)
-        val nature = Spinner(this).also {
-            it.adapter = ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,ArthSaathiArchitectureRegistry.creditNatureOptions); body.addView(it)
+        body.addView(TextView(this).apply {
+            text = "Search existing people by name, mobile, PAN or Aadhaar. Select a match to link the credit to that profile. Protected credit history remains hidden until consent."
+            textSize = 12f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 8)
+        })
+        val party = AutoCompleteTextView(this).apply {
+            hint = "Borrower / counterparty name"
+            setSingleLine(true)
+            textSize = 16f
+            setTextColor(ArthSaathiV7Design.NAVY)
+            setHintTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(16, 12, 16, 12)
+            minHeight = ArthSaathiV7Design.dp(this@ArthSaathiMasterModuleActivity, 52)
+            background = ArthSaathiV7Design.card(this@ArthSaathiMasterModuleActivity, android.graphics.Color.WHITE, 12)
+            threshold = 1
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_NEXT
+            setOnFocusChangeListener { view, focused -> if (focused) view.post { parentScrollIntoView(view) } }
         }
-        val amount = field(body,"Principal / amount",true)
-        val roi = field(body,"ROI %",true)
-        val method = field(body,"Method: Cash / UPI / NEFT / Other")
-        val terms = field(body,"Repayment frequency / terms (Monthly / Quarterly / Annual)")
+        body.addView(party, LinearLayout.LayoutParams(-1, -2).apply {
+            bottomMargin = ArthSaathiV7Design.dp(this@ArthSaathiMasterModuleActivity, 10)
+        })
+        val mobile = field(body, "Counterparty mobile (10 digits)", false, 10)
+        val existingPeople = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "PERSON" }
+        fun personLabel(person: JSONObject): String {
+            val pan = person.optString("pan").ifBlank { "PAN —" }
+            val aadhaar = person.optString("aadhaar").takeLast(4).let { if (it.isBlank()) "Aadhaar —" else "Aadhaar ••••" + it }
+            return person.optString("name") + " • " + person.optString("mobile") + " • " + pan + " • " + aadhaar
+        }
+        val suggestionAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, mutableListOf<String>())
+        party.setAdapter(suggestionAdapter)
+        var selectedPartyId: String? = null
+        var suppressPartyReset = false
+        party.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (!suppressPartyReset) selectedPartyId = null
+                val query = s?.toString()?.trim().orEmpty()
+                suggestionAdapter.clear()
+                if (query.length >= 1) {
+                    existingPeople.filter { person ->
+                        listOf("name", "mobile", "pan", "aadhaar", "id").any { key ->
+                            person.optString(key).contains(query, ignoreCase = true)
+                        }
+                    }.take(12).forEach { suggestionAdapter.add(personLabel(it)) }
+                }
+                suggestionAdapter.notifyDataSetChanged()
+                if (query.length >= 2 && suggestionAdapter.count > 0 && party.hasFocus()) {
+                    party.post { if (party.hasFocus() && suggestionAdapter.count > 0) party.showDropDown() }
+                }
+            }
+            override fun afterTextChanged(s: android.text.Editable?) = Unit
+        })
+        party.setOnItemClickListener { parent, _, position, _ ->
+            val selectedLabel = parent.getItemAtPosition(position)?.toString().orEmpty()
+            val selected = existingPeople.firstOrNull { personLabel(it) == selectedLabel }
+            if (selected != null) {
+                suppressPartyReset = true
+                party.setText(selected.optString("name"), false)
+                mobile.setText(selected.optString("mobile"))
+                selectedPartyId = selected.optString("id")
+                suppressPartyReset = false
+            }
+        }
+        val nature = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ArthSaathiArchitectureRegistry.creditNatureOptions)
+            body.addView(it)
+        }
+        val amount = field(body, "Principal / amount", true)
+        val roi = field(body, "ROI %", true)
+        val method = field(body, "Method: Cash / UPI / NEFT / Other")
+        val terms = field(body, "Frequency (Monthly / Quarterly / Annual)").apply { setText("Monthly") }
         val repaymentModes = listOf("EMI (reducing balance)", "Principal + Interest (simple interest)", "Bullet / Full at End", "Rental / Lease")
         body.addView(TextView(this).apply {
             text = "REPAYMENT CALCULATION METHOD"
@@ -181,10 +245,14 @@ class ArthSaathiMasterModuleActivity : Activity() {
             it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, repaymentModes)
             body.addView(it)
         }
-        val tenure = field(body,"Tenure in months (required for EMI / interest)",true)
-        val guarantor = field(body,"Guarantor (optional)")
-        val due = field(body,"Due date"); due.setOnClickListener { pickDate(due) }
-        val doc = field(body,"Digital document / agreement reference")
+        val tenure = field(body, "Tenure (months)", true)
+        val guarantor = field(body, "Guarantor (optional)")
+        val due = field(body, "Due date").apply {
+            isFocusable = false
+            isClickable = true
+            setOnClickListener { pickDate(this) }
+        }
+        val doc = field(body, "Document title / ID (optional)")
         nature.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
                 val selectedNature = parent?.getItemAtPosition(position)?.toString().orEmpty()
@@ -192,18 +260,17 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (leaseSelected) {
                     amount.hint = "Rent amount per period"
                     roi.visibility = android.view.View.GONE
-                    terms.hint = "Rental frequency / terms (Monthly / Quarterly / Annual)"
-                    tenure.hint = "Lease duration in months (required)"
-                    doc.hint = "Lease agreement document title / ID (required)"
+                    terms.hint = "Rental frequency (Monthly / Quarterly / Annual)"
+                    tenure.hint = "Lease duration (months)"
+                    doc.hint = "Lease agreement title / ID"
                     val rentalIndex = repaymentModes.indexOfFirst { it.contains("Rental", true) || it.contains("Lease", true) }
                     if (rentalIndex >= 0 && repaymentModeSpinner.selectedItemPosition != rentalIndex) repaymentModeSpinner.setSelection(rentalIndex)
-                    if (terms.text.isNullOrBlank()) terms.setText("Monthly")
                 } else {
                     amount.hint = "Principal / amount"
                     roi.visibility = android.view.View.VISIBLE
-                    terms.hint = "Repayment frequency / terms (Monthly / Quarterly / Annual)"
-                    tenure.hint = "Tenure in months (required for EMI / interest)"
-                    doc.hint = "Digital document / agreement reference"
+                    terms.hint = "Frequency (Monthly / Quarterly / Annual)"
+                    tenure.hint = "Tenure (months)"
+                    doc.hint = "Document title / ID (optional)"
                     if (repaymentModeSpinner.selectedItemPosition == repaymentModes.lastIndex) repaymentModeSpinner.setSelection(0)
                 }
             }
@@ -212,18 +279,37 @@ class ArthSaathiMasterModuleActivity : Activity() {
         body.addView(Button(this).apply {
             text = "REGISTER CREDIT"
             setOnClickListener {
-                val partyName = party.text.toString().trim()
-                if (partyName.isEmpty()) { party.error = "Required"; return@setOnClickListener }
-                val partyMobile = mobile.text.toString().trim()
-                if (!ArthSaathiCoreEngine.validateMobile(partyMobile)) {
-                    mobile.error = "A valid 10-digit mobile number is required for borrower consent"; return@setOnClickListener
+                val searchInput = party.text.toString().trim()
+                if (searchInput.isEmpty()) { party.error = "Enter or select a borrower / counterparty"; return@setOnClickListener }
+                var matchedPerson = selectedPartyId?.let { id -> existingPeople.firstOrNull { it.optString("id") == id } }
+                    ?: ArthSaathiCoreEngine.findPersonByIdentity(searchInput)
+                var partyName = matchedPerson?.optString("name")?.trim().orEmpty().ifBlank { searchInput }
+                var partyMobile = mobile.text.toString().trim().ifBlank { matchedPerson?.optString("mobile").orEmpty() }
+                if (matchedPerson != null && partyMobile.isNotBlank() &&
+                    matchedPerson.optString("mobile").isNotBlank() && partyMobile != matchedPerson.optString("mobile")) {
+                    if (selectedPartyId != null) {
+                        mobile.error = "Mobile does not match the selected person profile"; return@setOnClickListener
+                    }
+                    matchedPerson = null
+                }
+                if (matchedPerson == null && (
+                    ArthSaathiCoreEngine.validateMobile(searchInput) ||
+                    ArthSaathiCoreEngine.validatePan(searchInput.uppercase(Locale.US)) ||
+                    ArthSaathiCoreEngine.validateAadhaar(searchInput)
+                )) {
+                    party.error = "Select a matching saved person, or enter their full name"
+                    return@setOnClickListener
+                }
+                if (partyMobile.isEmpty() || !ArthSaathiCoreEngine.validateMobile(partyMobile)) {
+                    mobile.error = "A valid 10-digit mobile number is required for borrower consent"
+                    return@setOnClickListener
                 }
                 val principal = amount.text.toString().trim().toDoubleOrNull()
                 if (principal == null || !principal.isFinite() || principal <= 0.0) {
                     amount.error = "Enter an amount greater than zero"; return@setOnClickListener
                 }
-                val lease = nature.selectedItem.toString().contains("Rental", true) ||
-                    nature.selectedItem.toString().contains("Lease", true)
+                val selectedNature = nature.selectedItem.toString()
+                val lease = selectedNature.contains("Rental", true) || selectedNature.contains("Lease", true)
                 val rate = if (lease) 0.0 else roi.text.toString().trim().toDoubleOrNull()
                 if (rate == null || !rate.isFinite() || rate < 0.0 || rate > 100.0) {
                     roi.error = "ROI must be between 0 and 100%"; return@setOnClickListener
@@ -232,42 +318,62 @@ class ArthSaathiMasterModuleActivity : Activity() {
                     method.error = "Enter how the credit was given"; return@setOnClickListener
                 }
                 val repaymentTerms = terms.text.toString().trim()
-                if (repaymentTerms.isEmpty()) {
-                    terms.error = "Enter repayment frequency / terms"; return@setOnClickListener
+                val allowedFrequencies = listOf("Monthly", "Quarterly", "Half-yearly", "Annual")
+                val normalizedFrequency = allowedFrequencies.firstOrNull { it.equals(repaymentTerms, true) }
+                if (normalizedFrequency == null) {
+                    terms.error = "Choose Monthly, Quarterly, Half-yearly or Annual"; return@setOnClickListener
                 }
                 val repaymentMode = repaymentModeSpinner.selectedItem?.toString().orEmpty()
+                if (!lease && repaymentMode.contains("Rental", true)) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Choose Rental / Lease as the credit nature to use rental calculations.", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+                if (repaymentMode.contains("EMI", true) && !normalizedFrequency.equals("Monthly", true)) {
+                    terms.error = "EMI uses a monthly schedule; select Monthly frequency"; return@setOnClickListener
+                }
                 val tenureMonths = tenure.text.toString().trim().toIntOrNull() ?: 0
                 if (tenureMonths <= 0 || tenureMonths > 600) {
                     tenure.error = if (lease) "Enter lease duration from 1 to 600 months" else "Enter tenure from 1 to 600 months"
                     return@setOnClickListener
                 }
-                if (lease) {
-                    val reference = doc.text.toString().trim()
-                    if (reference.isEmpty()) { doc.error = "Store the lease agreement in Document Vault and enter its title / ID"; return@setOnClickListener }
-                    val linkedDocument = (0 until records.length()).mapNotNull { records.optJSONObject(it) }.any { record ->
+                var documentId = ""
+                val documentQuery = doc.text.toString().trim()
+                val matchingDocument = if (documentQuery.isBlank()) null else
+                    (0 until records.length()).mapNotNull { records.optJSONObject(it) }.firstOrNull { record ->
                         record.optString("type") == "DOCUMENT" &&
-                            (record.optString("id") == reference || record.optString("f0").equals(reference, true))
+                            (record.optString("id") == documentQuery || record.optString("f0").equals(documentQuery, true))
                     }
-                    if (!linkedDocument) {
-                        doc.error = "No saved Document Vault item matches this title / ID"
-                        return@setOnClickListener
-                    }
+                if (documentQuery.isNotBlank() && matchingDocument == null) {
+                    doc.error = "No saved Document Vault item matches this title / ID"
+                    return@setOnClickListener
                 }
+                if (lease && matchingDocument == null) {
+                    doc.error = "Store the lease agreement in Document Vault and enter its title / ID"
+                    return@setOnClickListener
+                }
+                documentId = matchingDocument?.optString("id").orEmpty()
                 try {
+                    val partyId = matchedPerson?.optString("id")?.takeIf { it.isNotBlank() }
+                        ?: ArthSaathiCoreEngine.createPerson(partyName, partyMobile, "Borrower / counterparty").id
+                    val guarantorName = guarantor.text.toString().trim()
+                    val guarantorPerson = if (guarantorName.isBlank()) null else ArthSaathiCoreEngine.findPersonByIdentity(guarantorName)
+                    val guarantorId = if (guarantorName.isBlank()) null else
+                        guarantorPerson?.optString("id")?.takeIf { it.isNotBlank() }
+                            ?: ArthSaathiCoreEngine.createPerson(guarantorName, "", "Guarantor").id
                     val result = ArthSaathiCoreEngine.createCredit(
-                        null, partyName, nature.selectedItem.toString(), principal, rate,
-                        method.text.toString().trim(), repaymentTerms,
-                        due.text.toString().trim(), null, doc.text.toString().trim(),
-                        partyMobile, guarantor.text.toString().trim(), repaymentMode, tenureMonths
+                        partyId, partyName, selectedNature, principal, rate,
+                        method.text.toString().trim(), normalizedFrequency,
+                        due.text.toString().trim(), guarantorId, documentId.ifBlank { null },
+                        partyMobile, guarantorName, repaymentMode, tenureMonths
                     )
                     if (!result.ok) {
                         Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
                         return@setOnClickListener
                     }
                     Toast.makeText(this@ArthSaathiMasterModuleActivity,
-                        "Draft saved. Verify borrower consent to complete credit registration.",
+                        "Credit saved as pending consent. It becomes active only after verified counterparty consent.",
                         Toast.LENGTH_LONG).show()
-                    render(ArthSaathiNavigation.SECURITY_CONSENT)
+                    render(ArthSaathiNavigation.LOANS_UDHAAR)
                 } catch (e: IllegalArgumentException) {
                     Toast.makeText(this@ArthSaathiMasterModuleActivity,
                         e.message ?: "Please review the credit details.", Toast.LENGTH_LONG).show()
