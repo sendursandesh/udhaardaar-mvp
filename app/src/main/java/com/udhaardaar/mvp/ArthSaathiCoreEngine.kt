@@ -154,7 +154,7 @@ object ArthSaathiCoreEngine {
   }
   return out
  }
- fun saveModule(type:String,fields:Map<String,Any?>,links:Map<String,String> = emptyMap()):Result{val o=JSONObject().apply{put("id",id(type.take(8).uppercase()));put("type",type);put("createdAt",n());put("updatedAt",n())};fields.forEach{(k,v)->o.put(k,v)};links.forEach{(k,v)->o.put(k,v)};save(o,"CREATE_$type");return Result(true,o.getString("id"),"$type saved")}
+ fun saveModule(type:String,fields:Map<String,Any?>,links:Map<String,String> = emptyMap()):Result{require(type != "CREDIT") { "Credits must be created through Register Credit so consent and repayment protections cannot be bypassed" };val o=JSONObject().apply{put("id",id(type.take(8).uppercase()));put("type",type);put("createdAt",n());put("updatedAt",n())};fields.forEach{(k,v)->o.put(k,v)};links.forEach{(k,v)->o.put(k,v)};save(o,"CREATE_$type");return Result(true,o.getString("id"),"$type saved")}
  fun update(id:String,fields:Map<String,Any?>,actor:String="user"):Result{
   val o=find(id)?:return Result(false,message="Record not found")
   val protectedCreditFields=setOf("consentStatus","consentChallengeId","consentActor","consentAt","consentRequestedAt","paid","status","ownerUserId")
