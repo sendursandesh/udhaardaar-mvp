@@ -14,18 +14,19 @@ object ArthSaathiCoreEngine {
  private fun n()=System.currentTimeMillis()
  private fun m(v:Double)=round(v*100)/100
  fun validateMobile(v:String)=v.matches(Regex("[6-9][0-9]{9}"))
+ fun validateEmail(v:String)=v.isBlank() || v.trim().matches(Regex("(?i)[A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,}"))
  fun validatePan(v:String)=v.isBlank()||v.matches(Regex("[A-Z]{5}[0-9]{4}[A-Z]"))
  fun validateGstin(v:String)=v.isBlank()||v.matches(Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"))
 
- fun createPerson(name:String,mobile:String="",role:String="",address:String="",pan:String="",gstin:String="",pin:String=""):Result {
-  require(name.isNotBlank());require(mobile.isEmpty()||validateMobile(mobile))
+ fun createPerson(name:String,mobile:String="",role:String="",address:String="",pan:String="",gstin:String="",pin:String="",email:String=""):Result {
+  require(name.isNotBlank());require(mobile.isEmpty()||validateMobile(mobile));require(validateEmail(email)) { "Enter a valid email address" }
   val normalizedPan=pan.trim().uppercase(Locale.US)
   val normalizedGstin=gstin.trim().uppercase(Locale.US)
   val normalizedPin=pin.trim()
   require(validatePan(normalizedPan)) { "Enter a valid PAN" }
   require(validateGstin(normalizedGstin)) { "Enter a valid GSTIN" }
   require(normalizedPin.isBlank() || normalizedPin.matches(Regex("[1-9][0-9]{5}"))) { "Enter a valid 6-digit Indian PIN code" }
-  val o=JSONObject().apply{put("id",id("PER"));put("type","PERSON");put("name",name.trim());put("mobile",mobile);put("role",role);put("address",address);put("pan",normalizedPan);put("gstin",normalizedGstin);put("pin",normalizedPin);put("createdAt",n());put("updatedAt",n())}
+  val o=JSONObject().apply{put("id",id("PER"));put("type","PERSON");put("name",name.trim());put("mobile",mobile);put("role",role);put("address",address);put("pan",normalizedPan);put("gstin",normalizedGstin);put("pin",normalizedPin);put("email",email.trim());put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_PERSON");return Result(true,o.getString("id"),"Person saved")
  }
  fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String="",repaymentMode:String=terms,tenureMonths:Int=0):Result {
