@@ -23,7 +23,7 @@ class ArthSaathiHomeActivity : Activity() {
     // Use the frozen brand palette everywhere; do not fork colours in the launcher shell.
     private val navy = ArthSaathiV7Design.NAVY
     private val gold = ArthSaathiV7Design.GOLD
-    private val ink = ArthSaathiV7Design.INK
+    private val ink = ArthSaathiV7Design.NAVY
     private val muted = ArthSaathiV7Design.MUTED
     private val canvas = ArthSaathiV7Design.CREAM
     private lateinit var body: LinearLayout
