@@ -30,7 +30,7 @@ set -e
 
 echo "=== Pulling canonical ArthSaathi visual evidence ==="
 mkdir -p app/build/qa-diagnostics/visual-captures
-if adb pull /sdcard/Android/data/com.udhaardaar.mvp/files/arthsaathi_canonical app/build/qa-diagnostics/visual-captures; then
+if adb pull /sdcard/Android/data/com.arthsaathi.master/files/arthsaathi_canonical app/build/qa-diagnostics/visual-captures; then
   screenshot_count=$(find app/build/qa-diagnostics/visual-captures -type f -name '*.png' | wc -l)
   echo "Canonical screenshots captured: $screenshot_count"
   if (( screenshot_count < 20 )); then
