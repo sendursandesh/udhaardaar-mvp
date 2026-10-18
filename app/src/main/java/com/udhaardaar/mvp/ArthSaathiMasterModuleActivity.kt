@@ -1648,7 +1648,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val nomineeLabels = listOf("No nominee recorded") + people.map { personLabel(it) }
         val nominee = Spinner(this).also {
             it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, nomineeLabels)
-            body.addView(TextView(this).apply { text = "NOMINEE / BENEFICIARY"; textSize = 12f; setTextColor(ArthSaathiV7Design.MUTED })
+            body.addView(TextView(this).apply { text = "NOMINEE / BENEFICIARY"; textSize = 12f; setTextColor(ArthSaathiV7Design.MUTED) })
             body.addView(it)
         }
         val evidence = field(body, "Document Vault title / ID (optional)")
