@@ -279,31 +279,48 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
     }
 
     @Test fun assetSavePersistsAndMisReflectsSameRecordedValue() {
-        val assetName = "QA Asset Runtime ${System.currentTimeMillis()}"
+        val marker = System.currentTimeMillis().toString()
+        val assetName = "QA Asset Runtime $marker"
+        val ownerName = "QA Owner $marker"
+        val nomineeName = "QA Nominee $marker"
+        val owner = ArthSaathiCoreEngine.createPerson(ownerName, "9876501201", "Family")
+        val nominee = ArthSaathiCoreEngine.createPerson(nomineeName, "9876501202", "Family")
         ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
             Intent(context, ArthSaathiMasterModuleActivity::class.java)
                 .putExtra("module", ArthSaathiNavigation.ASSET_VAULT)
         ).use { scenario ->
             scenario.onActivity { activity ->
                 val root = activity.window.decorView
-                requireNotNull(findEdit(root, "Asset")).setText(assetName)
-                requireNotNull(findEdit(root, "Category")).setText("PROPERTY")
-                requireNotNull(findEdit(root, "Current value")).setText("12345.67")
-                requireNotNull(findEdit(root, "Nominee / owner")).setText("QA Owner")
-                requireNotNull(findEdit(root, "Evidence")).setText("QA evidence reference")
-                requireNotNull(findButton(root, "SAVE")).performClick()
+                requireNotNull(findEdit(root, "Asset / account / property name")).setText(assetName)
+                requireNotNull(findEdit(root, "Current value (₹)")).setText("12345.67")
+                requireNotNull(findEdit(root, "Document Vault title / ID (optional)")).setText("QA evidence reference")
+                val spinners = findSpinners(root)
+                assertTrue("Asset category, owner and nominee selectors must be present", spinners.size >= 3)
+                spinners[0].setSelection(0) // Financial Asset
+                val ownerIndex = (0 until spinners[1].adapter.count).firstOrNull {
+                    spinners[1].adapter.getItem(it).toString().contains(ownerName)
+                }
+                val nomineeIndex = (0 until spinners[2].adapter.count).firstOrNull {
+                    spinners[2].adapter.getItem(it).toString().contains(nomineeName)
+                }
+                assertNotNull("Owner selector must include saved people", ownerIndex)
+                assertNotNull("Nominee selector must include saved people", nomineeIndex)
+                spinners[1].setSelection(requireNotNull(ownerIndex))
+                spinners[2].setSelection(requireNotNull(nomineeIndex))
+                requireNotNull(findButton(root, "SAVE ASSET")).performClick()
                 val refreshed = allText(activity.window.decorView).joinToString(" | ")
-                assertTrue("Saved generic-module record should appear on the same module screen: $refreshed",
-                    refreshed.contains(assetName))
+                assertTrue("Saved asset should appear on the same module screen: $refreshed", refreshed.contains(assetName))
             }
         }
 
         val saved = ArthSaathiDataStore.records()
-        assertTrue("Saved asset was not persisted",
-            (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }.any {
-                it.optString("type") == "ASSET" && it.optString("f0") == assetName &&
-                    it.optDouble("f2") == 12345.67
-            })
+        val asset = (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }.firstOrNull {
+            it.optString("type") == "ASSET" && it.optString("f0") == assetName
+        }
+        assertNotNull("Saved asset was not persisted", asset)
+        assertEquals(12345.67, requireNotNull(asset).optDouble("f2"), 0.005)
+        assertEquals(owner.id, asset.optString("ownerPersonId"))
+        assertEquals(nominee.id, asset.optString("nomineePersonId"))
 
         ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
             Intent(context, ArthSaathiMasterModuleActivity::class.java)
@@ -311,14 +328,16 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         ).use { scenario ->
             scenario.onActivity { activity ->
                 val text = allText(activity.window.decorView).joinToString(" | ")
-                assertTrue("MIS did not reflect the saved asset value: $text", text.contains("12345.67"))
+                assertTrue("MIS should show the recorded financial asset", text.contains("Financial assets"))
+                assertTrue("MIS should reflect the saved asset value: $text", text.contains("12345.67"))
             }
         }
 
-        // Ensure the owner-filtered store can still read the committed record after a fresh activity.
         val afterRelaunch = ArthSaathiDataStore.records()
-        assertTrue((0 until afterRelaunch.length()).mapNotNull { afterRelaunch.optJSONObject(it) }
-            .any { it.optString("f0") == assetName && it.optDouble("f2") == 12345.67 })
+        assertTrue((0 until afterRelaunch.length()).mapNotNull { afterRelaunch.optJSONObject(it) }.any {
+            it.optString("type") == "ASSET" && it.optString("f0") == assetName &&
+                it.optString("ownerPersonId") == owner.id && it.optString("nomineePersonId") == nominee.id
+        })
     }
 
     @Test fun groupKhataCalculatesPersistsAndDisplaysEqualExpenseShares() {
@@ -402,8 +421,8 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Principal / amount")).setText("0")
                 requireNotNull(findEdit(root, "ROI %")).setText("150")
                 requireNotNull(findEdit(root, "Method: Cash / UPI / NEFT / Other")).setText("UPI")
-                requireNotNull(findEdit(root, "Repayment frequency / terms (Monthly / Quarterly / Annual)")).setText("Monthly")
-                requireNotNull(findEdit(root, "Tenure in months (required for EMI / interest)")).setText("12")
+                requireNotNull(findEdit(root, "Frequency (Monthly / Quarterly / Annual)")).setText("Monthly")
+                requireNotNull(findEdit(root, "Tenure (months)")).setText("12")
                 requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
                 assertEquals("Enter an amount greater than zero",
                     findEdit(root, "Principal / amount")?.error)
@@ -448,9 +467,9 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Principal / amount")).setText("10000")
                 requireNotNull(findEdit(root, "ROI %")).setText("0")
                 requireNotNull(findEdit(root, "Method: Cash / UPI / NEFT / Other")).setText("BANK")
-                requireNotNull(findEdit(root, "Repayment frequency / terms (Monthly / Quarterly / Annual)")).setText("Monthly")
-                requireNotNull(findEdit(root, "Tenure in months (required for EMI / interest)")).setText("12")
-                requireNotNull(findEdit(root, "Digital document / agreement reference")).setText("Lease Agreement QA")
+                requireNotNull(findEdit(root, "Frequency (Monthly / Quarterly / Annual)")).setText("Monthly")
+                requireNotNull(findEdit(root, "Tenure (months)")).setText("12")
+                requireNotNull(findEdit(root, "Document title / ID (optional)")).setText("Lease Agreement QA")
                 requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
                 assertEquals("A valid 10-digit mobile number is required for borrower consent",
                     findEdit(root, "Counterparty mobile (10 digits)")?.error)
@@ -483,6 +502,85 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         throw NoSuchElementException("Credit type spinner missing")
     }
 
+    private fun findSpinners(root: View): List<android.widget.Spinner> {
+        val result = mutableListOf<android.widget.Spinner>()
+        fun visit(view: View) {
+            if (view is android.widget.Spinner) result += view
+            if (view is ViewGroup) for (i in 0 until view.childCount) visit(view.getChildAt(i))
+        }
+        visit(root)
+        return result
+    }
+
+
+    @Test fun personIdentityLookupSupportsMobilePanAadhaarAndCreditLinkage() {
+        val marker = System.currentTimeMillis().toString()
+        val name = "Identity QA $marker"
+        val mobileNumber = "9876501211"
+        val pan = "ABCDE1234F"
+        val aadhaar = "234567890123"
+        val person = ArthSaathiCoreEngine.createPerson(
+            name = name, mobile = mobileNumber, role = "Borrower",
+            pan = pan, aadhaar = aadhaar
+        )
+        assertEquals(person.id, ArthSaathiCoreEngine.findPersonByIdentity(mobileNumber)?.optString("id"))
+        assertEquals(person.id, ArthSaathiCoreEngine.findPersonByIdentity(pan)?.optString("id"))
+        assertEquals(person.id, ArthSaathiCoreEngine.findPersonByIdentity(aadhaar)?.optString("id"))
+        assertTrue(ArthSaathiCoreEngine.validateAadhaar(aadhaar))
+        assertFalse(ArthSaathiCoreEngine.validateAadhaar("123456789012"))
+
+        val created = ArthSaathiCoreEngine.createCredit(
+            person.id, name, "Personal Loan / Hand Loan", 1000.0, 0.0,
+            "UPI", "Monthly", "", null, null, mobileNumber, "",
+            "Principal + Interest", 12
+        )
+        assertTrue(created.ok)
+        assertEquals(person.id, ArthSaathiCoreEngine.find(requireNotNull(created.id))?.optString("partyId"))
+    }
+
+    @Test fun registrationSearchesExistingPersonByAadhaarAndLinksCreditWithoutShowingHistory() {
+        val marker = System.currentTimeMillis().toString()
+        val name = "Borrower Aadhaar QA $marker"
+        val aadhaar = "234567890124"
+        val mobileNumber = "9876501212"
+        val person = ArthSaathiCoreEngine.createPerson(
+            name = name, mobile = mobileNumber, role = "Borrower",
+            pan = "PQRSX1234A", aadhaar = aadhaar
+        )
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.REGISTER_CREDIT)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                requireNotNull(findEdit(root, "Borrower / counterparty name")).setText(aadhaar)
+                requireNotNull(findEdit(root, "Principal / amount")).setText("1000")
+                requireNotNull(findEdit(root, "ROI %")).setText("0")
+                requireNotNull(findEdit(root, "Method: Cash / UPI / NEFT / Other")).setText("UPI")
+                requireNotNull(findEdit(root, "Frequency (Monthly / Quarterly / Annual)")).setText("Monthly")
+                requireNotNull(findEdit(root, "Tenure (months)")).setText("12")
+                requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
+            }
+        }
+        val saved = ArthSaathiDataStore.records()
+        assertTrue("Credit should link to the matched person profile",
+            (0 until saved.length()).mapNotNull { saved.optJSONObject(it) }.any {
+                it.optString("type") == "CREDIT" && it.optString("partyId") == person.id &&
+                    it.optString("party") == name && it.optString("partyMobile") == mobileNumber
+            })
+    }
+
+    @Test fun misSeparatesFinancialNonFinancialAssetsAndPortfolioComposition() {
+        val before = ArthSaathiCoreEngine.mis()
+        ArthSaathiCoreEngine.saveModule("ASSET", mapOf("f0" to "Financial QA", "f1" to "Financial Asset", "f2" to 1000.0, "value" to 1000.0))
+        ArthSaathiCoreEngine.saveModule("ASSET", mapOf("f0" to "Non-financial QA", "f1" to "Non-financial Asset", "f2" to 2000.0, "value" to 2000.0))
+        ArthSaathiCoreEngine.saveModule("PORTFOLIO", mapOf("f0" to "Portfolio QA", "f1" to "Mutual Fund", "f2" to 2800.0, "f3" to 3000.0))
+        val after = ArthSaathiCoreEngine.mis()
+        assertEquals(1000.0, after.financialAssets - before.financialAssets, 0.005)
+        assertEquals(2000.0, after.nonFinancialAssets - before.nonFinancialAssets, 0.005)
+        assertEquals(3000.0, after.portfolioValue - before.portfolioValue, 0.005)
+        assertEquals(6000.0, after.assets - before.assets, 0.005)
+    }
 
     @Test fun misReconcilesCurrentPortfolioValueAndRevenueFieldsFromCanonicalScreens() {
         val marker = System.currentTimeMillis().toString()
