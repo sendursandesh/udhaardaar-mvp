@@ -690,6 +690,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             text = "LOOK UP PIN / RETRY"
             setOnClickListener { lookupPin(force = true) }
         })
+        val email = field(body, "Email (optional)")
         val pan = field(body, "PAN (optional)")
         val gstin = field(body, "GSTIN (optional)")
         body.addView(Button(this).apply {
@@ -710,6 +711,10 @@ class ArthSaathiMasterModuleActivity : Activity() {
                     (district.text.toString().isBlank() || state.text.toString().isBlank())) {
                     pin.error = "Wait for PIN lookup or enter the address manually"; return@setOnClickListener
                 }
+                val emailValue = email.text.toString().trim()
+                if (!ArthSaathiCoreEngine.validateEmail(emailValue)) {
+                    email.error = "Enter a valid email address"; return@setOnClickListener
+                }
                 val panValue = pan.text.toString().trim().uppercase(Locale.US)
                 if (!ArthSaathiCoreEngine.validatePan(panValue)) {
                     pan.error = "Enter a valid PAN (e.g. ABCDE1234F)"; return@setOnClickListener
@@ -723,7 +728,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                         name.text.toString().trim(), phone, role.text.toString().trim(),
                         address.text.toString().trim() +
                             listOf(district.text.toString().trim(), state.text.toString().trim()).filter { it.isNotBlank() }.joinToString(", ", prefix = if (address.text.toString().isBlank()) "" else ", "),
-                        panValue, gstinValue, pinValue
+                        panValue, gstinValue, pinValue, emailValue
                     )
                     Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_SHORT).show()
                     render(ArthSaathiNavigation.PEOPLE)
