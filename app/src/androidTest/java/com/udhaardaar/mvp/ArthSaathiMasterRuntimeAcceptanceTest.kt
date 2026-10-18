@@ -84,6 +84,8 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                         text.contains(module.title))
                     assertTrue("Home/back control missing on ${module.id}",
                         text.contains("← Home"))
+                    assertNotNull("Frozen logo missing on canonical module ${module.id}",
+                        activity.window.decorView.findViewWithTag<android.widget.ImageView>("arthsaathi-canonical-logo"))
                 }
             }
         }
