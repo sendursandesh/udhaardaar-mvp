@@ -31,13 +31,13 @@ object ArthSaathiCoreEngine {
  }
  fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String="",repaymentMode:String=terms,tenureMonths:Int=0):Result {
   require(partyName.isNotBlank());require(nature.isNotBlank());require(amount.isFinite() && amount in 0.01..1.0e15) { "Amount must be between ₹0.01 and ₹1,000,000,000,000,000" };require(roi.isFinite() && roi in 0.0..100.0)
-  require(partyMobile.isBlank() || validateMobile(partyMobile))
+  require(validateMobile(partyMobile)) { "A valid 10-digit counterparty mobile number is required for consent" }
   require(method.isNotBlank());require(terms.isNotBlank());require(tenureMonths in 0..600) { "Tenure cannot exceed 600 months" }
   if(nature.contains("Rental",true)||nature.contains("Lease",true))require(roi==0.0)
   val mode=repaymentMode.trim().ifBlank { terms.trim() }
   val isLease=nature.contains("Rental",true)||nature.contains("Lease",true)
-  if (!isLease && (mode.contains("EMI",true) || mode.contains("Principal + Interest",true))) require(tenureMonths in 1..600) { "Enter a tenure from 1 to 600 months for this repayment plan" }
-  val emiAmount=if(!isLease && mode.contains("EMI",true) && tenureMonths>0) emi(amount,roi,tenureMonths) else 0.0
+  val isEmi = mode.contains("EMI", true)\n  val isPrincipalInterest = mode.contains("Principal + Interest", true)\n  val isBullet = mode.contains("Bullet", true)\n  if (!isLease && (isEmi || isPrincipalInterest || isBullet)) require(tenureMonths in 1..600) { "Enter a tenure from 1 to 600 months for this repayment plan" }
+  val emiAmount=if(!isLease && isEmi && tenureMonths>0) emi(amount,roi,tenureMonths) else 0.0
   val totalPayable=when {
     isLease -> amount
     mode.contains("EMI",true) && tenureMonths>0 -> schedule(amount, roi, tenureMonths).let { plan -> m((0 until plan.length()).sumOf { plan.optJSONObject(it)?.optDouble("emi") ?: 0.0 }) }
@@ -45,7 +45,7 @@ object ArthSaathiCoreEngine {
     else -> amount
   }
   require(totalPayable.isFinite() && totalPayable >= amount) { "Calculated payable amount is outside the supported range" }
-  val o=JSONObject().apply{put("id",id("CR"));put("type","CREDIT");put("partyId",partyId?:"");put("party",partyName);put("partyMobile",partyMobile);put("nature",nature);put("amount",m(amount));put("roi",m(roi));put("method",method);put("terms",terms);put("repaymentMode",mode);put("tenureMonths",tenureMonths);put("expectedEmi",emiAmount);put("totalPayable",totalPayable);put("dueDate",dueDate);put("guarantorId",guarantorId?:"");put("guarantorName",guarantorName);put("documentId",documentId?:"");put("paid",0.0);put("status","ACTIVE");put("consentStatus","PENDING");put("createdAt",n());put("updatedAt",n())}
+  val o=JSONObject().apply{put("id",id("CR"));put("type","CREDIT");put("partyId",partyId?:"");put("party",partyName);put("partyMobile",partyMobile);put("nature",nature);put("amount",m(amount));put("roi",m(roi));put("method",method);put("terms",terms);put("repaymentMode",mode);put("tenureMonths",tenureMonths);put("expectedEmi",emiAmount);put("totalPayable",totalPayable);put("dueDate",dueDate);put("guarantorId",guarantorId?:"");put("guarantorName",guarantorName);put("documentId",documentId?:"");put("paid",0.0);put("status","PENDING_CONSENT");put("consentStatus","PENDING");put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_CREDIT");return Result(true,o.getString("id"),"Credit created")
  }
  fun requestConsent(recordId:String,actor:String):Result {
@@ -147,7 +147,7 @@ object ArthSaathiCoreEngine {
   for(i in 0 until a.length()){
    val o=a.optJSONObject(i)?:continue
    when(o.optString("type")){
-    "CREDIT"->{val principal=amount(o,"amount");c+=principal;val payable=amount(o,"totalPayable").takeIf { it>0.0 }?:principal;outstanding+=(payable-amount(o,"paid")).coerceAtLeast(0.0)}
+    "CREDIT"->{if(status(o,"status") in setOf("ACTIVE","CLOSED")){val principal=amount(o,"amount");c+=principal;val payable=amount(o,"totalPayable").takeIf { it>0.0 }?:principal;outstanding+=(payable-amount(o,"paid")).coerceAtLeast(0.0)}}
     "REPAYMENT"->p+=amount(o,"amount")
     "ASSET"->asst+=amount(o,"value","f2","currentValue")
     "PORTFOLIO"->asst+=amount(o,"currentValue","f3","value","f2")
