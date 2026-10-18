@@ -7,7 +7,7 @@ import java.util.Locale
 /** Cross-module integration facade used by the V6.2 modules. */
 object V62Integration {
     private fun store(c: Context) = V5LocalStore(c.applicationContext)
-    fun currentUserId(c: Context): String = c.getSharedPreferences("udhaardaar_accounts", Context.MODE_PRIVATE).getString("current_mobile", "")?.trim().orEmpty().ifBlank { "self" }
+    fun currentUserId(c: Context): String = V7AccountStore.currentMobile(c).trim().ifBlank { c.getSharedPreferences("udhaardaar_accounts", Context.MODE_PRIVATE).getString("current_mobile", "")?.trim().orEmpty() }.ifBlank { "self" }
 
     fun findCounterparties(c: Context, query: String): List<JSONObject> {
         val q=query.trim().lowercase(Locale.getDefault()); val owner=currentUserId(c)
