@@ -106,9 +106,9 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.CLAIMS -> simple(body,"CLAIM","Claim Assistance",listOf("Claim / asset","Claimant","Nominee","Status","Evidence / action"))
             ArthSaathiNavigation.WILL_LEGACY -> simple(body,"LEGACY","Will / Inheritance / Legacy",listOf("Asset","Beneficiary","Executor","Instruction","Draft version"))
             ArthSaathiNavigation.LEGAL -> simple(body,"LEGAL_CASE","Legal Help",listOf("Domain","City / locality","Issue","Related module","Status"))
-            ArthSaathiNavigation.ADVOCATES -> simple(body,"ADVOCATE","Advocate Directory",listOf("Advocate / firm","Domain","City","Verification","Contact"))
+            ArthSaathiNavigation.ADVOCATES -> advocateDirectory(body)
             ArthSaathiNavigation.DOCUMENT_VAULT -> documentVault(body)
-            ArthSaathiNavigation.AI_ADVISOR -> simple(body,"ADVISOR_ALERT","ArthSaathi AI Advisor",listOf("Signal","Reason","Related record","Risk / horizon","User action"))
+            ArthSaathiNavigation.AI_ADVISOR -> aiAdvisor(body)
             ArthSaathiNavigation.REVENUE -> revenue(body)
             ArthSaathiNavigation.SECURITY_CONSENT -> securityConsent(body)
             ArthSaathiNavigation.INTEGRATIONS -> simple(body,"INTEGRATION","Integrations",listOf("Provider","Capability","Environment","Status","Configuration reference"))
@@ -1131,6 +1131,182 @@ class ArthSaathiMasterModuleActivity : Activity() {
         } catch (e: Exception) {
             Toast.makeText(this, e.message ?: "Document could not be opened.", Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun advocateDirectory(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "ADVOCATE DIRECTORY • Search contacts you have saved by name, legal domain and city. User-entered contacts are not independently verified unless explicitly marked."
+            textSize = 14f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 12)
+        })
+        val search = field(body, "Search name / legal domain / city")
+        val name = field(body, "Advocate / firm name")
+        val domain = field(body, "Legal domain / expertise")
+        val city = field(body, "City / locality")
+        val verification = field(body, "Verification status (default: Unverified)")
+        val contact = field(body, "Phone / email contact")
+        val address = field(body, "Office address (optional)")
+        body.addView(Button(this).apply {
+            text = "SAVE ADVOCATE CONTACT"
+            setOnClickListener {
+                if (name.text.toString().trim().isEmpty()) { name.error = "Enter advocate or firm name"; return@setOnClickListener }
+                if (domain.text.toString().trim().isEmpty()) { domain.error = "Enter legal domain / expertise"; return@setOnClickListener }
+                if (city.text.toString().trim().isEmpty()) { city.error = "Enter city / locality"; return@setOnClickListener }
+                if (contact.text.toString().trim().isEmpty()) { contact.error = "Enter a contact detail"; return@setOnClickListener }
+                try {
+                    ArthSaathiCoreEngine.saveModule("ADVOCATE", mapOf(
+                        "f0" to name.text.toString().trim(),
+                        "f1" to domain.text.toString().trim(),
+                        "f2" to city.text.toString().trim(),
+                        "f3" to verification.text.toString().trim().ifBlank { "Unverified — user-entered" },
+                        "f4" to contact.text.toString().trim(),
+                        "f5" to address.text.toString().trim()
+                    ))
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Advocate contact saved to your private directory.", Toast.LENGTH_LONG).show()
+                    render(ArthSaathiNavigation.ADVOCATES)
+                } catch (e: Exception) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Could not save contact.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "\nDIRECTORY RESULTS"; textSize = 18f; setTextColor(ArthSaathiV7Design.NAVY); setPadding(0, 18, 0, 6) })
+        val results = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        body.addView(results)
+        fun refreshResults() {
+            results.removeAllViews()
+            val query = search.text.toString().trim().lowercase(Locale.US)
+            var count = 0
+            for (i in 0 until records.length()) {
+                val record = records.optJSONObject(i) ?: continue
+                if (record.optString("type") != "ADVOCATE") continue
+                val values = listOf("f0", "f1", "f2", "f3", "f4", "f5").map { record.optString(it) }
+                if (query.isNotBlank() && values.none { it.lowercase(Locale.US).contains(query) }) continue
+                count++
+                results.addView(TextView(this).apply {
+                    text = record.optString("f0") + "\n" + record.optString("f1") + " • " + record.optString("f2") +
+                        "\n" + record.optString("f3", "Unverified") + "\n" + record.optString("f4") +
+                        if (record.optString("f5").isBlank()) "" else "\n" + record.optString("f5")
+                    textSize = 14f
+                    setPadding(10, 12, 10, 6)
+                })
+                val phone = record.optString("f4").filter { it.isDigit() || it == '+' }
+                results.addView(Button(this).apply {
+                    text = "CONTACT"
+                    isAllCaps = false
+                    setOnClickListener {
+                        if (phone.isBlank()) {
+                            Toast.makeText(this@ArthSaathiMasterModuleActivity, record.optString("f4"), Toast.LENGTH_LONG).show()
+                        } else {
+                            runCatching {
+                                startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + phone)))
+                            }.onFailure {
+                                Toast.makeText(this@ArthSaathiMasterModuleActivity, record.optString("f4"), Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                })
+            }
+            if (count == 0) results.addView(TextView(this).apply {
+                text = if (query.isBlank()) "No contacts saved yet. Add a contact above to build your searchable directory."
+                    else "No saved contacts match this name, domain or city."
+                setTextColor(ArthSaathiV7Design.MUTED)
+                setPadding(0, 8, 0, 8)
+            })
+        }
+        search.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = refreshResults()
+            override fun afterTextChanged(s: android.text.Editable?) = Unit
+        })
+        refreshResults()
+    }
+
+    private fun aiAdvisor(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "ARTHSAATHI ADVISOR • Explainable reminders from your own recorded data. Suggestions only: no money movement, investment switch or external disclosure is performed."
+            textSize = 14f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 12)
+        })
+        val metrics = ArthSaathiCoreEngine.mis()
+        val all = ArthSaathiDataStore.records()
+        fun insight(title: String, reason: String, actionLabel: String, action: (() -> Unit)? = null) {
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(14, 12, 14, 12)
+                background = ArthSaathiV7Design.card(this@ArthSaathiMasterModuleActivity, android.graphics.Color.WHITE, 14)
+            }
+            card.addView(ArthSaathiV7Design.text(this, title, 15f, ArthSaathiV7Design.NAVY, true))
+            card.addView(ArthSaathiV7Design.text(this, reason, 12f, ArthSaathiV7Design.MUTED).apply { setPadding(0, 6, 0, 6) })
+            if (action != null) card.addView(Button(this).apply {
+                text = actionLabel
+                isAllCaps = false
+                setOnClickListener { action() }
+            })
+            body.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 8 })
+        }
+        insight("Recorded financial position",
+            "Assets Rs " + money(metrics.assets) + " • Liabilities Rs " + money(metrics.liabilities) +
+                " • Credit outstanding Rs " + money(metrics.outstanding),
+            "OPEN MIS") { startActivity(Intent(this, ArthSaathiMasterModuleActivity::class.java).putExtra("module", ArthSaathiNavigation.MIS)) }
+        var actionable = 0
+        for (i in 0 until all.length()) {
+            val record = all.optJSONObject(i) ?: continue
+            if (record.optString("type") == "CREDIT" && record.optString("status") == "ACTIVE") {
+                val due = parseAdvisorDate(record.optString("dueDate"))
+                if (due != null) {
+                    val days = ((due.time - System.currentTimeMillis()) / 86_400_000L).toInt()
+                    if (days < 0) {
+                        actionable++
+                        val balance = (record.optDouble("totalPayable", record.optDouble("amount")) - record.optDouble("paid")).coerceAtLeast(0.0)
+                        insight("Overdue credit reminder",
+                            record.optString("party") + " has a recorded due date that passed " + (-days) +
+                                " day(s) ago. Outstanding: Rs " + money(balance) + ".",
+                            "OPEN REPAYMENT") { startActivity(Intent(this, ArthSaathiMasterModuleActivity::class.java).putExtra("module", ArthSaathiNavigation.REPAYMENT)) }
+                    } else if (days <= 7) {
+                        actionable++
+                        insight("Upcoming due date",
+                            record.optString("party") + " has a recorded due date in " + days +
+                                " day(s). Check the account terms before recording a payment.",
+                            "OPEN ACCOUNT CENTRE") { startActivity(Intent(this, ArthSaathiMasterModuleActivity::class.java).putExtra("module", ArthSaathiNavigation.LOANS_UDHAAR)) }
+                    }
+                }
+            }
+            if (record.optString("type") == "CHARGECHECK" && record.optDouble("f3") > 0.0) {
+                actionable++
+                insight("Charge variance to review",
+                    record.optString("f0") + " has a recorded positive variance of Rs " + money(record.optDouble("f3")) +
+                        ". Review supporting evidence before taking action.",
+                    "OPEN CHARGECHECK") { startActivity(Intent(this, ArthSaathiMasterModuleActivity::class.java).putExtra("module", ArthSaathiNavigation.CHARGECHECK)) }
+            }
+            if (record.optString("type") == "PROTECTION") {
+                val expiry = parseAdvisorDate(record.optString("f3"))
+                if (expiry != null) {
+                    val days = ((expiry.time - System.currentTimeMillis()) / 86_400_000L).toInt()
+                    if (days in 0..30) {
+                        actionable++
+                        insight("Protection renewal check",
+                            record.optString("f0") + " has a recorded renewal / expiry date in " + days +
+                                " day(s). Check policy terms and eligibility.",
+                            "OPEN PROTECTION") { startActivity(Intent(this, ArthSaathiMasterModuleActivity::class.java).putExtra("module", ArthSaathiNavigation.PROTECTION)) }
+                    }
+                }
+            }
+        }
+        if (actionable == 0) insight("No rule-based alerts found",
+            "There are no overdue/upcoming due dates, positive ChargeCheck variances or near-term protection renewals in the records currently saved. This is not a guarantee that no obligations exist.",
+            "OPEN PEOPLE & RECORDS") { startActivity(Intent(this, ArthSaathiMasterModuleActivity::class.java).putExtra("module", ArthSaathiNavigation.PEOPLE)) }
+    }
+
+    private fun parseAdvisorDate(value: String): Date? {
+        if (value.isBlank()) return null
+        for (pattern in listOf("dd-MM-yyyy", "yyyy-MM-dd")) {
+            try {
+                return SimpleDateFormat(pattern, Locale.US).apply { isLenient = false }.parse(value)
+            } catch (_: Exception) { }
+        }
+        return null
     }
 
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
