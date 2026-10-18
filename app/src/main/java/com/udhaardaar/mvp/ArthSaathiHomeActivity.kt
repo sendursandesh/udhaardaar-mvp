@@ -28,6 +28,7 @@ class ArthSaathiHomeActivity : Activity() {
     private val canvas = ArthSaathiV7Design.CREAM
     private lateinit var body: LinearLayout
     private lateinit var nav: LinearLayout
+    private lateinit var navScroll: HorizontalScrollView
     private var currentDestination = "Home"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -117,12 +118,18 @@ class ArthSaathiHomeActivity : Activity() {
 
         nav = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
+            gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(Color.WHITE)
             setPadding(dp(4), dp(6), dp(4), dp(6))
-            elevation = dp(8).toFloat()
         }
-        root.addView(nav, LinearLayout.LayoutParams(-1, dp(62)))
+        navScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            isFillViewport = false
+            setBackgroundColor(Color.WHITE)
+            elevation = dp(8).toFloat()
+            addView(nav, HorizontalScrollView.LayoutParams(-2, -1))
+        }
+        root.addView(navScroll, LinearLayout.LayoutParams(-1, dp(62)))
         setContentView(root)
         render("Home")
     }
@@ -145,9 +152,12 @@ class ArthSaathiHomeActivity : Activity() {
         intro.addView(TextView(this).apply {
             text = when (destination) {
                 "Home" -> "One view. Your whole financial life."
+                "Record" -> "Record and organise financial activity"
                 "Credit" -> "Credit & account centre"
-                "Repay" -> "Repayments & dues"
-                "Vault" -> "Assets & liabilities"
+                "Assets" -> "Assets, liabilities and documents"
+                "Grow" -> "Portfolio, returns and switch analysis"
+                "Protect" -> "Protection, benefits and charge checks"
+                "Legal" -> "Legal support, advocates and legacy"
                 else -> "Services & tools"
             }
             textSize = 20f
@@ -157,9 +167,12 @@ class ArthSaathiHomeActivity : Activity() {
         intro.addView(TextView(this).apply {
             text = when (destination) {
                 "Home" -> "Track credit, assets, investments, protection and claims in one place."
-                "Credit" -> "Register and review credit records. Consent and repayment controls remain enforced."
-                "Repay" -> "Open repayment workflows and review related records."
-                "Vault" -> "Keep asset and liability records together."
+                "Record" -> "Create credit records, scan trade invoices and settle shared group expenses."
+                "Credit" -> "Review registered credits. Consent and repayment controls remain enforced."
+                "Assets" -> "Keep assets, liabilities and supporting documents together."
+                "Grow" -> "Review holdings, returns and indicative opportunity costs before deciding."
+                "Protect" -> "Track cover, completed benefits, refunds and charge discrepancies."
+                "Legal" -> "Find legal help and organise advocate contacts and legacy records."
                 else -> "Access reports, documents, benefits, legal support and app services."
             }
             textSize = 13f
@@ -273,14 +286,13 @@ class ArthSaathiHomeActivity : Activity() {
             body.addView(allServices, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(10) })
         } else {
             val modules = when (destination) {
-                "Credit" -> listOf("REGISTER_CREDIT", "LOANS_UDHAAR", "QR_KHATA", "PEOPLE")
-                "Repay" -> listOf("REPAYMENT", "LOANS_UDHAAR")
-                "Vault" -> listOf("ASSET_VAULT", "LIABILITY_VAULT", "DOCUMENT_VAULT")
-                "More" -> listOf(
-                    "PEOPLE", "MIS", "PORTFOLIO", "SWITCH_ANALYSIS", "PROTECTION", "BENEFITS",
-                    "CHARGECHECK", "GROUP_KHATA", "CLAIMS", "WILL_LEGACY", "LEGAL",
-                    "ADVOCATES", "AI_ADVISOR", "REVENUE", "SECURITY_CONSENT", "INTEGRATIONS"
-                )
+                "Record" -> listOf("REGISTER_CREDIT", "QR_KHATA", "GROUP_KHATA", "PEOPLE")
+                "Credit" -> listOf("LOANS_UDHAAR", "REPAYMENT")
+                "Assets" -> listOf("ASSET_VAULT", "LIABILITY_VAULT", "DOCUMENT_VAULT")
+                "Grow" -> listOf("PORTFOLIO", "SWITCH_ANALYSIS", "MIS")
+                "Protect" -> listOf("PROTECTION", "BENEFITS", "CHARGECHECK", "CLAIMS")
+                "Legal" -> listOf("LEGAL", "ADVOCATES", "WILL_LEGACY")
+                "More" -> listOf("AI_ADVISOR", "REVENUE", "SECURITY_CONSENT", "INTEGRATIONS")
                 else -> emptyList()
             }.distinct()
             val chosen = modules.mapNotNull { id -> ArthSaathiArchitectureRegistry.canonicalModule(id) }
@@ -312,7 +324,7 @@ class ArthSaathiHomeActivity : Activity() {
             }
         }
 
-        val tabs = listOf("Home", "Credit", "Repay", "Vault", "More")
+        val tabs = listOf("Home", "Record", "Credit", "Assets", "Grow", "Protect", "Legal", "More")
         tabs.forEach { tab ->
             nav.addView(TextView(this).apply {
                 text = tab
@@ -321,9 +333,15 @@ class ArthSaathiHomeActivity : Activity() {
                 setTextColor(if (tab == destination) navy else muted)
                 gravity = Gravity.CENTER
                 background = if (tab == destination) rounded(Color.rgb(232, 239, 248), 12) else null
-                setPadding(dp(4), dp(8), dp(4), dp(8))
-                setOnClickListener { render(tab) }
-            }, LinearLayout.LayoutParams(0, -1, 1f))
+                setPadding(dp(10), dp(8), dp(10), dp(8))
+                setOnClickListener {
+                    render(tab)
+                    navScroll.post {
+                        val child = nav.getChildAt(tabs.indexOf(tab))
+                        if (child != null) navScroll.smoothScrollTo(child.left - dp(8), 0)
+                    }
+                }
+            }, LinearLayout.LayoutParams(dp(76), -1))
         }
 
         if (destination == "More") {
