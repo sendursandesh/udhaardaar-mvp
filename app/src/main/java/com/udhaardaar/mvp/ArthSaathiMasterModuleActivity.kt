@@ -1832,8 +1832,22 @@ class ArthSaathiMasterModuleActivity : Activity() {
             }
             val values = linkedMapOf<String, Any?>()
             fields.forEachIndexed { idx, edit ->
-                val value = edit.text.toString().trim()
-                if (isNumericHint(hints[idx])) {
+                val hint = hints[idx]
+                val rawValue = edit.text.toString().trim()
+                if (hint.contains("mobile number", true) && !rawValue.matches(Regex("[6-9][0-9]{9}"))) {
+                    edit.error = "Enter a valid 10-digit Indian mobile number"; return@setOnClickListener
+                }
+                if (hint.contains("PIN code", true) && !rawValue.matches(Regex("[1-9][0-9]{5}"))) {
+                    edit.error = "Enter a valid 6-digit PIN code"; return@setOnClickListener
+                }
+                if (hint.contains("PAN", true) && rawValue.isNotBlank() && !rawValue.uppercase(Locale.US).matches(Regex("[A-Z]{5}[0-9]{4}[A-Z]"))) {
+                    edit.error = "Enter a valid PAN"; return@setOnClickListener
+                }
+                if (hint.contains("GSTIN", true) && rawValue.isNotBlank() && !rawValue.uppercase(Locale.US).matches(Regex("[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]"))) {
+                    edit.error = "Enter a valid GSTIN"; return@setOnClickListener
+                }
+                val value = if (hint.contains("PAN", true) || hint.contains("GSTIN", true)) rawValue.uppercase(Locale.US) else rawValue
+                if (isNumericHint(hint)) {
                     val number = value.toDoubleOrNull()
                     if (number == null || !number.isFinite()) {
                         edit.error = "Enter a valid number"; return@setOnClickListener
