@@ -28,6 +28,20 @@ timeout --signal=TERM --kill-after=15s 12m gradle :app:connectedDebugAndroidTest
 gradle_exit=$?
 set -e
 
+echo "=== Pulling canonical ArthSaathi visual evidence ==="
+mkdir -p app/build/qa-diagnostics/visual-captures
+if adb pull /sdcard/arthsaathi_canonical app/build/qa-diagnostics/visual-captures; then
+  screenshot_count=$(find app/build/qa-diagnostics/visual-captures -type f -name '*.png' | wc -l)
+  echo "Canonical screenshots captured: $screenshot_count"
+  if (( screenshot_count < 20 )); then
+    echo "FAIL: expected screenshots for canonical module screens; found only $screenshot_count"
+    exit 3
+  fi
+else
+  echo "FAIL: unable to pull canonical screenshots from emulator"
+  exit 3
+fi
+
 echo "=== Validating instrumentation reports ==="
 python3 - <<'PY'
 import glob
