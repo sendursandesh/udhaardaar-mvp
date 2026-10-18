@@ -164,7 +164,7 @@ class V7NativeModuleActivity : V7SessionActivity() {
         body.addView(ArthSaathiV7Design.section(this, "Profile & Identity", "Create or edit one complete profile. Address and picture belong to the profile, not a separate module."))
 
         recordName = field("Full name")
-        recordMobile = field("10-digit mobile", android.text.InputType.TYPE_CLASS_PHONE)
+        recordMobile = field("10-digit mobile", android.text.InputType.TYPE_CLASS_PHONE).apply { filters = arrayOf(android.text.InputFilter.LengthFilter(10)) }
         recordPan = field("PAN (optional)")
         recordAadhaar = field("Aadhaar (optional)", android.text.InputType.TYPE_CLASS_NUMBER)
         recordGstin = field("GSTIN (optional)")
