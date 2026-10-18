@@ -32,13 +32,50 @@ class ArthSaathiMasterModuleActivity : Activity() {
 
     private fun render(id: String) {
         val m = ArthSaathiArchitectureRegistry.canonicalModule(id)
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24,24,24,24) }
-        root.addView(TextView(this).apply { text = m?.title ?: "ArthSaathi"; textSize = 26f })
-        root.addView(TextView(this).apply { text = "Canonical destination • " + (m?.area ?: "HOME"); textSize = 14f })
-        val scroll = ScrollView(this)
-        val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 12, 16, 12)
+            setBackgroundColor(ArthSaathiV7Design.CREAM)
+            isFocusableInTouchMode = true
+        }
+        val masthead = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(8, 8, 8, 12)
+            background = ArthSaathiV7Design.bg(this@ArthSaathiMasterModuleActivity)
+        }
+        masthead.addView(ArthSaathiV7Design.logo(this, 54))
+        val brandColumn = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(8, 0, 0, 0) }
+        brandColumn.addView(ArthSaathiV7Design.brand(this, 23f, true))
+        brandColumn.addView(ArthSaathiV7Design.text(this, ArthSaathiV7Design.TAGLINE, 11f, ArthSaathiV7Design.GOLD_PALE))
+        brandColumn.addView(ArthSaathiV7Design.text(this, ArthSaathiV7Design.PILLARS, 10f, ArthSaathiV7Design.WHITE))
+        masthead.addView(brandColumn, LinearLayout.LayoutParams(0, -2, 1f))
+        root.addView(masthead)
+        root.addView(TextView(this).apply {
+            text = m?.title ?: "ArthSaathi"
+            textSize = 24f
+            setTextColor(ArthSaathiV7Design.NAVY)
+            typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
+            setPadding(4, 14, 4, 2)
+            contentDescription = "Current page title"
+        })
+        root.addView(TextView(this).apply {
+            text = "Step-by-step guidance • Complete each field and use Next to move forward. Your entries are validated before saving."
+            textSize = 13f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(4, 2, 4, 10)
+        })
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            descendantFocusability = android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
+            clipToPadding = false
+            setPadding(0, 0, 0, 8)
+        }
+        val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 4, 0, 8) }
         scroll.addView(body); root.addView(scroll, LinearLayout.LayoutParams(-1,0,1f))
-        root.addView(Button(this).apply { text = "← Home"; setOnClickListener { finish() } })
+        root.addView(ArthSaathiV7Design.goldButton(this, "← Home") { finish() })
         setContentView(root)
         when(id) {
             ArthSaathiNavigation.HOME -> home(body)
@@ -944,12 +981,43 @@ class ArthSaathiMasterModuleActivity : Activity() {
             .any { hint.contains(it, true) }
 
     private fun field(parent:LinearLayout,hint:String,number:Boolean=false,max:Int?=null):EditText{
-        return EditText(this).apply{
-            this.hint=hint
+        val edit = EditText(this).apply {
+            this.hint = hint
+            textSize = 16f
+            setTextColor(ArthSaathiV7Design.NAVY)
+            setHintTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(16, 12, 16, 12)
+            minHeight = ArthSaathiV7Design.dp(this@ArthSaathiMasterModuleActivity, 52)
+            background = ArthSaathiV7Design.card(this@ArthSaathiMasterModuleActivity, android.graphics.Color.WHITE, 12)
             if(number) inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED
             if(max!=null) filters=arrayOf(InputFilter.LengthFilter(max))
-            parent.addView(this)
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_NEXT
+            setOnEditorActionListener { view, actionId, _ ->
+                if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_NEXT ||
+                    actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE ||
+                    actionId == android.view.inputmethod.EditorInfo.IME_NULL) {
+                    val next = view.focusSearch(android.view.View.FOCUS_FORWARD)
+                    if (next != null) {
+                        next.requestFocus()
+                        if (next is EditText) {
+                            next.post { parentScrollIntoView(next) }
+                        }
+                    }
+                    true
+                } else false
+            }
+            setOnFocusChangeListener { view, focused ->
+                if (focused) view.post { parentScrollIntoView(view) }
+            }
         }
+        parent.addView(edit, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = ArthSaathiV7Design.dp(this@ArthSaathiMasterModuleActivity, 10) })
+        return edit
+    }
+
+    private fun parentScrollIntoView(view: android.view.View) {
+        var current: android.view.ViewParent? = view.parent
+        while (current != null && current !is ScrollView) current = current.parent
+        (current as? ScrollView)?.smoothScrollTo(0, view.top.coerceAtLeast(0))
     }
     private fun pickDate(target:EditText){val c=Calendar.getInstance();DatePickerDialog(this,{_,y,m,d->target.setText(dateFormat.format(GregorianCalendar(y,m,d).time))},c.get(Calendar.YEAR),c.get(Calendar.MONTH),c.get(Calendar.DAY_OF_MONTH)).show()}
     private fun money(v:Double)=String.format(Locale.US,"%.2f",v)
