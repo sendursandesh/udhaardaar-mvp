@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: arthsaathi-hardening-${{ github.ref }}
+  group: arthsaathi-hardening-latest-${{ github.ref }}
   # Keep the newest branch revision authoritative; stale test runs must not block its verification.
   cancel-in-progress: true
 
