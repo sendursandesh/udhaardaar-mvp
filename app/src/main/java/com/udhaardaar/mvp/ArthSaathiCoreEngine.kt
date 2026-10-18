@@ -46,12 +46,6 @@ object ArthSaathiCoreEngine {
       person.optString("pan").equals(q,true) ||
       person.optString("aadhaar")==q) return person
   }
-  val qLower=q.lowercase(Locale.US)
-  for(i in 0 until people.length()){
-   val person=people.optJSONObject(i)?:continue
-   if(person.optString("type")!="PERSON") continue
-   if(person.optString("name").lowercase(Locale.US).contains(qLower)) return person
-  }
   return null
  }
  fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String="",repaymentMode:String=terms,tenureMonths:Int=0):Result {
