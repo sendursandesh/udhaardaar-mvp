@@ -30,20 +30,24 @@ set -e
 
 echo "=== Pulling canonical ArthSaathi visual evidence ==="
 mkdir -p app/build/qa-diagnostics/visual-captures
-# Resolve the directory from the actual app-scoped storage location rather than
-# hard-coding an applicationId; this also catches package/applicationId drift.
-capture_dir="$(adb shell "find /storage/emulated/0/Android/data -type d -name 'arthsaathi_canonical' -print 2>/dev/null" | tr -d '\r' | head -n 1)"
-if [[ -n "$capture_dir" ]] && adb shell "test -d '$capture_dir'"; then
-  adb pull "$capture_dir" app/build/qa-diagnostics/visual-captures
+# The instrumentation test stores screenshots in the target app's internal files.
+# Export them through run-as so CI does not depend on Android/data host visibility.
+app_id="$(sed -n "s/^[[:space:]]*applicationId ['\"]\([^'\"]*\)['\"].*/\1/p" app/build.gradle | head -n 1)"
+if [[ -z "$app_id" ]]; then
+  echo "FAIL: could not resolve applicationId from app/build.gradle"
+  exit 3
+fi
+if adb shell "run-as '$app_id' test -d files/arthsaathi_canonical"; then
+  adb exec-out run-as "$app_id" tar -C files/arthsaathi_canonical -cf - . | tar -xf - -C app/build/qa-diagnostics/visual-captures
   screenshot_count=$(find app/build/qa-diagnostics/visual-captures -type f -name '*.png' | wc -l)
-  echo "Canonical screenshots captured from $capture_dir: $screenshot_count"
+  echo "Canonical screenshots exported from internal app storage: $screenshot_count"
   if (( screenshot_count < 20 )); then
     echo "FAIL: expected screenshots for canonical module screens; found only $screenshot_count"
     exit 3
   fi
 else
-  echo "FAIL: canonical screenshot directory was not found under /storage/emulated/0/Android/data"
-  adb shell "find /storage/emulated/0/Android/data -maxdepth 6 -type d -name 'arthsaathi_canonical' -print" || true
+  echo "FAIL: canonical screenshot directory not found in internal files for $app_id"
+  adb shell "run-as '$app_id' find files -maxdepth 3 -type d -name 'arthsaathi_canonical' -print" || true
   exit 3
 fi
 
