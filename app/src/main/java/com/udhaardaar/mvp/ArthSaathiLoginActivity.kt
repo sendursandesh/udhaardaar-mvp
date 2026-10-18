@@ -48,6 +48,7 @@ class ArthSaathiLoginActivity : Activity() {
         root.addView(ImageView(this).apply {
             setImageResource(R.drawable.arthsaathi_logo)
             contentDescription = "ArthSaathi approved journey logo"
+            tag = "arthsaathi-canonical-logo"
             scaleType = ImageView.ScaleType.FIT_CENTER
         }, LinearLayout.LayoutParams(dp(96), dp(96)))
         root.addView(TextView(this).apply {
