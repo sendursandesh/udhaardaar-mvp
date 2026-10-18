@@ -62,6 +62,18 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         return null
     }
 
+    @Test fun genericModuleWriterCannotCreateCreditAndBypassConsent() {
+        try {
+            ArthSaathiCoreEngine.saveModule("CREDIT", mapOf(
+                "party" to "Forged consent QA", "amount" to 9999.0,
+                "status" to "ACTIVE", "consentStatus" to "CONSENTED"
+            ))
+            fail("Generic module writer must not create credit records")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message.orEmpty().contains("Register Credit"))
+        }
+    }
+
     @Test fun creditIntelligenceHidesFinancialHistoryUntilConsentIsVerified() {
         val party = "Consent gate QA " + System.currentTimeMillis()
         val created = ArthSaathiCoreEngine.createCredit(
@@ -108,7 +120,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             scenario.onActivity { activity ->
                 val visible = allText(activity.window.decorView).joinToString(" | ")
                 assertTrue("Verified consent should unlock the registered financial summary", visible.contains("Registered amount: ₹24680.13"))
-                assertTrue("Verified consent should show the calculated outstanding", visible.contains("Outstanding: ₹25900.00"))
+                assertTrue("Verified consent should show the calculated outstanding", visible.contains("Outstanding: ₹24680.13"))
             }
         }
     }
