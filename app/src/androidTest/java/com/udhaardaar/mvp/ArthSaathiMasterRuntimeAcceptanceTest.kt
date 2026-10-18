@@ -454,7 +454,15 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         val emiRecord = requireNotNull(ArthSaathiCoreEngine.find(requireNotNull(emiCredit.id)))
         assertEquals(888.49, emiRecord.optDouble("expectedEmi"), 0.02)
         assertEquals(10661.88, emiRecord.optDouble("totalPayable"), 0.05)
-        assertEquals(beforeOutstanding + 21861.88, ArthSaathiCoreEngine.mis().outstanding, 0.1)
+        assertEquals("Unconsented credit drafts must not inflate registered-credit MIS", beforeOutstanding, ArthSaathiCoreEngine.mis().outstanding, 0.1)
+        assertEquals("PENDING_CONSENT", flatRecord.optString("status"))
+        val bullet = ArthSaathiCoreEngine.createCredit(
+            null, "Bullet QA", "Personal Loan / Hand Loan", 10000.0, 12.0,
+            "NEFT", "Bullet", "", null, null, "9876501175", "", "Bullet", 12
+        )
+        val bulletRecord = requireNotNull(ArthSaathiCoreEngine.find(requireNotNull(bullet.id)))
+        assertEquals("Bullet interest must be included in contractual payable", 11200.0,
+            bulletRecord.optDouble("totalPayable"), 0.01)
     }
 
     @Test fun paymentSetupSavesOnlyNonSecretPreLiveConfiguration() {
