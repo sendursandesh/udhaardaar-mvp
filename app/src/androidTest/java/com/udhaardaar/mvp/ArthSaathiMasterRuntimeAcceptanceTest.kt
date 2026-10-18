@@ -14,6 +14,9 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import java.io.ByteArrayInputStream
+import java.io.File
+import java.security.MessageDigest
 
 /**
  * Tests the actually configured ArthSaathi 8.0 launcher architecture, rather
@@ -57,6 +60,33 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             findButton(root.getChildAt(i), label)?.let { return it }
         }
         return null
+    }
+
+    @Test fun documentVaultEncryptsFilesAndRestoresOriginalBytesWithIntegrityHash() {
+        val original = "ArthSaathi secure document acceptance test".toByteArray(Charsets.UTF_8)
+        val stored = ArthSaathiDocumentStorage.store(
+            context, ByteArrayInputStream(original), "acceptance.txt"
+        )
+        assertEquals("SHA-256 must be represented by 64 hexadecimal characters", 64, stored.sha256.length)
+        val encrypted = File(context.filesDir, "arthsaathi_documents/${stored.fileName}")
+        assertTrue("Encrypted document must persist in app-private storage", encrypted.isFile)
+        assertFalse("Stored file must not contain plaintext source bytes",
+            encrypted.readBytes().contentEquals(original))
+        val preview = ArthSaathiDocumentStorage.decryptToCache(context, stored.fileName, stored.extension)
+        assertArrayEquals("Decrypted preview must match the original file bytes", original, preview.readBytes())
+        val expectedHash = MessageDigest.getInstance("SHA-256").digest(original)
+            .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+        assertEquals("Integrity hash must match the original document", expectedHash, stored.sha256)
+
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.DOCUMENT_VAULT)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                assertNotNull("Document upload action is missing",
+                    findButton(activity.window.decorView, "CHOOSE & STORE DOCUMENT"))
+            }
+        }
     }
 
     @Test fun emiScheduleReconcilesPrincipalInterestAndFinalPaymentOnAndroidRuntime() {
