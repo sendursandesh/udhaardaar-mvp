@@ -1,0 +1,91 @@
+name: ArthSaathi Steps 1-5 Preflight QA
+
+on:
+  push:
+    branches:
+      - arthsaathi-step1-5-functional-audit-2026-10-18
+  pull_request:
+    branches:
+      - arthsaathi-step1-5-functional-audit-2026-10-18
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arthsaathi-step1-5-preflight-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  static-unit-build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Install Gradle 8.10.2
+        run: |
+          set -euo pipefail
+          wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
+
+      - name: Static architecture and security guard checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          core = Path("app/src/main/java/com/udhaardaar/mvp/V7CoreArchitecture.kt").read_text()
+          registry = Path("app/src/main/java/com/udhaardaar/mvp/ArthSaathiArchitectureRegistry.kt").read_text()
+          manifest = Path("app/src/main/AndroidManifest.xml").read_text()
+          assert "if (currentUser.isBlank()) return false" in core, "V7 writes must reject signed-out sessions"
+          assert "ownerVisibleTo(existing.optString(\"ownerUserId\"), currentUser)" in core, "V7 updates must enforce stored-row ownership"
+          assert "revenueAlreadyRecorded" in core, "Revenue settlement must be idempotent"
+          assert "Module(\"MIS\"" in registry and "Module(\"GROUP_KHATA\"" in registry, "Required canonical modules missing"
+          assert 'android:name=".ArthSaathiLoginActivity"' in manifest, "Expected production login entry point missing"
+          print("Static guard checks passed. This is not a substitute for behaviour or emulator acceptance.")
+          PY
+
+      - name: Clean unit tests and debug compile
+        run: gradle clean :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Verify APK archive and capture checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          unzip -t "$apk" >/dev/null
+          sha256sum "$apk" | tee app/build/outputs/apk/debug/SHA256SUMS.txt
+          echo "APK bytes: $(stat -c%s "$apk")"
+
+      - name: Upload preflight evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: arthsaathi-step1-5-preflight-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/SHA256SUMS.txt
+            app/build/test-results/testDebugUnitTest/
+            app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: error
+          retention-days: 30
