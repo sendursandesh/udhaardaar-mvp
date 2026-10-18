@@ -1020,7 +1020,12 @@ class ArthSaathiMasterModuleActivity : Activity() {
     private fun parentScrollIntoView(view: android.view.View) {
         var current: android.view.ViewParent? = view.parent
         while (current != null && current !is ScrollView) current = current.parent
-        (current as? ScrollView)?.smoothScrollTo(0, view.top.coerceAtLeast(0))
+        (current as? ScrollView)?.let { scroll ->
+            val rect = android.graphics.Rect()
+            view.getDrawingRect(rect)
+            scroll.offsetDescendantRectToMyCoords(view, rect)
+            scroll.requestChildRectangleOnScreen(view, rect, true)
+        }
     }
     private fun pickDate(target:EditText){val c=Calendar.getInstance();DatePickerDialog(this,{_,y,m,d->target.setText(dateFormat.format(GregorianCalendar(y,m,d).time))},c.get(Calendar.YEAR),c.get(Calendar.MONTH),c.get(Calendar.DAY_OF_MONTH)).show()}
     private fun money(v:Double)=String.format(Locale.US,"%.2f",v)
