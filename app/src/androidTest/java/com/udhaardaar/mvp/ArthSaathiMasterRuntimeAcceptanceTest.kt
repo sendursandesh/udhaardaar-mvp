@@ -89,6 +89,60 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         }
     }
 
+    @Test fun homeSnapshotReflectsCanonicalAssetRecords() {
+        val before = ArthSaathiCoreEngine.mis().assets
+        val assetName = "Home snapshot QA " + System.currentTimeMillis()
+        ArthSaathiCoreEngine.saveModule("ASSET", mapOf("f0" to assetName, "f2" to 2345.67, "value" to 2345.67))
+        val expected = before + 2345.67
+        ActivityScenario.launch<ArthSaathiHomeActivity>(
+            Intent(context, ArthSaathiHomeActivity::class.java)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val visible = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("Home snapshot must show recorded assets; text=$visible",
+                    visible.contains(String.format(java.util.Locale.US, "%,.2f", expected)))
+                assertTrue("Home should show the approved Plan Today dashboard banner", visible.contains("Plan Today"))
+                assertTrue("Home should provide the canonical quick actions", visible.contains("Register Credit"))
+            }
+        }
+    }
+
+    @Test fun advocateDirectorySearchesSavedContactsByDomainAndCity() {
+        val advocateName = "Advocate QA " + System.currentTimeMillis()
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.ADVOCATES)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val root = activity.window.decorView
+                requireNotNull(findEdit(root, "Advocate / firm name")).setText(advocateName)
+                requireNotNull(findEdit(root, "Legal domain / expertise")).setText("Civil Litigation")
+                requireNotNull(findEdit(root, "City / locality")).setText("Ranchi")
+                requireNotNull(findEdit(root, "Phone / email contact")).setText("9876501144")
+                requireNotNull(findButton(root, "SAVE ADVOCATE CONTACT")).performClick()
+                val search = requireNotNull(findEdit(activity.window.decorView, "Search name / legal domain / city"))
+                search.setText("Ranchi")
+                val visible = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("Directory must filter saved contacts by city", visible.contains(advocateName))
+                assertTrue("Directory result should include legal domain", visible.contains("Civil Litigation"))
+                assertTrue("Unverified contacts must not be represented as independently verified", visible.contains("Unverified"))
+            }
+        }
+    }
+
+    @Test fun advisorUsesExplainableAlertsFromCanonicalRecords() {
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.AI_ADVISOR)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val visible = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("Advisor must show recorded financial position", visible.contains("Recorded financial position"))
+                assertTrue("Advisor must disclose that suggestions do not execute transactions", visible.contains("no money movement"))
+            }
+        }
+    }
+
     @Test fun emiScheduleReconcilesPrincipalInterestAndFinalPaymentOnAndroidRuntime() {
         val schedule = ArthSaathiCoreEngine.schedule(100000.0, 12.0, 12)
         assertEquals(12, schedule.length())
@@ -555,6 +609,8 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         assertEquals("REQUESTED", ArthSaathiCoreEngine.find(createdId)!!.optString("consentStatus"))
         assertTrue(ArthSaathiCoreEngine.confirmConsent(createdId, "654321", "borrower").ok)
         assertEquals("CONSENTED", ArthSaathiCoreEngine.find(createdId)!!.optString("consentStatus"))
+        assertEquals("Credit becomes active only after verified consent", "ACTIVE",
+            ArthSaathiCoreEngine.find(createdId)!!.optString("status"))
     }
 
 
