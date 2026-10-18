@@ -200,7 +200,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
                     terms.error = "Enter repayment terms"; return@setOnClickListener
                 }
                 val tenureMonths = tenure.text.toString().trim().toIntOrNull() ?: 0
-                val interestPlan = repaymentMode.contains("EMI", true) || repaymentMode.contains("Principal + Interest", true)
+                val interestPlan = repaymentMode.contains("EMI", true) ||
+                    repaymentMode.contains("Principal + Interest", true) || repaymentMode.contains("Bullet", true)
                 if (interestPlan && !lease && tenureMonths <= 0) {
                     tenure.error = "Enter a positive tenure for EMI / interest calculation"; return@setOnClickListener
                 }
@@ -219,9 +220,9 @@ class ArthSaathiMasterModuleActivity : Activity() {
                         return@setOnClickListener
                     }
                     Toast.makeText(this@ArthSaathiMasterModuleActivity,
-                        "Credit registered. Consent is still pending; repayment updates remain locked until verified consent.",
+                        "Draft saved. Verify borrower consent to complete credit registration.",
                         Toast.LENGTH_LONG).show()
-                    render(ArthSaathiNavigation.LOANS_UDHAAR)
+                    render(ArthSaathiNavigation.SECURITY_CONSENT)
                 } catch (e: IllegalArgumentException) {
                     Toast.makeText(this@ArthSaathiMasterModuleActivity,
                         e.message ?: "Please review the credit details.", Toast.LENGTH_LONG).show()
@@ -240,7 +241,13 @@ class ArthSaathiMasterModuleActivity : Activity() {
             val o=records.getJSONObject(i); if(o.optString("type")!="CREDIT") continue
             found=true
             val outstanding=(o.optDouble("totalPayable",o.optDouble("amount"))-o.optDouble("paid")).coerceAtLeast(0.0)
-            body.addView(Button(this).apply { text=o.optString("party")+" • "+o.optString("nature")+"\nOutstanding ₹"+money(outstanding); setOnClickListener{detail(o)} })
+            val state = when (o.optString("status")) {
+                "PENDING_CONSENT" -> "Draft • Awaiting consent"
+                "CLOSED" -> "Closed"
+                else -> "Active"
+            }
+            val balanceLine = if (o.optString("status") == "PENDING_CONSENT") "Not registered yet" else "Outstanding ₹" + money(outstanding)
+            body.addView(Button(this).apply { text=state+"\n"+o.optString("party")+" • "+o.optString("nature")+"\n"+balanceLine; setOnClickListener{detail(o)} })
         }
         if(!found) body.addView(TextView(this).apply{text="\nNo credit accounts registered yet."})
     }
@@ -262,7 +269,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         })
         for(i in 0 until records.length()){
             val o=records.getJSONObject(i)
-            if(o.optString("type")!="CREDIT" || o.optString("status")=="CLOSED") continue
+            if(o.optString("type")!="CREDIT" || o.optString("status")!="ACTIVE") continue
             body.addView(Button(this).apply {
                 text="Record repayment • "+o.optString("party")
                 isAllCaps = false
