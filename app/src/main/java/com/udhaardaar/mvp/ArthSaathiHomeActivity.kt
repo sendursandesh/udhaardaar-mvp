@@ -50,6 +50,7 @@ class ArthSaathiHomeActivity : Activity() {
         header.addView(ImageView(this).apply {
             setImageResource(R.drawable.arthsaathi_logo)
             contentDescription = "ArthSaathi approved journey logo"
+            tag = "arthsaathi-canonical-logo"
             scaleType = ImageView.ScaleType.FIT_CENTER
         }, LinearLayout.LayoutParams(dp(58), dp(58)))
         val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), 0, 0, 0) }
