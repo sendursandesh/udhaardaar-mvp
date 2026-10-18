@@ -13,8 +13,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: arthsaathi-hardening-latest-${{ github.ref }}
-  # Keep the newest branch revision authoritative; stale test runs must not block its verification.
+  group: arthsaathi-hardening-${{ github.ref }}-${{ github.sha }}
+  # Isolate each revision so an older long-running emulator job cannot queue the latest commit.
   cancel-in-progress: false
 
 jobs:
