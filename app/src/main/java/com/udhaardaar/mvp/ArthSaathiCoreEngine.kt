@@ -36,12 +36,15 @@ object ArthSaathiCoreEngine {
   if(nature.contains("Rental",true)||nature.contains("Lease",true))require(roi==0.0)
   val mode=repaymentMode.trim().ifBlank { terms.trim() }
   val isLease=nature.contains("Rental",true)||nature.contains("Lease",true)
-  val isEmi = mode.contains("EMI", true)\n  val isPrincipalInterest = mode.contains("Principal + Interest", true)\n  val isBullet = mode.contains("Bullet", true)\n  if (!isLease && (isEmi || isPrincipalInterest || isBullet)) require(tenureMonths in 1..600) { "Enter a tenure from 1 to 600 months for this repayment plan" }
+  val isEmi = mode.contains("EMI", true)
+  val isPrincipalInterest = mode.contains("Principal + Interest", true)
+  val isBullet = mode.contains("Bullet", true)
+  if (!isLease && (isEmi || isPrincipalInterest || isBullet)) require(tenureMonths in 1..600) { "Enter a tenure from 1 to 600 months for this repayment plan" }
   val emiAmount=if(!isLease && isEmi && tenureMonths>0) emi(amount,roi,tenureMonths) else 0.0
   val totalPayable=when {
     isLease -> amount
-    mode.contains("EMI",true) && tenureMonths>0 -> schedule(amount, roi, tenureMonths).let { plan -> m((0 until plan.length()).sumOf { plan.optJSONObject(it)?.optDouble("emi") ?: 0.0 }) }
-    mode.contains("Principal + Interest",true) && tenureMonths>0 -> m(amount + amount*roi*tenureMonths/1200.0)
+    isEmi && tenureMonths>0 -> schedule(amount, roi, tenureMonths).let { plan -> m((0 until plan.length()).sumOf { plan.optJSONObject(it)?.optDouble("emi") ?: 0.0 }) }
+    (isPrincipalInterest || isBullet) && tenureMonths>0 -> m(amount + amount*roi*tenureMonths/1200.0)
     else -> amount
   }
   require(totalPayable.isFinite() && totalPayable >= amount) { "Calculated payable amount is outside the supported range" }
