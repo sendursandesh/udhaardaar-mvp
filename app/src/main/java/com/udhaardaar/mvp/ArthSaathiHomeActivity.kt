@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
@@ -127,7 +128,7 @@ class ArthSaathiHomeActivity : Activity() {
             isFillViewport = false
             setBackgroundColor(Color.WHITE)
             elevation = dp(8).toFloat()
-            addView(nav, HorizontalScrollView.LayoutParams(-2, -1))
+            addView(nav, ViewGroup.LayoutParams(-2, -1))
         }
         root.addView(navScroll, LinearLayout.LayoutParams(-1, dp(62)))
         setContentView(root)
