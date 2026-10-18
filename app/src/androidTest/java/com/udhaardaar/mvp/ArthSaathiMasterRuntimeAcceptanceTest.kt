@@ -59,6 +59,14 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         return null
     }
 
+    @Test fun installedAppLauncherUsesCanonicalSecureArthSaathiEntryPoint() {
+        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
+        assertNotNull("App must expose one launcher entry point", launch)
+        val resolved = context.packageManager.resolveActivity(launch!!, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+        assertEquals("Canonical secure login must be the installed launcher",
+            ArthSaathiLoginActivity::class.java.name, resolved?.activityInfo?.name)
+    }
+
     @Test fun everyConfiguredCanonicalModuleOpensAndShowsItsExpectedTitle() {
         assertEquals("Module ids must be unique", ArthSaathiArchitectureRegistry.modules.size,
             ArthSaathiArchitectureRegistry.modules.map { it.id }.toSet().size)
