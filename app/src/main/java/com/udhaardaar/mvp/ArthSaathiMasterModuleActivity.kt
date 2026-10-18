@@ -46,7 +46,11 @@ class ArthSaathiMasterModuleActivity : Activity() {
             setPadding(8, 8, 8, 12)
             background = ArthSaathiV7Design.bg(this@ArthSaathiMasterModuleActivity)
         }
-        masthead.addView(ArthSaathiV7Design.logo(this, 54))
+        masthead.addView(ArthSaathiV7Design.logo(this, 54).apply {
+            tag = R.drawable.arthsaathi_logo
+            this@apply.contentDescription = "ArthSaathi logo"
+            setTag(R.id.arthsaathi_logo_tag, R.drawable.arthsaathi_logo)
+        })
         val brandColumn = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(8, 0, 0, 0) }
         brandColumn.addView(ArthSaathiV7Design.brand(this, 23f, true))
         brandColumn.addView(ArthSaathiV7Design.text(this, ArthSaathiV7Design.TAGLINE, 11f, ArthSaathiV7Design.GOLD_PALE))
