@@ -8,7 +8,7 @@ object ArthSaathiV7MasterVision {
         Tile("Register Credit","Create a new credit relationship","＋","REGISTER_CREDIT"),
         Tile("Loans & Udhaar","Existing active & closed accounts","₹","CREDIT"),
         Tile("Collect / Pay Dues","Schedules, payments & closure","↻","REPAYMENT"),
-        Tile("My Assets & Property","Financial and non-financial assets","▣","ASSETS"),
+        Tile("Asset Vault","Financial and non-financial assets","▣","ASSETS"),
         Tile("Investments & Returns","Portfolio, returns & switch analysis","▥","GROW"),
         Tile("Insurance & Protection","Policies, renewals & claims","◆","PROTECT"),
         Tile("Group Khata","Shared expenses & settlement","👥","GROUP_KHATA"),
