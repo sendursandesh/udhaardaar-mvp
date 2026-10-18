@@ -30,7 +30,11 @@ set -e
 
 echo "=== Pulling canonical ArthSaathi visual evidence ==="
 mkdir -p app/build/qa-diagnostics/visual-captures
-if adb pull /sdcard/Android/data/com.arthsaathi.master/files/arthsaathi_canonical app/build/qa-diagnostics/visual-captures; then
+# UiDevice writes screenshots to the app-scoped external path under /storage/emulated/0.
+# Use that canonical path rather than /sdcard, which is not mounted consistently on CI images.
+capture_dir="/storage/emulated/0/Android/data/com.arthsaathi.master/files/arthsaathi_canonical"
+if adb shell "test -d '$capture_dir'"; then
+  adb pull "$capture_dir" app/build/qa-diagnostics/visual-captures
   screenshot_count=$(find app/build/qa-diagnostics/visual-captures -type f -name '*.png' | wc -l)
   echo "Canonical screenshots captured: $screenshot_count"
   if (( screenshot_count < 20 )); then
@@ -38,11 +42,13 @@ if adb pull /sdcard/Android/data/com.arthsaathi.master/files/arthsaathi_canonica
     exit 3
   fi
 else
-  echo "FAIL: unable to pull canonical screenshots from emulator"
+  echo "FAIL: canonical screenshot directory not found at $capture_dir"
+  adb shell "find /storage/emulated/0/Android/data/com.arthsaathi.master/files -maxdepth 3 -type d -name 'arthsaathi_canonical' -print" || true
   exit 3
 fi
 
 echo "=== Validating instrumentation reports ==="
+set +e
 python3 - <<'PY'
 import glob
 import sys
@@ -78,6 +84,7 @@ if total_failures or total_errors:
     sys.exit(1)
 PY
 report_exit=$?
+set -e
 
 if (( gradle_exit != 0 )); then
   echo "FAIL: connectedDebugAndroidTest exited with status $gradle_exit"
@@ -87,4 +94,4 @@ if (( report_exit != 0 )); then
   exit "$report_exit"
 fi
 
-echo "PASS: emulator instrumentation tests completed and reports contain no failures."
+echo "PASS: emulator instrumentation tests completed, reports contain no failures, and canonical screenshots were collected."
