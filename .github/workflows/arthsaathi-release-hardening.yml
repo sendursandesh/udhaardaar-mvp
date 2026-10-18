@@ -15,7 +15,7 @@ permissions:
 concurrency:
   group: arthsaathi-hardening-latest-${{ github.ref }}
   # Keep the newest branch revision authoritative; stale test runs must not block its verification.
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-test:
