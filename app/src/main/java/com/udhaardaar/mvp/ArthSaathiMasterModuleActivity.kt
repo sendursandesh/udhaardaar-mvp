@@ -400,7 +400,14 @@ class ArthSaathiMasterModuleActivity : Activity() {
             val balanceLine = if (o.optString("status") == "PENDING_CONSENT") "Not registered yet" else "Outstanding ₹" + money(outstanding)
             body.addView(Button(this).apply { text=state+"\n"+o.optString("party")+" • "+o.optString("nature")+"\n"+balanceLine; setOnClickListener{detail(o)} })
         }
-        if(!found) body.addView(TextView(this).apply{text="\nNo credit accounts registered yet."})
+        if (!found) {
+            body.addView(ArthSaathiV7Design.text(this,
+                "Your credit account centre will show registered credit, consent state, total payable and outstanding balance here.",
+                13f, ArthSaathiV7Design.MUTED).apply { setPadding(0, 12, 0, 12) })
+            body.addView(ArthSaathiV7Design.goldButton(this, "REGISTER YOUR FIRST CREDIT") {
+                render(ArthSaathiNavigation.REGISTER_CREDIT)
+            })
+        }
     }
 
     private fun detail(o:JSONObject){
@@ -418,9 +425,11 @@ class ArthSaathiMasterModuleActivity : Activity() {
             text = "SINGLE REPAYMENT ENGINE\nProduction repayment changes require verified consent and a valid amount/method."
             textSize = 16f
         })
+        var eligibleAccounts = 0
         for(i in 0 until records.length()){
             val o=records.getJSONObject(i)
             if(o.optString("type")!="CREDIT" || o.optString("status")!="ACTIVE") continue
+            eligibleAccounts++
             body.addView(Button(this).apply {
                 text="Record repayment • "+o.optString("party")
                 isAllCaps = false
@@ -489,6 +498,17 @@ class ArthSaathiMasterModuleActivity : Activity() {
                             }
                         }.show()
                 }
+            })
+        }
+        if (eligibleAccounts == 0) {
+            body.addView(ArthSaathiV7Design.text(this,
+                "No active credit accounts are eligible for repayment yet. Register a credit first, then complete the required consent flow. Repayment actions will appear here when an account is active.",
+                13f, ArthSaathiV7Design.MUTED).apply { setPadding(0, 12, 0, 12) })
+            body.addView(ArthSaathiV7Design.goldButton(this, "GO TO CREDIT REGISTRATION") {
+                render(ArthSaathiNavigation.REGISTER_CREDIT)
+            })
+            body.addView(ArthSaathiV7Design.outlineButton(this, "OPEN CONSENT CENTRE") {
+                render(ArthSaathiNavigation.SECURITY_CONSENT)
             })
         }
     }
@@ -650,7 +670,12 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val credits = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
             .filter { it.optString("type") == "CREDIT" }
         if (credits.isEmpty()) {
-            body.addView(TextView(this).apply { text = "No credit records are available for consent." })
+            body.addView(ArthSaathiV7Design.text(this,
+                "Consent records are created when you register a credit. Borrower consent is required before protected credit history is disclosed or consent-gated repayment actions are accepted.",
+                13f, ArthSaathiV7Design.MUTED).apply { setPadding(0, 12, 0, 12) })
+            body.addView(ArthSaathiV7Design.goldButton(this, "REGISTER CREDIT") {
+                render(ArthSaathiNavigation.REGISTER_CREDIT)
+            })
             return
         }
         credits.forEach { record ->
