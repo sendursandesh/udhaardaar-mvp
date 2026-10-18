@@ -27,6 +27,14 @@ class ArthSaathiFinancialMathTest {
         assertTrue(schedule.getJSONObject(11).optDouble("emi") > 0.0)
     }
 
+    @Test fun emailValidationAcceptsOptionalOrValidAddressAndRejectsMalformedAddress() {
+        assertTrue(ArthSaathiCoreEngine.validateEmail(""))
+        assertTrue(ArthSaathiCoreEngine.validateEmail("user@example.com"))
+        assertTrue(ArthSaathiCoreEngine.validateEmail("finance.team+qa@example.co.in"))
+        assertTrue(!ArthSaathiCoreEngine.validateEmail("not-an-email"))
+        assertTrue(!ArthSaathiCoreEngine.validateEmail("user@invalid"))
+    }
+
     @Test fun invalidOrExtremeInputsAreRejected() {
         assertRejected { ArthSaathiCoreEngine.emi(Double.NaN, 12.0, 12) }
         assertRejected { ArthSaathiCoreEngine.emi(1000.0, 101.0, 12) }
