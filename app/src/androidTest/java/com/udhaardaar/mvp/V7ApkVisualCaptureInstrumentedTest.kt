@@ -51,6 +51,8 @@ class V7ApkVisualCaptureInstrumentedTest {
                         activity.window.decorView.findViewWithTag<android.widget.ImageView>(
                             "arthsaathi-canonical-logo") != null)
                 }
+                // Capture before ActivityScenario closes; otherwise the screenshot could
+                // show the previous task instead of the module under review.
                 device.waitForIdle()
                 val target = File(captureDir, "${module.id}.png")
                 assertTrue("Screenshot capture failed for ${module.id}", device.takeScreenshot(target))
