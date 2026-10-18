@@ -81,6 +81,55 @@ class V7Step1To5IntegrationInstrumentedTest {
         })
     }
 
+    @Test fun crossAccountUpdateCannotOverwriteAnotherOwnersRecord() {
+        val ownerA = testOwner
+        val ownerB = "9876501092"
+        V7AccountStore.logout(context)
+        if (V7AccountStore.account(context, ownerB) == null) {
+            V7AccountStore.create(context, "V7 Isolation B", ownerB)
+        }
+        V7AccountStore.login(context, ownerA)
+        val person = V7Records.person(context, "Owner A Original", "9876501093")
+        val recordId = person.optString("id")
+
+        V7AccountStore.login(context, ownerB)
+        val rawRecord = V7LocalStore(context).find(V7Core.Keys.PEOPLE, recordId)
+        assertNotNull("QA precondition: raw record exists in shared encrypted store", rawRecord)
+        rawRecord!!.put("name", "Owner B Tampered")
+        assertFalse("Foreign account must not be able to overwrite another owner's row",
+            V7Core.replace(context, V7Core.Keys.PEOPLE, rawRecord))
+
+        V7AccountStore.login(context, ownerA)
+        assertEquals("Owner A Original",
+            V7Core.find(context, V7Core.Keys.PEOPLE, recordId)?.optString("name"))
+        V7AccountStore.logout(context)
+        V7LocalStore(context).remove("v7_accounts", ownerB)
+        V7AccountStore.login(context, ownerA)
+    }
+
+    @Test fun revenueReconciliationIsIdempotentAndRejectsFailedPayments() {
+        val service = V7RevenueEngine.service(context, "Idempotency QA", 150.0)
+        val invoice = V7RevenueEngine.invoice(context, service.optString("id"), 150.0, "Idempotency QA")
+        val successful = V7RevenueEngine.payment(
+            context, invoice.optString("id"), 150.0, "TEST_GATEWAY", "IDEMPOTENT-REF",
+            V7RevenueEngine.PaymentStatus.SUCCESS
+        )
+        val paymentId = successful.optString("id")
+        assertTrue(V7RevenueEngine.reconcile(context, paymentId, "SETTLEMENT-IDEMPOTENT"))
+        assertTrue(V7RevenueEngine.reconcile(context, paymentId, "SETTLEMENT-IDEMPOTENT"))
+        assertEquals(1, V7Core.all(context, V7Core.Keys.REVENUE).count {
+            it.optString("paymentId") == paymentId
+        })
+        assertFalse(V7RevenueEngine.reconcile(context, paymentId, "DIFFERENT-SETTLEMENT"))
+
+        val failed = V7RevenueEngine.payment(
+            context, invoice.optString("id"), 150.0, "TEST_GATEWAY", "FAILED-REF",
+            V7RevenueEngine.PaymentStatus.FAILED
+        )
+        assertFalse(V7RevenueEngine.reconcile(context, failed.optString("id"), "FAILED-SETTLEMENT"))
+        assertEquals("FAILED", V7Core.find(context, V7Core.Keys.PAYMENTS, failed.optString("id"))?.optString("status"))
+    }
+
     @Test fun expiredConsentIsNotActive() {
         val person = V7Records.person(context, "V7 Expiry QA", "9876543211")
         val service = V7Architecture.LocalConsentService(context)
