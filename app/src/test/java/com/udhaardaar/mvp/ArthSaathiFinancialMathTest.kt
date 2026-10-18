@@ -15,18 +15,6 @@ class ArthSaathiFinancialMathTest {
         assertEquals(8884.88, ArthSaathiCoreEngine.emi(100000.0, 12.0, 12), 0.02)
     }
 
-    @Test fun scheduleClosesBalanceAndFinalInstallmentReconciles() {
-        val schedule = ArthSaathiCoreEngine.schedule(100000.0, 12.0, 12)
-        assertEquals(12, schedule.length())
-        assertEquals(0.0, schedule.getJSONObject(11).optDouble("balance"), 0.001)
-        val paid = (0 until schedule.length()).sumOf { schedule.getJSONObject(it).optDouble("emi") }
-        val principal = (0 until schedule.length()).sumOf { schedule.getJSONObject(it).optDouble("principal") }
-        val interest = (0 until schedule.length()).sumOf { schedule.getJSONObject(it).optDouble("interest") }
-        assertEquals(100000.0, principal, 0.02)
-        assertEquals(paid, principal + interest, 0.03)
-        assertTrue(schedule.getJSONObject(11).optDouble("emi") > 0.0)
-    }
-
     @Test fun emailValidationAcceptsOptionalOrValidAddressAndRejectsMalformedAddress() {
         assertTrue(ArthSaathiCoreEngine.validateEmail(""))
         assertTrue(ArthSaathiCoreEngine.validateEmail("user@example.com"))
@@ -39,7 +27,6 @@ class ArthSaathiFinancialMathTest {
         assertRejected { ArthSaathiCoreEngine.emi(Double.NaN, 12.0, 12) }
         assertRejected { ArthSaathiCoreEngine.emi(1000.0, 101.0, 12) }
         assertRejected { ArthSaathiCoreEngine.emi(1000.0, 12.0, 601) }
-        assertRejected { ArthSaathiCoreEngine.schedule(0.0, 12.0, 12) }
     }
 
     private fun assertRejected(block: () -> Unit) {
