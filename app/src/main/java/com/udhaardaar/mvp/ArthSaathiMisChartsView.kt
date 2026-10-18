@@ -8,7 +8,7 @@ import android.view.View
 import java.util.Locale
 import kotlin.math.max
 
-/** Lightweight native MIS charts, driven only by the canonical ledger metrics. */
+/** Native MIS charts from the canonical ledger: balance, asset composition, and actual measures. */
 class ArthSaathiMisChartsView(context: Context, private val metrics: ArthSaathiCoreEngine.Mis) : View(context) {
     private val density = resources.displayMetrics.density
     private val navy = android.graphics.Color.rgb(14, 38, 70)
@@ -27,23 +27,26 @@ class ArthSaathiMisChartsView(context: Context, private val metrics: ArthSaathiC
         "Credits" to metrics.credits,
         "Repayments" to metrics.repayments,
         "Outstanding" to metrics.outstanding,
-        "Assets / portfolio" to metrics.assets,
+        "Total assets" to metrics.assets,
+        "Financial assets" to metrics.financialAssets,
+        "Non-financial" to metrics.nonFinancialAssets,
+        "Portfolio value" to metrics.portfolioValue,
         "Liabilities" to metrics.liabilities,
         "Benefits / refunds" to metrics.benefits,
         "Group expenses" to metrics.groupExpenses,
-        "Service revenue (net)" to metrics.revenue,
+        "Service revenue" to metrics.revenue,
         "Actual charges" to metrics.actualCharges,
         "Charge variance" to metrics.chargeVariance
     )
-    private val palette = intArrayOf(navy, teal, orange, gold, blue, green, muted, navy)
+    private val palette = intArrayOf(navy, teal, orange, gold, teal, green, blue, navy, green, muted, gold, orange, blue)
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = navy
-        textSize = dp(12f)
+        textSize = dp(11.5f)
         typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
     }
     private val boldPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = navy
-        textSize = dp(14f)
+        textSize = dp(13.5f)
         typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
     }
     private val barPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
@@ -51,8 +54,33 @@ class ArthSaathiMisChartsView(context: Context, private val metrics: ArthSaathiC
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = track; strokeWidth = dp(1f) }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val desiredHeight = dp(500f).toInt()
+        val desiredHeight = dp(750f).toInt()
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), resolveSize(desiredHeight, heightMeasureSpec))
+    }
+
+    private fun drawPie(canvas: Canvas, centerX: Float, centerY: Float, radius: Float, values: List<Double>, colors: IntArray) {
+        val total = values.sumOf { it.coerceAtLeast(0.0) }
+        val rect = RectF(centerX - radius, centerY - radius, centerX + radius, centerY + radius)
+        if (total <= 0.0) {
+            piePaint.color = track
+            canvas.drawCircle(centerX, centerY, radius, piePaint)
+            return
+        }
+        var angle = -90f
+        values.forEachIndexed { index, value ->
+            if (value > 0.0) {
+                val sweep = (value / total * 360.0).toFloat()
+                piePaint.color = colors[index % colors.size]
+                canvas.drawArc(rect, angle, sweep, true, piePaint)
+                angle += sweep
+            }
+        }
+    }
+
+    private fun legend(canvas: Canvas, x: Float, y: Float, color: Int, label: String) {
+        piePaint.color = color
+        canvas.drawRoundRect(RectF(x, y - dp(8f), x + dp(9f), y + dp(1f)), dp(2f), dp(2f), piePaint)
+        canvas.drawText(label, x + dp(14f), y, textPaint)
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -69,44 +97,26 @@ class ArthSaathiMisChartsView(context: Context, private val metrics: ArthSaathiC
             })
 
         canvas.drawText("Recorded balance snapshot", pad, dp(22f), boldPaint)
-        val pieTop = dp(34f)
-        val radius = dp(42f)
-        val centerX = w / 2f
-        val centerY = pieTop + radius
-        val assets = metrics.assets.coerceAtLeast(0.0)
-        val liabilities = metrics.liabilities.coerceAtLeast(0.0)
-        val total = assets + liabilities
-        val rect = RectF(centerX - radius, centerY - radius, centerX + radius, centerY + radius)
-        if (total <= 0.0) {
-            piePaint.color = track
-            canvas.drawCircle(centerX, centerY, radius, piePaint)
-        } else {
-            var angle = -90f
-            val assetSweep = (assets / total * 360.0).toFloat()
-            if (assets > 0.0) {
-                piePaint.color = gold
-                canvas.drawArc(rect, angle, assetSweep, true, piePaint)
-                angle += assetSweep
-            }
-            if (liabilities > 0.0) {
-                piePaint.color = navy
-                canvas.drawArc(rect, angle, (liabilities / total * 360.0).toFloat(), true, piePaint)
-            }
-        }
-        val legendY = centerY - dp(12f)
-        piePaint.color = gold
-        canvas.drawRoundRect(RectF(pad, legendY, pad + dp(10f), legendY + dp(10f)), dp(2f), dp(2f), piePaint)
-        canvas.drawText("Assets / portfolio  " + money(assets), pad + dp(16f), legendY + dp(9f), textPaint)
-        piePaint.color = navy
-        canvas.drawRoundRect(RectF(pad, legendY + dp(20f), pad + dp(10f), legendY + dp(30f)), dp(2f), dp(2f), piePaint)
-        canvas.drawText("Liabilities  " + money(liabilities), pad + dp(16f), legendY + dp(29f), textPaint)
+        drawPie(canvas, w * 0.27f, dp(70f), dp(32f),
+            listOf(metrics.assets, metrics.liabilities), intArrayOf(gold, navy))
+        legend(canvas, w * 0.50f, dp(62f), gold, "Assets  " + money(metrics.assets))
+        legend(canvas, w * 0.50f, dp(84f), navy, "Liabilities  " + money(metrics.liabilities))
 
-        val chartTitleY = dp(151f)
+        canvas.drawLine(pad, dp(119f), w - pad, dp(119f), linePaint)
+        canvas.drawText("Asset & portfolio composition", pad, dp(141f), boldPaint)
+        val mixValues = listOf(metrics.financialAssets, metrics.nonFinancialAssets, metrics.portfolioValue)
+        val mixColors = intArrayOf(teal, green, blue)
+        drawPie(canvas, w * 0.27f, dp(194f), dp(34f), mixValues, mixColors)
+        legend(canvas, w * 0.50f, dp(174f), teal, "Financial  " + money(metrics.financialAssets))
+        legend(canvas, w * 0.50f, dp(196f), green, "Non-financial  " + money(metrics.nonFinancialAssets))
+        legend(canvas, w * 0.50f, dp(218f), blue, "Portfolio  " + money(metrics.portfolioValue))
+
+        val chartTitleY = dp(267f)
         canvas.drawLine(pad, chartTitleY - dp(12f), w - pad, chartTitleY - dp(12f), linePaint)
         canvas.drawText("All recorded measures", pad, chartTitleY, boldPaint)
         val maxValue = max(1.0, values.maxOf { it.second.coerceAtLeast(0.0) })
-        val labelWidth = dp(104f)
-        val valueWidth = dp(82f)
+        val labelWidth = dp(100f)
+        val valueWidth = dp(72f)
         val barLeft = pad + labelWidth
         val barRight = w - pad - valueWidth
         val barWidth = (barRight - barLeft).coerceAtLeast(dp(24f))
@@ -122,9 +132,9 @@ class ArthSaathiMisChartsView(context: Context, private val metrics: ArthSaathiC
                 barPaint.color = palette[index]
                 canvas.drawRoundRect(RectF(barLeft, top, barLeft + barWidth * ratio, bottom), dp(5f), dp(5f), barPaint)
             }
-            textPaint.textSize = dp(9.5f)
-            canvas.drawText(compact(item.second), barRight + dp(4f), y + dp(3f), textPaint)
-            textPaint.textSize = dp(12f)
+            textPaint.textSize = dp(9f)
+            canvas.drawText(compact(item.second), barRight + dp(3f), y + dp(3f), textPaint)
+            textPaint.textSize = dp(11.5f)
         }
     }
 
