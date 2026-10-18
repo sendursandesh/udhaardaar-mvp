@@ -1533,7 +1533,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val ownerLabels = listOf("Primary user / not linked") + people.map { personLabel(it) }
         val owner = Spinner(this).also {
             it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ownerLabels)
-            body.addView(TextView(this).apply { text = "OWNER / RESPONSIBLE PERSON"; textSize = 12f; setTextColor(ArthSaathiV7Design.MUTED })
+            body.addView(TextView(this).apply { text = "OWNER / RESPONSIBLE PERSON"; textSize = 12f; setTextColor(ArthSaathiV7Design.MUTED) })
             body.addView(it)
         }
         val nomineeLabels = listOf("No nominee recorded") + people.map { personLabel(it) }
