@@ -318,9 +318,10 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             it.optString("type") == "ASSET" && it.optString("f0") == assetName
         }
         assertNotNull("Saved asset was not persisted", asset)
-        assertEquals(12345.67, requireNotNull(asset).optDouble("f2"), 0.005)
-        assertEquals(owner.id, asset.optString("ownerPersonId"))
-        assertEquals(nominee.id, asset.optString("nomineePersonId"))
+        val savedAsset = requireNotNull(asset)
+        assertEquals(12345.67, savedAsset.optDouble("f2"), 0.005)
+        assertEquals(owner.id, savedAsset.optString("ownerPersonId"))
+        assertEquals(nominee.id, savedAsset.optString("nomineePersonId"))
 
         ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
             Intent(context, ArthSaathiMasterModuleActivity::class.java)
