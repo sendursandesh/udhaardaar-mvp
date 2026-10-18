@@ -706,8 +706,9 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (pinValue.isNotBlank() && !pinValue.matches(Regex("[1-9][0-9]{5}"))) {
                     pin.error = "Enter a valid 6-digit Indian PIN code"; return@setOnClickListener
                 }
-                if (pinValue.isNotBlank() && (district.text.toString().isBlank() || state.text.toString().isBlank())) {
-                    pin.error = "Wait for PIN lookup or tap LOOK UP PIN / RETRY"; return@setOnClickListener
+                if (pinValue.isNotBlank() && address.text.toString().isBlank() &&
+                    (district.text.toString().isBlank() || state.text.toString().isBlank())) {
+                    pin.error = "Wait for PIN lookup or enter the address manually"; return@setOnClickListener
                 }
                 val panValue = pan.text.toString().trim().uppercase(Locale.US)
                 if (!ArthSaathiCoreEngine.validatePan(panValue)) {
