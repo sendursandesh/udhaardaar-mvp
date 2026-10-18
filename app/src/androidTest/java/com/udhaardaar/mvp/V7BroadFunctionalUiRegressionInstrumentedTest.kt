@@ -80,7 +80,11 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
                 requireNotNull(spinner)
                 val peopleSpinner = find<android.widget.Spinner>(root) { view -> view is android.widget.Spinner && (0 until (view.adapter?.count ?: 0)).any { index -> view.adapter?.getItem(index)?.toString()?.contains("Credit UI") == true } }
                 requireNotNull(peopleSpinner)
-                peopleSpinner.setSelection(0)
+                val creditUiIndex = (0 until (peopleSpinner.adapter?.count ?: 0)).firstOrNull { index ->
+                    peopleSpinner.adapter?.getItem(index)?.toString()?.contains("Credit UI") == true
+                }
+                requireNotNull(creditUiIndex)
+                peopleSpinner.setSelection(creditUiIndex)
                 edit(root, "Amount / Rent due (₹)").setText("10000")
                 spinner.setSelection(9)
                 edit(root, "Custom ROI %").setText("120")
