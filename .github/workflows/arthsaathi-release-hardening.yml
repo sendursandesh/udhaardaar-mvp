@@ -14,7 +14,8 @@ permissions:
 
 concurrency:
   group: arthsaathi-hardening-${{ github.ref }}
-  cancel-in-progress: true
+  # Do not cancel a running emulator suite when a follow-up correction is pushed.
+  cancel-in-progress: false
 
 jobs:
   build-test:
