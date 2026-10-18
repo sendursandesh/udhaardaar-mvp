@@ -64,11 +64,11 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
 
     @Test fun creditIntelligenceHidesFinancialHistoryUntilConsentIsVerified() {
         val party = "Consent gate QA " + System.currentTimeMillis()
-        ArthSaathiCoreEngine.saveModule("CREDIT", mapOf(
-            "party" to party, "nature" to "Personal Loan", "amount" to 24680.13,
-            "totalPayable" to 26000.0, "paid" to 100.0,
-            "status" to "ACTIVE", "consentStatus" to "PENDING"
-        ))
+        val created = ArthSaathiCoreEngine.createCredit(
+            null, party, "Personal Loan / Hand Loan", 24680.13, 0.0,
+            "UPI", "Bullet", "", null, null, "9876501188", "", "Bullet", 12
+        )
+        assertTrue("Credit must be created as pending consent", created.ok)
         ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
             Intent(context, ArthSaathiMasterModuleActivity::class.java)
                 .putExtra("module", ArthSaathiNavigation.CREDIT_INTELLIGENCE)
@@ -85,13 +85,22 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         }
     }
 
-    @Test fun creditIntelligenceShowsFinancialSummaryAfterVerifiedConsentState() {
+    @Test fun creditIntelligenceShowsFinancialSummaryOnlyAfterProviderVerifiedConsent() {
         val party = "Consent granted QA " + System.currentTimeMillis()
-        ArthSaathiCoreEngine.saveModule("CREDIT", mapOf(
-            "party" to party, "nature" to "Personal Loan", "amount" to 24680.13,
-            "totalPayable" to 26000.0, "paid" to 100.0,
-            "status" to "ACTIVE", "consentStatus" to "CONSENTED"
-        ))
+        ArthSaathiOtpService.installProvider(object : ArthSaathiOtpProvider {
+            override fun requestCode(mobile: String, purpose: String, recordId: String): String? = "qa-challenge"
+            override fun verifyCode(challengeId: String, code: String): Boolean =
+                challengeId == "qa-challenge" && code == "123456"
+        })
+        val created = ArthSaathiCoreEngine.createCredit(
+            null, party, "Personal Loan / Hand Loan", 24680.13, 0.0,
+            "UPI", "Bullet", "", null, null, "9876501187", "", "Bullet", 12
+        )
+        assertTrue("Credit creation must succeed", created.ok)
+        val id = created.id ?: error("Created credit did not return an ID")
+        assertTrue("Provider must issue a consent challenge", ArthSaathiCoreEngine.requestConsent(id, "lender").ok)
+        assertTrue("Only provider verification should activate the credit",
+            ArthSaathiCoreEngine.confirmConsent(id, "123456", "borrower").ok)
         ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
             Intent(context, ArthSaathiMasterModuleActivity::class.java)
                 .putExtra("module", ArthSaathiNavigation.CREDIT_INTELLIGENCE)
