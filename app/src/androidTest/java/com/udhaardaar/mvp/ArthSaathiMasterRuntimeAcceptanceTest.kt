@@ -62,6 +62,48 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         return null
     }
 
+    @Test fun creditIntelligenceHidesFinancialHistoryUntilConsentIsVerified() {
+        val party = "Consent gate QA " + System.currentTimeMillis()
+        ArthSaathiCoreEngine.saveModule("CREDIT", mapOf(
+            "party" to party, "nature" to "Personal Loan", "amount" to 24680.13,
+            "totalPayable" to 26000.0, "paid" to 100.0,
+            "status" to "ACTIVE", "consentStatus" to "PENDING"
+        ))
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.CREDIT_INTELLIGENCE)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val visible = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("Counterparty should be identifiable without disclosing financial history", visible.contains(party))
+                assertTrue("Pending consent must explain why details are hidden", visible.contains("Protected details hidden"))
+                assertFalse("Unconsented principal must not be displayed", visible.contains("24680.13"))
+                assertFalse("Unconsented payable must not be displayed", visible.contains("26000.00"))
+                assertTrue("Screen must route the user to the canonical consent workflow",
+                    visible.contains("OPEN SECURITY & CONSENT"))
+            }
+        }
+    }
+
+    @Test fun creditIntelligenceShowsFinancialSummaryAfterVerifiedConsentState() {
+        val party = "Consent granted QA " + System.currentTimeMillis()
+        ArthSaathiCoreEngine.saveModule("CREDIT", mapOf(
+            "party" to party, "nature" to "Personal Loan", "amount" to 24680.13,
+            "totalPayable" to 26000.0, "paid" to 100.0,
+            "status" to "ACTIVE", "consentStatus" to "CONSENTED"
+        ))
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.CREDIT_INTELLIGENCE)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                val visible = allText(activity.window.decorView).joinToString(" | ")
+                assertTrue("Verified consent should unlock the registered financial summary", visible.contains("Registered amount: ₹24680.13"))
+                assertTrue("Verified consent should show the calculated outstanding", visible.contains("Outstanding: ₹25900.00"))
+            }
+        }
+    }
+
     @Test fun documentVaultEncryptsFilesAndRestoresOriginalBytesWithIntegrityHash() {
         val original = "ArthSaathi secure document acceptance test".toByteArray(Charsets.UTF_8)
         val stored = ArthSaathiDocumentStorage.store(
