@@ -70,9 +70,9 @@ object ArthSaathiCoreEngine {
   if(challenge.isBlank()||!ArthSaathiOtpService.verify(challenge,otp))
       return Result(false,message="OTP could not be verified; consent remains pending")
   o.put("consentStatus","CONSENTED");o.put("consentActor",actor);o.put("consentAt",n())
-  o.remove("consentChallengeId")
-  replace(o);audit(recordId,"CONSENT_CONFIRMED",actor)
-  return Result(true,recordId,"Consent confirmed by OTP provider")
+  o.put("status","ACTIVE");o.put("registeredAt",n());o.remove("consentChallengeId")
+  replace(o);audit(recordId,"CONSENT_CONFIRMED",actor);audit(recordId,"CREDIT_REGISTERED",actor)
+  return Result(true,recordId,"Consent confirmed; credit is now registered")
  }
  fun repayment(recordId:String,amount:Double,method:String,actor:String):Result{
   require(amount.isFinite() && amount>0);require(method.isNotBlank())
