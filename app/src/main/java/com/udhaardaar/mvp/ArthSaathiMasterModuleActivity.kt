@@ -1808,8 +1808,16 @@ class ArthSaathiMasterModuleActivity : Activity() {
     private fun simple(body:LinearLayout,type:String,title:String,hints:List<String>){
         body.addView(TextView(this).apply{text=title+"\n";textSize=17f})
         val fields=hints.map { hint ->
-            val numeric = isNumericHint(hint)
-            val edit = field(body, hint, numeric)
+            val numeric = isNumericHint(hint) || hint.contains("mobile number", true) || hint.contains("PIN code", true) || hint.contains("Aadhaar (last four", true)
+            val maxLength = when {
+                hint.contains("mobile number", true) -> 10
+                hint.contains("PIN code", true) -> 6
+                hint.contains("Aadhaar (last four", true) -> 4
+                hint.contains("PAN", true) -> 10
+                hint.contains("GSTIN", true) -> 15
+                else -> null
+            }
+            val edit = field(body, hint, numeric, maxLength)
             if (!numeric && (hint.contains("date", true) || hint.contains("expiry", true) ||
                     hint.contains("renewal", true) || hint.contains("due", true))) {
                 edit.isFocusable = false
