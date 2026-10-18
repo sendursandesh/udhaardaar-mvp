@@ -30,20 +30,20 @@ set -e
 
 echo "=== Pulling canonical ArthSaathi visual evidence ==="
 mkdir -p app/build/qa-diagnostics/visual-captures
-# UiDevice writes screenshots to the app-scoped external path under /storage/emulated/0.
-# Use that canonical path rather than /sdcard, which is not mounted consistently on CI images.
-capture_dir="/storage/emulated/0/Android/data/com.arthsaathi.master/files/arthsaathi_canonical"
-if adb shell "test -d '$capture_dir'"; then
+# Resolve the directory from the actual app-scoped storage location rather than
+# hard-coding an applicationId; this also catches package/applicationId drift.
+capture_dir="$(adb shell "find /storage/emulated/0/Android/data -type d -name 'arthsaathi_canonical' -print 2>/dev/null" | tr -d '\r' | head -n 1)"
+if [[ -n "$capture_dir" ]] && adb shell "test -d '$capture_dir'"; then
   adb pull "$capture_dir" app/build/qa-diagnostics/visual-captures
   screenshot_count=$(find app/build/qa-diagnostics/visual-captures -type f -name '*.png' | wc -l)
-  echo "Canonical screenshots captured: $screenshot_count"
+  echo "Canonical screenshots captured from $capture_dir: $screenshot_count"
   if (( screenshot_count < 20 )); then
     echo "FAIL: expected screenshots for canonical module screens; found only $screenshot_count"
     exit 3
   fi
 else
-  echo "FAIL: canonical screenshot directory not found at $capture_dir"
-  adb shell "find /storage/emulated/0/Android/data/com.arthsaathi.master/files -maxdepth 3 -type d -name 'arthsaathi_canonical' -print" || true
+  echo "FAIL: canonical screenshot directory was not found under /storage/emulated/0/Android/data"
+  adb shell "find /storage/emulated/0/Android/data -maxdepth 6 -type d -name 'arthsaathi_canonical' -print" || true
   exit 3
 fi
 
