@@ -462,7 +462,10 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                     sp.getItemAtPosition(it).toString().contains("Rental", true)
                 }
                 if (leaseIndex != null) sp.setSelection(leaseIndex)
-                requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
+            }
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+            scenario.onActivity { activity ->
+                requireNotNull(findButton(activity.window.decorView, "REGISTER CREDIT")).performClick()
             }
         }
         val after = ArthSaathiDataStore.records()
