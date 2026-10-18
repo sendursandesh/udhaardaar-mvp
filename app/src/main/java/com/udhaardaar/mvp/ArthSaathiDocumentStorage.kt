@@ -3,7 +3,6 @@ package com.udhaardaar.mvp
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -40,7 +39,7 @@ object ArthSaathiDocumentStorage {
         val extension = originalName.substringAfterLast('.', "bin")
             .lowercase().filter { it.isLetterOrDigit() }.take(8).ifBlank { "bin" }
         val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
-            .joinToString("") { "%02x".format(it) }
+            .joinToString("") { "%02x".format(it.toInt() and 0xff) }
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key())
         val encrypted = cipher.doFinal(bytes)
