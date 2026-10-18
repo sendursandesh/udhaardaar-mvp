@@ -117,7 +117,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.PROFILE -> simple(body,"PROFILE","Profile & Identity",listOf("Full legal name","Mobile number (10 digits)","Email address","PAN","Aadhaar (last four digits only)","Preferred language"))
             ArthSaathiNavigation.FAMILY -> simple(body,"FAMILY","Family & Nominees",listOf("Family member / nominee name","Relationship","Mobile number (10 digits)","Nomination / relationship notes","Consent status"))
             ArthSaathiNavigation.ADDRESS -> simple(body,"ADDRESS","Address & Geolocation",listOf("Address label","PIN code (6 digits)","City","State","Landmark / address override","Location source / verification status"))
-            ArthSaathiNavigation.CREDIT_INTELLIGENCE -> simple(body,"CREDIT_INTELLIGENCE","Credit Intelligence & Score",listOf("Counterparty name or reference","Credit category","Consent reference (required before viewing history)","Verified repayment summary","Last updated date"))
+            ArthSaathiNavigation.CREDIT_INTELLIGENCE -> creditIntelligence(body)
             ArthSaathiNavigation.TRADE_CREDIT -> simple(body,"TRADE_CREDIT","Trade Credit",listOf("Supplier / customer","GSTIN","Invoice number","Invoice date","Invoice amount (₹)","Credit period in days","Due date","Source system / reference"))
             ArthSaathiNavigation.ACCOUNTING -> simple(body,"ACCOUNTING_ADAPTER","Accounting & ERP Adapters",listOf("Adapter (Tally / SAP / CSV / REST / webhook)","Source system","Environment (local / test / production)","Connection status","Configuration reference (no secrets)"))
             ArthSaathiNavigation.FORMAL_CREDIT -> simple(body,"FORMAL_CREDIT","Formal Credit & Charge Review",listOf("Lender / institution","Loan product","Sanctioned principal (₹)","Sanctioned interest rate (%)","Actual interest / charges (₹)","Evidence document reference","Review status"))
@@ -722,6 +722,75 @@ class ArthSaathiMasterModuleActivity : Activity() {
                         Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
                         if (result.ok) render(ArthSaathiNavigation.SECURITY_CONSENT)
                     }
+                })
+            }
+        }
+    }
+
+    /**
+     * Privacy-first credit intelligence. A typed consent reference or status label is
+     * never sufficient: the locally registered credit must carry a completed consent
+     * state from the dedicated consent workflow before any financial history is shown.
+     */
+    private fun creditIntelligence(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "Credit history and score details are private. They are shown only for a registered credit whose borrower consent has been verified through Security & Consent."
+            textSize = 14f
+            setPadding(0, 4, 0, 12)
+        })
+        val credits = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "CREDIT" }
+        if (credits.isEmpty()) {
+            body.addView(TextView(this).apply {
+                text = "No registered credit records are available. Register a credit first; no history is inferred from a name or typed reference."
+                textSize = 14f
+                setPadding(0, 8, 0, 12)
+            })
+            body.addView(Button(this).apply {
+                text = "REGISTER CREDIT"
+                setOnClickListener { render(ArthSaathiNavigation.REGISTER_CREDIT) }
+            })
+            return
+        }
+        credits.forEach { credit ->
+            val consented = credit.optString("consentStatus") == "CONSENTED"
+            body.addView(TextView(this).apply {
+                text = credit.optString("party", "Counterparty") + " • " +
+                    credit.optString("nature", "Credit") + "\nConsent: " +
+                    if (consented) "Verified" else "Not verified"
+                textSize = 15f
+                setPadding(0, 12, 0, 6)
+            })
+            if (!consented) {
+                body.addView(TextView(this).apply {
+                    text = "Protected details hidden until borrower consent is verified. A manually entered consent reference cannot unlock this record."
+                    textSize = 13f
+                    setPadding(8, 4, 8, 8)
+                })
+                body.addView(Button(this).apply {
+                    text = "OPEN SECURITY & CONSENT"
+                    setOnClickListener { render(ArthSaathiNavigation.SECURITY_CONSENT) }
+                })
+            } else {
+                val payable = credit.optDouble("totalPayable", credit.optDouble("amount"))
+                val paid = credit.optDouble("paid")
+                val outstanding = (payable - paid).coerceAtLeast(0.0)
+                body.addView(TextView(this).apply {
+                    text = "Registered amount: ₹" + money(credit.optDouble("amount")) +
+                        "\nContractual payable: ₹" + money(payable) +
+                        "\nRepaid: ₹" + money(paid) +
+                        "\nOutstanding: ₹" + money(outstanding) +
+                        "\nAccount status: " + credit.optString("status", "UNKNOWN")
+                    textSize = 14f
+                    setPadding(8, 4, 8, 8)
+                })
+                val payments = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+                    .filter { it.optString("type") == "REPAYMENT" &&
+                        it.optString("recordId") == credit.optString("id") }
+                body.addView(TextView(this).apply {
+                    text = "Verified repayment transactions: " + payments.size
+                    textSize = 13f
+                    setPadding(8, 0, 8, 8)
                 })
             }
         }
