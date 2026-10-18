@@ -441,7 +441,7 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(root, "Method: Cash / UPI / NEFT / Other")).setText("BANK")
                 requireNotNull(findEdit(root, "Repayment mode / terms (EMI / Principal + Interest / Bullet / Rental)")).setText("Monthly rent")
                 requireNotNull(findButton(root, "REGISTER CREDIT")).performClick()
-                assertEquals("Enter a 10-digit mobile number",
+                assertEquals("A valid 10-digit mobile number is required for borrower consent",
                     findEdit(root, "Counterparty mobile (10 digits)")?.error)
                 assertEquals(before, ArthSaathiDataStore.records().length())
                 requireNotNull(findEdit(root, "Counterparty mobile (10 digits)")).setText("9876501187")
