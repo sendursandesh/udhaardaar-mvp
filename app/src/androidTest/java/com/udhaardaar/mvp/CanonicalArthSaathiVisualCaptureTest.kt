@@ -41,6 +41,24 @@ class CanonicalArthSaathiVisualCaptureTest {
     @Test fun captureEveryCanonicalArthSaathiModuleScreen() {
         val modules = ArthSaathiArchitectureRegistry.modules
         assertTrue("Canonical module registry must not be empty", modules.isNotEmpty())
+        // Capture the real unauthenticated login screen before restoring the QA session.
+        ArthSaathiSession.logout(context)
+        ActivityScenario.launch<ArthSaathiLoginActivity>(
+            Intent(context, ArthSaathiLoginActivity::class.java)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                assertTrue("Login screen did not become visible", activity.window.decorView.isShown)
+                val logo = activity.window.decorView.findViewWithTag<android.widget.ImageView>("arthsaathi-canonical-logo")
+                assertTrue("Approved logo missing from login screen",
+                    logo != null && logo.contentDescription == "ArthSaathi approved journey logo")
+            }
+            device.waitForIdle()
+            val target = File(captureDir, "LOGIN.png")
+            device.executeShellCommand("screencap -p \${target.absolutePath}")
+            val bytes = device.executeShellCommand("stat -c %s \${target.absolutePath}").trim().toLongOrNull() ?: 0L
+            assertTrue("Login screenshot missing or empty", bytes > 0L)
+        }
+        ArthSaathiSession.login(context, mobile)
         modules.forEach { module ->
             ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
                 Intent(context, ArthSaathiMasterModuleActivity::class.java)
@@ -81,6 +99,6 @@ class CanonicalArthSaathiVisualCaptureTest {
             assertTrue("Real launcher home screenshot is missing or empty", bytes > 0L)
         }
         assertTrue("Expected one screenshot for every canonical module plus real launcher home",
-            device.executeShellCommand("ls /sdcard/arthsaathi_canonical").lineSequence().count { it.trim().endsWith(".png") } == modules.size + 1)
+            device.executeShellCommand("ls /sdcard/arthsaathi_canonical").lineSequence().count { it.trim().endsWith(".png") } == modules.size + 2)
     }
 }
