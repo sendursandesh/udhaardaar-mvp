@@ -130,6 +130,51 @@ class V7Step1To5IntegrationInstrumentedTest {
         assertEquals("FAILED", V7Core.find(context, V7Core.Keys.PAYMENTS, failed.optString("id"))?.optString("status"))
     }
 
+    @Test fun repaymentAmountMustReconcileToPrincipalAndInterest() {
+        val person = V7Records.person(context, "V7 Amount Reconciliation", "9876543290")
+        val relationship = V7Records.relationship(
+            context, person.optString("id"), "INFORMAL_CREDIT",
+            "RECEIVABLE", 5000.0, 0.0, "PRINCIPAL_PLUS_INTEREST", "amount reconciliation"
+        )
+        val service = V7Architecture.LocalConsentService(context)
+        val consent = service.request(
+            V7Architecture.ConsentRequest(
+                subjectId = person.optString("id"),
+                purpose = "REPAYMENT_UPDATE",
+                scope = "relationship:" + relationship.optString("id"),
+                actorId = V7Core.user(context),
+                expiresAt = System.currentTimeMillis() + 60_000L
+            )
+        )
+        assertNotNull(service.grant(consent.id, true))
+
+        V7Records.repayment(
+            context, relationship.optString("id"), 1000.0, 600.0, 300.0, "UPI", true
+        )
+        val stored = V7Core.find(context, V7Core.Keys.RELATIONSHIPS, relationship.optString("id"))
+        assertEquals(5000.0, stored!!.optDouble("outstanding"), 0.005)
+        assertFalse(V7Core.all(context, V7Core.Keys.REPAYMENTS).any {
+            it.optString("relationshipId") == relationship.optString("id")
+        })
+    }
+
+    @Test fun repeatedAlertEvaluationDoesNotDuplicateOpenAlerts() {
+        val liability = V7Records.liability(
+            context, V7Core.user(context), "QA_DUE", 8000.0, 7000.0, 0.0
+        )
+        liability.put("dueDate", "2099-12-31")
+        assertTrue(V7Core.replace(context, V7Core.Keys.LIABILITIES, liability))
+
+        V7AlertEngine.evaluate(context)
+        V7AlertEngine.evaluate(context)
+        val matching = V7Core.all(context, V7Core.Keys.ALERTS).filter {
+            it.optString("type") == "LIABILITY_DUE" &&
+                it.optString("entityId") == liability.optString("id") &&
+                it.optString("status") == "OPEN"
+        }
+        assertEquals("One open due alert per liability", 1, matching.size)
+    }
+
     @Test fun expiredConsentIsNotActive() {
         val person = V7Records.person(context, "V7 Expiry QA", "9876543211")
         val service = V7Architecture.LocalConsentService(context)
