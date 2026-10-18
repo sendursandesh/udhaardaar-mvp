@@ -54,8 +54,8 @@ class CanonicalArthSaathiVisualCaptureTest {
             }
             device.waitForIdle()
             val target = File(captureDir, "LOGIN.png")
-            device.executeShellCommand("screencap -p \${target.absolutePath}")
-            val bytes = device.executeShellCommand("stat -c %s \${target.absolutePath}").trim().toLongOrNull() ?: 0L
+            device.executeShellCommand("screencap -p ${target.absolutePath}")
+            val bytes = device.executeShellCommand("stat -c %s ${target.absolutePath}").trim().toLongOrNull() ?: 0L
             assertTrue("Login screenshot missing or empty", bytes > 0L)
         }
         ArthSaathiSession.login(context, mobile)
