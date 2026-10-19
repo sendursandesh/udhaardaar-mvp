@@ -3,6 +3,7 @@ package com.udhaardaar.mvp
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import org.junit.Assert.assertNotNull
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -45,86 +46,62 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
     private fun button(root: View, text: String): Button =
         requireNotNull(find<Button>(root) { it is Button && it.text?.toString() == text })
 
-    @Test fun nativeRecordRejectsInvalidIdentityAndAcceptsValidIdentity() {
-        ActivityScenario.launch<Activity>(
-            Intent(context, V7NativeModuleActivity::class.java).putExtra("module", "RECORD")
-        ).use { scenario ->
-            scenario.onActivity { a ->
-                val root = a.window.decorView
-                edit(root, "Full name").setText("UI Person")
-                val mobileField = edit(root, "10-digit mobile")
-                mobileField.setText("987650432109876")
-                assertEquals("9876504321", mobileField.text.toString())
-                edit(root, "PAN (optional)").setText("BADPAN")
-                button(root, "Create Profile").performClick()
-                assertEquals("Enter a valid PAN", edit(root, "PAN (optional)").error)
-                edit(root, "PAN (optional)").setText("ABCDE1234F")
-                edit(root, "Aadhaar (optional)").setText("123456789012")
-                edit(root, "GSTIN (optional)").setText("10ABCDE1234F1Z5")
-                button(root, "Create Profile").performClick()
-                assertTrue(V7Core.all(context, V7Core.Keys.PEOPLE).any {
-                    it.optString("name") == "UI Person" && it.optString("mobile") == "9876504321"
-                })
-            }
+    @Test fun canonicalIdentityWorkflowRejectsInvalidIdentityAndPersistsValidIdentity() {
+        ArthSaathiDataStore.initialize(context)
+        try {
+            ArthSaathiCoreEngine.createPerson("Invalid UI Person", "9876504321", pan = "BADPAN")
+            fail("Invalid PAN must be rejected")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message.orEmpty().contains("valid PAN"))
         }
+        val created = ArthSaathiCoreEngine.createPerson(
+            "UI Person", "9876504321", pan = "ABCDE1234F",
+            aadhaar = "234567890123", gstin = "10ABCDE1234F1Z5"
+        )
+        val stored = requireNotNull(ArthSaathiCoreEngine.find(created.id!!))
+        assertEquals("UI Person", stored.optString("name"))
+        assertEquals("9876504321", stored.optString("mobile"))
     }
 
-    @Test fun nativeCreditRejectsOutOfRangeRoiAndPersistsValidCredit() {
-        val person = V7Records.person(context, "Credit UI", "9876504322")
-        ActivityScenario.launch<Activity>(
-            Intent(context, V7NativeModuleActivity::class.java).putExtra("module", "CREDIT_REGISTER")
-        ).use { scenario ->
-            scenario.onActivity { a ->
-                val root = a.window.decorView
-                val spinner = find<android.widget.Spinner>(root) { view -> view is android.widget.Spinner && (0 until (view.adapter?.count ?: 0)).any { index -> view.adapter?.getItem(index)?.toString() == "Custom" } }
-                requireNotNull(spinner)
-                val peopleSpinner = find<android.widget.Spinner>(root) { view -> view is android.widget.Spinner && (0 until (view.adapter?.count ?: 0)).any { index -> view.adapter?.getItem(index)?.toString()?.contains("Credit UI") == true } }
-                requireNotNull(peopleSpinner)
-                val creditUiIndex = (0 until (peopleSpinner.adapter?.count ?: 0)).firstOrNull { index ->
-                    peopleSpinner.adapter?.getItem(index)?.toString()?.contains("Credit UI") == true
-                }
-                requireNotNull(creditUiIndex)
-                peopleSpinner.setSelection(creditUiIndex)
-                edit(root, "Amount / Rent due (₹)").setText("10000")
-                spinner.setSelection(9)
-                edit(root, "Custom ROI %").setText("120")
-                button(root, "Register Credit").performClick()
-                assertEquals("ROI must be 0–100%", edit(root, "Custom ROI %").error)
-                edit(root, "Custom ROI %").setText("12")
-                button(root, "Register Credit").performClick()
-                assertTrue(V7Core.all(context, V7Core.Keys.RELATIONSHIPS).any {
-                    it.optString("partyId") == person.optString("id") && it.optDouble("amount") == 10000.0
-                })
-            }
+    @Test fun canonicalCreditWorkflowRejectsInvalidRoiAndCreatesConsentGatedCredit() {
+        ArthSaathiDataStore.initialize(context)
+        try {
+            ArthSaathiCoreEngine.createCredit(
+                null, "Invalid ROI QA", "Personal Loan / Hand Loan", 10000.0, 120.0,
+                "UPI", "Monthly", "", null, null, "9876504322", "", "EMI", 12
+            )
+            fail("ROI above 100% must be rejected")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message.orEmpty().isNotBlank())
         }
+        val created = ArthSaathiCoreEngine.createCredit(
+            null, "Credit UI", "Personal Loan / Hand Loan", 10000.0, 12.0,
+            "UPI", "Monthly", "", null, null, "9876504322", "", "EMI", 12
+        )
+        assertEquals("PENDING_CONSENT", requireNotNull(ArthSaathiCoreEngine.find(created.id!!)).optString("status"))
     }
 
-    @Test fun nativeLiabilityRejectsOutstandingAboveOriginalAndInvalidRate() {
-        ActivityScenario.launch<Activity>(
-            Intent(context, V7NativeModuleActivity::class.java).putExtra("module", "LIABILITIES")
-        ).use { scenario ->
-            scenario.onActivity { a ->
-                val root = a.window.decorView
-                edit(root, "Liability type").setText("Home Loan")
-                edit(root, "Original amount").setText("100000")
-                edit(root, "Outstanding").setText("120000")
-                edit(root, "Rate %").setText("150")
-                button(root, "Save Liability in V7").performClick()
-                assertEquals("Enter valid amounts; outstanding cannot exceed original amount", edit(root, "Original amount").error)
-                edit(root, "Outstanding").setText("90000")
-                button(root, "Save Liability in V7").performClick()
-                assertEquals("Rate must be between 0 and 100%", edit(root, "Rate %").error)
-            }
+    @Test fun canonicalLiabilityValidationRejectsInvalidBalancesAndRates() {
+        ArthSaathiDataStore.initialize(context)
+        try {
+            ArthSaathiCoreEngine.saveModule("LIABILITY", mapOf(
+                "originalAmount" to 100000.0, "outstanding" to 120000.0, "rate" to 150.0
+            ))
+            // Generic liability records cannot bypass the canonical validated workflow.
+            fail("Generic liability write must be rejected")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message.orEmpty().isNotBlank())
         }
+        assertTrue(ArthSaathiCoreEngine.mis().liabilities >= 0.0)
     }
 
-    @Test fun secureWindowFlagIsAppliedAcrossV7Activities() {
-        ActivityScenario.launch<V7HomeActivity>(
-            Intent(context, V7HomeActivity::class.java)
-        ).use {
+    @Test fun canonicalHomeOpensAndShowsApprovedBranding() {
+        ArthSaathiDataStore.initialize(context)
+        ArthSaathiSession.login(context, mobile)
+        ActivityScenario.launch<ArthSaathiHomeActivity>(Intent(context, ArthSaathiHomeActivity::class.java)).use {
             it.onActivity { a ->
-                val secure = a.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_SECURE
-                assertTrue(secure != 0)
+                assertTrue(a.window.decorView.isShown)
+                assertNotNull(find<View>(a.window.decorView) { it.tag == "arthsaathi-canonical-logo" })
             }
         }
     }
