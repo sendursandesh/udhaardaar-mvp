@@ -1008,4 +1008,25 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         assertEquals("Rejected writes must not append records", before, ArthSaathiDataStore.records().length())
     }
 
+    @Test fun genericUpdateCannotConvertAnAssetIntoCreditOrReassignOwnership() {
+        val created = ArthSaathiCoreEngine.saveModule(
+            "ASSET",
+            mapOf("f0" to "Identity immutability QA", "value" to 123.45)
+        )
+        assertTrue("Test asset should be saved", created.ok)
+        val id = created.id ?: error("Asset ID missing")
+
+        val typeChange = ArthSaathiCoreEngine.update(
+            id,
+            mapOf("type" to "CREDIT", "status" to "ACTIVE", "consentStatus" to "CONSENTED")
+        )
+        assertFalse("Generic update must reject a record-type mutation", typeChange.ok)
+        assertEquals("ASSET", ArthSaathiCoreEngine.find(id)?.optString("type"))
+
+        val ownerChange = ArthSaathiCoreEngine.update(id, mapOf("ownerUserId" to "another-account"))
+        assertFalse("Generic update must reject ownership mutation", ownerChange.ok)
+        assertEquals("The record must remain owned by the signed-in account",
+            "9876501199", ArthSaathiCoreEngine.find(id)?.optString("ownerUserId"))
+    }
+
 }
