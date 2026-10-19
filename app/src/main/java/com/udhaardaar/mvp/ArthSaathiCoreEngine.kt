@@ -184,6 +184,9 @@ object ArthSaathiCoreEngine {
  }
  fun update(id:String,fields:Map<String,Any?>,actor:String="user"):Result{
   val o=find(id)?:return Result(false,message="Record not found")
+  val reserved=setOf("id","type","ownerUserId","createdAt","updatedAt")
+  if(fields.keys.any { it in reserved })
+   return Result(false,id,"Record identity, ownership and creation timestamps cannot be changed through a generic update")
   val protectedCreditFields=setOf("consentStatus","consentChallengeId","consentActor","consentAt","consentRequestedAt","paid","status","ownerUserId")
   if(o.optString("type")=="CREDIT" && fields.keys.any{it in protectedCreditFields})
    return Result(false,id,"Consent, repayment, closure and ownership fields can only change through their dedicated verified workflows")
