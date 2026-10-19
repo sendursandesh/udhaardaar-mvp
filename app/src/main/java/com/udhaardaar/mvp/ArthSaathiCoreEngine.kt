@@ -108,14 +108,45 @@ object ArthSaathiCoreEngine {
   replace(o);audit(recordId,"CONSENT_CONFIRMED",actor);audit(recordId,"CREDIT_REGISTERED",actor)
   return Result(true,recordId,"Consent confirmed; credit is now registered")
  }
- fun repayment(recordId:String,amount:Double,method:String,actor:String):Result{
+ fun requestRepaymentOtp(recordId:String,actor:String):Result {
+  val o=find(recordId)?:return Result(false,message="Credit not found")
+  if(o.optString("type")!="CREDIT")return Result(false,message="Repayment is supported for credit records only")
+  if(o.optString("status")!="ACTIVE")return Result(false,message="Credit is not registered and active")
+  if(o.optString("consentStatus")!="CONSENTED")return Result(false,message="Verified borrower consent is required before repayment")
+  val mobile=o.optString("partyMobile")
+  if(!validateMobile(mobile))return Result(false,message="A valid borrower mobile number is required for repayment verification")
+  val challenge=ArthSaathiOtpService.request(mobile,"REPAYMENT_CONFIRMATION",recordId)
+      ?:return Result(false,message="Repayment OTP service is not configured or could not issue a challenge; no repayment was recorded")
+  audit(recordId,"REPAYMENT_OTP_REQUESTED",actor)
+  return Result(true,challenge,"Repayment verification code requested from the configured provider")
+ }
+
+ /** Legacy entry point intentionally fails closed: callers must provide a provider-verified OTP. */
+ fun repayment(recordId:String,amount:Double,method:String,actor:String):Result =
+  Result(false,recordId,"Repayment OTP verification is required; no repayment was recorded")
+
+ fun repayment(recordId:String,amount:Double,method:String,actor:String,challengeId:String,otp:String):Result{
   require(amount.isFinite() && amount>0);require(method.isNotBlank())
   val paymentAmount=m(amount);require(paymentAmount>0.0) { "Repayment must be at least ₹0.01" }
-  val o=find(recordId)?:return Result(false,message="Credit not found");require(o.optString("type")=="CREDIT");require(o.optString("status")=="ACTIVE") { "Credit is not registered and active" };require(o.optString("consentStatus")=="CONSENTED")
+  val o=find(recordId)?:return Result(false,message="Credit not found")
+  require(o.optString("type")=="CREDIT")
+  require(o.optString("status")=="ACTIVE") { "Credit is not registered and active" }
+  require(o.optString("consentStatus")=="CONSENTED") { "Verified borrower consent is required" }
+  if(challengeId.isBlank() || !ArthSaathiOtpService.verify(challengeId,otp))
+   return Result(false,recordId,"Repayment OTP was not verified; no repayment was recorded")
   val payable=o.optDouble("totalPayable",o.optDouble("amount"))
-  val out=(payable-o.optDouble("paid")).coerceAtLeast(0.0);require(paymentAmount<=out+0.005)
-  val tx=JSONObject().apply{put("id",id("TX"));put("type","REPAYMENT");put("recordId",recordId);put("amount",paymentAmount);put("method",method);put("actor",actor);put("createdAt",n())}
-  save(tx,"REPAYMENT");o.put("paid",m(o.optDouble("paid")+paymentAmount));if(o.optDouble("paid")+0.005>=payable)o.put("status","CLOSED");o.put("updatedAt",n());replace(o);return Result(true,tx.getString("id"),"Repayment recorded")
+  val out=(payable-o.optDouble("paid")).coerceAtLeast(0.0)
+  require(paymentAmount<=out+0.005) { "Repayment exceeds outstanding balance" }
+  val tx=JSONObject().apply{
+   put("id",id("TX"));put("type","REPAYMENT");put("recordId",recordId)
+   put("amount",paymentAmount);put("method",method.trim());put("actor",actor)
+   put("verificationChallengeId",challengeId);put("verificationPurpose","REPAYMENT_CONFIRMATION")
+   put("verifiedAt",n());put("createdAt",n())
+  }
+  save(tx,"REPAYMENT");o.put("paid",m(o.optDouble("paid")+paymentAmount))
+  if(o.optDouble("paid")+0.005>=payable)o.put("status","CLOSED")
+  o.put("updatedAt",n());replace(o)
+  return Result(true,tx.getString("id"),"Repayment recorded after verified OTP")
  }
  fun emi(p:Double,rate:Double,months:Int):Double{require(p.isFinite() && p in 0.01..1.0e15) { "Principal must be between ₹0.01 and ₹1,000,000,000,000,000" };require(rate.isFinite() && rate in 0.0..100.0) { "Annual rate must be between 0 and 100%" };require(months in 1..600) { "Tenure must be between 1 and 600 months" };if(rate==0.0)return maxOf(m(p/months),0.01);val r=rate/1200.0;val discount=(1.0+r).pow(-months.toDouble());val raw=p*r/(1.0-discount);require(raw.isFinite() && raw>0.0) { "EMI calculation exceeded the supported range" };return maxOf(m(raw),0.01)}
  fun schedule(p:Double,rate:Double,months:Int):JSONArray{val a=JSONArray();var balance=p;val payment=emi(p,rate,months);val r=rate/1200.0;for(i in 1..months){val interest=if(r==0.0)0.0 else m(balance*r);val last=i==months;val due=if(last||payment>=balance+interest)m(balance+interest) else payment;val principal=if(balance<=0.0)0.0 else if(last||due>=balance+interest)m(balance) else m((due-interest).coerceAtLeast(0.0).coerceAtMost(balance));balance=if(principal>=balance-0.005)0.0 else m((balance-principal).coerceAtLeast(0.0));a.put(JSONObject().apply{put("installment",i);put("emi",due);put("interest",interest);put("principal",principal);put("balance",balance)})};return a}
