@@ -41,6 +41,7 @@ The audit branch has been extended with:
 - Guardrails against generic writes overriding record type, ID, owner, or timestamps.
 - Guardrails against generic updates changing record identity or protected registered credit terms.
 - Removed the Home screen's dependency on the legacy `udhaardaar_accounts` preference namespace; the profile header now reads account-scoped ArthSaathi profile records.
+- Restored the agreed five-tab navigation `Home | Credit | Repay | Vault | More`; the 34 non-home modules are assigned exactly once across the four service tabs, and duplicate home quick-action tiles were removed.
 - Repayment requires a separate provider-issued OTP bound to the specific credit and purpose; the legacy direct call fails closed. Balance, repayment ledger and audit entry are committed in one encrypted-store write.
 - Added email and Aadhaar-last-four validation to generic module forms.
 - Added instrumentation cases for generic-write/update protections, repayment challenge binding and wrong-OTP rejection, MIS propagation, legacy-profile isolation, field validation, and every canonical module title/brand mark. The runtime suite now clears its account-scoped test records between cases to prevent order-dependent results.
