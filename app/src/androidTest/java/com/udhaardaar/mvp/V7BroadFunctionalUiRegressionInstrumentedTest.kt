@@ -22,9 +22,13 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
     @Before fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         V7AccountStore.logout(context)
+        ArthSaathiSession.logout(context)
         V7LocalStore(context).remove("v7_accounts", mobile)
         V7AccountStore.create(context, "UI Regression", mobile)
         V7AccountStore.login(context, mobile)
+        ArthSaathiDataStore.initialize(context)
+        ArthSaathiSession.logout(context)
+        ArthSaathiSession.login(context, mobile)
     }
 
     @After fun tearDown() {
@@ -81,7 +85,7 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
         assertEquals("PENDING_CONSENT", requireNotNull(ArthSaathiCoreEngine.find(created.id!!)).optString("status"))
     }
 
-    @Test fun canonicalLiabilityValidationRejectsInvalidBalancesAndRates() {
+    @Test fun genericLiabilityWriteCannotBypassCanonicalValidatedWorkflow() {
         ArthSaathiDataStore.initialize(context)
         try {
             ArthSaathiCoreEngine.saveModule("LIABILITY", mapOf(
