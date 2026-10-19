@@ -862,20 +862,23 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         )
         val id = requireNotNull(created.id)
         ArthSaathiOtpService.installProvider(object : ArthSaathiOtpProvider {
-            override fun requestCode(mobile: String, purpose: String, recordId: String): String? =
-                if (mobile == "9876501164" && purpose == "CREDIT_CONSENT" && recordId == id)
-                    "UI-CONSENT-CHALLENGE" else null
-            override fun verifyCode(challengeId: String, code: String): Boolean =
-                challengeId == "UI-CONSENT-CHALLENGE" && code == "654321"
+            override fun requestCode(mobile: String, purpose: String, recordId: String): String? {
+                if (mobile != "9876501164" || recordId != id) return null
+                return when (purpose) {
+                    "CREDIT_CONSENT" -> "UI-CONSENT-CHALLENGE"
+                    "REPAYMENT_CONFIRMATION" -> "UI-REPAYMENT-CHALLENGE"
+                    else -> null
+                }
+            }
+            override fun verifyCode(challengeId: String, code: String): Boolean = when (challengeId) {
+                "UI-CONSENT-CHALLENGE" -> code == "654321"
+                "UI-REPAYMENT-CHALLENGE" -> code == "123123"
+                else -> false
+            }
         })
 
-        var blockedBeforeConsent = false
-        try {
-            ArthSaathiCoreEngine.repayment(id, 100.0, "UPI", "QA")
-        } catch (_: IllegalArgumentException) {
-            blockedBeforeConsent = true
-        }
-        assertTrue("Repayment must be blocked before verified consent", blockedBeforeConsent)
+        val blockedBeforeConsent = ArthSaathiCoreEngine.repayment(id, 100.0, "UPI", "QA")
+        assertFalse("Repayment must fail closed before consent and OTP verification", blockedBeforeConsent.ok)
 
         ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
             Intent(context, ArthSaathiMasterModuleActivity::class.java)
@@ -894,8 +897,15 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         }
 
         assertEquals("CONSENTED", ArthSaathiCoreEngine.find(id)!!.optString("consentStatus"))
-        val repayment = ArthSaathiCoreEngine.repayment(id, 100.0, "UPI", "QA")
-        assertTrue("Verified consent should unlock a valid repayment", repayment.ok)
+        val challenge = ArthSaathiCoreEngine.requestRepaymentOtp(id, "lender")
+        assertTrue("Repayment must request a separate borrower OTP", challenge.ok)
+        val challengeId = requireNotNull(challenge.id)
+        val wrongOtp = ArthSaathiCoreEngine.repayment(id, 100.0, "UPI", "lender", challengeId, "000000")
+        assertFalse("Wrong repayment OTP must not change the ledger", wrongOtp.ok)
+        assertEquals(0.0, ArthSaathiCoreEngine.find(id)!!.optDouble("paid"), 0.001)
+        val repayment = ArthSaathiCoreEngine.repayment(id, 100.0, "UPI", "lender", challengeId, "123123")
+        assertTrue("Provider-verified repayment OTP should unlock the repayment", repayment.ok)
+        assertEquals(100.0, ArthSaathiCoreEngine.find(id)!!.optDouble("paid"), 0.001)
         assertTrue("MIS must reflect the repayment ledger entry",
             ArthSaathiCoreEngine.mis().repayments >= 100.0)
     }
