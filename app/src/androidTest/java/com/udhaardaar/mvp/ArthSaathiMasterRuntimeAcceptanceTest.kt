@@ -29,6 +29,12 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
     @Before fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         ArthSaathiSession.logout(context)
+        // Isolate every instrumentation case so prior credits, repayments and profile
+        // records cannot leak into later assertions or make MIS tests order-dependent.
+        context.getSharedPreferences("arthsaathi_master_data", Context.MODE_PRIVATE)
+            .edit().clear().commit()
+        context.getSharedPreferences("udhaardaar_accounts", Context.MODE_PRIVATE)
+            .edit().clear().commit()
         ArthSaathiDataStore.initialize(context)
         ArthSaathiOtpService.clearProviderForTests()
         ArthSaathiSession.login(context, mobile)
