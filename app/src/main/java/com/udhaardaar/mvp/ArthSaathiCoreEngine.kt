@@ -159,7 +159,10 @@ object ArthSaathiCoreEngine {
   require(normalizedType.isNotBlank() && normalizedType.matches(Regex("[A-Z][A-Z0-9_]{0,39}"))) {
    "A valid module record type is required"
   }
-  require(normalizedType !in setOf("CREDIT","PERSON","REPAYMENT","AUDIT")) {
+  require(normalizedType != "CREDIT") {
+   "Credits must be created through Register Credit so consent and repayment protections cannot be bypassed"
+  }
+  require(normalizedType !in setOf("PERSON","REPAYMENT","AUDIT")) {
    "This record type must be created through its dedicated validated workflow"
   }
   // These fields define record identity, ownership and lifecycle. Never let a
