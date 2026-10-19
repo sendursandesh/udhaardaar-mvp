@@ -49,8 +49,14 @@ class ArthSaathiMisFinancialReconciliationTest {
         assertEquals("Consented credit must enter registered-credit MIS", 1000.0,
             before.outstanding - baseline.outstanding, 0.005)
 
-        // Deliberately orphaned: an unlinked repayment must not reduce any credit balance.
-        ArthSaathiCoreEngine.saveModule("REPAYMENT", mapOf("amount" to 500.0))
+        // The generic writer must reject orphaned repayments. Only the validated
+        // repayment workflow may create them and link them to a registered credit.
+        try {
+            ArthSaathiCoreEngine.saveModule("REPAYMENT", mapOf("amount" to 500.0))
+            org.junit.Assert.fail("Generic writer must reject an unlinked repayment")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message.orEmpty().contains("dedicated validated workflow"))
+        }
         ArthSaathiCoreEngine.saveModule("REVENUE", mapOf("f1" to 777.0, "f2" to "PENDING"))
         ArthSaathiCoreEngine.saveModule("REVENUE", mapOf("f1" to 250.0, "f2" to "PAID"))
         ArthSaathiCoreEngine.saveModule("REVENUE", mapOf("f1" to 40.0, "f2" to "REFUNDED"))
