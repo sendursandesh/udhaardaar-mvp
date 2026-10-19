@@ -34,7 +34,7 @@ class ArthSaathiCanonicalModuleRouteTest {
         ArthSaathiSession.logout(context)
     }
 
-    private fun findTaggedText(view: View, tag: String): TextView? {
+    private fun findTaggedView(view: View, tag: String): View? {\n        if (view.tag == tag) return view\n        if (view is ViewGroup) {\n            for (i in 0 until view.childCount) {\n                findTaggedView(view.getChildAt(i), tag)?.let { return it }\n            }\n        }\n        return null\n    }\n\n    private fun findTaggedText(view: View, tag: String): TextView? {
         if (view.tag == tag && view is TextView) return view
         if (view is ViewGroup) {
             for (i in 0 until view.childCount) {
