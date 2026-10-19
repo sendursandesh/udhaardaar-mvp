@@ -80,11 +80,32 @@ class ArthSaathiHomeActivity : Activity() {
             setPadding(0, dp(3), 0, 0)
         })
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
-        val accountPrefs = getSharedPreferences("udhaardaar_accounts", MODE_PRIVATE)
-        val activeMobile = accountPrefs.getString("current_mobile", ArthSaathiSession.mobile(this).orEmpty()).orEmpty()
-        val displayName = accountPrefs.getString("name_$activeMobile", "User").orEmpty().ifBlank { "User" }
-        val photoUri = listOf("profile_photo_uri", "user_photo_uri", "photo_uri")
-            .firstNotNullOfOrNull { key -> accountPrefs.getString(key, null)?.takeIf { it.isNotBlank() } }
+        // Read identity only from the authenticated ArthSaathi account store.
+        // Do not read the legacy Udhaardaar shared-preferences namespace here.
+        val activeMobile = ArthSaathiSession.mobile(this).orEmpty()
+        val profileRecords = ArthSaathiDataStore.records()
+        var displayName = "User"
+        var photoUri: String? = null
+        var fallbackProfileName = ""
+        var fallbackPhotoUri: String? = null
+        for (index in profileRecords.length() - 1 downTo 0) {
+            val record = profileRecords.optJSONObject(index) ?: continue
+            if (record.optString("type") != "PROFILE") continue
+            val candidateName = record.optString("f0").trim()
+            val candidateMobile = record.optString("f1").trim()
+            val candidatePhoto = record.optString("profilePhotoUri").takeIf { it.isNotBlank() }
+            if (fallbackProfileName.isBlank() && candidateName.isNotBlank()) {
+                fallbackProfileName = candidateName
+                fallbackPhotoUri = candidatePhoto
+            }
+            if (candidateMobile.isBlank() || candidateMobile == activeMobile) {
+                if (candidateName.isNotBlank()) displayName = candidateName
+                photoUri = candidatePhoto
+                break
+            }
+        }
+        if (displayName == "User" && fallbackProfileName.isNotBlank()) displayName = fallbackProfileName
+        if (photoUri == null) photoUri = fallbackPhotoUri
         val profileView: View = if (photoUri != null) {
             ImageView(this).apply {
                 contentDescription = "$displayName profile photo"
