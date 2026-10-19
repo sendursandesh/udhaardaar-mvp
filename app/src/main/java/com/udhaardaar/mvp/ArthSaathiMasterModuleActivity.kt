@@ -828,6 +828,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
             "Repayments recorded" to metrics.repayments,
             "Credit outstanding" to metrics.outstanding,
             "Group expenses" to metrics.groupExpenses,
+            "Group contributions collected" to metrics.groupCollected,
+            "Outstanding group shares" to metrics.groupOutstandingShares,
             "Assets / portfolio (current value)" to metrics.assets,
             "Financial assets" to metrics.financialAssets,
             "Non-financial assets" to metrics.nonFinancialAssets,
