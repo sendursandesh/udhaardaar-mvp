@@ -159,29 +159,39 @@ class V7FinalAcceptanceInstrumentedTest {
     }
 
     @Test fun majorNativeScreensOpenWithoutCrash(){
-        listOf("RECORD","CREDIT","REPAYMENT","ASSETS","LIABILITIES").forEach { module ->
-            ActivityScenario.launch<V7NativeModuleActivity>(Intent(c,V7NativeModuleActivity::class.java).putExtra("module",module)).use { scenario ->
-                scenario.onActivity { assertTrue(it.window.decorView.isShown) }
+        listOf("REGISTER_CREDIT","LOANS_UDHAAR","REPAYMENT","ASSET_VAULT","LIABILITY_VAULT").forEach { module ->
+            ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+                Intent(c,ArthSaathiMasterModuleActivity::class.java).putExtra("module",module)
+            ).use { scenario ->
+                scenario.onActivity { a ->
+                    assertTrue("Canonical module not visible: $module", a.window.decorView.isShown)
+                    assertTrue(a.window.decorView.findViewWithTag<android.view.View>("canonical-page-title") != null)
+                }
             }
         }
     }
 
     @Test fun toolsScreensOpenWithoutCrash(){
-        listOf("MIS","SCORE","INTEGRATION","REVENUE","OPPORTUNITY","MARKET","ADDRESS").forEach { tool ->
-            ActivityScenario.launch<V7ToolsActivity>(Intent(c,V7ToolsActivity::class.java).putExtra("tool",tool)).use { scenario ->
-                scenario.onActivity { assertTrue(it.window.decorView.isShown) }
+        listOf("MIS","CREDIT_INTELLIGENCE","INTEGRATIONS","REVENUE","SWITCH_ANALYSIS","PORTFOLIO","ADDRESS").forEach { module ->
+            ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+                Intent(c,ArthSaathiMasterModuleActivity::class.java).putExtra("module",module)
+            ).use { scenario ->
+                scenario.onActivity { a ->
+                    assertTrue("Canonical tool module not visible: $module", a.window.decorView.isShown)
+                    assertTrue(a.window.decorView.findViewWithTag<android.view.View>("canonical-page-title") != null)
+                }
             }
         }
     }
 
     @Test fun homeContainsApprovedBrandingAndMajorJourneys(){
-        ActivityScenario.launch<V7HomeActivity>(Intent(c,V7HomeActivity::class.java)).use { scenario ->
+        ActivityScenario.launch<ArthSaathiHomeActivity>(Intent(c,ArthSaathiHomeActivity::class.java)).use { scenario ->
             scenario.onActivity { a ->
                 val text=allText(a.window.decorView).joinToString(" | ")
                 assertTrue(text.contains("ArthSaathi"))
                 assertTrue(text.contains("Navigate Your Financial Journey"))
-                assertTrue(text.contains("Your Asset. Your Record. Your Right."))
-                assertTrue(text.contains("Register Credit"))
+                assertTrue(a.window.decorView.findViewWithTag<android.view.View>("arthsaathi-canonical-logo") != null)
+                assertTrue(text.contains("Credit"))
                 assertTrue(text.contains("Asset Vault"))
             }
         }
@@ -206,24 +216,15 @@ class V7FinalAcceptanceInstrumentedTest {
     }
 
     @Test fun allRegisteredV7ModulesHaveLaunchableEntryPoint() {
-        V7MasterVisionRegistry.all().forEach { module ->
-            when (module.destination) {
-                V7MasterVisionRegistry.Destination.NATIVE_MODULE ->
-                    ActivityScenario.launch<V7NativeModuleActivity>(
-                        Intent(c, V7NativeModuleActivity::class.java).putExtra("module", module.key)
-                    ).use { scenario ->
-                        scenario.onActivity { a ->
-                            assertTrue("Native module not visible: " + module.key, a.window.decorView.isShown)
-                        }
-                    }
-                V7MasterVisionRegistry.Destination.MODULE_ROUTER ->
-                    ActivityScenario.launch<V7ModuleActivity>(
-                        Intent(c, V7ModuleActivity::class.java).putExtra("module", module.key)
-                    ).use { scenario ->
-                        scenario.onActivity { a ->
-                            assertTrue("V7 module router not visible: " + module.key, a.window.decorView.isShown)
-                        }
-                    }
+        ArthSaathiArchitectureRegistry.modules.forEach { module ->
+            ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+                Intent(c, ArthSaathiMasterModuleActivity::class.java).putExtra("module", module.id)
+            ).use { scenario ->
+                scenario.onActivity { a ->
+                    assertTrue("Canonical module not visible: " + module.id, a.window.decorView.isShown)
+                    val title = a.window.decorView.findViewWithTag<android.view.View>("canonical-page-title")
+                    assertNotNull("Canonical page title missing: " + module.id, title)
+                }
             }
         }
     }
