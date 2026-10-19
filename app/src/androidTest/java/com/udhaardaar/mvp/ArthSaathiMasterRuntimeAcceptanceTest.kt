@@ -979,4 +979,33 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         assertEquals(2600.0, result.optDouble("netIndicativeDifference"), 0.01)
     }
 
+    @Test fun genericWriterCannotOverrideRecordTypeOrOwnership() {
+        val before = ArthSaathiDataStore.records().length()
+        try {
+            ArthSaathiCoreEngine.saveModule("ASSET", mapOf(
+                "type" to "CREDIT",
+                "party" to "Forged credit QA",
+                "amount" to 9999.0,
+                "status" to "ACTIVE",
+                "consentStatus" to "CONSENTED"
+            ))
+            fail("A generic ASSET form must not be able to write a CREDIT record")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message.orEmpty().contains("identity"))
+        }
+        try {
+            ArthSaathiCoreEngine.saveModule("ASSET", mapOf("ownerUserId" to "another-account"))
+            fail("A generic form must not be able to assign record ownership")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message.orEmpty().contains("identity"))
+        }
+        try {
+            ArthSaathiCoreEngine.saveModule("PERSON", mapOf("f0" to "Forged Person"))
+            fail("People records must use the validated person workflow")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message.orEmpty().contains("dedicated validated workflow"))
+        }
+        assertEquals("Rejected writes must not append records", before, ArthSaathiDataStore.records().length())
+    }
+
 }
