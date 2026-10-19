@@ -1029,4 +1029,23 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             "9876501199", ArthSaathiCoreEngine.find(id)?.optString("ownerUserId"))
     }
 
+    @Test fun genericUpdateCannotRewriteRegisteredCreditTerms() {
+        val created = ArthSaathiCoreEngine.createCredit(
+            null, "Credit immutability QA", "Personal Loan / Hand Loan",
+            12000.0, 8.0, "UPI", "Monthly", "", null, null,
+            "9876501188", "", "EMI (reducing balance)", 12
+        )
+        assertTrue("Credit fixture should be created pending consent", created.ok)
+        val id = created.id ?: error("Credit ID missing")
+        val result = ArthSaathiCoreEngine.update(
+            id,
+            mapOf("amount" to 1.0, "totalPayable" to 1.0, "party" to "Tampered")
+        )
+        assertFalse("Generic update must not rewrite credit terms", result.ok)
+        val unchanged = ArthSaathiCoreEngine.find(id)
+        assertEquals(12000.0, unchanged?.optDouble("amount") ?: 0.0, 0.001)
+        assertEquals("Credit immutability QA", unchanged?.optString("party"))
+        assertEquals("PENDING", unchanged?.optString("consentStatus"))
+    }
+
 }
