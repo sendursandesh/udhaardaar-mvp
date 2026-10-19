@@ -154,7 +154,31 @@ object ArthSaathiCoreEngine {
   }
   return out
  }
- fun saveModule(type:String,fields:Map<String,Any?>,links:Map<String,String> = emptyMap()):Result{require(type != "CREDIT") { "Credits must be created through Register Credit so consent and repayment protections cannot be bypassed" };val o=JSONObject().apply{put("id",id(type.take(8).uppercase()));put("type",type);put("createdAt",n());put("updatedAt",n())};fields.forEach{(k,v)->o.put(k,v)};links.forEach{(k,v)->o.put(k,v)};save(o,"CREATE_$type");return Result(true,o.getString("id"),"$type saved")}
+ fun saveModule(type:String,fields:Map<String,Any?>,links:Map<String,String> = emptyMap()):Result {
+  val normalizedType=type.trim().uppercase(Locale.US)
+  require(normalizedType.isNotBlank() && normalizedType.matches(Regex("[A-Z][A-Z0-9_]{0,39}"))) {
+   "A valid module record type is required"
+  }
+  require(normalizedType !in setOf("CREDIT","PERSON","REPAYMENT","AUDIT")) {
+   "This record type must be created through its dedicated validated workflow"
+  }
+  // These fields define record identity, ownership and lifecycle. Never let a
+  // generic module form overwrite them, even when it submits a different type.
+  val reserved=setOf("id","type","ownerUserId","createdAt","updatedAt")
+  require(fields.keys.none { it in reserved } && links.keys.none { it in reserved }) {
+   "Generic module fields cannot overwrite record identity, ownership or timestamps"
+  }
+  val o=JSONObject().apply {
+   put("id",id(normalizedType.take(8)))
+   put("type",normalizedType)
+   put("createdAt",n())
+   put("updatedAt",n())
+  }
+  fields.forEach { (k,v) -> o.put(k,v) }
+  links.forEach { (k,v) -> o.put(k,v) }
+  save(o,"CREATE_$normalizedType")
+  return Result(true,o.getString("id"),"$normalizedType saved")
+ }
  fun update(id:String,fields:Map<String,Any?>,actor:String="user"):Result{
   val o=find(id)?:return Result(false,message="Record not found")
   val protectedCreditFields=setOf("consentStatus","consentChallengeId","consentActor","consentAt","consentRequestedAt","paid","status","ownerUserId")
