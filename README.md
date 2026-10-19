@@ -44,7 +44,7 @@ The audit branch has been extended with:
 - Restored the agreed five-tab navigation `Home | Credit | Repay | Vault | More`; the 34 non-home modules are assigned exactly once across the four service tabs, and duplicate home quick-action tiles were removed.
 - Repayment requires a separate provider-issued OTP bound to the specific credit and purpose; the legacy direct call fails closed. Balance, repayment ledger and audit entry are committed in one encrypted-store write.
 - Added email and Aadhaar-last-four validation to generic module forms.
-- Added instrumentation cases for generic-write/update protections, repayment challenge binding and wrong-OTP rejection, MIS propagation, legacy-profile isolation, field validation, and every canonical module title/brand mark. Added a dedicated group-MIS scenario for contribution collection and outstanding shares. Runtime tests must clear their account-scoped records between cases to prevent order-dependent results.
+- Added instrumentation cases for generic-write/update protections, repayment challenge binding and wrong-OTP rejection, MIS propagation, legacy-profile isolation, field validation, canonical module title/brand mark, generic record updates, and group-MIS collection/outstanding-share reconciliation. Runtime tests must clear their account-scoped records between cases to prevent order-dependent results.
 - Added `.github/workflows/arthsaathi-audit.yml` to run build/unit tests and Android 15 emulator instrumentation tests on this branch.
 
 **These changes are not yet release-certified.** No status-check or workflow-run result has been returned for the latest audit commits. This environment cannot resolve GitHub from its local shell and has no Android SDK; the new CI workflow must execute and its build and emulator artifacts must be reviewed before any test pass or final APK can be claimed.
@@ -53,7 +53,7 @@ The audit branch has been extended with:
 
 - Production OTP provider configuration is not present in this repository's app code; sign-in and consent must remain fail-closed until a trusted provider is connected.
 - The repayment OTP path is implemented fail-closed, but it still depends on a trusted provider being installed and configured; it must be verified by the new instrumentation tests.
-- Fifteen modules still use generic save-and-list forms rather than dedicated domain workflows; those forms do not provide full edit/delete behavior or complete inter-module relationships.
+- Fifteen modules still use generic save/list/edit forms rather than dedicated domain workflows; safe editing is available for those records, but delete controls and complete domain relationships are not yet implemented.
 - Rental & Lease currently writes a separate generic `RENTAL_LEASE` record instead of using the validated lease/contract calculation path in Register Credit.
 - Trade Credit is not automatically linked to QR Khata invoice records or the credit/repayment engine; Claims and Legal records use free-text references rather than enforced links to assets, benefits and documents.
 - Group Khata now feeds MIS with total contributions collected and outstanding equal-share balances after contributions and settlements; an Android instrumentation scenario covers the calculation. This test is authored but remains unverified until CI passes.
