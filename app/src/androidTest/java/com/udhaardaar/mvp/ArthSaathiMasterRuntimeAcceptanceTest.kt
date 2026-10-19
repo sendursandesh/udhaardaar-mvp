@@ -103,14 +103,18 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 requireNotNull(findEdit(activity.window.decorView, "Full legal name")).setText("Profile QA")
                 requireNotNull(findEdit(activity.window.decorView, "Mobile number (10 digits)")).setText(mobile)
                 val email = requireNotNull(findEdit(activity.window.decorView, "Email address"))
+                val aadhaar = requireNotNull(findEdit(activity.window.decorView, "Aadhaar (last four digits only)"))
+                val save = requireNotNull(findButton(activity.window.decorView, "SAVE"))
                 email.setText("not-an-email")
-                requireNotNull(findEdit(activity.window.decorView, "Aadhaar (last four digits only)")).setText("12A4")
-                requireNotNull(findButton(activity.window.decorView, "SAVE")).performClick()
+                aadhaar.setText("12A4")
+                save.performClick()
                 assertNotNull("Invalid email must be rejected", email.error)
+                email.setText("qa@example.com")
+                save.performClick()
+                assertNotNull("Aadhaar last four must contain exactly four digits", aadhaar.error)
+                val after = ArthSaathiDataStore.records()
                 assertEquals("Invalid profile fields must not create a record", before,
-                    (0 until ArthSaathiDataStore.records().length()).count {
-                        ArthSaathiDataStore.records().optJSONObject(it)?.optString("type") == "PROFILE"
-                    })
+                    (0 until after.length()).count { after.optJSONObject(it)?.optString("type") == "PROFILE" })
             }
         }
     }
