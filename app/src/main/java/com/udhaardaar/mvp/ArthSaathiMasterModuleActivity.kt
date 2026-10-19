@@ -1920,8 +1920,9 @@ class ArthSaathiMasterModuleActivity : Activity() {
             edit
         }
         var editingRecordId: String? = null
-        lateinit var saveButton: Button
-        saveButton = Button(this).apply{text="SAVE";setOnClickListener{
+        val saveButton = Button(this)
+        saveButton.text = "SAVE"
+        saveButton.setOnClickListener {
             if (fields.isNotEmpty() && fields[0].text.toString().trim().isEmpty()) {
                 fields[0].error = "Required"; return@setOnClickListener
             }
@@ -1990,7 +1991,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 Toast.makeText(this@ArthSaathiMasterModuleActivity,
                     e.message ?: "Sign in again before saving.", Toast.LENGTH_LONG).show()
             }
-        }}
+        }
         body.addView(saveButton)
         body.addView(TextView(this).apply {
             text = "\nSAVED RECORDS"
