@@ -175,13 +175,10 @@ class ArthSaathiHomeActivity : Activity() {
         intro.addView(TextView(this).apply {
             text = when (destination) {
                 "Home" -> "One view. Your whole financial life."
-                "Record" -> "Record and organise financial activity"
                 "Credit" -> "Credit & account centre"
-                "Assets" -> "Assets, liabilities and documents"
-                "Grow" -> "Portfolio, returns and switch analysis"
-                "Protect" -> "Protection, benefits and charge checks"
-                "Legal" -> "Legal support, advocates and legacy"
-                else -> "Services & tools"
+                "Repay" -> "Repayment, QR Khata and shared settlements"
+                "Vault" -> "Assets, liabilities, investments and documents"
+                else -> "Reports, protection, people and services"
             }
             textSize = 20f
             typeface = Typeface.DEFAULT_BOLD
@@ -189,14 +186,11 @@ class ArthSaathiHomeActivity : Activity() {
         })
         intro.addView(TextView(this).apply {
             text = when (destination) {
-                "Home" -> "Track credit, assets, investments, protection and claims in one place."
-                "Record" -> "Create credit records, scan trade invoices and settle shared group expenses."
-                "Credit" -> "Review registered credits. Consent and repayment controls remain enforced."
-                "Assets" -> "Keep assets, liabilities and supporting documents together."
-                "Grow" -> "Review holdings, returns and indicative opportunity costs before deciding."
-                "Protect" -> "Track cover, completed benefits, refunds and charge discrepancies."
-                "Legal" -> "Find legal help and organise advocate contacts and legacy records."
-                else -> "Access reports, documents, benefits, legal support and app services."
+                "Home" -> "Track your financial position from the account-scoped ledger."
+                "Credit" -> "Register and review credit records; protected history requires verified consent."
+                "Repay" -> "Record verified repayments, review QR invoices and manage group contributions."
+                "Vault" -> "Maintain assets, liabilities, investments, protection and supporting documents."
+                else -> "Open the remaining reports, people, legal and platform services."
             }
             textSize = 13f
             setTextColor(muted)
@@ -217,7 +211,6 @@ class ArthSaathiHomeActivity : Activity() {
                     cornerRadius = dp(16).toFloat()
                     setStroke(dp(1), gold)
                 }
-                setOnClickListener { render("More") }
             }
             val planText = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
             planText.addView(TextView(this).apply {
@@ -265,57 +258,28 @@ class ArthSaathiHomeActivity : Activity() {
                 Triple(money(metrics.benefits), "Benefits / Refunds", gold),
                 Triple(money(metrics.revenue), "Service Revenue", navy)
             ))
-            addSectionTitle("QUICK ACTIONS")
-            val quickActions = listOf(
-                Triple("₹", "Register Credit", "Record a new credit") to "REGISTER_CREDIT",
-                Triple("↻", "Repayment", "Record a payment") to "REPAYMENT",
-                Triple("▣", "Asset Vault", "What you own") to "ASSET_VAULT",
-                Triple("✚", "Protect", "Insurance and cover") to "PROTECTION",
-                Triple("▥", "Grow", "Portfolio and returns") to "PORTFOLIO",
-                Triple("★", "Benefits", "Benefits and refunds") to "BENEFITS",
-                Triple("⚖", "Legal Help", "Find assistance") to "LEGAL",
-                Triple("⇄", "Group Khata", "Share and settle") to "GROUP_KHATA",
-                Triple("▤", "MIS & Insights", "Your financial position") to "MIS"
-            )
-            var index = 0
-            while (index < quickActions.size) {
-                val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                for (column in 0..2) {
-                    val itemIndex = index + column
-                    if (itemIndex < quickActions.size) {
-                        val item = quickActions[itemIndex]
-                        row.addView(ArthSaathiV7Design.tile(
-                            this, item.first.first, item.first.second, item.first.third
-                        ) { openModule(item.second) }, LinearLayout.LayoutParams(0, dp(112), 1f).apply {
-                            if (column > 0) leftMargin = dp(6)
-                        })
-                    }
-                }
-                body.addView(row, LinearLayout.LayoutParams(-1, dp(112)).apply {
-                    if (index > 0) topMargin = dp(6)
-                })
-                index += 3
-            }
-            val allServices = Button(this).apply {
-                text = "View all services  ›"
-                isAllCaps = false
-                setTextColor(Color.WHITE)
-                background = android.graphics.drawable.GradientDrawable(
-                    android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
-                    intArrayOf(ArthSaathiV7Design.NAVY_2, ArthSaathiV7Design.NAVY_3)
-                ).apply { cornerRadius = dp(14).toFloat() }
-                setOnClickListener { render("More") }
-            }
-            body.addView(allServices, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(10) })
+            body.addView(TextView(this).apply {
+                text = "Use the five navigation tabs to open each module from one canonical location. Snapshot figures refresh from your saved ArthSaathi records."
+                textSize = 12f
+                setTextColor(muted)
+                setPadding(dp(2), dp(8), dp(2), dp(8))
+            })
         } else {
             val modules = when (destination) {
-                "Record" -> listOf("REGISTER_CREDIT", "QR_KHATA", "GROUP_KHATA", "PEOPLE")
-                "Credit" -> listOf("LOANS_UDHAAR", "REPAYMENT")
-                "Assets" -> listOf("ASSET_VAULT", "LIABILITY_VAULT", "DOCUMENT_VAULT")
-                "Grow" -> listOf("PORTFOLIO", "SWITCH_ANALYSIS", "MIS")
-                "Protect" -> listOf("PROTECTION", "BENEFITS", "CHARGECHECK", "CLAIMS")
-                "Legal" -> listOf("LEGAL", "ADVOCATES", "WILL_LEGACY")
-                "More" -> listOf("AI_ADVISOR", "REVENUE", "SECURITY_CONSENT", "INTEGRATIONS")
+                "Credit" -> listOf(
+                    "REGISTER_CREDIT", "LOANS_UDHAAR", "CREDIT_INTELLIGENCE",
+                    "TRADE_CREDIT", "FORMAL_CREDIT", "GUARANTOR", "RENTAL"
+                )
+                "Repay" -> listOf("REPAYMENT", "QR_KHATA", "GROUP_KHATA", "CHARGECHECK")
+                "Vault" -> listOf(
+                    "ASSET_VAULT", "LIABILITY_VAULT", "PORTFOLIO", "SWITCH_ANALYSIS",
+                    "DOCUMENT_VAULT", "PROTECTION", "BENEFITS", "CLAIMS", "WILL_LEGACY"
+                )
+                "More" -> listOf(
+                    "PEOPLE", "MIS", "LEGAL", "ADVOCATES", "AI_ADVISOR", "REVENUE",
+                    "SECURITY_CONSENT", "INTEGRATIONS", "PROFILE", "FAMILY", "ADDRESS",
+                    "ACCOUNTING", "FUNDING", "ALERTS"
+                )
                 else -> emptyList()
             }.distinct()
             val chosen = modules.mapNotNull { id -> ArthSaathiArchitectureRegistry.canonicalModule(id) }
@@ -347,7 +311,7 @@ class ArthSaathiHomeActivity : Activity() {
             }
         }
 
-        val tabs = listOf("Home", "Record", "Credit", "Assets", "Grow", "Protect", "Legal", "More")
+        val tabs = listOf("Home", "Credit", "Repay", "Vault", "More")
         tabs.forEach { tab ->
             nav.addView(TextView(this).apply {
                 text = tab
