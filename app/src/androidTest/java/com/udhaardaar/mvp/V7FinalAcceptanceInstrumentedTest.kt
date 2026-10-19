@@ -191,17 +191,31 @@ class V7FinalAcceptanceInstrumentedTest {
         }
     }
 
-    @Test fun homeContainsApprovedBrandingAndMajorJourneys(){
+    @Test fun homeContainsApprovedBrandingAndPrimaryJourneysOpenTheirCanonicalModules(){
         ActivityScenario.launch<ArthSaathiHomeActivity>(Intent(c,ArthSaathiHomeActivity::class.java)).use { scenario ->
             scenario.onActivity { a ->
-                val text=allText(a.window.decorView).joinToString(" | ")
+                val root = a.window.decorView
+                val text = allText(root).joinToString(" | ")
                 assertTrue(text.contains("ArthSaathi"))
                 assertTrue(text.contains("Navigate Your Financial Journey"))
-                assertTrue(a.window.decorView.findViewWithTag<android.view.View>("arthsaathi-canonical-logo") != null)
-                assertTrue(text.contains("Credit"))
-                assertTrue(text.contains("Asset Vault"))
+                assertNotNull(root.findViewWithTag<android.view.View>("arthsaathi-canonical-logo"))
+                assertNotNull(findTextView(root, "Credit"))
+                assertNotNull(findTextView(root, "Vault"))
+
+                requireNotNull(findTextView(root, "Credit")).performClick()
+                assertTrue("Credit tab must expose Register Credit", allText(root).any { it.contains("Register Credit") })
+                requireNotNull(findTextView(root, "Vault")).performClick()
+                assertTrue("Vault tab must expose Asset Vault", allText(root).any { it.contains("Asset Vault") })
             }
         }
+    }
+
+    private fun findTextView(view: View, expected: String): TextView? {
+        if (view is TextView && view.text?.toString() == expected) return view
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) findTextView(view.getChildAt(i), expected)?.let { return it }
+        }
+        return null
     }
 
 
