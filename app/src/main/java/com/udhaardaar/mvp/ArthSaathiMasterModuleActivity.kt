@@ -1919,7 +1919,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
             }
             edit
         }
-        body.addView(Button(this).apply{text="SAVE";setOnClickListener{
+        var editingRecordId: String? = null
+        val saveButton = Button(this).apply{text="SAVE";setOnClickListener{
             if (fields.isNotEmpty() && fields[0].text.toString().trim().isEmpty()) {
                 fields[0].error = "Required"; return@setOnClickListener
             }
@@ -1965,8 +1966,21 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 }
             }
             try {
-                ArthSaathiCoreEngine.saveModule(type, values)
-                Toast.makeText(this@ArthSaathiMasterModuleActivity,title+" record saved",Toast.LENGTH_SHORT).show()
+                val currentId = editingRecordId
+                if (currentId == null) {
+                    ArthSaathiCoreEngine.saveModule(type, values)
+                } else {
+                    val result = ArthSaathiCoreEngine.update(currentId, values)
+                    if (!result.ok) {
+                        Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
+                        return@setOnClickListener
+                    }
+                }
+                editingRecordId = null
+                saveButton.text = "SAVE"
+                Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                    if (currentId == null) title + " record saved" else title + " record updated",
+                    Toast.LENGTH_SHORT).show()
                 render(intent.getStringExtra("module") ?: ArthSaathiNavigation.HOME)
             } catch (e: IllegalArgumentException) {
                 Toast.makeText(this@ArthSaathiMasterModuleActivity,
@@ -1975,7 +1989,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 Toast.makeText(this@ArthSaathiMasterModuleActivity,
                     e.message ?: "Sign in again before saving.", Toast.LENGTH_LONG).show()
             }
-        }})
+        }}
+        body.addView(saveButton)
         body.addView(TextView(this).apply {
             text = "\nSAVED RECORDS"
             textSize = 19f
@@ -1999,6 +2014,22 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 text = heading + (if (lines.isEmpty()) "" else "\n" + lines.drop(1).joinToString("\n"))
                 textSize = 15f
                 setPadding(8, 12, 8, 12)
+            })
+            body.addView(Button(this).apply {
+                text = "EDIT • " + heading
+                isAllCaps = false
+                setOnClickListener {
+                    editingRecordId = record.optString("id")
+                    fields.forEachIndexed { idx, edit ->
+                        val value = record.opt("f$idx")
+                        edit.setText(if (value == null || value == JSONObject.NULL) "" else value.toString())
+                    }
+                    saveButton.text = "UPDATE RECORD"
+                    fields.firstOrNull()?.requestFocus()
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                        "Editing saved record. Review the fields and choose UPDATE RECORD.",
+                        Toast.LENGTH_LONG).show()
+                }
             })
         }
         if (savedCount == 0) body.addView(TextView(this).apply {
