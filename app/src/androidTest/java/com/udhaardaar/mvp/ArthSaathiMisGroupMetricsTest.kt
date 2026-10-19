@@ -60,4 +60,25 @@ class ArthSaathiMisGroupMetricsTest {
         assertEquals(5000.0, settled.groupCollected, 0.01)
         assertEquals(666.67, settled.groupOutstandingShares, 0.02)
     }
+    @Test
+    fun genericModuleEditPreservesRecordIdentityAndType() {
+        val created = ArthSaathiCoreEngine.saveModule(
+            "BENEFIT",
+            mapOf("f0" to "Electricity refund", "f1" to "Utility", "f2" to 1250.0, "f3" to "PENDING")
+        )
+        val id = requireNotNull(created.id)
+        val updated = ArthSaathiCoreEngine.update(id, mapOf(
+            "f0" to "Electricity refund",
+            "f1" to "Utility",
+            "f2" to 1500.0,
+            "f3" to "COMPLETED"
+        ))
+        assertEquals(true, updated.ok)
+        val stored = requireNotNull(ArthSaathiCoreEngine.find(id))
+        assertEquals(id, stored.optString("id"))
+        assertEquals("BENEFIT", stored.optString("type"))
+        assertEquals("COMPLETED", stored.optString("f3"))
+        assertEquals(1500.0, stored.optDouble("f2"), 0.01)
+    }
+
 }
