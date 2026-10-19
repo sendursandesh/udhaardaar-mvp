@@ -14,7 +14,6 @@
         android:usesCleartextTraffic="false"
         android:alwaysRetainTaskState="true"
         android:theme="@style/Theme.ArthSaathi">
-        <activity android:name=".LoginActivity" android:exported="false" android:launchMode="singleTask" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity android:name=".ArthSaathiLoginActivity" android:exported="true" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,12 +22,6 @@
         </activity>
         <activity android:name=".ArthSaathiHomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ArthSaathiMasterModuleActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
-        <activity android:name=".ArthSaathiModulesActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".RegisterCreditV3Activity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".V7HomeActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".V7ModuleActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".V7NativeModuleActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".V7ToolsActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
