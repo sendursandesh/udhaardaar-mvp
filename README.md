@@ -43,10 +43,10 @@ The audit branch has been extended with:
 - Removed the Home screen's dependency on the legacy `udhaardaar_accounts` preference namespace; the profile header now reads account-scoped ArthSaathi profile records.
 - Repayment requires a separate provider-issued OTP bound to the specific credit and purpose; the legacy direct call fails closed. Balance, repayment ledger and audit entry are committed in one encrypted-store write.
 - Added email and Aadhaar-last-four validation to generic module forms.
-- Added instrumentation cases for generic-write/update protections, repayment challenge binding and wrong-OTP rejection, MIS propagation, legacy-profile isolation, field validation, and every canonical module title/brand mark.
+- Added instrumentation cases for generic-write/update protections, repayment challenge binding and wrong-OTP rejection, MIS propagation, legacy-profile isolation, field validation, and every canonical module title/brand mark. The runtime suite now clears its account-scoped test records between cases to prevent order-dependent results.
 - Added `.github/workflows/arthsaathi-audit.yml` to run build/unit tests and Android 15 emulator instrumentation tests on this branch.
 
-**These changes are not yet release-certified.** No status-check or workflow-run result has been returned for the latest audit commits. This environment cannot access GitHub directly and has no local Gradle/Android SDK, so the new CI workflow must execute and its build and emulator artifacts must be reviewed before any test pass or final APK can be claimed.
+**These changes are not yet release-certified.** No status-check or workflow-run result has been returned for the latest audit commits. This environment cannot resolve GitHub from its local shell and has no Android SDK; the new CI workflow must execute and its build and emulator artifacts must be reviewed before any test pass or final APK can be claimed.
 
 ## Known functional gaps that must be closed before release
 
