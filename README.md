@@ -44,7 +44,7 @@ The audit branch has been extended with:
 - Restored the agreed five-tab navigation `Home | Credit | Repay | Vault | More`; the 34 non-home modules are assigned exactly once across the four service tabs, and duplicate home quick-action tiles were removed.
 - Repayment requires a separate provider-issued OTP bound to the specific credit and purpose; the legacy direct call fails closed. Balance, repayment ledger and audit entry are committed in one encrypted-store write.
 - Added email and Aadhaar-last-four validation to generic module forms.
-- Added instrumentation cases for generic-write/update protections, repayment challenge binding and wrong-OTP rejection, MIS propagation, legacy-profile isolation, field validation, and every canonical module title/brand mark. The runtime suite now clears its account-scoped test records between cases to prevent order-dependent results.
+- Added instrumentation cases for generic-write/update protections, repayment challenge binding and wrong-OTP rejection, MIS propagation, legacy-profile isolation, field validation, and every canonical module title/brand mark. Added a dedicated group-MIS scenario for contribution collection and outstanding shares. Runtime tests must clear their account-scoped records between cases to prevent order-dependent results.
 - Added `.github/workflows/arthsaathi-audit.yml` to run build/unit tests and Android 15 emulator instrumentation tests on this branch.
 
 **These changes are not yet release-certified.** No status-check or workflow-run result has been returned for the latest audit commits. This environment cannot resolve GitHub from its local shell and has no Android SDK; the new CI workflow must execute and its build and emulator artifacts must be reviewed before any test pass or final APK can be claimed.
@@ -56,7 +56,7 @@ The audit branch has been extended with:
 - Fifteen modules still use generic save-and-list forms rather than dedicated domain workflows; those forms do not provide full edit/delete behavior or complete inter-module relationships.
 - Rental & Lease currently writes a separate generic `RENTAL_LEASE` record instead of using the validated lease/contract calculation path in Register Credit.
 - Trade Credit is not automatically linked to QR Khata invoice records or the credit/repayment engine; Claims and Legal records use free-text references rather than enforced links to assets, benefits and documents.
-- Group Khata records contributions and settlements, but MIS does not yet calculate per-member collected amounts or remaining group-share balances.
+- Group Khata now feeds MIS with total contributions collected and outstanding equal-share balances after contributions and settlements; an Android instrumentation scenario covers the calculation. This test is authored but remains unverified until CI passes.
 - Portfolio-switch analysis is a calculation from supplied inputs; it is not yet a verified live-market comparison feed.
 - Revenue settings store gateway/bank configuration data but do not by themselves execute real payments or verify provider callbacks.
 - Address fields expose PIN/city/state and location-source fields, but a verified Google Maps/Places lookup must not be claimed unless implemented and tested.
