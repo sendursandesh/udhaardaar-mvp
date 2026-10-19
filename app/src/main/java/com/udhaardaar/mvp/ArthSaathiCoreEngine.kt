@@ -117,6 +117,13 @@ object ArthSaathiCoreEngine {
   if(!validateMobile(mobile))return Result(false,message="A valid borrower mobile number is required for repayment verification")
   val challenge=ArthSaathiOtpService.request(mobile,"REPAYMENT_CONFIRMATION",recordId)
       ?:return Result(false,message="Repayment OTP service is not configured or could not issue a challenge; no repayment was recorded")
+  // Bind the server challenge to this exact credit and purpose locally as well.
+  // A challenge issued for another credit cannot be replayed against this record.
+  o.put("repaymentChallengeId",challenge)
+  o.put("repaymentChallengePurpose","REPAYMENT_CONFIRMATION")
+  o.put("repaymentChallengeRequestedAt",n())
+  o.put("updatedAt",n())
+  replace(o)
   audit(recordId,"REPAYMENT_OTP_REQUESTED",actor)
   return Result(true,challenge,"Repayment verification code requested from the configured provider")
  }
@@ -132,7 +139,12 @@ object ArthSaathiCoreEngine {
   require(o.optString("type")=="CREDIT")
   require(o.optString("status")=="ACTIVE") { "Credit is not registered and active" }
   require(o.optString("consentStatus")=="CONSENTED") { "Verified borrower consent is required" }
-  if(challengeId.isBlank() || !ArthSaathiOtpService.verify(challengeId,otp))
+  if(challengeId.isBlank() ||
+      challengeId != o.optString("repaymentChallengeId") ||
+      o.optString("repaymentChallengePurpose") != "REPAYMENT_CONFIRMATION") {
+   return Result(false,recordId,"This repayment OTP challenge was not issued for this credit; no repayment was recorded")
+  }
+  if(!ArthSaathiOtpService.verify(challengeId,otp))
    return Result(false,recordId,"Repayment OTP was not verified; no repayment was recorded")
   val payable=o.optDouble("totalPayable",o.optDouble("amount"))
   val out=(payable-o.optDouble("paid")).coerceAtLeast(0.0)
@@ -143,9 +155,26 @@ object ArthSaathiCoreEngine {
    put("verificationChallengeId",challengeId);put("verificationPurpose","REPAYMENT_CONFIRMATION")
    put("verifiedAt",n());put("createdAt",n())
   }
-  save(tx,"REPAYMENT");o.put("paid",m(o.optDouble("paid")+paymentAmount))
+  o.put("paid",m(o.optDouble("paid")+paymentAmount))
   if(o.optDouble("paid")+0.005>=payable)o.put("status","CLOSED")
-  o.put("updatedAt",n());replace(o)
+  o.remove("repaymentChallengeId")
+  o.remove("repaymentChallengePurpose")
+  o.remove("repaymentChallengeRequestedAt")
+  o.put("updatedAt",n())
+  // Commit the balance change, repayment ledger row, and audit row in one
+  // encrypted-store write to avoid a partial update if the app process stops.
+  val current=ArthSaathiDataStore.records()
+  val transaction=JSONArray()
+  for(i in 0 until current.length()) {
+   val existing=current.optJSONObject(i) ?: continue
+   transaction.put(if(existing.optString("id")==recordId) o else existing)
+  }
+  transaction.put(tx)
+  transaction.put(JSONObject().apply {
+   put("id",id("AUD"));put("type","AUDIT");put("recordId",recordId)
+   put("action","REPAYMENT");put("actor",actor);put("createdAt",n())
+  })
+  ArthSaathiDataStore.replace(transaction)
   return Result(true,tx.getString("id"),"Repayment recorded after verified OTP")
  }
  fun emi(p:Double,rate:Double,months:Int):Double{require(p.isFinite() && p in 0.01..1.0e15) { "Principal must be between ₹0.01 and ₹1,000,000,000,000,000" };require(rate.isFinite() && rate in 0.0..100.0) { "Annual rate must be between 0 and 100%" };require(months in 1..600) { "Tenure must be between 1 and 600 months" };if(rate==0.0)return maxOf(m(p/months),0.01);val r=rate/1200.0;val discount=(1.0+r).pow(-months.toDouble());val raw=p*r/(1.0-discount);require(raw.isFinite() && raw>0.0) { "EMI calculation exceeded the supported range" };return maxOf(m(raw),0.01)}
@@ -218,7 +247,7 @@ object ArthSaathiCoreEngine {
   val reserved=setOf("id","type","ownerUserId","createdAt","updatedAt")
   if(fields.keys.any { it in reserved })
    return Result(false,id,"Record identity, ownership and creation timestamps cannot be changed through a generic update")
-  val protectedCreditFields=setOf("consentStatus","consentChallengeId","consentActor","consentAt","consentRequestedAt","paid","status","amount","roi","totalPayable","expectedEmi","party","partyId","partyMobile","nature","method","terms","repaymentMode","tenureMonths","dueDate","guarantorId","guarantorName","documentId","registeredAt","ownerUserId")
+  val protectedCreditFields=setOf("consentStatus","consentChallengeId","consentActor","consentAt","consentRequestedAt","paid","status","amount","roi","totalPayable","expectedEmi","party","partyId","partyMobile","nature","method","terms","repaymentMode","tenureMonths","dueDate","guarantorId","guarantorName","documentId","registeredAt","repaymentChallengeId","repaymentChallengePurpose","repaymentChallengeRequestedAt","ownerUserId")
   if(o.optString("type")=="CREDIT" && fields.keys.any{it in protectedCreditFields})
    return Result(false,id,"Consent, repayment, closure and ownership fields can only change through their dedicated verified workflows")
   if(fields.containsKey("ownerUserId"))
