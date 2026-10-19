@@ -46,6 +46,13 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         return result
     }
 
+    private fun allDescriptions(view: View): List<String> {
+        val result = mutableListOf<String>()
+        view.contentDescription?.toString()?.let { result += it }
+        if (view is ViewGroup) for (i in 0 until view.childCount) result += allDescriptions(view.getChildAt(i))
+        return result
+    }
+
     private fun findEdit(root: View, hint: String): EditText? {
         if (root is EditText && root.hint?.toString() == hint) return root
         if (root is ViewGroup) for (i in 0 until root.childCount) {
@@ -60,6 +67,28 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
             findButton(root.getChildAt(i), label)?.let { return it }
         }
         return null
+    }
+
+    @Test fun homeProfileIgnoresLegacyUdhaardaarAccountPreferences() {
+        context.getSharedPreferences("udhaardaar_accounts", Context.MODE_PRIVATE).edit()
+            .putString("current_mobile", mobile)
+            .putString("name_$mobile", "Legacy Ghost Profile")
+            .apply()
+        ArthSaathiCoreEngine.saveModule("PROFILE", mapOf(
+            "f0" to "Canonical ArthSaathi Profile",
+            "f1" to mobile,
+            "f2" to "qa@example.invalid"
+        ))
+
+        ActivityScenario.launch<ArthSaathiHomeActivity>(Intent(context, ArthSaathiHomeActivity::class.java)).use { scenario ->
+            scenario.onActivity { activity ->
+                val descriptions = allDescriptions(activity.window.decorView).joinToString(" | ")
+                assertTrue("Home must use the current ArthSaathi profile record",
+                    descriptions.contains("Canonical ArthSaathi Profile profile"))
+                assertFalse("Home must not read the legacy Udhaardaar profile namespace",
+                    descriptions.contains("Legacy Ghost Profile"))
+            }
+        }
     }
 
     @Test fun genericModuleWriterCannotCreateCreditAndBypassConsent() {
@@ -900,12 +929,18 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         val challenge = ArthSaathiCoreEngine.requestRepaymentOtp(id, "lender")
         assertTrue("Repayment must request a separate borrower OTP", challenge.ok)
         val challengeId = requireNotNull(challenge.id)
+        val foreignChallenge = ArthSaathiCoreEngine.repayment(
+            id, 100.0, "UPI", "lender", challengeId + "-another-credit", "123123"
+        )
+        assertFalse("A challenge ID not bound to this credit must be rejected", foreignChallenge.ok)
         val wrongOtp = ArthSaathiCoreEngine.repayment(id, 100.0, "UPI", "lender", challengeId, "000000")
         assertFalse("Wrong repayment OTP must not change the ledger", wrongOtp.ok)
         assertEquals(0.0, ArthSaathiCoreEngine.find(id)!!.optDouble("paid"), 0.001)
         val repayment = ArthSaathiCoreEngine.repayment(id, 100.0, "UPI", "lender", challengeId, "123123")
         assertTrue("Provider-verified repayment OTP should unlock the repayment", repayment.ok)
         assertEquals(100.0, ArthSaathiCoreEngine.find(id)!!.optDouble("paid"), 0.001)
+        assertEquals("Successful repayment must consume its locally bound challenge", "",
+            ArthSaathiCoreEngine.find(id)!!.optString("repaymentChallengeId"))
         assertTrue("MIS must reflect the repayment ledger entry",
             ArthSaathiCoreEngine.mis().repayments >= 100.0)
     }
