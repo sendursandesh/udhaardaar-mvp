@@ -1928,6 +1928,13 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 if (hint.contains("mobile number", true) && !rawValue.matches(Regex("[6-9][0-9]{9}"))) {
                     edit.error = "Enter a valid 10-digit Indian mobile number"; return@setOnClickListener
                 }
+                if (hint.contains("email", true) && !ArthSaathiCoreEngine.validateEmail(rawValue)) {
+                    edit.error = "Enter a valid email address"; return@setOnClickListener
+                }
+                if (hint.contains("Aadhaar (last four", true) && rawValue.isNotBlank() &&
+                    !rawValue.matches(Regex("[0-9]{4}"))) {
+                    edit.error = "Enter only the last four Aadhaar digits"; return@setOnClickListener
+                }
                 if (hint.contains("PIN code", true) && !rawValue.matches(Regex("[1-9][0-9]{5}"))) {
                     edit.error = "Enter a valid 6-digit PIN code"; return@setOnClickListener
                 }
