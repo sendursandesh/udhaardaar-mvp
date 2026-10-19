@@ -227,7 +227,12 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
                 assertTrue("Home snapshot must show recorded assets; text=$visible",
                     visible.contains(String.format(java.util.Locale.US, "%,.2f", expected)))
                 assertTrue("Home should show the approved Plan Today dashboard banner", visible.contains("Plan Today"))
-                assertTrue("Home should provide the canonical quick actions", visible.contains("Register Credit"))
+                assertTrue("Home should expose the canonical Credit tab", visible.contains("Credit"))
+                assertTrue("Home should expose the canonical Repay tab", visible.contains("Repay"))
+                assertTrue("Home should expose the canonical Vault tab", visible.contains("Vault"))
+                assertTrue("Home should expose the canonical More tab", visible.contains("More"))
+                assertFalse("Home should not duplicate module-specific buttons already available in the tabs",
+                    visible.contains("Register Credit"))
             }
         }
     }
