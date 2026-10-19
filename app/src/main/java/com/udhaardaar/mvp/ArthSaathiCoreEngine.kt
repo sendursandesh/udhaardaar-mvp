@@ -10,7 +10,7 @@ import kotlin.math.round
 
 object ArthSaathiCoreEngine {
  data class Result(val ok:Boolean,val id:String?=null,val message:String="")
- data class Mis(val credits:Double,val repayments:Double,val outstanding:Double,val assets:Double,val liabilities:Double,val benefits:Double,val groupExpenses:Double,val revenue:Double,val actualCharges:Double,val chargeVariance:Double,val financialAssets:Double=0.0,val nonFinancialAssets:Double=0.0,val portfolioValue:Double=0.0)
+ data class Mis(val credits:Double,val repayments:Double,val outstanding:Double,val assets:Double,val liabilities:Double,val benefits:Double,val groupExpenses:Double,val revenue:Double,val actualCharges:Double,val chargeVariance:Double,val financialAssets:Double=0.0,val nonFinancialAssets:Double=0.0,val portfolioValue:Double=0.0,val groupCollected:Double=0.0,val groupOutstandingShares:Double=0.0)
  private fun id(p:String)=p+"-"+UUID.randomUUID().toString().take(8).uppercase()
  private fun n()=System.currentTimeMillis()
  private fun m(v:Double)=round(v*100)/100
@@ -260,7 +260,7 @@ object ArthSaathiCoreEngine {
  fun linked(id:String):List<JSONObject>{val out=mutableListOf<JSONObject>();val a=ArthSaathiDataStore.records();for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("recordId")==id||o.optString("partyId")==id||o.optString("relatedId")==id||o.optString("parentId")==id)out+=o};return out}
  fun mis():Mis{
   val a=ArthSaathiDataStore.records()
-  var c=0.0;var p=0.0;var outstanding=0.0;var asst=0.0;var liab=0.0;var ben=0.0;var grp=0.0;var rev=0.0;var charges=0.0;var chargeVariance=0.0;var financialAssets=0.0;var nonFinancialAssets=0.0;var portfolioValue=0.0
+  var c=0.0;var p=0.0;var outstanding=0.0;var asst=0.0;var liab=0.0;var ben=0.0;var grp=0.0;var rev=0.0;var charges=0.0;var chargeVariance=0.0;var financialAssets=0.0;var nonFinancialAssets=0.0;var portfolioValue=0.0;var groupCollected=0.0;var groupOutstandingShares=0.0
   fun amount(o:JSONObject,vararg keys:String):Double {
    for(key in keys){if(o.has(key)&&!o.isNull(key)){val v=o.optDouble(key,Double.NaN);if(v.isFinite())return v}}
    return 0.0
@@ -281,11 +281,43 @@ object ArthSaathiCoreEngine {
     "LIABILITY"->liab+=amount(o,"outstanding","f2","value")
     "BENEFIT"->{if(status(o,"status","f3") in completedBenefitStatuses)ben+=amount(o,"value","f2")}
     "GROUP_EXPENSE"->grp+=amount(o,"total","f1","value")
+    "GROUP_CONTRIBUTION"->groupCollected+=amount(o,"f1","amount","value")
     "REVENUE"->{val state=status(o,"paymentStatus","f2","status");val value=amount(o,"amount","f1","value");if(state in receivedStatuses)rev+=value else if(state=="REFUNDED")rev-=value}
     "CHARGECHECK"->{charges+=amount(o,"actualCharge","f2");chargeVariance+=if(o.has("variance"))amount(o,"variance") else if(o.has("f3"))amount(o,"f3") else amount(o,"f2")-amount(o,"f1")}
    }
   }
-  return Mis(m(c),m(p),m(outstanding),m(asst),m(liab),m(ben),m(grp),m(rev),m(charges),m(chargeVariance),m(financialAssets),m(nonFinancialAssets),m(portfolioValue))
+  // Reconcile each group's equal-share obligation against recorded contributions and settlements.
+  // A settlement transfers money between members; it changes individual net balances but not the total collected.
+  for(i in 0 until a.length()){
+   val expense=a.optJSONObject(i)?:continue
+   if(expense.optString("type")!="GROUP_EXPENSE") continue
+   val groupId=expense.optString("id")
+   val total=amount(expense,"total","f1","value")
+   val names=expense.optString("f4").split(",").map{it.trim()}.filter{it.isNotBlank()}.distinctBy{it.lowercase(Locale.US)}
+   if(names.isEmpty()) continue
+   val share=total/names.size
+   val balances=linkedMapOf<String,Double>()
+   names.forEach{balances[it]= -share}
+   for(j in 0 until a.length()){
+    val entry=a.optJSONObject(j)?:continue
+    if(entry.optString("parentId")!=groupId) continue
+    when(entry.optString("type")){
+     "GROUP_CONTRIBUTION"->{
+      val member=names.firstOrNull{it.equals(entry.optString("f0").trim(),true)}
+      if(member!=null) balances[member]=(balances[member]?: -share)+amount(entry,"f1","amount","value")
+     }
+     "GROUP_SETTLEMENT"->{
+      val debtor=names.firstOrNull{it.equals(entry.optString("f0").trim(),true)}
+      val creditor=names.firstOrNull{it.equals(entry.optString("f1").trim(),true)}
+      val value=amount(entry,"f2","amount","value")
+      if(debtor!=null) balances[debtor]=(balances[debtor]?: -share)+value
+      if(creditor!=null) balances[creditor]=(balances[creditor]?: -share)-value
+     }
+    }
+   }
+   groupOutstandingShares+=balances.values.filter{it < -0.005}.sumOf{-it}
+  }
+  return Mis(m(c),m(p),m(outstanding),m(asst),m(liab),m(ben),m(grp),m(rev),m(charges),m(chargeVariance),m(financialAssets),m(nonFinancialAssets),m(portfolioValue),m(groupCollected),m(groupOutstandingShares))
  }
  fun switchAnalysis(value:Double,currentReturn:Double,alternativeReturn:Double,currentCost:Double,alternativeCost:Double)=JSONObject().apply{val d=alternativeReturn-currentReturn;val cd=alternativeCost-currentCost;put("returnDifferencePct",m(d));put("annualOpportunityDifference",m(value*d/100));put("costDifference",m(cd));put("netIndicativeDifference",m(value*d/100-cd));put("requiresRiskReview",true);put("requiresUserDecision",true)}
  fun audit(recordId:String,action:String,actor:String){ArthSaathiDataStore.append(JSONObject().apply{put("id",id("AUD"));put("type","AUDIT");put("recordId",recordId);put("action",action);put("actor",actor);put("createdAt",n())})}
