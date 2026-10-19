@@ -1048,4 +1048,41 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         assertEquals("PENDING", unchanged?.optString("consentStatus"))
     }
 
+    @Test fun misUpdatesAcrossAssetLiabilityBenefitGroupRevenueAndChargeRecords() {
+        val before = ArthSaathiCoreEngine.mis()
+
+        ArthSaathiCoreEngine.saveModule("ASSET", mapOf(
+            "f0" to "MIS financial asset QA", "category" to "FINANCIAL", "value" to 1010.25
+        ))
+        ArthSaathiCoreEngine.saveModule("PORTFOLIO", mapOf(
+            "f0" to "MIS portfolio QA", "currentValue" to 2020.50
+        ))
+        ArthSaathiCoreEngine.saveModule("LIABILITY", mapOf(
+            "f0" to "MIS liability QA", "outstanding" to 303.75
+        ))
+        ArthSaathiCoreEngine.saveModule("BENEFIT", mapOf(
+            "f0" to "MIS completed benefit QA", "status" to "COMPLETED", "value" to 40.25
+        ))
+        ArthSaathiCoreEngine.saveModule("GROUP_EXPENSE", mapOf(
+            "f0" to "MIS group expense QA", "total" to 50.50
+        ))
+        ArthSaathiCoreEngine.saveModule("REVENUE", mapOf(
+            "f0" to "MIS received revenue QA", "paymentStatus" to "RECEIVED", "amount" to 60.75
+        ))
+        ArthSaathiCoreEngine.saveModule("CHARGECHECK", mapOf(
+            "f0" to "MIS charge QA", "actualCharge" to 70.25, "variance" to 10.25
+        ))
+
+        val after = ArthSaathiCoreEngine.mis()
+        assertEquals(3030.75, after.assets - before.assets, 0.01)
+        assertEquals(1010.25, after.financialAssets - before.financialAssets, 0.01)
+        assertEquals(2020.50, after.portfolioValue - before.portfolioValue, 0.01)
+        assertEquals(303.75, after.liabilities - before.liabilities, 0.01)
+        assertEquals(40.25, after.benefits - before.benefits, 0.01)
+        assertEquals(50.50, after.groupExpenses - before.groupExpenses, 0.01)
+        assertEquals(60.75, after.revenue - before.revenue, 0.01)
+        assertEquals(70.25, after.actualCharges - before.actualCharges, 0.01)
+        assertEquals(10.25, after.chargeVariance - before.chargeVariance, 0.01)
+    }
+
 }
