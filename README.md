@@ -40,16 +40,22 @@ The canonical registry includes:
 The audit branch has been extended with:
 - Guardrails against generic writes overriding record type, ID, owner, or timestamps.
 - Guardrails against generic updates changing record identity or protected registered credit terms.
-- Repayment now requires a separate provider-issued repayment challenge and successful OTP verification; the legacy direct call fails closed.
-- Instrumentation cases for generic-write/update protections, wrong-OTP rejection, verified repayment, MIS propagation, and every canonical module title/brand mark.
+- Removed the Home screen's dependency on the legacy `udhaardaar_accounts` preference namespace; the profile header now reads account-scoped ArthSaathi profile records.
+- Repayment requires a separate provider-issued OTP bound to the specific credit and purpose; the legacy direct call fails closed. Balance, repayment ledger and audit entry are committed in one encrypted-store write.
+- Added email and Aadhaar-last-four validation to generic module forms.
+- Added instrumentation cases for generic-write/update protections, repayment challenge binding and wrong-OTP rejection, MIS propagation, legacy-profile isolation, field validation, and every canonical module title/brand mark.
+- Added `.github/workflows/arthsaathi-audit.yml` to run build/unit tests and Android 15 emulator instrumentation tests on this branch.
 
-**These changes are not yet release-certified.** The connected GitHub tooling has not returned a CI run or status-check record for the latest audit commits, and this environment cannot access GitHub directly to run Gradle or an emulator. The new tests must execute in the project CI before their result can be claimed.
+**These changes are not yet release-certified.** No status-check or workflow-run result has been returned for the latest audit commits. This environment cannot access GitHub directly and has no local Gradle/Android SDK, so the new CI workflow must execute and its build and emulator artifacts must be reviewed before any test pass or final APK can be claimed.
 
 ## Known functional gaps that must be closed before release
 
 - Production OTP provider configuration is not present in this repository's app code; sign-in and consent must remain fail-closed until a trusted provider is connected.
 - The repayment OTP path is implemented fail-closed, but it still depends on a trusted provider being installed and configured; it must be verified by the new instrumentation tests.
-- Several modules still use generic record forms rather than dedicated domain-specific workflows.
+- Fifteen modules still use generic save-and-list forms rather than dedicated domain workflows; those forms do not provide full edit/delete behavior or complete inter-module relationships.
+- Rental & Lease currently writes a separate generic `RENTAL_LEASE` record instead of using the validated lease/contract calculation path in Register Credit.
+- Trade Credit is not automatically linked to QR Khata invoice records or the credit/repayment engine; Claims and Legal records use free-text references rather than enforced links to assets, benefits and documents.
+- Group Khata records contributions and settlements, but MIS does not yet calculate per-member collected amounts or remaining group-share balances.
 - Portfolio-switch analysis is a calculation from supplied inputs; it is not yet a verified live-market comparison feed.
 - Revenue settings store gateway/bank configuration data but do not by themselves execute real payments or verify provider callbacks.
 - Address fields expose PIN/city/state and location-source fields, but a verified Google Maps/Places lookup must not be claimed unless implemented and tested.
