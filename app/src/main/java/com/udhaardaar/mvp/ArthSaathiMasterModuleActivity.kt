@@ -1920,7 +1920,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
             edit
         }
         var editingRecordId: String? = null
-        val saveButton = Button(this).apply{text="SAVE";setOnClickListener{
+        lateinit var saveButton: Button
+        saveButton = Button(this).apply{text="SAVE";setOnClickListener{
             if (fields.isNotEmpty() && fields[0].text.toString().trim().isEmpty()) {
                 fields[0].error = "Required"; return@setOnClickListener
             }
