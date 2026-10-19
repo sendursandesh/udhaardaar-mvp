@@ -85,18 +85,15 @@ class V7BroadFunctionalUiRegressionInstrumentedTest {
         assertEquals("PENDING_CONSENT", requireNotNull(ArthSaathiCoreEngine.find(created.id!!)).optString("status"))
     }
 
-    @Test fun genericLiabilityWriteCannotBypassCanonicalValidatedWorkflow() {
+    @Test fun liabilityRecordIsIncludedInMisWithoutChangingCreditOutstanding() {
         ArthSaathiDataStore.initialize(context)
-        try {
-            ArthSaathiCoreEngine.saveModule("LIABILITY", mapOf(
-                "originalAmount" to 100000.0, "outstanding" to 120000.0, "rate" to 150.0
-            ))
-            // Generic liability records cannot bypass the canonical validated workflow.
-            fail("Generic liability write must be rejected")
-        } catch (expected: IllegalArgumentException) {
-            assertTrue(expected.message.orEmpty().isNotBlank())
-        }
-        assertTrue(ArthSaathiCoreEngine.mis().liabilities >= 0.0)
+        val before = ArthSaathiCoreEngine.mis()
+        ArthSaathiCoreEngine.saveModule("LIABILITY", mapOf(
+            "originalAmount" to 100000.0, "outstanding" to 120000.0, "rate" to 15.0
+        ))
+        val after = ArthSaathiCoreEngine.mis()
+        assertEquals(before.liabilities + 120000.0, after.liabilities, 0.005)
+        assertEquals(before.outstanding, after.outstanding, 0.005)
     }
 
     @Test fun canonicalHomeOpensAndShowsApprovedBranding() {
