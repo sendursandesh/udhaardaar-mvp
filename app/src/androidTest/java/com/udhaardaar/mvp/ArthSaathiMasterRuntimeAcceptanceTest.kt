@@ -91,6 +91,30 @@ class ArthSaathiMasterRuntimeAcceptanceTest {
         }
     }
 
+    @Test fun profileFormRejectsInvalidEmailAndAadhaarLastFour() {
+        val before = ArthSaathiDataStore.records().let { records ->
+            (0 until records.length()).count { records.optJSONObject(it)?.optString("type") == "PROFILE" }
+        }
+        ActivityScenario.launch<ArthSaathiMasterModuleActivity>(
+            Intent(context, ArthSaathiMasterModuleActivity::class.java)
+                .putExtra("module", ArthSaathiNavigation.PROFILE)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                requireNotNull(findEdit(activity.window.decorView, "Full legal name")).setText("Profile QA")
+                requireNotNull(findEdit(activity.window.decorView, "Mobile number (10 digits)")).setText(mobile)
+                val email = requireNotNull(findEdit(activity.window.decorView, "Email address"))
+                email.setText("not-an-email")
+                requireNotNull(findEdit(activity.window.decorView, "Aadhaar (last four digits only)")).setText("12A4")
+                requireNotNull(findButton(activity.window.decorView, "SAVE")).performClick()
+                assertNotNull("Invalid email must be rejected", email.error)
+                assertEquals("Invalid profile fields must not create a record", before,
+                    (0 until ArthSaathiDataStore.records().length()).count {
+                        ArthSaathiDataStore.records().optJSONObject(it)?.optString("type") == "PROFILE"
+                    })
+            }
+        }
+    }
+
     @Test fun genericModuleWriterCannotCreateCreditAndBypassConsent() {
         try {
             ArthSaathiCoreEngine.saveModule("CREDIT", mapOf(
