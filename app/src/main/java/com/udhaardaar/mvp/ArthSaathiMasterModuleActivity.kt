@@ -492,22 +492,43 @@ class ArthSaathiMasterModuleActivity : Activity() {
                                     "Enter the repayment method.", Toast.LENGTH_LONG).show()
                                 return@setPositiveButton
                             }
-                            try {
-                                val result = ArthSaathiCoreEngine.repayment(
-                                    o.optString("id"), amount, method, "user"
-                                )
+                            val challenge = ArthSaathiCoreEngine.requestRepaymentOtp(
+                                o.optString("id"), "lender"
+                            )
+                            if (!challenge.ok || challenge.id.isNullOrBlank()) {
                                 Toast.makeText(this@ArthSaathiMasterModuleActivity,
-                                    result.message, Toast.LENGTH_LONG).show()
-                                render(ArthSaathiNavigation.REPAYMENT)
-                            } catch (e: IllegalArgumentException) {
-                                Toast.makeText(this@ArthSaathiMasterModuleActivity,
-                                    e.message ?: "Repayment was rejected; no change was made.",
-                                    Toast.LENGTH_LONG).show()
-                            } catch (e: IllegalStateException) {
-                                Toast.makeText(this@ArthSaathiMasterModuleActivity,
-                                    e.message ?: "Sign in again before recording repayment.",
-                                    Toast.LENGTH_LONG).show()
+                                    challenge.message, Toast.LENGTH_LONG).show()
+                                return@setPositiveButton
                             }
+                            val otpField = EditText(this@ArthSaathiMasterModuleActivity).apply {
+                                hint = "OTP sent to borrower mobile"
+                                inputType = InputType.TYPE_CLASS_NUMBER
+                                filters = arrayOf(InputFilter.LengthFilter(8))
+                            }
+                            AlertDialog.Builder(this@ArthSaathiMasterModuleActivity)
+                                .setTitle("Verify borrower repayment OTP")
+                                .setMessage("Enter the code sent by the configured provider to the borrower's registered mobile. No repayment is saved until verification succeeds.")
+                                .setView(otpField)
+                                .setNegativeButton("CANCEL", null)
+                                .setPositiveButton("VERIFY & RECORD") { _, _ ->
+                                    try {
+                                        val result = ArthSaathiCoreEngine.repayment(
+                                            o.optString("id"), amount, method, "lender",
+                                            challenge.id, otpField.text.toString().trim()
+                                        )
+                                        Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                                            result.message, Toast.LENGTH_LONG).show()
+                                        if (result.ok) render(ArthSaathiNavigation.REPAYMENT)
+                                    } catch (e: IllegalArgumentException) {
+                                        Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                                            e.message ?: "Repayment was rejected; no change was made.",
+                                            Toast.LENGTH_LONG).show()
+                                    } catch (e: IllegalStateException) {
+                                        Toast.makeText(this@ArthSaathiMasterModuleActivity,
+                                            e.message ?: "Sign in again before recording repayment.",
+                                            Toast.LENGTH_LONG).show()
+                                    }
+                                }.show()
                         }.show()
                 }
             })
