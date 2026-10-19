@@ -106,7 +106,8 @@ class ArthSaathiHomeActivity : Activity() {
         }
         if (displayName == "User" && fallbackProfileName.isNotBlank()) displayName = fallbackProfileName
         if (photoUri == null) photoUri = fallbackPhotoUri
-        val resolvedPhotoUri = photoUri\n        val profileView: View = if (resolvedPhotoUri != null) {
+        val resolvedPhotoUri = photoUri
+        val profileView: View = if (resolvedPhotoUri != null) {
             ImageView(this).apply {
                 contentDescription = "$displayName profile photo"
                 scaleType = ImageView.ScaleType.CENTER_CROP
