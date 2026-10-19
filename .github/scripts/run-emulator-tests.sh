@@ -24,7 +24,7 @@ adb shell cmd package list packages >/dev/null
 echo "=== Emulator ready; starting instrumentation tests ==="
 
 set +e
-timeout --signal=TERM --kill-after=15s 12m gradle :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
+timeout --signal=TERM --kill-after=15s 12m gradle clean :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
 gradle_exit=$?
 set -e
 
