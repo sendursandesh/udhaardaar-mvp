@@ -22,9 +22,16 @@ class V7FinalAcceptanceInstrumentedTest {
         V7LocalStore(c).remove("v7_accounts",mobile)
         V7AccountStore.create(c,"Final Acceptance",mobile)
         V7AccountStore.login(c,mobile)
+        ArthSaathiDataStore.initialize(c)
+        ArthSaathiSession.logout(c)
+        ArthSaathiSession.login(c,mobile)
     }
 
-    @After fun tearDown(){ V7AccountStore.logout(c); V7LocalStore(c).remove("v7_accounts",mobile) }
+    @After fun tearDown(){
+        ArthSaathiSession.logout(c)
+        V7AccountStore.logout(c)
+        V7LocalStore(c).remove("v7_accounts",mobile)
+    }
 
     @Test fun masterArchitectureHasUniqueOwnershipAndNativeCore(){
         val modules=V7MasterVisionRegistry.all()
