@@ -187,7 +187,7 @@ object ArthSaathiCoreEngine {
   val reserved=setOf("id","type","ownerUserId","createdAt","updatedAt")
   if(fields.keys.any { it in reserved })
    return Result(false,id,"Record identity, ownership and creation timestamps cannot be changed through a generic update")
-  val protectedCreditFields=setOf("consentStatus","consentChallengeId","consentActor","consentAt","consentRequestedAt","paid","status","ownerUserId")
+  val protectedCreditFields=setOf("consentStatus","consentChallengeId","consentActor","consentAt","consentRequestedAt","paid","status","amount","roi","totalPayable","expectedEmi","party","partyId","partyMobile","nature","method","terms","repaymentMode","tenureMonths","dueDate","guarantorId","guarantorName","documentId","registeredAt","ownerUserId")
   if(o.optString("type")=="CREDIT" && fields.keys.any{it in protectedCreditFields})
    return Result(false,id,"Consent, repayment, closure and ownership fields can only change through their dedicated verified workflows")
   if(fields.containsKey("ownerUserId"))
