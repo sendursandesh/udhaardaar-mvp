@@ -33,7 +33,7 @@ object ArthSaathiDataStore {
     internal fun ownerCanRead(recordOwner: String?, activeOwner: String?): Boolean =
         !recordOwner.isNullOrBlank() && !activeOwner.isNullOrBlank() && recordOwner == activeOwner
 
-    private fun activeOwner(): String? = ArthSaathiSession.mobile(appContext)?.takeIf { it.isNotBlank() }
+    private fun activeOwner(): String? = ArthSaathiSession.ownerId(appContext)?.takeIf { it.isNotBlank() }
 
     /**
      * Financial and identity records are encrypted at rest with AES-GCM using a
