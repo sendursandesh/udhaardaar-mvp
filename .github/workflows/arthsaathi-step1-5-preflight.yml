@@ -13,8 +13,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: arthsaathi-step1-5-preflight-${{ github.ref }}
-  cancel-in-progress: true
+  group: arthsaathi-step1-5-preflight-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   static-unit-build:
