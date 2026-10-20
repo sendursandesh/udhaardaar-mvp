@@ -11,6 +11,14 @@
 
 Do not treat the earlier APK or a successful compile as final acceptance. The complete architecture and all module workflows must pass source review, build, instrumentation, regression, and device/emulator checks before a final APK is released.
 
+## Branch and APK identity controls
+
+- The release-candidate source branch is `arthsaathi-step1-5-functional-audit-2026-10-18`; the release workflow checks out the triggering commit SHA, not a moving branch tip.
+- The canonical Android identity is application ID `com.arthsaathi.master`, versionCode `800`, versionName `8.0`. The release workflow fails closed if the branch or any of these Gradle identity values differ.
+- Every successful build job records repository, branch, exact commit SHA, application ID, version code/name, workflow run/attempt and UTC build time in `release-provenance.txt`; it also records the APK SHA-256 in `apk-sha256.txt` and uploads both alongside the APK.
+- Build provenance proves which source produced an artifact; it does not certify functional correctness. The emulator acceptance job must also pass before release approval.
+- GitHub reports this branch as unprotected with required status checks disabled. Repository branch protection must be enabled in GitHub settings by an administrator; until that is done, the workflow's identity guard is an enforcement check, not a server-side prohibition on direct pushes.
+
 ## Consolidated architecture and data ownership
 
 The persistent navigation is **Home | Credit | Repay | Vault | More**. Each feature should have one canonical route; legacy screens must not create duplicate entry points or competing record owners.
