@@ -133,6 +133,7 @@ jobs:
         with:
           gradle-version: '8.7'
       - name: Run instrumented acceptance suite on Android 14 emulator
+        timeout-minutes: 115
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
