@@ -277,7 +277,7 @@ object ArthSaathiCoreEngine {
   return Result(true,id,"Updated")
  }
  fun find(id:String):JSONObject?{val a=ArthSaathiDataStore.records();for(i in 0 until a.length())if(a.optJSONObject(i)?.optString("id")==id)return a.getJSONObject(i);return null}
- fun linked(id:String):List<JSONObject>{val out=mutableListOf<JSONObject>();val a=ArthSaathiDataStore.records();for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("recordId")==id||o.optString("partyId")==id||o.optString("relatedId")==id||o.optString("parentId")==id||o.optString("sourceRecordId")==id||o.optString("relatedAssetId")==id||o.optString("relatedBenefitId")==id||o.optString("relatedDocumentId")==id)out+=o};return out}
+ fun linked(id:String):List<JSONObject>{val out=mutableListOf<JSONObject>();val a=ArthSaathiDataStore.records();for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("recordId")==id||o.optString("partyId")==id||o.optString("relatedId")==id||o.optString("parentId")==id||o.optString("sourceRecordId")==id||o.optString("relatedAssetId")==id||o.optString("relatedBenefitId")==id||o.optString("relatedDocumentId")==id||o.optString("personId")==id||o.optString("responsiblePersonId")==id||o.optString("nomineePersonId")==id)out+=o};return out}
  fun mis():Mis{
   val a=ArthSaathiDataStore.records()
   var c=0.0;var p=0.0;var outstanding=0.0;var asst=0.0;var liab=0.0;var ben=0.0;var grp=0.0;var rev=0.0;var charges=0.0;var chargeVariance=0.0;var financialAssets=0.0;var nonFinancialAssets=0.0;var portfolioValue=0.0;var groupCollected=0.0;var groupOutstandingShares=0.0
