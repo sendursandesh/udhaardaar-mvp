@@ -118,7 +118,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.FAMILY -> simple(body,"FAMILY","Family & Nominees",listOf("Family member / nominee name","Relationship","Mobile number (10 digits)","Nomination / relationship notes","Consent status"))
             ArthSaathiNavigation.ADDRESS -> simple(body,"ADDRESS","Address & Geolocation",listOf("Address label","PIN code (6 digits)","City","State","Landmark / address override","Location source / verification status"))
             ArthSaathiNavigation.CREDIT_INTELLIGENCE -> creditIntelligence(body)
-            ArthSaathiNavigation.TRADE_CREDIT -> simple(body,"TRADE_CREDIT","Trade Credit",listOf("Supplier / customer","GSTIN","Invoice number","Invoice date","Invoice amount (₹)","Credit period in days","Due date","Source system / reference"))
+            ArthSaathiNavigation.TRADE_CREDIT -> tradeCredit(body)
             ArthSaathiNavigation.ACCOUNTING -> simple(body,"ACCOUNTING_ADAPTER","Accounting & ERP Adapters",listOf("Adapter (Tally / SAP / CSV / REST / webhook)","Source system","Environment (local / test / production)","Connection status","Configuration reference (no secrets)"))
             ArthSaathiNavigation.FORMAL_CREDIT -> simple(body,"FORMAL_CREDIT","Formal Credit & Charge Review",listOf("Lender / institution","Loan product","Sanctioned principal (₹)","Sanctioned interest rate (%)","Actual interest / charges (₹)","Evidence document reference","Review status"))
             ArthSaathiNavigation.FUNDING -> simple(body,"FUNDING_REQUEST","Funding Marketplace",listOf("Funding purpose","Requested amount (₹)","Business / personal category","Eligibility notes","Consent reference for profile sharing","Request status"))
@@ -169,6 +169,12 @@ class ArthSaathiMasterModuleActivity : Activity() {
     }
 
     private fun registerCredit(body: LinearLayout, rentalOnly: Boolean = false) {
+        val sourceInvoiceId = intent.getStringExtra("sourceInvoiceId").orEmpty()
+        val sourceInvoice = sourceInvoiceId.takeIf { it.isNotBlank() }?.let { id ->
+            (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+                .firstOrNull { it.optString("type") == "QR_KHATA" && it.optString("id") == id }
+        }
+        val linkedInvoiceId = sourceInvoice?.optString("id")?.takeIf { it.isNotBlank() }
         body.addView(TextView(this).apply {
             text = if (rentalOnly) "RENTAL / LEASE REGISTRATION\nUse the same credit ledger, linked lease agreement, payment tracking and outstanding reconciliation. External OTP consent remains deferred." else "NEW CREDIT ONLY\nIdentify party → nature → credit-specific fields → method → repayment → guarantor → document → consent / OTP → registration."
             textSize = 15f
@@ -294,6 +300,19 @@ class ArthSaathiMasterModuleActivity : Activity() {
             }
             if (rentalIndex >= 0) nature.setSelection(rentalIndex)
             nature.isEnabled = false
+        } else if (sourceInvoice != null) {
+            party.setText(sourceInvoice.optString("f0"), false)
+            amount.setText(sourceInvoice.optString("f1"))
+            val tradeIndex = ArthSaathiArchitectureRegistry.creditNatureOptions.indexOfFirst {
+                it.contains("Trade Credit", true)
+            }
+            if (tradeIndex >= 0) nature.setSelection(tradeIndex)
+            body.addView(TextView(this).apply {
+                text = "Linked QR Khata invoice: " + sourceInvoice.optString("f2", sourceInvoice.optString("id")) +
+                    "\nReview extracted values before registering the credit."
+                textSize = 12f
+                setTextColor(ArthSaathiV7Design.MUTED)
+            })
         }
         body.addView(Button(this).apply {
             text = if (rentalOnly) "REGISTER RENTAL / LEASE" else "REGISTER CREDIT"
@@ -383,7 +402,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
                         partyId, partyName, selectedNature, principal, rate,
                         method.text.toString().trim(), normalizedFrequency,
                         due.text.toString().trim(), guarantorId, documentId.ifBlank { null },
-                        partyMobile, guarantorName, repaymentMode, tenureMonths
+                        partyMobile, guarantorName, repaymentMode, tenureMonths, linkedInvoiceId
                     )
                     if (!result.ok) {
                         Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
@@ -417,7 +436,9 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 else -> "Active"
             }
             val balanceLine = if (o.optString("status") == "PENDING_CONSENT") "Not registered yet" else "Outstanding ₹" + money(outstanding)
-            body.addView(Button(this).apply { text=state+"\n"+o.optString("party")+" • "+o.optString("nature")+"\n"+balanceLine; setOnClickListener{detail(o)} })
+            val invoice = o.optString("sourceRecordId").takeIf { it.isNotBlank() }?.let { ArthSaathiCoreEngine.find(it) }
+            val invoiceLine = invoice?.let { "\nQR invoice: " + it.optString("f2", it.optString("id")) }.orEmpty()
+            body.addView(Button(this).apply { text=state+"\n"+o.optString("party")+" • "+o.optString("nature")+"\n"+balanceLine+invoiceLine; setOnClickListener{detail(o)} })
         }
         if (!found) {
             body.addView(ArthSaathiV7Design.text(this,
@@ -1228,6 +1249,64 @@ class ArthSaathiMasterModuleActivity : Activity() {
             if (creditor != null) balances[creditor] = (balances[creditor] ?: -share) - value
         }
         return balances
+    }
+
+    /** Trade-credit records originate from QR Khata invoices and share the canonical credit ledger. */
+    private fun tradeCredit(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "TRADE CREDIT • Convert a reviewed QR Khata invoice into a credit record. The invoice and credit remain linked; repayment and outstanding are tracked in the same ledger."
+            textSize = 15f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 12)
+        })
+        body.addView(Button(this).apply {
+            text = "OPEN QR KHATA / SCAN INVOICE"
+            isAllCaps = false
+            setOnClickListener { startActivity(Intent(this@ArthSaathiMasterModuleActivity, ArthSaathiMasterModuleActivity::class.java).putExtra("module", ArthSaathiNavigation.QR_KHATA)) }
+        })
+        val invoices = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "QR_KHATA" }
+        if (invoices.isEmpty()) {
+            body.addView(TextView(this).apply {
+                text = "No QR Khata invoices saved yet. Scan or enter an invoice first, then return here to register trade credit."
+                setPadding(0, 12, 0, 12)
+            })
+            return
+        }
+        invoices.forEach { invoice ->
+            val invoiceId = invoice.optString("id")
+            val linkedCredits = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+                .filter { it.optString("type") == "CREDIT" && it.optString("sourceRecordId") == invoiceId }
+            body.addView(TextView(this).apply {
+                text = invoice.optString("f0") + " • ₹" + money(invoice.optDouble("f1")) +
+                    "\nInvoice reference: " + invoice.optString("f2", invoiceId) +
+                    "\nInvoice date: " + invoice.optString("f6") +
+                    "\nCaptured: " + invoice.optString("f4")
+                textSize = 14f
+                setPadding(8, 12, 8, 6)
+            })
+            if (linkedCredits.isEmpty()) {
+                body.addView(Button(this).apply {
+                    text = "CREATE TRADE CREDIT FROM THIS INVOICE"
+                    isAllCaps = false
+                    setOnClickListener {
+                        startActivity(Intent(this@ArthSaathiMasterModuleActivity, ArthSaathiMasterModuleActivity::class.java)
+                            .putExtra("module", ArthSaathiNavigation.REGISTER_CREDIT)
+                            .putExtra("sourceInvoiceId", invoiceId))
+                    }
+                })
+            } else {
+                linkedCredits.forEach { credit ->
+                    val outstanding = (credit.optDouble("totalPayable", credit.optDouble("amount")) - credit.optDouble("paid")).coerceAtLeast(0.0)
+                    body.addView(Button(this).apply {
+                        text = "LINKED CREDIT • " + credit.optString("party") + "\n" +
+                            credit.optString("status") + " • Outstanding ₹" + money(outstanding)
+                        isAllCaps = false
+                        setOnClickListener { detail(credit) }
+                    })
+                }
+            }
+        }
     }
 
     private fun qrKhata(body: LinearLayout) {
