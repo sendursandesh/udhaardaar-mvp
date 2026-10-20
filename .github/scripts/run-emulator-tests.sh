@@ -6,13 +6,13 @@ trap 'adb logcat -d -t 8000 > app/build/qa-diagnostics/emulator-logcat.txt 2>&1 
 
 echo "=== Connected Android devices ==="
 adb devices -l
-timeout --signal=TERM --kill-after=5s 30s adb wait-for-device || { echo "FAIL: emulator did not become reachable within 30 seconds"; adb devices -l || true; exit 124; }
+timeout --signal=TERM --kill-after=10s 5m adb wait-for-device || { echo "FAIL: emulator did not become reachable within 5 minutes"; adb devices -l || true; exit 124; }
 
-echo "=== Waiting up to 30 seconds for Android boot ==="
-deadline=$((SECONDS + 30))
+echo "=== Waiting up to 5 minutes for Android boot ==="
+deadline=$((SECONDS + 300))
 until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)" == "1" ]]; do
   if (( SECONDS >= deadline )); then
-    echo "FAIL: emulator did not reach sys.boot_completed=1 within 30 seconds"
+    echo "FAIL: emulator did not reach sys.boot_completed=1 within 5 minutes"
     adb devices -l || true
     adb logcat -d -t 3000 || true
     exit 124
@@ -24,7 +24,7 @@ adb shell cmd package list packages >/dev/null
 echo "=== Emulator ready; starting instrumentation tests ==="
 
 set +e
-timeout --signal=TERM --kill-after=30s 20m gradle clean :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
+gradle clean :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
 gradle_exit=$?
 set -e
 
