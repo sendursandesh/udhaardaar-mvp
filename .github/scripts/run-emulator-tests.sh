@@ -2,6 +2,8 @@
 set -Eeuo pipefail
 
 mkdir -p app/build/qa-diagnostics
+attempt_log_aggregate=/tmp/arthsaathi-instrumentation-attempts.log
+: > "$attempt_log_aggregate"
 trap 'mkdir -p app/build/qa-diagnostics; adb logcat -d -t 8000 > app/build/qa-diagnostics/emulator-logcat.txt 2>&1 || true; adb devices -l > app/build/qa-diagnostics/adb-devices.txt 2>&1 || true' EXIT
 
 echo "=== Connected Android devices ==="
@@ -29,8 +31,12 @@ attempt=1
 max_attempts=3
 while (( attempt <= max_attempts )); do
   echo "=== Instrumentation attempt ${attempt}/${max_attempts} ==="
-  gradle clean :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
+  attempt_log="/tmp/arthsaathi-instrumentation-attempt-${attempt}.log"
+  gradle clean :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace >"$attempt_log" 2>&1
   gradle_exit=$?
+  cat "$attempt_log"
+  printf '\n===== ATTEMPT %s LOG =====\n' "$attempt" >> "$attempt_log_aggregate"
+  cat "$attempt_log" >> "$attempt_log_aggregate"
 
   executed_tests=$(python3 - <<'PY'
 import glob
@@ -57,16 +63,22 @@ PY
     break
   fi
 
+  if ! grep -Eqi "Instrumentation run failed due to Process crashed|Failed to start Emulator console|Instrumentation process crashed" "$attempt_log"; then
+    echo "FAIL: zero tests executed, but the log does not match a known emulator/instrumentation crash; not retrying compile or configuration failures."
+    break
+  fi
   if (( attempt == max_attempts )); then
-    echo "FAIL: instrumentation executed zero tests after ${max_attempts} attempts."
+    echo "FAIL: instrumentation process crashed before tests executed after ${max_attempts} attempts."
     break
   fi
 
-  echo "RETRY: instrumentation failed before executing tests; reusing the booted emulator after a 10-second pause."
+  echo "RETRY: confirmed emulator/instrumentation process crash before tests executed; reusing the booted emulator after a 10-second pause."
   sleep 10
   attempt=$((attempt + 1))
 done
 set -e
+mkdir -p app/build/qa-diagnostics
+cp "$attempt_log_aggregate" app/build/qa-diagnostics/gradle-instrumentation-attempts.log
 
 echo "=== Pulling canonical ArthSaathi visual evidence ==="
 visual_exit=0
