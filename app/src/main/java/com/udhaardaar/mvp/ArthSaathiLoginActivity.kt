@@ -119,12 +119,26 @@ class ArthSaathiLoginActivity : Activity() {
         }
         root.addView(status, LinearLayout.LayoutParams(-1, -2))
         root.addView(TextView(this).apply {
-            text = "Your mobile number alone does not sign you in."
+            text = "Offline mode stores records on this device only. It does not verify identity, borrower consent, or repayments. Protected credit actions remain locked until trusted OTP verification is connected."
             textSize = 11f
             setTextColor(muted)
             gravity = Gravity.CENTER
-            setPadding(0, dp(18), 0, 0)
+            setPadding(0, dp(18), 0, dp(8))
         })
+        root.addView(Button(this).apply {
+            text = "CONTINUE IN OFFLINE MODE"
+            isAllCaps = false
+            setTextColor(navy)
+            setOnClickListener {
+                ArthSaathiSession.loginOffline(this@ArthSaathiLoginActivity)
+                Toast.makeText(
+                    this@ArthSaathiLoginActivity,
+                    "Offline workspace opened. No identity or consent was verified.",
+                    Toast.LENGTH_LONG
+                ).show()
+                openHome()
+            }
+        }, LinearLayout.LayoutParams(-1, dp(52)))
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
     }
 
