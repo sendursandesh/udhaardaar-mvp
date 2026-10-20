@@ -90,12 +90,15 @@ jobs:
       - name: Run instrumented acceptance suite on Android 15 emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           target: google_apis
           arch: x86_64
           profile: pixel_2
+          cores: 2
+          ram-size: 2048M
+          heap-size: 512M
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -camera-back none
           disable-animations: true
           script: bash .github/scripts/run-emulator-tests.sh
       - name: Upload instrumentation test results
