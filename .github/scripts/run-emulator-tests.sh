@@ -72,8 +72,35 @@ PY
     break
   fi
 
-  echo "RETRY: confirmed emulator/instrumentation process crash before tests executed; reusing the booted emulator after a 10-second pause."
-  sleep 10
+  echo "RETRY: confirmed instrumentation crash before tests executed; capturing diagnostics and repairing ADB before retry."
+  mkdir -p app/build/qa-diagnostics
+  adb devices -l > "app/build/qa-diagnostics/adb-before-retry-${attempt}.txt" 2>&1 || true
+  adb logcat -d -t 4000 > "app/build/qa-diagnostics/logcat-before-retry-${attempt}.txt" 2>&1 || true
+  adb kill-server || true
+  sleep 2
+  adb start-server || true
+  timeout --signal=TERM --kill-after=10s 2m adb wait-for-device || {
+    echo "FAIL: emulator did not reconnect after ADB restart."
+    adb devices -l || true
+    break
+  }
+  boot_deadline=$((SECONDS + 120))
+  until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\\r' || true)" == "1" ]]; do
+    if (( SECONDS >= boot_deadline )); then
+      echo "FAIL: Android did not return to boot-completed state after ADB restart."
+      adb devices -l || true
+      break
+    fi
+    sleep 2
+  done
+  if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\\r' || true)" != "1" ]]; then
+    break
+  fi
+  adb shell cmd package list packages >/dev/null || {
+    echo "FAIL: package manager did not respond after ADB restart."
+    break
+  }
+  sleep 5
   attempt=$((attempt + 1))
 done
 set -e
