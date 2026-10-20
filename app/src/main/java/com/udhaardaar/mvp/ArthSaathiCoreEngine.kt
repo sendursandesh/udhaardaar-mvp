@@ -219,17 +219,17 @@ object ArthSaathiCoreEngine {
   val out=JSONObject().put("merchant","").put("amount","").put("reference","").put("note",raw.take(2000)).put("date","")
   if(raw.isBlank()) return out
   val lines=raw.lines().map{it.trim()}.filter{it.isNotBlank()}
-  val labels=Regex("""(?i)\\b(?:tax invoice|invoice no|invoice date|gstin|gst no|total|amount|bill to|ship to|phone|mobile|address|email|description|quantity|hsn|sac|subtotal|taxable value|cgst|sgst|igst|terms)\\b""")
+  val labels=Regex("""(?i)\b(?:tax invoice|invoice no|invoice date|gstin|gst no|total|amount|bill to|ship to|phone|mobile|address|email|description|quantity|hsn|sac|subtotal|taxable value|cgst|sgst|igst|terms)\b""")
   val merchant=lines.firstOrNull { it.length in 2..100 && !labels.containsMatchIn(it) }
   if(merchant!=null) out.put("merchant",merchant)
-  val totalPattern=Regex("""(?i)(?:grand\\s+total|total\\s+amount|invoice\\s+value|amount\\s+due|net\\s+payable|total|payable)\\s*[:\\-]?\\s*(?:₹|INR|Rs\\.?\\s*)?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)""")
+  val totalPattern=Regex("""(?i)(?:grand\s+total|total\s+amount|invoice\s+value|amount\s+due|net\s+payable|total|payable)\s*[:\-]?\s*(?:₹|INR|Rs\.?\s*)?\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)""")
   val amount=totalPattern.find(raw)?.groupValues?.getOrNull(1)?.replace(",","")
     ?.takeIf { it.toDoubleOrNull()?.let { value -> value.isFinite() && value>0.0 }==true }
   if(amount!=null) out.put("amount",amount)
-  val referencePattern=Regex("""(?im)^\\s*(?:invoice\\s*(?:no\\.?|number|#)?|bill\\s*(?:no\\.?|number)|reference)\\s*[:#\\-]?\\s*([A-Z0-9][A-Z0-9/\\-]{2,})""")
+  val referencePattern=Regex("""(?im)^\s*(?:invoice\s*(?:no\.?|number|#)?|bill\s*(?:no\.?|number)|reference)\s*[:#\-]?\s*([A-Z0-9][A-Z0-9/\-]{2,})""")
   val reference=referencePattern.find(raw)?.groupValues?.getOrNull(1)
   if(!reference.isNullOrBlank()) out.put("reference",reference)
-  val date=Regex("""\\b(?:[0-3]?[0-9][/-][01]?[0-9][/-][0-9]{4}|[0-9]{4}-[01][0-9]-[0-3][0-9])\\b""").find(raw)?.value
+  val date=Regex("""\b(?:[0-3]?[0-9][/-][01]?[0-9][/-][0-9]{4}|[0-9]{4}-[01][0-9]-[0-3][0-9])\b""").find(raw)?.value
   if(!date.isNullOrBlank()) out.put("date",date)
   return out
  }
