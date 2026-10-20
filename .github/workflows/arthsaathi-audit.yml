@@ -71,19 +71,29 @@ jobs:
           gradle-version: '8.7'
       - name: Build and run unit tests
         run: gradle --no-daemon clean testDebugUnitTest assembleDebug
-      - name: Verify APK and calculate checksum
+      - name: Verify APK identity and calculate checksum
         shell: bash
         run: |
           set -euo pipefail
-          APK="app/build/outputs/apk/debug/app-debug.apk"
-          test -s "$APK"
-          sha256sum "$APK" | tee app/build/release-provenance/apk-sha256.txt
+          echo "=== APK files produced by Gradle ==="
+          find app/build/outputs/apk -type f -name '*.apk' -print
+          APK="$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)"
+          test -n "$APK" && test -s "$APK"
+          AAPT="${ANDROID_HOME}/build-tools/35.0.0/aapt"
+          test -x "$AAPT"
+          BADGING="$("$AAPT" dump badging "$APK")"
+          printf '%s\n' "$BADGING" | grep -Fq "package: name='com.arthsaathi.master' versionCode='800' versionName='8.0'"
+          mkdir -p app/build/release-provenance
+          cp "$APK" app/build/release-provenance/arthsaathi-debug.apk
+          echo "verifiedApkSource=$APK" > app/build/release-provenance/apk-identity.txt
+          printf '%s\n' "$BADGING" | grep '^package:' >> app/build/release-provenance/apk-identity.txt
+          sha256sum app/build/release-provenance/arthsaathi-debug.apk | tee app/build/release-provenance/apk-sha256.txt
       - name: Upload debug APK and provenance
         uses: actions/upload-artifact@v4
         with:
           name: arthsaathi-debug-${{ github.sha }}
           path: |
-            app/build/outputs/apk/debug/app-debug.apk
+            app/build/release-provenance/arthsaathi-debug.apk
             app/build/release-provenance/
           if-no-files-found: error
           retention-days: 14
@@ -122,7 +132,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Run instrumented acceptance suite on Android 15 emulator
+      - name: Run instrumented acceptance suite on Android 14 emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
