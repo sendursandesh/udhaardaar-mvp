@@ -48,7 +48,7 @@ object ArthSaathiCoreEngine {
   }
   return null
  }
- fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String="",repaymentMode:String=terms,tenureMonths:Int=0):Result {
+ fun createCredit(partyId:String?,partyName:String,nature:String,amount:Double,roi:Double,method:String,terms:String,dueDate:String="",guarantorId:String?=null,documentId:String?=null,partyMobile:String="",guarantorName:String="",repaymentMode:String=terms,tenureMonths:Int=0,sourceRecordId:String?=null):Result {
   require(partyName.isNotBlank());require(nature.isNotBlank());require(amount.isFinite() && amount in 0.01..1.0e15) { "Amount must be between ₹0.01 and ₹1,000,000,000,000,000" };require(roi.isFinite() && roi in 0.0..100.0)
   require(validateMobile(partyMobile)) { "A valid 10-digit counterparty mobile number is required for consent" }
   require(method.isNotBlank());require(terms.isNotBlank());require(tenureMonths in 0..600) { "Tenure cannot exceed 600 months" }
@@ -82,7 +82,7 @@ object ArthSaathiCoreEngine {
     else -> amount
   }
   require(totalPayable.isFinite() && totalPayable >= amount) { "Calculated payable amount is outside the supported range" }
-  val o=JSONObject().apply{put("id",id("CR"));put("type","CREDIT");put("partyId",partyId?:"");put("party",partyName);put("partyMobile",partyMobile);put("nature",nature);put("amount",m(amount));put("roi",m(roi));put("method",method);put("terms",terms);put("repaymentMode",mode);put("tenureMonths",tenureMonths);put("expectedEmi",emiAmount);put("totalPayable",totalPayable);put("dueDate",dueDate);put("guarantorId",guarantorId?:"");put("guarantorName",guarantorName);put("documentId",documentId?:"");put("paid",0.0);put("status","PENDING_CONSENT");put("consentStatus","PENDING");put("createdAt",n());put("updatedAt",n())}
+  val o=JSONObject().apply{put("id",id("CR"));put("type","CREDIT");put("partyId",partyId?:"");put("party",partyName);put("partyMobile",partyMobile);put("nature",nature);put("amount",m(amount));put("roi",m(roi));put("method",method);put("terms",terms);put("repaymentMode",mode);put("tenureMonths",tenureMonths);put("expectedEmi",emiAmount);put("totalPayable",totalPayable);put("dueDate",dueDate);put("guarantorId",guarantorId?:"");put("guarantorName",guarantorName);put("documentId",documentId?:"");put("sourceRecordId",sourceRecordId?:"");put("paid",0.0);put("status","PENDING_CONSENT");put("consentStatus","PENDING");put("createdAt",n());put("updatedAt",n())}
   save(o,"CREATE_CREDIT");return Result(true,o.getString("id"),"Credit created")
  }
  fun requestConsent(recordId:String,actor:String):Result {
@@ -257,7 +257,7 @@ object ArthSaathiCoreEngine {
   return Result(true,id,"Updated")
  }
  fun find(id:String):JSONObject?{val a=ArthSaathiDataStore.records();for(i in 0 until a.length())if(a.optJSONObject(i)?.optString("id")==id)return a.getJSONObject(i);return null}
- fun linked(id:String):List<JSONObject>{val out=mutableListOf<JSONObject>();val a=ArthSaathiDataStore.records();for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("recordId")==id||o.optString("partyId")==id||o.optString("relatedId")==id||o.optString("parentId")==id)out+=o};return out}
+ fun linked(id:String):List<JSONObject>{val out=mutableListOf<JSONObject>();val a=ArthSaathiDataStore.records();for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("recordId")==id||o.optString("partyId")==id||o.optString("relatedId")==id||o.optString("parentId")==id||o.optString("sourceRecordId")==id)out+=o};return out}
  fun mis():Mis{
   val a=ArthSaathiDataStore.records()
   var c=0.0;var p=0.0;var outstanding=0.0;var asst=0.0;var liab=0.0;var ben=0.0;var grp=0.0;var rev=0.0;var charges=0.0;var chargeVariance=0.0;var financialAssets=0.0;var nonFinancialAssets=0.0;var portfolioValue=0.0;var groupCollected=0.0;var groupOutstandingShares=0.0
