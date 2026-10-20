@@ -12,6 +12,9 @@ import android.widget.*
 import androidx.core.content.FileProvider
 import com.google.zxing.integration.android.IntentIntegrator
 import com.google.zxing.integration.android.IntentResult
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.io.ByteArrayInputStream
@@ -31,6 +34,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
     private var documentTypeField: EditText? = null
     private var documentRelatedField: EditText? = null
     private val requestPickDocument = 8124
+    private val requestPickInvoiceImage = 8125
     private val records get() = ArthSaathiDataStore.records()
 
     override fun onCreate(state: Bundle?) {
@@ -1326,6 +1330,17 @@ class ArthSaathiMasterModuleActivity : Activity() {
                     .initiateScan()
             }
         })
+        body.addView(Button(this).apply {
+            text = "IMPORT INVOICE IMAGE • OCR"
+            isAllCaps = false
+            setOnClickListener {
+                val picker = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "image/*"
+                }
+                startActivityForResult(picker, requestPickInvoiceImage)
+            }
+        })
         qrMerchantField = field(body, "Merchant / customer")
         qrAmountField = field(body, "Amount (₹)", true)
         qrReferenceField = field(body, "QR / invoice reference")
@@ -1371,6 +1386,10 @@ class ArthSaathiMasterModuleActivity : Activity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        if (requestCode == requestPickInvoiceImage) {
+            if (resultCode == RESULT_OK) handleInvoiceOcr(data?.data)
+            return
+        }
         if (requestCode == requestPickDocument) {
             if (resultCode == RESULT_OK) handleDocumentPickerResult(data)
             return
@@ -1394,6 +1413,41 @@ class ArthSaathiMasterModuleActivity : Activity() {
             return
         }
         super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    private fun handleInvoiceOcr(uri: Uri?) {
+        if (uri == null) {
+            Toast.makeText(this, "No invoice image selected.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val image = try {
+            InputImage.fromFilePath(this, uri)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Could not open the selected invoice image: " + (e.message ?: "unsupported image"), Toast.LENGTH_LONG).show()
+            return
+        }
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        recognizer.process(image)
+            .addOnSuccessListener { result ->
+                val raw = result.text.trim()
+                if (raw.isBlank()) {
+                    Toast.makeText(this, "No readable text found. Try a clearer invoice image.", Toast.LENGTH_LONG).show()
+                    return@addOnSuccessListener
+                }
+                val parsed = ArthSaathiCoreEngine.parseInvoiceText(raw)
+                parsed.optString("merchant").takeIf { it.isNotBlank() }?.let { qrMerchantField?.setText(it) }
+                parsed.optString("amount").takeIf { it.isNotBlank() }?.let { qrAmountField?.setText(it) }
+                parsed.optString("reference").takeIf { it.isNotBlank() }?.let { qrReferenceField?.setText(it) }
+                parsed.optString("note").takeIf { it.isNotBlank() }?.let { qrNoteField?.setText(it.take(2000)) }
+                parsed.optString("date").takeIf { it.isNotBlank() }?.let { qrInvoiceDateField?.setText(it) }
+                qrCapturedAtField?.setText(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date()))
+                qrRawPayload = "OCR_TEXT:\n" + raw.take(8000)
+                Toast.makeText(this, "OCR extracted possible invoice fields. Review and correct them before saving; extraction is not verification.", Toast.LENGTH_LONG).show()
+            }
+            .addOnFailureListener { error ->
+                Toast.makeText(this, "Invoice OCR failed: " + (error.message ?: "try another image"), Toast.LENGTH_LONG).show()
+            }
+            .addOnCompleteListener { recognizer.close() }
     }
 
     private fun documentVault(body: LinearLayout) {
