@@ -132,7 +132,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.SECURITY_CONSENT -> securityConsent(body)
             ArthSaathiNavigation.INTEGRATIONS -> simple(body,"INTEGRATION","Integrations",listOf("Provider","Capability","Environment","Status","Configuration reference"))
             ArthSaathiNavigation.PROFILE -> simple(body,"PROFILE","Profile & Identity",listOf("Full legal name","Mobile number (10 digits)","Email address","PAN","Aadhaar (last four digits only)","Preferred language"))
-            ArthSaathiNavigation.FAMILY -> simple(body,"FAMILY","Family & Nominees",listOf("Family member / nominee name","Relationship","Mobile number (10 digits)","Nomination / relationship notes","Consent status"))
+            ArthSaathiNavigation.FAMILY -> familyNominees(body)
             ArthSaathiNavigation.ADDRESS -> simple(body,"ADDRESS","Address & Geolocation",listOf("Address label","PIN code (6 digits)","City","State","Landmark / address override","Location source / verification status"))
             ArthSaathiNavigation.CREDIT_INTELLIGENCE -> creditIntelligence(body)
             ArthSaathiNavigation.TRADE_CREDIT -> tradeCredit(body)
@@ -2175,6 +2175,117 @@ class ArthSaathiMasterModuleActivity : Activity() {
         }
     }
 
+    /** Nominee records link to a person and an asset/portfolio; consent is never self-asserted. */
+    private fun familyNominees(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "FAMILY & NOMINEES • Link nominees to existing people and assets. Nomination consent remains pending until a trusted verification flow is integrated."
+            textSize = 14f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 12)
+        })
+        val nomineeName = field(body, "Family member / nominee name")
+        val relation = field(body, "Relationship")
+        val mobile = field(body, "Mobile number (10 digits)", false, 10)
+        val share = field(body, "Nomination share (%)", true)
+        val notes = field(body, "Nomination / relationship notes")
+        val people = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "PERSON" }
+        val assets = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "ASSET" || it.optString("type") == "PORTFOLIO" }
+        body.addView(TextView(this).apply {
+            text = "LINK EXISTING PERSON (OPTIONAL)"
+            textSize = 12f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(4, 8, 0, 2)
+        })
+        val personSpinner = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
+                listOf("No linked person") + people.map { p -> p.optString("name") + " • " + p.optString("id") })
+            body.addView(it)
+        }
+        personSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                val person = people.getOrNull(position - 1) ?: return
+                if (nomineeName.text.toString().isBlank()) nomineeName.setText(person.optString("name"))
+                if (mobile.text.toString().isBlank()) mobile.setText(person.optString("mobile"))
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
+        }
+        body.addView(TextView(this).apply {
+            text = "LINK ASSET / PORTFOLIO (OPTIONAL)"
+            textSize = 12f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(4, 8, 0, 2)
+        })
+        val assetSpinner = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
+                listOf("No linked asset") + assets.map { a -> a.optString("f0", "Asset") + " • " + a.optString("id") })
+            body.addView(it)
+        }
+        body.addView(Button(this).apply {
+            text = "SAVE NOMINEE LINK"
+            isAllCaps = false
+            setOnClickListener {
+                val name = nomineeName.text.toString().trim()
+                val relationValue = relation.text.toString().trim()
+                val phone = mobile.text.toString().trim()
+                val shareValue = share.text.toString().trim().let { if (it.isBlank()) 0.0 else it.toDoubleOrNull() }
+                if (name.isBlank()) { nomineeName.error = "Enter the nominee name"; return@setOnClickListener }
+                if (relationValue.isBlank()) { relation.error = "Enter the relationship"; return@setOnClickListener }
+                if (phone.isNotBlank() && !ArthSaathiCoreEngine.validateMobile(phone)) { mobile.error = "Enter a valid 10-digit mobile number"; return@setOnClickListener }
+                if (shareValue == null || !shareValue.isFinite() || shareValue !in 0.0..100.0) { share.error = "Enter a share from 0 to 100%"; return@setOnClickListener }
+                val person = people.getOrNull(personSpinner.selectedItemPosition - 1)
+                val asset = assets.getOrNull(assetSpinner.selectedItemPosition - 1)
+                if (asset != null && shareValue > 0.0) {
+                    val alreadyAllocated = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+                        .filter { it.optString("type") == "FAMILY_NOMINEE" && it.optString("relatedAssetId") == asset.optString("id") }
+                        .sumOf { it.optDouble("f3") }
+                    if (alreadyAllocated + shareValue > 100.0001) {
+                        share.error = "Existing nominee shares total " + money(alreadyAllocated) + "%. The total cannot exceed 100%."
+                        return@setOnClickListener
+                    }
+                }
+                val links = linkedMapOf<String, String>()
+                person?.optString("id")?.takeIf { it.isNotBlank() }?.let { links["personId"] = it }
+                asset?.optString("id")?.takeIf { it.isNotBlank() }?.let { links["relatedAssetId"] = it }
+                try {
+                    ArthSaathiCoreEngine.saveModule("FAMILY_NOMINEE", mapOf(
+                        "f0" to name,
+                        "f1" to relationValue,
+                        "f2" to phone,
+                        "f3" to shareValue,
+                        "f4" to notes.text.toString().trim(),
+                        "f5" to "PENDING_VERIFICATION"
+                    ), links)
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Nominee saved and linked. Consent remains pending verification.", Toast.LENGTH_LONG).show()
+                    render(ArthSaathiNavigation.FAMILY)
+                } catch (e: Exception) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Could not save nominee.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "\nSAVED FAMILY / NOMINEE LINKS"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        val nominees = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "FAMILY_NOMINEE" }
+        if (nominees.isEmpty()) body.addView(TextView(this).apply { text = "No family or nominee links recorded yet." })
+        nominees.forEach { nominee ->
+            val person = nominee.optString("personId").takeIf { it.isNotBlank() }?.let { ArthSaathiCoreEngine.find(it) }
+            val asset = nominee.optString("relatedAssetId").takeIf { it.isNotBlank() }?.let { ArthSaathiCoreEngine.find(it) }
+            body.addView(TextView(this).apply {
+                text = nominee.optString("f0") + " • " + nominee.optString("f1") +
+                    "\nMobile: " + nominee.optString("f2") +
+                    "\nShare: " + money(nominee.optDouble("f3")) + "%" +
+                    "\nLinked person: " + (person?.optString("name") ?: "—") +
+                    "\nLinked asset: " + (asset?.optString("f0") ?: "—") +
+                    "\nConsent status: " + nominee.optString("f5", "PENDING_VERIFICATION") +
+                    (if (nominee.optString("f4").isBlank()) "" else "\nNotes: " + nominee.optString("f4")
+                    )
+                textSize = 14f
+                setPadding(8, 12, 8, 8)
+            })
+        }
+    }
+
     private fun assetVault(body: LinearLayout) {
         body.addView(TextView(this).apply {
             text = "ASSET VAULT • Record financial and non-financial assets, with owner and nominee links to People & Relationships. Evidence should be stored in Document Vault."
@@ -2242,11 +2353,15 @@ class ArthSaathiMasterModuleActivity : Activity() {
             val record = records.optJSONObject(i) ?: continue
             if (record.optString("type") != "ASSET") continue
             count++
+            val linkedNominees = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+                .filter { it.optString("type") == "FAMILY_NOMINEE" && it.optString("relatedAssetId") == record.optString("id") }
+            val nomineeSummary = linkedNominees.joinToString(", ") { it.optString("f0") + " (" + money(it.optDouble("f3")) + "%)" }
             body.addView(TextView(this).apply {
                 text = record.optString("f0") + " • " + record.optString("f1") +
                     "\nCurrent value: ₹" + money(record.optDouble("value", record.optDouble("f2"))) +
                     "\nOwner: " + record.optString("f3", "Primary user") +
                     (if (record.optString("nomineeName").isBlank()) "" else "\nNominee: " + record.optString("nomineeName")) +
+                    (if (nomineeSummary.isBlank()) "" else "\nLinked nominees: " + nomineeSummary) +
                     (if (record.optString("f4").isBlank()) "" else "\nEvidence: " + record.optString("f4"))
                 textSize = 14f
                 setPadding(8, 12, 8, 8)
