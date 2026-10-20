@@ -26,6 +26,7 @@ object ArthSaathiSession {
             .putBoolean(KEY_LOGGED_IN, true)
             .putString(KEY_MOBILE, mobile)
             .putString(KEY_OWNER_ID, mobile)
+            .remove("offline_workspace")
             .apply()
     }
 
