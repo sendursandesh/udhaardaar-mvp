@@ -109,7 +109,7 @@ jobs:
   emulator-acceptance:
     name: Emulator instrumentation acceptance
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 25
     steps:
       - name: Checkout audited branch
         uses: actions/checkout@v4
@@ -145,7 +145,7 @@ jobs:
         with:
           gradle-version: '8.7'
       - name: Run instrumented acceptance suite on Android 14 emulator
-        timeout-minutes: 115
+        timeout-minutes: 20
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -155,7 +155,7 @@ jobs:
           cores: 2
           ram-size: 2048M
           heap-size: 512M
-          emulator-boot-timeout: 1200
+          emulator-boot-timeout: 600
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save -camera-back none
           disable-animations: true
           script: bash .github/scripts/run-emulator-tests.sh
