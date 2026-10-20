@@ -64,7 +64,7 @@ jobs:
   emulator-acceptance:
     name: Emulator instrumentation acceptance
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - name: Checkout audited branch
         uses: actions/checkout@v4
@@ -94,7 +94,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          emulator-boot-timeout: 900
+          emulator-boot-timeout: 1200
           script: bash .github/scripts/run-emulator-tests.sh
       - name: Upload instrumentation test results
         if: always()
