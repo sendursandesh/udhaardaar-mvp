@@ -107,7 +107,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.CHARGECHECK -> chargeCheck(body)
             ArthSaathiNavigation.CLAIMS -> claims(body)
             ArthSaathiNavigation.WILL_LEGACY -> willLegacy(body)
-            ArthSaathiNavigation.LEGAL -> simple(body,"LEGAL_CASE","Legal Help",listOf("Domain","City / locality","Issue","Related module","Status"))
+            ArthSaathiNavigation.LEGAL -> legalHelp(body)
             ArthSaathiNavigation.ADVOCATES -> advocateDirectory(body)
             ArthSaathiNavigation.DOCUMENT_VAULT -> documentVault(body)
             ArthSaathiNavigation.AI_ADVISOR -> aiAdvisor(body)
@@ -1506,6 +1506,81 @@ class ArthSaathiMasterModuleActivity : Activity() {
             Toast.makeText(this, "No installed app can open this document type.", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             Toast.makeText(this, e.message ?: "Document could not be opened.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /** Local legal-case tracker with a real record relationship; external lawyer feeds remain deferred. */
+    private fun legalHelp(body: LinearLayout) {
+        body.addView(TextView(this).apply {
+            text = "LEGAL HELP • Maintain an internal case tracker and link it to the relevant saved asset, benefit, claim or document. This is recordkeeping, not legal advice or a verified advocate referral."
+            textSize = 14f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(0, 4, 0, 12)
+        })
+        val domain = field(body, "Legal domain / matter")
+        val city = field(body, "City / locality")
+        val issue = field(body, "Issue / next action")
+        val candidates = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") !in setOf("AUDIT", "REPAYMENT") }
+        val labels = listOf("No linked record") + candidates.map { record ->
+            record.optString("type") + " • " +
+                record.optString("f0", record.optString("party", record.optString("name", "Record"))) +
+                " • " + record.optString("id")
+        }
+        body.addView(TextView(this).apply {
+            text = "RELATED RECORD"
+            textSize = 12f
+            setTextColor(ArthSaathiV7Design.MUTED)
+            setPadding(4, 8, 0, 2)
+        })
+        val related = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, labels)
+            body.addView(it)
+        }
+        val states = listOf("OPEN", "WAITING_FOR_DOCUMENTS", "READY_FOR_REVIEW", "REFERRED", "RESOLVED", "CLOSED")
+        val status = Spinner(this).also {
+            it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, states)
+            body.addView(it)
+        }
+        body.addView(Button(this).apply {
+            text = "SAVE LEGAL CASE"
+            isAllCaps = false
+            setOnClickListener {
+                if (domain.text.toString().trim().isBlank()) { domain.error = "Enter the legal domain"; return@setOnClickListener }
+                if (city.text.toString().trim().isBlank()) { city.error = "Enter the city / locality"; return@setOnClickListener }
+                if (issue.text.toString().trim().isBlank()) { issue.error = "Enter the issue or next action"; return@setOnClickListener }
+                val selected = candidates.getOrNull(related.selectedItemPosition - 1)
+                val links = selected?.optString("id")?.takeIf { it.isNotBlank() }
+                    ?.let { mapOf("relatedId" to it) } ?: emptyMap()
+                try {
+                    ArthSaathiCoreEngine.saveModule("LEGAL_CASE", mapOf(
+                        "f0" to domain.text.toString().trim(),
+                        "f1" to city.text.toString().trim(),
+                        "f2" to issue.text.toString().trim(),
+                        "f3" to status.selectedItem.toString(),
+                        "f4" to (selected?.optString("id") ?: "")
+                    ), links)
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Legal case saved.", Toast.LENGTH_SHORT).show()
+                    render(ArthSaathiNavigation.LEGAL)
+                } catch (e: Exception) {
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Could not save legal case.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
+        body.addView(TextView(this).apply { text = "\nSAVED LEGAL CASES"; textSize = 18f; setPadding(0, 18, 0, 6) })
+        val cases = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "LEGAL_CASE" }
+        if (cases.isEmpty()) body.addView(TextView(this).apply { text = "No legal cases recorded yet." })
+        cases.forEach { case ->
+            val linked = case.optString("relatedId").takeIf { it.isNotBlank() }?.let { ArthSaathiCoreEngine.find(it) }
+            body.addView(TextView(this).apply {
+                text = case.optString("f0") + " • " + case.optString("f1") +
+                    "\nIssue / next action: " + case.optString("f2") +
+                    "\nStatus: " + case.optString("f3") +
+                    "\nLinked record: " + (linked?.optString("f0") ?: linked?.optString("party") ?: "—")
+                textSize = 14f
+                setPadding(8, 12, 8, 12)
+            })
         }
     }
 
