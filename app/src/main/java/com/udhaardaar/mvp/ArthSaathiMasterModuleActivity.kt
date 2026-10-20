@@ -1995,7 +1995,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val claimName = field(body, "Claim / asset / benefit")
         val claimant = field(body, "Claimant / nominee / authorised person")
         val institution = field(body, "Institution / source")
-        val evidence = field(body, "Evidence notes / external reference (optional)")
+        val evidence = field(body, "Evidence / document references")
         val assets = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
             .filter { it.optString("type") == "ASSET" }
         val benefits = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
