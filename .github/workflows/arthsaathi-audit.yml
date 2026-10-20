@@ -26,6 +26,32 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+      - name: Verify release branch and app identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_BRANCH="arthsaathi-step1-5-functional-audit-2026-10-18"
+          test "${GITHUB_REF_NAME}" = "${EXPECTED_BRANCH}" || {
+            echo "::error::Refusing release artifact from unexpected branch: ${GITHUB_REF_NAME}"
+            exit 1
+          }
+          GRADLE_FILE="app/build.gradle"
+          grep -Fq "applicationId 'com.arthsaathi.master'" "${GRADLE_FILE}"
+          grep -Fq "versionCode 800" "${GRADLE_FILE}"
+          grep -Fq "versionName '8.0'" "${GRADLE_FILE}"
+          mkdir -p app/build/release-provenance
+          {
+            echo "product=ArthSaathi"
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "branch=${GITHUB_REF_NAME}"
+            echo "commit=${GITHUB_SHA}"
+            echo "applicationId=com.arthsaathi.master"
+            echo "versionCode=800"
+            echo "versionName=8.0"
+            echo "workflowRunId=${GITHUB_RUN_ID}"
+            echo "workflowRunAttempt=${GITHUB_RUN_ATTEMPT}"
+            echo "builtAtUtc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > app/build/release-provenance/release-provenance.txt
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -45,11 +71,20 @@ jobs:
           gradle-version: '8.7'
       - name: Build and run unit tests
         run: gradle --no-daemon clean testDebugUnitTest assembleDebug
-      - name: Upload debug APK
+      - name: Verify APK and calculate checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          sha256sum "$APK" | tee app/build/release-provenance/apk-sha256.txt
+      - name: Upload debug APK and provenance
         uses: actions/upload-artifact@v4
         with:
           name: arthsaathi-debug-${{ github.sha }}
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/release-provenance/
           if-no-files-found: error
           retention-days: 14
       - name: Upload unit test results
