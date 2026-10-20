@@ -123,7 +123,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
             ArthSaathiNavigation.FORMAL_CREDIT -> simple(body,"FORMAL_CREDIT","Formal Credit & Charge Review",listOf("Lender / institution","Loan product","Sanctioned principal (₹)","Sanctioned interest rate (%)","Actual interest / charges (₹)","Evidence document reference","Review status"))
             ArthSaathiNavigation.FUNDING -> simple(body,"FUNDING_REQUEST","Funding Marketplace",listOf("Funding purpose","Requested amount (₹)","Business / personal category","Eligibility notes","Consent reference for profile sharing","Request status"))
             ArthSaathiNavigation.GUARANTOR -> simple(body,"GUARANTOR","Guarantor Records",listOf("Guarantor full name","Mobile number (10 digits)","Relationship to borrower","Consent / OTP reference","Related credit reference","Document reference"))
-            ArthSaathiNavigation.RENTAL -> simple(body,"RENTAL_LEASE","Rental & Lease",listOf("Landlord / tenant","Agreement type (rental / lease)","Monthly rent (₹)","Security deposit (₹)","Start date","End / renewal date","Agreement document reference"))
+            ArthSaathiNavigation.RENTAL -> registerCredit(body, rentalOnly = true)
             ArthSaathiNavigation.ALERTS -> simple(body,"ALERT","Alerts & Notifications",listOf("Alert title","Related module","Due date","Priority","Status","Notes"))
             else -> body.addView(TextView(this).apply { text = "Canonical module"; textSize = 17f })
         }
@@ -168,9 +168,9 @@ class ArthSaathiMasterModuleActivity : Activity() {
         }
     }
 
-    private fun registerCredit(body: LinearLayout) {
+    private fun registerCredit(body: LinearLayout, rentalOnly: Boolean = false) {
         body.addView(TextView(this).apply {
-            text = "NEW CREDIT ONLY\nIdentify party → nature → credit-specific fields → method → repayment → guarantor → document → consent / OTP → registration."
+            text = if (rentalOnly) "RENTAL / LEASE REGISTRATION\nUse the same credit ledger, linked lease agreement, payment tracking and outstanding reconciliation. External OTP consent remains deferred." else "NEW CREDIT ONLY\nIdentify party → nature → credit-specific fields → method → repayment → guarantor → document → consent / OTP → registration."
             textSize = 15f
         })
         body.addView(TextView(this).apply {
@@ -288,8 +288,15 @@ class ArthSaathiMasterModuleActivity : Activity() {
             }
             override fun onNothingSelected(parent: AdapterView<*>?) = Unit
         }
+        if (rentalOnly) {
+            val rentalIndex = ArthSaathiArchitectureRegistry.creditNatureOptions.indexOfFirst {
+                it.contains("Rental", true) || it.contains("Lease", true)
+            }
+            if (rentalIndex >= 0) nature.setSelection(rentalIndex)
+            nature.isEnabled = false
+        }
         body.addView(Button(this).apply {
-            text = "REGISTER CREDIT"
+            text = if (rentalOnly) "REGISTER RENTAL / LEASE" else "REGISTER CREDIT"
             setOnClickListener {
                 val searchInput = party.text.toString().trim()
                 if (searchInput.isEmpty()) { party.error = "Enter or select a borrower / counterparty"; return@setOnClickListener }
