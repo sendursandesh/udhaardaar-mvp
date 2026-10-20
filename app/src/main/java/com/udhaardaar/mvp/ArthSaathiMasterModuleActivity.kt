@@ -4,7 +4,10 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.provider.MediaStore
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputType
@@ -18,6 +21,7 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.util.*
 
 /** Canonical executable surface for the consolidated ArthSaathi architecture. */
@@ -35,6 +39,15 @@ class ArthSaathiMasterModuleActivity : Activity() {
     private var documentRelatedField: EditText? = null
     private val requestPickDocument = 8124
     private val requestPickInvoiceImage = 8125
+    private val requestTakePartyPhoto = 8126
+    private val requestTakeGuarantorPhoto = 8127
+    private val requestTakePersonPhoto = 8128
+    private var pendingPartyPhotoBytes: ByteArray? = null
+    private var pendingGuarantorPhotoBytes: ByteArray? = null
+    private var pendingPersonPhotoBytes: ByteArray? = null
+    private var partyPhotoPreview: ImageView? = null
+    private var guarantorPhotoPreview: ImageView? = null
+    private var personPhotoPreview: ImageView? = null
     private val records get() = ArthSaathiDataStore.records()
 
     override fun onCreate(state: Bundle?) {
@@ -206,6 +219,18 @@ class ArthSaathiMasterModuleActivity : Activity() {
             bottomMargin = ArthSaathiV7Design.dp(this@ArthSaathiMasterModuleActivity, 10)
         })
         val mobile = field(body, "Counterparty mobile (10 digits)", false, 10)
+        partyPhotoPreview = ImageView(this).apply {
+            visibility = android.view.View.GONE
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            contentDescription = "Counterparty photo preview"
+        }
+        body.addView(partyPhotoPreview, LinearLayout.LayoutParams(-1, ArthSaathiV7Design.dp(this, 150)))
+        body.addView(Button(this).apply {
+            text = "TAKE COUNTERPARTY PHOTO"
+            isAllCaps = false
+            setOnClickListener { launchPhotoCapture(requestTakePartyPhoto) }
+        })
         val existingPeople = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
             .filter { it.optString("type") == "PERSON" }
         fun personLabel(person: JSONObject): String {
@@ -245,6 +270,13 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 party.setText(selected.optString("name"), false)
                 mobile.setText(selected.optString("mobile"))
                 selectedPartyId = selected.optString("id")
+                val savedPhoto = personPhotoBitmap(selected)
+                if (savedPhoto != null) {
+                    partyPhotoPreview?.setImageBitmap(savedPhoto)
+                    partyPhotoPreview?.visibility = android.view.View.VISIBLE
+                } else if (pendingPartyPhotoBytes == null) {
+                    partyPhotoPreview?.visibility = android.view.View.GONE
+                }
                 suppressPartyReset = false
             }
         }
@@ -269,6 +301,18 @@ class ArthSaathiMasterModuleActivity : Activity() {
         }
         val tenure = field(body, "Tenure (months)", true)
         val guarantor = field(body, "Guarantor (optional)")
+        guarantorPhotoPreview = ImageView(this).apply {
+            visibility = android.view.View.GONE
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            contentDescription = "Guarantor photo preview"
+        }
+        body.addView(guarantorPhotoPreview, LinearLayout.LayoutParams(-1, ArthSaathiV7Design.dp(this, 150)))
+        body.addView(Button(this).apply {
+            text = "TAKE GUARANTOR PHOTO"
+            isAllCaps = false
+            setOnClickListener { launchPhotoCapture(requestTakeGuarantorPhoto) }
+        })
         val due = field(body, "Due date").apply {
             isFocusable = false
             isClickable = true
@@ -412,8 +456,20 @@ class ArthSaathiMasterModuleActivity : Activity() {
                         Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_LONG).show()
                         return@setOnClickListener
                     }
+                    val photoWarnings = mutableListOf<String>()
+                    pendingPartyPhotoBytes?.let { bytes ->
+                        runCatching { attachPersonPhoto(partyId, partyName, bytes) }
+                            .onFailure { photoWarnings += "Counterparty photo: " + (it.message ?: "could not save") }
+                    }
+                    if (!guarantorId.isNullOrBlank()) pendingGuarantorPhotoBytes?.let { bytes ->
+                        runCatching { attachPersonPhoto(guarantorId, guarantorName, bytes) }
+                            .onFailure { photoWarnings += "Guarantor photo: " + (it.message ?: "could not save") }
+                    }
+                    pendingPartyPhotoBytes = null
+                    pendingGuarantorPhotoBytes = null
+                    val baseMessage = "Credit saved as pending consent. It becomes active only after verified counterparty consent."
                     Toast.makeText(this@ArthSaathiMasterModuleActivity,
-                        "Credit saved as pending consent. It becomes active only after verified counterparty consent.",
+                        if (photoWarnings.isEmpty()) baseMessage else baseMessage + "\n" + photoWarnings.joinToString("\n"),
                         Toast.LENGTH_LONG).show()
                     render(ArthSaathiNavigation.LOANS_UDHAAR)
                 } catch (e: IllegalArgumentException) {
@@ -952,6 +1008,18 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val pin = field(body, "6-digit PIN code (optional)", false, 6).apply { inputType = InputType.TYPE_CLASS_NUMBER }
         val district = field(body, "District / city (PIN lookup)")
         val state = field(body, "State (PIN lookup)")
+        personPhotoPreview = ImageView(this).apply {
+            visibility = if (pendingPersonPhotoBytes == null) android.view.View.GONE else android.view.View.VISIBLE
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            contentDescription = "Person photo preview"
+        }
+        body.addView(personPhotoPreview, LinearLayout.LayoutParams(-1, ArthSaathiV7Design.dp(this, 150)))
+        body.addView(Button(this).apply {
+            text = "TAKE PERSON PHOTO"
+            isAllCaps = false
+            setOnClickListener { launchPhotoCapture(requestTakePersonPhoto) }
+        })
         var lastPinLookupRequested = ""
         fun lookupPin(force: Boolean = false) {
             val pinValue = pin.text.toString().trim()
@@ -1064,7 +1132,18 @@ class ArthSaathiMasterModuleActivity : Activity() {
                             listOf(district.text.toString().trim(), state.text.toString().trim()).filter { it.isNotBlank() }.joinToString(", ", prefix = if (address.text.toString().isBlank()) "" else ", "),
                         panValue, gstinValue, pinValue, emailValue, aadhaarValue
                     )
-                    Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message, Toast.LENGTH_SHORT).show()
+                    val photoBytes = pendingPersonPhotoBytes
+                    var photoMessage = ""
+                    if (photoBytes != null && !result.id.isNullOrBlank()) {
+                        try {
+                            attachPersonPhoto(result.id!!, name.text.toString().trim(), photoBytes)
+                            photoMessage = " Photo encrypted and linked."
+                        } catch (photoError: Exception) {
+                            photoMessage = " Person saved, but photo linking failed: " + (photoError.message ?: "unknown error")
+                        }
+                    }
+                    pendingPersonPhotoBytes = null
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, result.message + photoMessage, Toast.LENGTH_LONG).show()
                     render(ArthSaathiNavigation.PEOPLE)
                 } catch (e: IllegalArgumentException) {
                     Toast.makeText(this@ArthSaathiMasterModuleActivity,
@@ -1079,6 +1158,14 @@ class ArthSaathiMasterModuleActivity : Activity() {
             val record = saved.optJSONObject(i) ?: continue
             if (record.optString("type") != "PERSON") continue
             count++
+            personPhotoBitmap(record)?.let { bitmap ->
+                body.addView(ImageView(this).apply {
+                    setImageBitmap(bitmap)
+                    adjustViewBounds = true
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    contentDescription = "Photo of " + record.optString("name")
+                }, LinearLayout.LayoutParams(-1, ArthSaathiV7Design.dp(this, 150)))
+            }
             body.addView(TextView(this).apply {
                 text = record.optString("name") + " • " + record.optString("mobile") +
                     if (record.optString("role").isNotBlank()) " • " + record.optString("role") else ""
@@ -1386,6 +1473,37 @@ class ArthSaathiMasterModuleActivity : Activity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        if (requestCode in setOf(requestTakePartyPhoto, requestTakeGuarantorPhoto, requestTakePersonPhoto)) {
+            if (resultCode == RESULT_OK) {
+                val bitmap = data?.extras?.get("data") as? Bitmap
+                if (bitmap == null) {
+                    Toast.makeText(this, "Camera did not return a photo. Please try again.", Toast.LENGTH_LONG).show()
+                } else {
+                    val output = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, output)
+                    val bytes = output.toByteArray()
+                    when (requestCode) {
+                        requestTakePartyPhoto -> {
+                            pendingPartyPhotoBytes = bytes
+                            partyPhotoPreview?.setImageBitmap(bitmap)
+                            partyPhotoPreview?.visibility = android.view.View.VISIBLE
+                        }
+                        requestTakeGuarantorPhoto -> {
+                            pendingGuarantorPhotoBytes = bytes
+                            guarantorPhotoPreview?.setImageBitmap(bitmap)
+                            guarantorPhotoPreview?.visibility = android.view.View.VISIBLE
+                        }
+                        requestTakePersonPhoto -> {
+                            pendingPersonPhotoBytes = bytes
+                            personPhotoPreview?.setImageBitmap(bitmap)
+                            personPhotoPreview?.visibility = android.view.View.VISIBLE
+                        }
+                    }
+                    Toast.makeText(this, "Photo captured. It will be encrypted and linked when you save the person / credit.", Toast.LENGTH_LONG).show()
+                }
+            }
+            return
+        }
         if (requestCode == requestPickInvoiceImage) {
             if (resultCode == RESULT_OK) handleInvoiceOcr(data?.data)
             return
@@ -1413,6 +1531,55 @@ class ArthSaathiMasterModuleActivity : Activity() {
             return
         }
         super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    private fun launchPhotoCapture(requestCode: Int) {
+        val capture = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        if (capture.resolveActivity(packageManager) == null) {
+            Toast.makeText(this, "No camera application is available on this device.", Toast.LENGTH_LONG).show()
+            return
+        }
+        startActivityForResult(capture, requestCode)
+    }
+
+    private fun attachPersonPhoto(personId: String, displayName: String, bytes: ByteArray) {
+        val stored = ArthSaathiDocumentStorage.store(this, ByteArrayInputStream(bytes), "person_photo.jpg")
+        val document = ArthSaathiCoreEngine.saveModule(
+            "DOCUMENT",
+            mapOf(
+                "f0" to "Photo — " + displayName,
+                "f1" to "Profile photo",
+                "f2" to personId,
+                "f3" to stored.fileName,
+                "f4" to stored.sha256,
+                "sizeBytes" to stored.sizeBytes,
+                "extension" to stored.extension,
+                "mimeType" to "image/jpeg",
+                "encrypted" to true,
+                "storage" to "ANDROID_KEYSTORE_AES_GCM"
+            ),
+            mapOf("relatedId" to personId, "personId" to personId)
+        )
+        val documentId = document.id?.takeIf { document.ok && it.isNotBlank() }
+            ?: throw IllegalStateException(document.message.ifBlank { "Photo document could not be saved." })
+        val updated = ArthSaathiCoreEngine.update(personId, mapOf(
+            "photoDocumentId" to documentId,
+            "photoFileName" to stored.fileName,
+            "photoExtension" to stored.extension,
+            "photoSha256" to stored.sha256
+        ), "user")
+        if (!updated.ok) throw IllegalStateException(updated.message.ifBlank { "Photo could not be linked to the person." })
+    }
+
+    private fun personPhotoBitmap(person: JSONObject): Bitmap? {
+        val documentId = person.optString("photoDocumentId").takeIf { it.isNotBlank() } ?: return null
+        val document = ArthSaathiCoreEngine.find(documentId) ?: return null
+        return runCatching {
+            val file = ArthSaathiDocumentStorage.decryptToCache(
+                this, document.optString("f3"), document.optString("extension", "jpg")
+            )
+            BitmapFactory.decodeFile(file.absolutePath)
+        }.getOrNull()
     }
 
     private fun handleInvoiceOcr(uri: Uri?) {
