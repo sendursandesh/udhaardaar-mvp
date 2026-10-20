@@ -38,6 +38,10 @@ if adb shell "test -d '$capture_dir'"; then
   adb pull "$capture_dir/." app/build/qa-diagnostics/visual-captures/ || true
   screenshot_count=$(find app/build/qa-diagnostics/visual-captures -type f -name '*.png' | wc -l)
   echo "Canonical screenshots available: $screenshot_count"
+  if (( screenshot_count < 1 )); then
+    echo "FAIL: screenshot export directory exists but contains no PNG evidence."
+    visual_exit=1
+  fi
 else
   echo "FAIL: no canonical screenshot export was produced by this instrumentation suite."
   visual_exit=1
