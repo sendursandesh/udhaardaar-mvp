@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 mkdir -p app/build/qa-diagnostics
-trap 'adb logcat -d -t 8000 > app/build/qa-diagnostics/emulator-logcat.txt 2>&1 || true; adb devices -l > app/build/qa-diagnostics/adb-devices.txt 2>&1 || true' EXIT
+trap 'mkdir -p app/build/qa-diagnostics; adb logcat -d -t 8000 > app/build/qa-diagnostics/emulator-logcat.txt 2>&1 || true; adb devices -l > app/build/qa-diagnostics/adb-devices.txt 2>&1 || true' EXIT
 
 echo "=== Connected Android devices ==="
 adb devices -l
@@ -24,8 +24,48 @@ adb shell cmd package list packages >/dev/null
 echo "=== Emulator ready; starting instrumentation tests ==="
 
 set +e
-gradle clean :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
-gradle_exit=$?
+gradle_exit=1
+attempt=1
+max_attempts=3
+while (( attempt <= max_attempts )); do
+  echo "=== Instrumentation attempt ${attempt}/${max_attempts} ==="
+  gradle clean :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace
+  gradle_exit=$?
+
+  executed_tests=$(python3 - <<'PY'
+import glob
+import xml.etree.ElementTree as ET
+
+total = 0
+for path in sorted(set(glob.glob("app/build/outputs/androidTest-results/**/*.xml", recursive=True))):
+    try:
+        root = ET.parse(path).getroot()
+    except (ET.ParseError, OSError):
+        continue
+    suites = [root] if root.tag == "testsuite" else list(root.iter("testsuite"))
+    for suite in suites:
+        total += int(suite.attrib.get("tests", "0"))
+print(total)
+PY
+)
+  echo "Executed instrumentation tests on attempt ${attempt}: ${executed_tests}"
+
+  if (( executed_tests > 0 )); then
+    if (( gradle_exit != 0 )); then
+      echo "FAIL: tests executed but Gradle reported failure; not retrying assertion/test failures."
+    fi
+    break
+  fi
+
+  if (( attempt == max_attempts )); then
+    echo "FAIL: instrumentation executed zero tests after ${max_attempts} attempts."
+    break
+  fi
+
+  echo "RETRY: instrumentation failed before executing tests; reusing the booted emulator after a 10-second pause."
+  sleep 10
+  attempt=$((attempt + 1))
+done
 set -e
 
 echo "=== Pulling canonical ArthSaathi visual evidence ==="
