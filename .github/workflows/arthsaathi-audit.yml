@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: arthsaathi-audit-${{ github.ref }}
+  group: arthsaathi-audit-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
