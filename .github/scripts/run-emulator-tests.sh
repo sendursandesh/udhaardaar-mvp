@@ -85,7 +85,7 @@ PY
     break
   }
   boot_deadline=$((SECONDS + 120))
-  until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\\r' || true)" == "1" ]]; do
+  until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)" == "1" ]]; do
     if (( SECONDS >= boot_deadline )); then
       echo "FAIL: Android did not return to boot-completed state after ADB restart."
       adb devices -l || true
@@ -93,7 +93,7 @@ PY
     fi
     sleep 2
   done
-  if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\\r' || true)" != "1" ]]; then
+  if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)" != "1" ]]; then
     break
   fi
   adb shell cmd package list packages >/dev/null || {
