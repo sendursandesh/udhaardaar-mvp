@@ -51,7 +51,7 @@ The audit branch has been extended with:
 
 ## Known functional gaps that must be closed before release
 
-- Production OTP provider configuration is not present in this repository's app code; sign-in and consent must remain fail-closed until a trusted provider is connected.
+- Production OTP provider configuration is not present in this repository's app code. Provider-verified sign-in and consent remain fail-closed until a trusted provider is connected. A clearly labelled device-only offline workspace is available for internal module testing and local record management; it is not verified identity, and it cannot activate credit or authorise repayments without provider-verified consent.
 - The repayment OTP path is implemented fail-closed, but it still depends on a trusted provider being installed and configured; it must be verified by the new instrumentation tests.
 - Fifteen modules still use generic save/list/edit forms rather than dedicated domain workflows; safe editing is available for those records, but delete controls and complete domain relationships are not yet implemented.
 - Rental & Lease currently writes a separate generic `RENTAL_LEASE` record instead of using the validated lease/contract calculation path in Register Credit.
