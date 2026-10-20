@@ -1687,7 +1687,7 @@ class ArthSaathiMasterModuleActivity : Activity() {
 
     private fun claims(body: LinearLayout) {
         body.addView(TextView(this).apply {
-            text = "CLAIM ASSISTANCE • Track an asset, benefit or recovery through clear stages. Keep evidence references with the claim; approval and legal entitlement must be confirmed by the relevant institution or professional."
+            text = "CLAIM ASSISTANCE • Track a recovery and link it to an asset, benefit/refund and stored evidence. Approval and legal entitlement must be confirmed by the relevant institution or professional."
             textSize = 14f
             setTextColor(ArthSaathiV7Design.MUTED)
             setPadding(0, 4, 0, 12)
@@ -1695,7 +1695,34 @@ class ArthSaathiMasterModuleActivity : Activity() {
         val claimName = field(body, "Claim / asset / benefit")
         val claimant = field(body, "Claimant / nominee / authorised person")
         val institution = field(body, "Institution / source")
-        val evidence = field(body, "Evidence / document references")
+        val evidence = field(body, "Evidence notes / external reference (optional)")
+        val assets = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "ASSET" }
+        val benefits = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "BENEFIT" }
+        val documents = (0 until records.length()).mapNotNull { records.optJSONObject(it) }
+            .filter { it.optString("type") == "DOCUMENT" }
+        fun linkedSpinner(label: String, options: List<String>): Spinner {
+            body.addView(TextView(this).apply {
+                text = label
+                textSize = 12f
+                setTextColor(ArthSaathiV7Design.MUTED)
+                setPadding(4, 8, 0, 2)
+            })
+            return Spinner(this).also {
+                it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, options)
+                body.addView(it)
+            }
+        }
+        val assetSpinner = linkedSpinner("LINK ASSET", listOf("No linked asset") + assets.map {
+            it.optString("f0", "Asset") + " • " + it.optString("id")
+        })
+        val benefitSpinner = linkedSpinner("LINK BENEFIT / REFUND", listOf("No linked benefit") + benefits.map {
+            it.optString("f0", "Benefit") + " • " + it.optString("id")
+        })
+        val documentSpinner = linkedSpinner("LINK STORED DOCUMENT", listOf("No linked document") + documents.map {
+            it.optString("f0", "Document") + " • " + it.optString("id")
+        })
         val stages = listOf("IDENTIFIED", "DOCUMENTS_PENDING", "READY_TO_SUBMIT", "SUBMITTED", "FOLLOW_UP", "APPROVED", "REJECTED", "CLOSED")
         val status = Spinner(this).also {
             it.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, stages)
@@ -1706,6 +1733,13 @@ class ArthSaathiMasterModuleActivity : Activity() {
             setOnClickListener {
                 if (claimName.text.toString().trim().isEmpty()) { claimName.error = "Enter the claim or asset"; return@setOnClickListener }
                 if (claimant.text.toString().trim().isEmpty()) { claimant.error = "Enter claimant / authorised person"; return@setOnClickListener }
+                val selectedAsset = assets.getOrNull(assetSpinner.selectedItemPosition - 1)
+                val selectedBenefit = benefits.getOrNull(benefitSpinner.selectedItemPosition - 1)
+                val selectedDocument = documents.getOrNull(documentSpinner.selectedItemPosition - 1)
+                val links = linkedMapOf<String, String>()
+                selectedAsset?.optString("id")?.takeIf { it.isNotBlank() }?.let { links["relatedAssetId"] = it }
+                selectedBenefit?.optString("id")?.takeIf { it.isNotBlank() }?.let { links["relatedBenefitId"] = it }
+                selectedDocument?.optString("id")?.takeIf { it.isNotBlank() }?.let { links["relatedDocumentId"] = it }
                 try {
                     ArthSaathiCoreEngine.saveModule("CLAIM", mapOf(
                         "f0" to claimName.text.toString().trim(),
@@ -1713,8 +1747,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
                         "f2" to institution.text.toString().trim(),
                         "f3" to status.selectedItem.toString(),
                         "f4" to evidence.text.toString().trim()
-                    ))
-                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Claim stage saved.", Toast.LENGTH_SHORT).show()
+                    ), links)
+                    Toast.makeText(this@ArthSaathiMasterModuleActivity, "Claim saved with selected record links.", Toast.LENGTH_SHORT).show()
                     render(ArthSaathiNavigation.CLAIMS)
                 } catch (e: Exception) {
                     Toast.makeText(this@ArthSaathiMasterModuleActivity, e.message ?: "Could not save claim.", Toast.LENGTH_LONG).show()
@@ -1725,10 +1759,16 @@ class ArthSaathiMasterModuleActivity : Activity() {
         for (i in 0 until records.length()) {
             val record = records.optJSONObject(i) ?: continue
             if (record.optString("type") != "CLAIM") continue
+            val asset = record.optString("relatedAssetId").takeIf { it.isNotBlank() }?.let { ArthSaathiCoreEngine.find(it) }
+            val benefit = record.optString("relatedBenefitId").takeIf { it.isNotBlank() }?.let { ArthSaathiCoreEngine.find(it) }
+            val document = record.optString("relatedDocumentId").takeIf { it.isNotBlank() }?.let { ArthSaathiCoreEngine.find(it) }
             body.addView(TextView(this).apply {
                 text = record.optString("f0") + "\nClaimant: " + record.optString("f1") +
                     "\nInstitution: " + record.optString("f2") + "\nStage: " + record.optString("f3") +
-                    "\nEvidence: " + record.optString("f4")
+                    "\nAsset: " + (asset?.optString("f0") ?: "—") +
+                    "\nBenefit / refund: " + (benefit?.optString("f0") ?: "—") +
+                    "\nEvidence document: " + (document?.optString("f0") ?: "—") +
+                    "\nNotes: " + record.optString("f4")
                 textSize = 14f
                 setPadding(8, 12, 8, 4)
             })
