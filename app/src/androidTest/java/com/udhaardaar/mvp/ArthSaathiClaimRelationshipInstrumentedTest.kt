@@ -59,4 +59,19 @@ class ArthSaathiClaimRelationshipInstrumentedTest {
         assertTrue(ArthSaathiCoreEngine.linked(asset.id!!).any { it.optString("id") == legalCase.id })
     }
 
+    @Test fun familyNomineeLinksToPersonAndAsset() {
+        val person = ArthSaathiCoreEngine.createPerson("Nominee QA", "9876501188")
+        val asset = ArthSaathiCoreEngine.saveModule("ASSET", mapOf("f0" to "Nominee QA Property", "f1" to "Non-financial", "f2" to 500000.0))
+        val nominee = ArthSaathiCoreEngine.saveModule(
+            "FAMILY_NOMINEE",
+            mapOf("f0" to "Nominee QA", "f1" to "Spouse", "f2" to "9876501188", "f3" to 50.0, "f5" to "PENDING_VERIFICATION"),
+            mapOf("personId" to person.id!!, "relatedAssetId" to asset.id!!)
+        )
+        assertTrue(nominee.ok)
+        assertEquals(person.id, ArthSaathiCoreEngine.find(nominee.id!!)?.optString("personId"))
+        assertEquals(asset.id, ArthSaathiCoreEngine.find(nominee.id!!)?.optString("relatedAssetId"))
+        assertTrue(ArthSaathiCoreEngine.linked(person.id!!).any { it.optString("id") == nominee.id })
+        assertTrue(ArthSaathiCoreEngine.linked(asset.id!!).any { it.optString("id") == nominee.id })
+    }
+
 }
