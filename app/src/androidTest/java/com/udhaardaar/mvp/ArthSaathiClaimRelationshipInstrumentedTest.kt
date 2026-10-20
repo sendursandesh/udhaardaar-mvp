@@ -47,4 +47,16 @@ class ArthSaathiClaimRelationshipInstrumentedTest {
         assertTrue(ArthSaathiCoreEngine.linked(benefit.id!!).any { it.optString("id") == claim.id })
         assertTrue(ArthSaathiCoreEngine.linked(document.id!!).any { it.optString("id") == claim.id })
     }
+    @Test fun legalCaseLinksToSelectedSavedRecord() {
+        val asset = ArthSaathiCoreEngine.saveModule("ASSET", mapOf("f0" to "Business Premises", "f1" to "Non-financial", "f2" to 900000.0))
+        val legalCase = ArthSaathiCoreEngine.saveModule(
+            "LEGAL_CASE",
+            mapOf("f0" to "Property", "f1" to "Ranchi", "f2" to "Title document review", "f3" to "OPEN"),
+            mapOf("relatedId" to asset.id!!)
+        )
+        assertTrue(legalCase.ok)
+        assertEquals(asset.id, ArthSaathiCoreEngine.find(legalCase.id!!)?.optString("relatedId"))
+        assertTrue(ArthSaathiCoreEngine.linked(asset.id!!).any { it.optString("id") == legalCase.id })
+    }
+
 }
