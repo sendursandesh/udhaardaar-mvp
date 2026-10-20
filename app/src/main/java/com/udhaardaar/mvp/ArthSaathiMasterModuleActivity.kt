@@ -441,6 +441,8 @@ class ArthSaathiMasterModuleActivity : Activity() {
                 try {
                     val partyId = matchedPerson?.optString("id")?.takeIf { it.isNotBlank() }
                         ?: ArthSaathiCoreEngine.createPerson(partyName, partyMobile, "Borrower / counterparty").id
+                            ?.takeIf { it.isNotBlank() }
+                        ?: throw IllegalStateException("Could not create or resolve the counterparty profile.")
                     val guarantorName = guarantor.text.toString().trim()
                     val guarantorPerson = if (guarantorName.isBlank()) null else ArthSaathiCoreEngine.findPersonByIdentity(guarantorName)
                     val guarantorId = if (guarantorName.isBlank()) null else
@@ -461,9 +463,11 @@ class ArthSaathiMasterModuleActivity : Activity() {
                         runCatching { attachPersonPhoto(partyId, partyName, bytes) }
                             .onFailure { photoWarnings += "Counterparty photo: " + (it.message ?: "could not save") }
                     }
-                    if (!guarantorId.isNullOrBlank()) pendingGuarantorPhotoBytes?.let { bytes ->
-                        runCatching { attachPersonPhoto(guarantorId, guarantorName, bytes) }
-                            .onFailure { photoWarnings += "Guarantor photo: " + (it.message ?: "could not save") }
+                    guarantorId?.takeIf { it.isNotBlank() }?.let { resolvedGuarantorId ->
+                        pendingGuarantorPhotoBytes?.let { bytes ->
+                            runCatching { attachPersonPhoto(resolvedGuarantorId, guarantorName, bytes) }
+                                .onFailure { photoWarnings += "Guarantor photo: " + (it.message ?: "could not save") }
+                        }
                     }
                     pendingPartyPhotoBytes = null
                     pendingGuarantorPhotoBytes = null
