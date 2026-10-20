@@ -115,6 +115,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+      - name: Verify emulator job branch and app identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_BRANCH="arthsaathi-step1-5-functional-audit-2026-10-18"
+          test "${GITHUB_REF_NAME}" = "${EXPECTED_BRANCH}" || {
+            echo "::error::Refusing emulator validation on unexpected branch: ${GITHUB_REF_NAME}"
+            exit 1
+          }
+          grep -Fq "applicationId 'com.arthsaathi.master'" app/build.gradle
+          grep -Fq "versionCode 800" app/build.gradle
+          grep -Fq "versionName '8.0'" app/build.gradle
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
