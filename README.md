@@ -71,3 +71,19 @@ The audit branch has been extended with:
 - QR/OCR support must be verified against real invoice/payment payloads and the saved record linkage; decoded text alone is not proof of a completed trade-credit workflow.
 
 Do not mark the app final while any required internal flow, inter-module update, or test remains incomplete.
+
+
+## Release identity lock (2026-10-20)
+
+This section is the release identity contract for the current audit candidate. Do not infer a release version from a branch name alone.
+
+- Canonical candidate branch: `arthsaathi-step1-5-functional-audit-2026-10-18`
+- Canonical Android application ID: `com.arthsaathi.master`
+- Canonical Android version: `versionCode 800`, `versionName 8.0`
+- Source of truth: `app/build.gradle` on the exact commit being built.
+- Artifact acceptance: the APK, `release-provenance.txt`, and `apk-sha256.txt` must come from the same successful workflow run and exact commit SHA.
+- Test acceptance: both the build/unit-test job and emulator instrumentation job must succeed for that commit. Empty/missing CI results are **not** a pass.
+- Branch protection: repository settings must require the audit workflow's build/unit and emulator checks before merging. This cannot be enabled by a source-file change; a repository administrator must apply and verify the GitHub branch rules.
+- Release status remains **NOT CERTIFIED** until the checks and artifact provenance above are verified. Do not rename the APK or manually relabel its version to imply certification.
+
+Do not build a release from a V6.2/V7 branch or cherry-pick a prior-version APK into this release. Any intentional version change must update the Gradle identity, workflow guard, provenance generation, tests, and release documentation together in one reviewed change.
