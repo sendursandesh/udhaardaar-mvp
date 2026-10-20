@@ -29,6 +29,7 @@ gradle_exit=$?
 set -e
 
 echo "=== Pulling canonical ArthSaathi visual evidence ==="
+visual_exit=0
 mkdir -p app/build/qa-diagnostics/visual-captures
 # The instrumentation test exports screenshots to shared MediaStore Pictures storage.
 # This survives Gradle's cleanup/uninstall of the target app after connected tests.
@@ -38,7 +39,8 @@ if adb shell "test -d '$capture_dir'"; then
   screenshot_count=$(find app/build/qa-diagnostics/visual-captures -type f -name '*.png' | wc -l)
   echo "Canonical screenshots available: $screenshot_count"
 else
-  echo "NOTE: no canonical screenshot export was produced by this instrumentation suite; continuing with test reports and logcat diagnostics."
+  echo "FAIL: no canonical screenshot export was produced by this instrumentation suite."
+  visual_exit=1
 fi
 
 echo "=== Validating instrumentation reports ==="
@@ -87,5 +89,9 @@ fi
 if (( report_exit != 0 )); then
   exit "$report_exit"
 fi
+if (( visual_exit != 0 )); then
+  echo "FAIL: canonical visual evidence is missing; inspect test output and QA diagnostics."
+  exit 3
+fi
 
-echo "PASS: emulator instrumentation tests completed, reports contain no failures, and canonical screenshots were collected."
+echo "PASS: emulator instrumentation tests completed with zero reported failures and canonical screenshots verified."
