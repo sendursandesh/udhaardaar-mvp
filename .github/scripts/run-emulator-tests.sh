@@ -32,9 +32,9 @@ max_attempts=3
 while (( attempt <= max_attempts )); do
   echo "=== Instrumentation attempt ${attempt}/${max_attempts} ==="
   attempt_log="/tmp/arthsaathi-instrumentation-attempt-${attempt}.log"
-  gradle clean :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace >"$attempt_log" 2>&1
-  gradle_exit=$?
-  cat "$attempt_log"
+  # Bound each Gradle attempt and stream output so a stuck test is diagnosable in Actions logs.
+  timeout --signal=TERM --kill-after=20s 12m gradle clean :app:connectedDebugAndroidTest --no-daemon --no-parallel --max-workers=2 --stacktrace --console=plain 2>&1 | tee "$attempt_log"
+  gradle_exit=${PIPESTATUS[0]}
   printf '\n===== ATTEMPT %s LOG =====\n' "$attempt" >> "$attempt_log_aggregate"
   cat "$attempt_log" >> "$attempt_log_aggregate"
 
