@@ -14,6 +14,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 
 /**
  * Canonical ArthSaathi command centre. The five persistent destinations are
@@ -34,6 +37,9 @@ class ArthSaathiHomeActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Android 15+ edge-to-edge: explicitly reserve system-bar insets so the
+        // persistent five-tab navigation stays above the gesture/3-button bar.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         if (!ArthSaathiSession.isLoggedIn(this)) {
             startActivity(Intent(this, ArthSaathiLoginActivity::class.java))
             finish()
@@ -153,7 +159,13 @@ class ArthSaathiHomeActivity : Activity() {
             addView(nav, ViewGroup.LayoutParams(-2, -1))
         }
         root.addView(navScroll, LinearLayout.LayoutParams(-1, dp(62)))
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, windowInsets ->
+            val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(0, systemBars.top, 0, systemBars.bottom)
+            windowInsets
+        }
         setContentView(root)
+        ViewCompat.requestApplyInsets(root)
         render("Home")
     }
 
