@@ -42,7 +42,7 @@ class ArthSaathiLoginActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(28), dp(32), dp(28), dp(28))
+            setPadding(dp(20), dp(14), dp(20), dp(14))
             setBackgroundColor(ArthSaathiV7Design.CREAM)
         }
         root.addView(ImageView(this).apply {
@@ -50,7 +50,7 @@ class ArthSaathiLoginActivity : Activity() {
             contentDescription = "ArthSaathi approved journey logo"
             tag = "arthsaathi-canonical-logo"
             scaleType = ImageView.ScaleType.FIT_CENTER
-        }, LinearLayout.LayoutParams(dp(96), dp(96)))
+        }, LinearLayout.LayoutParams(dp(68), dp(68)))
         root.addView(TextView(this).apply {
             val wordmark = android.text.SpannableString("ArthSaathi")
             wordmark.setSpan(android.text.style.ForegroundColorSpan(navy), 0, 4, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -65,7 +65,7 @@ class ArthSaathiLoginActivity : Activity() {
             textSize = 13f
             setTextColor(navy)
             gravity = Gravity.CENTER
-            setPadding(0, dp(4), 0, dp(5))
+            setPadding(0, dp(2), 0, dp(2))
         })
         root.addView(TextView(this).apply {
             text = "Plan • Protect • Grow • Nominate"
@@ -73,14 +73,14 @@ class ArthSaathiLoginActivity : Activity() {
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(gold)
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, dp(5))
+            setPadding(0, 0, 0, dp(2))
         })
         root.addView(TextView(this).apply {
             text = "Your Asset. Your Record. Your Right."
             textSize = 11f
             setTextColor(muted)
             gravity = Gravity.CENTER
-            setPadding(0, 0, 0, dp(22))
+            setPadding(0, 0, 0, dp(10))
         })
         mobile = EditText(this).apply {
             hint = "10-digit mobile number"
@@ -118,13 +118,8 @@ class ArthSaathiLoginActivity : Activity() {
             setPadding(0, dp(14), 0, 0)
         }
         root.addView(status, LinearLayout.LayoutParams(-1, -2))
-        root.addView(TextView(this).apply {
-            text = "Offline mode stores records on this device only. It does not verify identity, borrower consent, or repayments. Protected credit actions remain locked until trusted OTP verification is connected."
-            textSize = 11f
-            setTextColor(muted)
-            gravity = Gravity.CENTER
-            setPadding(0, dp(18), 0, dp(8))
-        })
+        // Keep the test workspace entry near the top so it remains reachable even
+        // when OTP delivery is unavailable. It is explicitly offline, not authenticated.
         root.addView(Button(this).apply {
             text = "CONTINUE IN OFFLINE MODE"
             isAllCaps = false
@@ -139,6 +134,13 @@ class ArthSaathiLoginActivity : Activity() {
                 openHome()
             }
         }, LinearLayout.LayoutParams(-1, dp(52)))
+        root.addView(TextView(this).apply {
+            text = "Offline test workspace: device-only records. Identity, borrower consent and repayments are not verified."
+            textSize = 11f
+            setTextColor(muted)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(8), 0, dp(8))
+        })
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
     }
 
