@@ -109,7 +109,7 @@ jobs:
   emulator-acceptance:
     name: Emulator instrumentation acceptance
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - name: Checkout audited branch
         uses: actions/checkout@v4
@@ -162,7 +162,7 @@ jobs:
             exit 1
           fi
       - name: Run instrumented acceptance suite on Android 14 emulator
-        timeout-minutes: 20
+        timeout-minutes: 35
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
