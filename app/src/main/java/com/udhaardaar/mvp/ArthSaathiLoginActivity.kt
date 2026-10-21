@@ -86,6 +86,23 @@ class ArthSaathiLoginActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, dp(10))
         })
+        // Keep the test workspace entry near the top so it remains reachable even
+        // when OTP delivery is unavailable. It is explicitly offline, not authenticated.
+        root.addView(Button(this).apply {
+            text = "CONTINUE IN OFFLINE MODE"
+            isAllCaps = false
+            setTextColor(navy)
+            setOnClickListener {
+                ArthSaathiSession.loginOffline(this@ArthSaathiLoginActivity)
+                Toast.makeText(
+                    this@ArthSaathiLoginActivity,
+                    "Offline workspace opened. No identity or consent was verified.",
+                    Toast.LENGTH_LONG
+                ).show()
+                openHome()
+            }
+        }, LinearLayout.LayoutParams(-1, dp(52)))
+
         mobile = EditText(this).apply {
             hint = "10-digit mobile number"
             inputType = InputType.TYPE_CLASS_PHONE
@@ -122,22 +139,6 @@ class ArthSaathiLoginActivity : Activity() {
             setPadding(0, dp(14), 0, 0)
         }
         root.addView(status, LinearLayout.LayoutParams(-1, -2))
-        // Keep the test workspace entry near the top so it remains reachable even
-        // when OTP delivery is unavailable. It is explicitly offline, not authenticated.
-        root.addView(Button(this).apply {
-            text = "CONTINUE IN OFFLINE MODE"
-            isAllCaps = false
-            setTextColor(navy)
-            setOnClickListener {
-                ArthSaathiSession.loginOffline(this@ArthSaathiLoginActivity)
-                Toast.makeText(
-                    this@ArthSaathiLoginActivity,
-                    "Offline workspace opened. No identity or consent was verified.",
-                    Toast.LENGTH_LONG
-                ).show()
-                openHome()
-            }
-        }, LinearLayout.LayoutParams(-1, dp(52)))
         root.addView(TextView(this).apply {
             text = "Offline test workspace: device-only records. Identity, borrower consent and repayments are not verified."
             textSize = 11f
