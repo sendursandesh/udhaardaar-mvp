@@ -16,6 +16,9 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 
 /**
  * Production-safe login shell. A mobile number alone is never authentication:
@@ -37,6 +40,7 @@ class ArthSaathiLoginActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         if (ArthSaathiSession.isLoggedIn(this)) { openHome(); return }
 
         val root = LinearLayout(this).apply {
@@ -141,7 +145,14 @@ class ArthSaathiLoginActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(0, dp(8), 0, dp(8))
         })
-        setContentView(ScrollView(this).apply { isFillViewport = true; addView(root) })
+        val scroll = ScrollView(this).apply { isFillViewport = true; addView(root) }
+        ViewCompat.setOnApplyWindowInsetsListener(scroll) { view, windowInsets ->
+            val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(0, systemBars.top, 0, systemBars.bottom)
+            windowInsets
+        }
+        setContentView(scroll)
+        ViewCompat.requestApplyInsets(scroll)
     }
 
     private fun requestLoginOtp() {
