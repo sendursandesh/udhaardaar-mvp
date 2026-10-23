@@ -86,7 +86,7 @@ class ArthSaathiRecoveryUiAcceptanceTest {
         assertTrue("Home logo must remain visible", device.hasObject(By.desc("ArthSaathi logo")))
 
         // Exercise a real bottom-tab route, not just the presence of labels.
-        device.findObject(By.text("CR\\nCredit")).click()
+        device.findObject(By.text("CR\nCredit")).click()
         assertTrue("Credit tab should open the registration flow",
             device.wait(Until.hasObject(By.text("Register Financial Relationship")), 5_000))
         device.pressBack()
