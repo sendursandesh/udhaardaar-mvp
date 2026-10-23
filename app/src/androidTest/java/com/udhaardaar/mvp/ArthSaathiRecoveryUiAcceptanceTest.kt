@@ -47,6 +47,7 @@ class ArthSaathiRecoveryUiAcceptanceTest {
         assertTrue(device.hasObject(By.text("Sign Up")))
         assertTrue(device.hasObject(By.text("Send OTP")))
         assertTrue(device.hasObject(By.textContains("ArthSaathi")))
+        assertTrue("Approved logo must be exposed accessibly", device.hasObject(By.desc("ArthSaathi logo")))
     }
 
     @Test
@@ -77,5 +78,11 @@ class ArthSaathiRecoveryUiAcceptanceTest {
             device.wait(Until.hasObject(By.text("Plan Today")), 10_000))
         assertTrue("Home should expose at least one primary module",
             device.hasObject(By.textContains("Register")))
+        assertTrue("Home tab should remain visible", device.hasObject(By.textContains("Home")))
+        assertTrue("Credit tab should remain visible", device.hasObject(By.textContains("Credit")))
+        assertTrue("Repay tab should remain visible", device.hasObject(By.textContains("Repay")))
+        assertTrue("Vault tab should remain visible", device.hasObject(By.textContains("Vault")))
+        assertTrue("More tab should remain visible", device.hasObject(By.textContains("More")))
+        assertTrue("Home logo must remain visible", device.hasObject(By.desc("ArthSaathi logo")))
     }
 }
