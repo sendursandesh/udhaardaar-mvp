@@ -8,6 +8,11 @@ on:
     branches: [main]
 permissions:
   contents: read
+
+# Recovery builds are serialized; cancel stale commits so only the latest source is tested.
+concurrency:
+  group: arthsaathi-v62-recovery-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
