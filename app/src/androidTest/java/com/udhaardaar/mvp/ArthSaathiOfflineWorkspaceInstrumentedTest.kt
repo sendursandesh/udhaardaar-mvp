@@ -53,6 +53,18 @@ class ArthSaathiOfflineWorkspaceInstrumentedTest {
         assertTrue(ArthSaathiSession.isOfflineWorkspace(context))
     }
 
+
+    @Test fun legacyPersistedSessionIsClearedSoUpgradeReturnsToLogin() {
+        // Simulate the previous test APK leaving a persistent offline session behind.
+        context.getSharedPreferences("arthsaathi_bootstrap", Context.MODE_PRIVATE)
+            .edit().clear().commit()
+        ArthSaathiSession.loginOffline(context)
+
+        ArthSaathiSession.migrateSessionIfNeeded(context)
+
+        assertFalse("Upgrade must not silently skip the login screen", ArthSaathiSession.isLoggedIn(context))
+    }
+
     @Test fun providerSessionDoesNotRetainOfflineWorkspaceFlag() {
         ArthSaathiSession.login(context, "9876501199")
         assertFalse(ArthSaathiSession.isOfflineWorkspace(context))
