@@ -59,7 +59,7 @@ class ArthSaathiRecoveryUiAcceptanceTest {
     fun demoOtpCompletesLoginAndOpensHome() {
         val mobileField = device.findObject(By.clazz(EditText::class.java.name))
         assertNotNull("Mobile input must be available", mobileField)
-        mobileField!!.text = "9876501199"
+        mobileField!!.setText("9876501199")
         device.findObject(By.text("Send OTP")).click()
 
         val otpMessage = device.wait(Until.findObject(By.textContains("Demo OTP:")), 5_000)
@@ -68,7 +68,7 @@ class ArthSaathiRecoveryUiAcceptanceTest {
         assertNotNull("Dialog should show the six-digit demo code", match)
         val otpInput = device.findObjects(By.clazz(EditText::class.java.name)).lastOrNull()
         assertNotNull("OTP input should be available", otpInput)
-        otpInput!!.text = match!!.groupValues[1]
+        otpInput!!.setText(match!!.groupValues[1])
         device.findObject(By.text("VERIFY")).click()
 
         assertTrue("Successful demo verification should open V6.2 home",
