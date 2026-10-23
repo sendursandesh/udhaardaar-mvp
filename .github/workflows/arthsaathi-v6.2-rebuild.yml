@@ -72,3 +72,49 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+  emulator-acceptance:
+    name: V6.2 login-to-home emulator acceptance
+    runs-on: ubuntu-22.04
+    needs: build
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Gradle 8.10.2
+        run: |
+          set -euo pipefail
+          wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
+          sudo unzip -q /tmp/gradle.zip -d /opt
+          echo /opt/gradle-8.10.2/bin >> "$GITHUB_PATH"
+      - name: Run UI acceptance tests on Android 14
+        uses: reactivecircus/android-emulator-runner@v2
+        timeout-minutes: 25
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          cores: 2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-boot-timeout: 300
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save
+          disable-animations: true
+          script: gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
+      - name: Upload emulator acceptance reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arthsaathi-v6.2-recovery-emulator-results
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+            app/build/outputs/apk/androidTest/
+          if-no-files-found: warn
+          retention-days: 30
