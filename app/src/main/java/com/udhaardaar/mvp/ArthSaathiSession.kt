@@ -16,6 +16,27 @@ object ArthSaathiSession {
     private const val LOCAL_PREFS = "arthsaathi_local_identity"
     private const val KEY_LOCAL_OWNER_ID = "local_owner_id"
     private const val LOCAL_PREFIX = "local:"
+    private const val BOOTSTRAP_PREFS = "arthsaathi_bootstrap"
+    private const val KEY_SESSION_SCHEMA = "session_schema_version"
+    private const val CURRENT_SESSION_SCHEMA = 2
+
+    /**
+     * One-time upgrade migration: sessions created by earlier test APKs must not
+     * silently bypass the login screen in this release. Device-local records are
+     * preserved; only stale authentication/session state is cleared.
+     */
+    fun migrateSessionIfNeeded(context: Context) {
+        val bootstrap = context.getSharedPreferences(BOOTSTRAP_PREFS, Context.MODE_PRIVATE)
+        val schema = bootstrap.getInt(KEY_SESSION_SCHEMA, 0)
+        if (schema < CURRENT_SESSION_SCHEMA) {
+            check(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().commit()) {
+                "Could not reset the stale session; please restart the app."
+            }
+            check(bootstrap.edit().putInt(KEY_SESSION_SCHEMA, CURRENT_SESSION_SCHEMA).commit()) {
+                "Could not record the session migration; please restart the app."
+            }
+        }
+    }
 
     fun isLoggedIn(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_LOGGED_IN, false)
