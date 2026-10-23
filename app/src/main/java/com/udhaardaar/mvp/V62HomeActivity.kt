@@ -6,6 +6,9 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 
 /** ArthSaathi V6.2 home: Plan • Protect • Grow • Nominate, with live vault metrics. */
 class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
@@ -15,7 +18,7 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
     private lateinit var root:LinearLayout
     private fun open(c:Class<*>)=startActivity(Intent(this,c))
     private fun add(v:View,top:Int=7)=ArthSaathiV62Design.add(root,v,top)
-    override fun onCreate(b:Bundle?){super.onCreate(b);render()}
+    override fun onCreate(b:Bundle?){super.onCreate(b);WindowCompat.setDecorFitsSystemWindows(window,false);render()}
     override fun onResume(){super.onResume();if(!isFinishing)render()}
     private fun render(){
         val p=getSharedPreferences("udhaardaar_accounts",MODE_PRIVATE)
@@ -64,6 +67,12 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
             addView(root)
         }, LinearLayout.LayoutParams(-1, 0, 1f))
         screen.addView(bottomNav, LinearLayout.LayoutParams(-1, -2))
+        ViewCompat.setOnApplyWindowInsetsListener(screen) { view, windowInsets ->
+            val bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(0, bars.top, 0, bars.bottom)
+            windowInsets
+        }
         setContentView(screen)
+        ViewCompat.requestApplyInsets(screen)
     }
 }
