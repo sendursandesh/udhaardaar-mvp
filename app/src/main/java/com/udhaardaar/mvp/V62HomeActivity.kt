@@ -22,7 +22,6 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
         if(!p.getBoolean("logged_in",false)){startActivity(Intent(this,LoginActivity::class.java));finish();return}
         val owner=V62Integration.currentUserId(this);val mobile=p.getString("current_mobile","") ?: "";val name=p.getString("name_$mobile","User") ?: "User"
         root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(12),dp(8),dp(12),dp(18));background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(0xfffff1c8.toInt(),ArthSaathiV62Design.BG,0xfffffdf7.toInt()))}
-        setContentView(ScrollView(this).apply{isFillViewport=true;addView(root)})
         val top=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(3),dp(2),dp(3),dp(2))}
         top.addView(ImageView(this).apply{setImageResource(R.drawable.arthsaathi_logo);scaleType=ImageView.ScaleType.CENTER_INSIDE;contentDescription="ArthSaathi logo"},LinearLayout.LayoutParams(dp(52),dp(52)))
         val id=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(8),0,0,0)}
@@ -46,6 +45,25 @@ class V62HomeActivity : androidx.appcompat.app.AppCompatActivity() {
         add(ArthSaathiV62Design.moduleCard(this,"03","QR Khata","Scan • capture • consent • ledger",ArthSaathiV62Design.GOLD_DEEP){open(V62ExtendedModulesActivity::class.java)},3)
         add(ArthSaathiV62Design.moduleCard(this,"04","TTMM Shared Money","Group expenses • shares • settlement",ArthSaathiV62Design.BLUE){open(V62TTMMActivity::class.java)},3)
         add(ArthSaathiV62Design.moduleCard(this,"05","Legal + Legacy + AI","Advocates • claims • will • portfolio review",ArthSaathiV62Design.TEAL){open(V62LegacyLegalAIActivity::class.java)},3)
-        add(ArthSaathiV62Design.bottomNav(this,"Home",mapOf("Home" to {},"Credit" to {open(V62CreditRegistrationActivity::class.java)},"Repay" to {open(V62RepaymentActivity::class.java)},"Vault" to {open(V62AssetVaultActivity::class.java)},"More" to {open(V62ExtendedModulesActivity::class.java)})),12)
+        val bottomNav = ArthSaathiV62Design.bottomNav(this,"Home",mapOf(
+            "Home" to {},
+            "Credit" to { open(V62CreditRegistrationActivity::class.java) },
+            "Repay" to { open(V62RepaymentActivity::class.java) },
+            "Vault" to { open(V62AssetVaultActivity::class.java) },
+            "More" to { open(V62ExtendedModulesActivity::class.java) }
+        ))
+        // Keep the five destinations fixed above Android system navigation; only the
+        // dashboard content scrolls. Previously the entire page, including the tabs,
+        // was inside one ScrollView, so the tabs could disappear below the fold.
+        val screen = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(ArthSaathiV62Design.BG)
+        }
+        screen.addView(ScrollView(this).apply {
+            isFillViewport = true
+            addView(root)
+        }, LinearLayout.LayoutParams(-1, 0, 1f))
+        screen.addView(bottomNav, LinearLayout.LayoutParams(-1, -2))
+        setContentView(screen)
     }
 }
