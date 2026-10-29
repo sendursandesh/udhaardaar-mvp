@@ -2,6 +2,7 @@ package com.udhaardaar.mvp
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -26,6 +27,8 @@ import androidx.core.view.WindowInsetsCompat
  * trusted OTP provider. No local/demo OTP is accepted.
  */
 class ArthSaathiLoginActivity : Activity() {
+    private val isDebugBuild: Boolean
+        get() = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     private val navy = ArthSaathiV7Design.NAVY
     private val gold = ArthSaathiV7Design.GOLD
     private val muted = ArthSaathiV7Design.MUTED
@@ -164,7 +167,7 @@ class ArthSaathiLoginActivity : Activity() {
         }
         if (!ArthSaathiOtpService.isConfigured()) {
             // Debug-only test path: never accept a local OTP in release builds.
-            if (BuildConfig.DEBUG) {
+            if (isDebugBuild) {
                 pendingMobile = value
                 pendingChallenge = "DEBUG_DUMMY_OTP"
                 otp.setText("")
@@ -206,7 +209,7 @@ class ArthSaathiLoginActivity : Activity() {
             otp.error = "Enter the verification code"
             return
         }
-        val verified = if (BuildConfig.DEBUG && challenge == "DEBUG_DUMMY_OTP") {
+        val verified = if (isDebugBuild && challenge == "DEBUG_DUMMY_OTP") {
             code == "123456"
         } else {
             ArthSaathiOtpService.verify(challenge, code)
@@ -215,7 +218,7 @@ class ArthSaathiLoginActivity : Activity() {
             status.text = "Code not verified. You remain signed out; request a new code if it expires."
             return
         }
-        if (BuildConfig.DEBUG && challenge == "DEBUG_DUMMY_OTP") {
+        if (isDebugBuild && challenge == "DEBUG_DUMMY_OTP") {
             ArthSaathiSession.loginOffline(this)
         } else {
             ArthSaathiSession.login(this, value)
