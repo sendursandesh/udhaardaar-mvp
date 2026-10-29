@@ -163,8 +163,21 @@ class ArthSaathiLoginActivity : Activity() {
             return
         }
         if (!ArthSaathiOtpService.isConfigured()) {
-            status.text = "Secure OTP service is not configured. Sign-in is disabled until a trusted server provider is connected."
-            Toast.makeText(this, "OTP service unavailable; no sign-in occurred", Toast.LENGTH_LONG).show()
+            // Debug-only test path: never accept a local OTP in release builds.
+            if (BuildConfig.DEBUG) {
+                pendingMobile = value
+                pendingChallenge = "DEBUG_DUMMY_OTP"
+                otp.setText("")
+                otp.visibility = android.view.View.VISIBLE
+                verifyButton.visibility = android.view.View.VISIBLE
+                sendButton.isEnabled = false
+                mobile.isEnabled = false
+                status.text = "DEBUG TEST LOGIN: enter 123456. This code works only in debug builds."
+                Toast.makeText(this, "Debug test OTP: 123456", Toast.LENGTH_LONG).show()
+            } else {
+                status.text = "Secure OTP service is not configured. Sign-in is disabled until a trusted server provider is connected."
+                Toast.makeText(this, "OTP service unavailable; no sign-in occurred", Toast.LENGTH_LONG).show()
+            }
             return
         }
         val challenge = ArthSaathiOtpService.request(value, "LOGIN", "LOGIN")
@@ -193,11 +206,20 @@ class ArthSaathiLoginActivity : Activity() {
             otp.error = "Enter the verification code"
             return
         }
-        if (!ArthSaathiOtpService.verify(challenge, code)) {
+        val verified = if (BuildConfig.DEBUG && challenge == "DEBUG_DUMMY_OTP") {
+            code == "123456"
+        } else {
+            ArthSaathiOtpService.verify(challenge, code)
+        }
+        if (!verified) {
             status.text = "Code not verified. You remain signed out; request a new code if it expires."
             return
         }
-        ArthSaathiSession.login(this, value)
+        if (BuildConfig.DEBUG && challenge == "DEBUG_DUMMY_OTP") {
+            ArthSaathiSession.loginOffline(this)
+        } else {
+            ArthSaathiSession.login(this, value)
+        }
         pendingChallenge = null
         pendingMobile = null
         openHome()
