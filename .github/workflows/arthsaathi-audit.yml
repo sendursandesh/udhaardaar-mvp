@@ -37,8 +37,8 @@ jobs:
           }
           GRADLE_FILE="app/build.gradle"
           grep -Fq "applicationId 'com.arthsaathi.master'" "${GRADLE_FILE}"
-          grep -Fq "versionCode 800" "${GRADLE_FILE}"
-          grep -Fq "versionName '8.0'" "${GRADLE_FILE}"
+          grep -Fq "versionCode 801" "${GRADLE_FILE}"
+          grep -Fq "versionName '8.0.1'" "${GRADLE_FILE}"
           mkdir -p app/build/release-provenance
           {
             echo "product=ArthSaathi"
@@ -46,8 +46,8 @@ jobs:
             echo "branch=${GITHUB_REF_NAME}"
             echo "commit=${GITHUB_SHA}"
             echo "applicationId=com.arthsaathi.master"
-            echo "versionCode=800"
-            echo "versionName=8.0"
+            echo "versionCode=801"
+            echo "versionName=8.0.1"
             echo "workflowRunId=${GITHUB_RUN_ID}"
             echo "workflowRunAttempt=${GITHUB_RUN_ATTEMPT}"
             echo "builtAtUtc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -82,7 +82,7 @@ jobs:
           AAPT="${ANDROID_HOME}/build-tools/35.0.0/aapt"
           test -x "$AAPT"
           BADGING="$("$AAPT" dump badging "$APK")"
-          printf '%s\n' "$BADGING" | grep -Fq "package: name='com.arthsaathi.master' versionCode='800' versionName='8.0'"
+          printf '%s\n' "$BADGING" | grep -Fq "package: name='com.arthsaathi.master' versionCode='801' versionName='8.0.1'"
           mkdir -p app/build/release-provenance
           cp "$APK" app/build/release-provenance/arthsaathi-debug.apk
           echo "verifiedApkSource=$APK" > app/build/release-provenance/apk-identity.txt
@@ -125,8 +125,8 @@ jobs:
             exit 1
           }
           grep -Fq "applicationId 'com.arthsaathi.master'" app/build.gradle
-          grep -Fq "versionCode 800" app/build.gradle
-          grep -Fq "versionName '8.0'" app/build.gradle
+          grep -Fq "versionCode 801" app/build.gradle
+          grep -Fq "versionName '8.0.1'" app/build.gradle
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
