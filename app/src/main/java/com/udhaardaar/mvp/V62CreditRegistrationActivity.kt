@@ -286,7 +286,7 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
             put("periodicity", draft.getString("period", "Monthly").orEmpty()); put("period", draft.getString("period", "Monthly").orEmpty())
             put("startDate", draft.getString("start", "").orEmpty()); put("start", draft.getString("start", "").orEmpty()); put("endDate", draft.getString("end", "").orEmpty()); put("end", draft.getString("end", "").orEmpty())
             put("emi", draft.getString("emi", "0").orEmpty().toDoubleOrNull() ?: 0.0)
-            put("guarantorName", draft.getString("guarantorName", "").orEmpty()); put("guarantorMobile", draft.getString("guarantorMobile", "").orEmpty())
+            put("guarantorName", draft.getString("guarantorName", "").orEmpty()); put("guarantorMobile", draft.getString("guarantorMobile", "").orEmpty()); put("guarantorCounterpartyId", draft.getString("guarantorCounterpartyId", "").orEmpty())
             put("supportingDocumentId", documentId); put("supportingDocumentUri", docUri); put("invoiceOcrText", invoiceText.take(12000))
             put("promissoryNote", note); put("historyConsent", "VERIFIED"); put("registrationConsent", "VERIFIED"); put("outstanding", principal); put("status", "ACTIVE"); put("createdAt", System.currentTimeMillis())
         }
