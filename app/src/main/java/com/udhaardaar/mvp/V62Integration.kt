@@ -46,7 +46,8 @@ object V62Integration {
     fun recalculateRelationshipOutstanding(c:Context,relationshipId:String):Double{
         val rel=relationship(c,relationshipId)?:return 0.0
         val principal=rel.optDouble("amount",rel.optDouble("principal",0.0))
-        val repayments=store(c).all(V62Store.REPAYMENTS).filter{it.optString("relationshipId")==relationshipId}
+        val owner=currentUserId(c)
+        val repayments=store(c).all(V62Store.REPAYMENTS).filter{it.optString("ownerUserId",it.optString("recordedBy",""))==owner && it.optString("relationshipId")==relationshipId}
         val paid=repayments.sumOf{it.optDouble("principal",it.optDouble("amount",0.0))}
         val outstanding=(principal-paid).coerceAtLeast(0.0)
         rel.put("outstanding",outstanding);rel.put("status",if(outstanding<=0.0&&principal>0.0)"CLOSED" else "ACTIVE")
