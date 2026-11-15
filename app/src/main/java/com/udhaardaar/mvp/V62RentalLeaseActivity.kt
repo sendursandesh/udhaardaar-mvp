@@ -13,7 +13,9 @@ class V62RentalLeaseActivity : androidx.appcompat.app.AppCompatActivity() {
     private val Int.dp: Int get() = (this * d).toInt()
     private var doc = JSONObject()
     private var extracted = emptyList<V62DocumentIntelligence.Field>()
-    private val fields = listOf("Lessor / Landlord", "Lessee / Tenant", "Property / premises description", "Monthly rent", "Security deposit", "Lease start date", "Lease end date", "Rent due date", "Escalation / revision", "Lock-in period", "Notice period", "Maintenance responsibility", "Utilities responsibility", "Late-payment terms", "Renewal terms", "Termination terms", "Special conditions")
+    private var lessor: JSONObject? = null
+    private var lessee: JSONObject? = null
+    private val fields = listOf("Property / premises description", "Monthly rent", "Security deposit", "Lease start date", "Lease end date", "Rent due date", "Escalation / revision", "Lock-in period", "Notice period", "Maintenance responsibility", "Utilities responsibility", "Late-payment terms", "Renewal terms", "Termination terms", "Special conditions")
 
     override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
     private fun render() {
@@ -27,20 +29,53 @@ class V62RentalLeaseActivity : androidx.appcompat.app.AppCompatActivity() {
     }
     private fun pick() { startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*"; putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false); addCategory(Intent.CATEGORY_OPENABLE) }, 42) }
     override fun onActivityResult(r: Int, c: Int, data: Intent?) { super.onActivityResult(r, c, data); if (r == 42 && c == Activity.RESULT_OK && data?.data != null) { doc = V62Documents.retain(this, data.data!!, "LEASE_DEED"); V62DocumentScanner.scan(this, data.data!!, { text -> extracted = V62DocumentIntelligence.analyse("LEASE_DEED", text); runOnUiThread { showForm() } }, { runOnUiThread { Toast.makeText(this, "Reading failed; manual verification available.", Toast.LENGTH_LONG).show(); showForm() } }) } }
+    private fun chooseParty(title: String, onSelected: (JSONObject) -> Unit) {
+        val query = ArthSaathiV62Design.input(this, "Search registered name / mobile / PAN / GSTIN")
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(query); addView(list) }
+        val dlg = android.app.AlertDialog.Builder(this).setTitle(title).setView(wrap).setNegativeButton("CANCEL", null).create()
+        fun refresh() {
+            list.removeAllViews()
+            val rows = V62Integration.findCounterparties(this, query.text.toString()).take(15)
+            if (rows.isEmpty()) list.addView(ArthSaathiV62Design.text(this, "No matching registered profile. Create one for this lease.", 11f, ArthSaathiV62Design.MUTED))
+            rows.forEach { p -> list.addView(ArthSaathiV62Design.button(this, "${p.optString("name")} • ${p.optString("mobile")}", ArthSaathiV62Design.NAVY) { dlg.dismiss(); onSelected(p) }) }
+            list.addView(ArthSaathiV62Design.button(this, "CREATE REGISTERED PROFILE", ArthSaathiV62Design.TEAL) {
+                val name = ArthSaathiV62Design.input(this, "Name / business name *")
+                val mobile = ArthSaathiV62Design.input(this, "Indian mobile number *")
+                val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(name); addView(mobile) }
+                android.app.AlertDialog.Builder(this).setTitle("Create lease party profile").setView(box).setNegativeButton("CANCEL", null).setPositiveButton("CREATE") { _, _ ->
+                    val cp = V62Integration.createCounterparty(this, name.text.toString(), mobile.text.toString(), transactionContext = "RENTAL_LEASE")
+                    if (cp == null) Toast.makeText(this, "Enter a name and valid 10-digit Indian mobile.", Toast.LENGTH_LONG).show()
+                    else { dlg.dismiss(); onSelected(cp) }
+                }.show()
+            })
+        }
+        query.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { refresh() }
+            override fun afterTextChanged(e: android.text.Editable?) {}
+        })
+        dlg.show(); refresh()
+    }
+
     private fun showForm() {
         root.removeAllViews(); ArthSaathiV62Design.add(root, ArthSaathiV62Design.title(this, "Verify Lease Terms", "Document proposal → your confirmation"), 2)
+        ArthSaathiV62Design.add(root, ArthSaathiV62Design.button(this, "SELECT REGISTERED LANDLORD / LESSOR", ArthSaathiV62Design.TEAL) { chooseParty("Select landlord / lessor") { lessor = it; showForm() } }, 5)
+        ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, lessor?.let { "Landlord: ${it.optString("name")} • ${it.optString("mobile")}" } ?: "Landlord / lessor not selected", 11f, ArthSaathiV62Design.NAVY), 4)
+        ArthSaathiV62Design.add(root, ArthSaathiV62Design.button(this, "SELECT REGISTERED TENANT / LESSEE", ArthSaathiV62Design.TEAL) { chooseParty("Select tenant / lessee") { lessee = it; showForm() } }, 5)
+        ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, lessee?.let { "Tenant: ${it.optString("name")} • ${it.optString("mobile")}" } ?: "Tenant / lessee not selected", 11f, ArthSaathiV62Design.NAVY), 4)
         val edits = linkedMapOf<String, EditText>(); fields.forEach { k -> val e = ArthSaathiV62Design.input(this, k); extracted.firstOrNull { it.name == k }?.let { e.setText(it.value) }; edits[k] = e; ArthSaathiV62Design.add(root, e, 4) }
         ArthSaathiV62Design.add(root, ArthSaathiV62Design.button(this, "SAVE VERIFIED AGREEMENT", ArthSaathiV62Design.GREEN) {
+            if (lessor == null || lessee == null || lessor?.optString("id") == lessee?.optString("id")) { Toast.makeText(this, "Select two different registered profiles for landlord and tenant.", Toast.LENGTH_LONG).show(); return@button }
             val owner = V62Integration.currentUserId(this@V62RentalLeaseActivity)
             val id = V62Store.id("LEASE")
-            val lessor = edits["Lessor / Landlord"]?.text.toString().trim()
-            val lessee = edits["Lessee / Tenant"]?.text.toString().trim()
-            val counterpartyName = listOf("Lessor / Landlord" to lessor, "Lessee / Tenant" to lessee).filter { it.second.isNotBlank() }.joinToString(" • ") { "${it.first}: ${it.second}" }
-            val o = JSONObject().apply { put("id", id); put("ownerUserId", owner); put("side", "USER"); put("counterpartyName", counterpartyName); put("documentId", doc.optString("id")); put("verifiedAt", System.currentTimeMillis()); put("status", "ACTIVE") }
+            val lessorProfile = lessor!!; val lesseeProfile = lessee!!
+            val counterpartyName = "Lessor: ${lessorProfile.optString("name")} • Lessee: ${lesseeProfile.optString("name")}"
+            val o = JSONObject().apply { put("id", id); put("ownerUserId", owner); put("lessorCounterpartyId", lessorProfile.optString("id")); put("lesseeCounterpartyId", lesseeProfile.optString("id")); put("side", "USER"); put("counterpartyName", counterpartyName); put("documentId", doc.optString("id")); put("verifiedAt", System.currentTimeMillis()); put("status", "ACTIVE") }
             edits.forEach { (k, e) -> o.put(k, e.text.toString().trim()) }
             s.add(V62Store.RENTALS, o)
             val relId = V62Store.id("REL")
-            s.add(V62Store.RELATIONSHIPS, JSONObject().apply { put("id", relId); put("ownerUserId", owner); put("type", "RENTAL"); put("rentalId", id); put("counterpartyName", counterpartyName); put("status", "ACTIVE"); put("outstanding", 0.0); put("createdAt", System.currentTimeMillis()) })
+            s.add(V62Store.RELATIONSHIPS, JSONObject().apply { put("id", relId); put("ownerUserId", owner); put("type", "RENTAL"); put("rentalId", id); put("counterpartyName", counterpartyName); put("counterpartyId", if (lessorProfile.optString("id") == lesseeProfile.optString("id")) "" else lesseeProfile.optString("id")); put("lessorCounterpartyId", lessorProfile.optString("id")); put("lesseeCounterpartyId", lesseeProfile.optString("id")); put("status", "ACTIVE"); put("outstanding", 0.0); put("createdAt", System.currentTimeMillis()) })
             V62EventBus.publish(V62Event(V62Events.RELATIONSHIP_CHANGED, relId))
             val rentDue = edits["Rent due date"]?.text.toString().trim(); val end = edits["Lease end date"]?.text.toString().trim()
             if (rentDue.isNotBlank()) V62Integration.addAlert(this, "RENT_DUE", "Rent due date: $rentDue", id, "ACTION")
