@@ -34,6 +34,7 @@ class V62CreditIntelligenceActivity : androidx.appcompat.app.AppCompatActivity()
             if (rel.isEmpty() && cp.optString("createdBy") != ownerId) return@forEach
 
             val consented = s.all(V62Store.CONSENTS).any {
+                it.optString("ownerUserId", "") == ownerId &&
                 it.optString("counterpartyId") == id &&
                 it.optString("eventType") == "HISTORY_SHARING" &&
                 it.optBoolean("otpVerified") &&
@@ -50,7 +51,8 @@ class V62CreditIntelligenceActivity : androidx.appcompat.app.AppCompatActivity()
             if (!consented) {
                 card.addView(ArthSaathiV62Design.text(this, "History / internal score withheld until OTP-verified history-sharing consent is recorded.", 11f, ArthSaathiV62Design.MUTED), 5)
             } else {
-                val reps = s.all(V62Store.REPAYMENTS).filter { it.optString("counterpartyId") == id || rel.any { r -> r.optString("id") == it.optString("relationshipId") } }
+                val relationshipIds = rel.map { it.optString("id") }.toSet()
+                val reps = s.all(V62Store.REPAYMENTS).filter { it.optString("recordedBy", it.optString("ownerUserId", "")) == ownerId && (it.optString("counterpartyId") == id || it.optString("relationshipId") in relationshipIds) }
                 val exposure = rel.filter { it.optString("status") != "CLOSED" }.sumOf { it.optDouble("outstanding", it.optDouble("amount", it.optDouble("principal", 0.0))) }
                 val repaid = reps.sumOf { it.optDouble("principal", it.optDouble("amount", 0.0)) }
                 val score = V62Integration.score(this, id)
