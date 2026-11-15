@@ -29,6 +29,7 @@ object V62Integration {
     /** Central consent check for protected cross-module disclosures/mutations. */
     fun hasVerifiedConsent(c:Context, subjectId:String, relationshipId:String, eventType:String):Boolean =
         store(c).all(V62Store.CONSENTS).any {
+            it.optString("ownerUserId", "") == currentUserId(c) &&
             it.optString("subjectId") == subjectId &&
             it.optString("relationshipId") == relationshipId &&
             it.optString("eventType") == eventType &&
@@ -57,7 +58,7 @@ object V62Integration {
         val owner=currentUserId(c)
         val rels=store(c).all(V62Store.RELATIONSHIPS).filter{it.optString("counterpartyId")==counterpartyId && it.optString("ownerUserId", "") == owner}
         val relationshipIds=rels.map{it.optString("id")}.toSet()
-        val reps=store(c).all(V62Store.REPAYMENTS).filter{it.optString("counterpartyId")==counterpartyId || it.optString("relationshipId") in relationshipIds}
+        val reps=store(c).all(V62Store.REPAYMENTS).filter{it.optString("recordedBy", it.optString("ownerUserId", "")) == owner && (it.optString("counterpartyId")==counterpartyId || it.optString("relationshipId") in relationshipIds)}
         val principal=rels.sumOf{it.optDouble("amount",it.optDouble("principal",0.0))}
         val repaid=reps.sumOf{it.optDouble("principal",it.optDouble("amount",0.0))}
         val overdue=rels.sumOf{it.optDouble("overdueAmount",0.0)}
