@@ -37,7 +37,7 @@ class V62LegacyLegalAIActivity : androidx.appcompat.app.AppCompatActivity() {
         val beneficiary=ArthSaathiV62Design.input(this,"Beneficiary / nominee name *")
         val executor=ArthSaathiV62Design.input(this,"Executor / trusted person")
         val instructions=ArthSaathiV62Design.input(this,"Distribution / legacy instructions *")
-        val assets=store.all(V62Store.ASSETS).filter{it.optBoolean("currentAsset",true)}
+        val owner=V62Integration.currentUserId(this);val assets=store.all(V62Store.ASSETS).filter{it.optString("ownerUserId","")==owner&&it.optBoolean("currentAsset",true)}
         val selected=mutableSetOf<String>()
         val list=LinearLayout(this);list.orientation=LinearLayout.VERTICAL
         assets.forEach{asset->val cb=CheckBox(this);cb.text="${asset.optString("Asset name / description",asset.optString("type"))} • ₹${"%.2f".format(Locale.US,asset.optDouble("value"))}";cb.setOnCheckedChangeListener{_,checked->if(checked)selected.add(asset.optString("id"))else selected.remove(asset.optString("id"))};list.addView(cb)}
@@ -53,7 +53,7 @@ class V62LegacyLegalAIActivity : androidx.appcompat.app.AppCompatActivity() {
 
     private fun claimDialog() {
         val claimant=ArthSaathiV62Design.input(this,"Claimant name / relation *");val event=ArthSaathiV62Design.input(this,"Claim event / date *")
-        val policies=store.all(V62Store.INSURANCE);val assets=store.all(V62Store.ASSETS);val docs=store.all(V62Store.DOCUMENTS)
+        val owner=V62Integration.currentUserId(this);val policies=store.all(V62Store.INSURANCE).filter{it.optString("ownerUserId","")==owner};val assets=store.all(V62Store.ASSETS).filter{it.optString("ownerUserId","")==owner};val docs=store.all(V62Store.DOCUMENTS).filter{it.optString("ownerUserId","")==owner}
         val box=LinearLayout(this);box.orientation=LinearLayout.VERTICAL;box.addView(claimant);box.addView(event)
         AlertDialog.Builder(this).setTitle("Claim Assistance").setMessage("Linked evidence: ${policies.size} policies • ${assets.size} assets • ${docs.size} documents.").setView(box).setNegativeButton("CANCEL",null).setPositiveButton("CREATE CASE"){_,_->
             if(claimant.text.isBlank()||event.text.isBlank()){Toast.makeText(this,"Claimant and event are required.",Toast.LENGTH_LONG).show();return@setPositiveButton}
@@ -97,6 +97,6 @@ class V62LegacyLegalAIActivity : androidx.appcompat.app.AppCompatActivity() {
     }
 
     private fun alertsDialog(){
-        val alerts=store.all(V62Store.ALERTS).takeLast(20).reversed();val msg=if(alerts.isEmpty())"No generated alerts yet." else alerts.joinToString("\n\n"){a->"${a.optString("severity")}: ${a.optString("message")}"};AlertDialog.Builder(this).setTitle("ArthSaathi Alerts").setMessage(msg).setPositiveButton("OK",null).show()
+        val owner=V62Integration.currentUserId(this);val alerts=store.all(V62Store.ALERTS).filter{it.optString("ownerUserId","")==owner}.takeLast(20).reversed();val msg=if(alerts.isEmpty())"No generated alerts yet." else alerts.joinToString("\n\n"){a->"${a.optString("severity")}: ${a.optString("message")}"};AlertDialog.Builder(this).setTitle("ArthSaathi Alerts").setMessage(msg).setPositiveButton("OK",null).show()
     }
 }
