@@ -180,27 +180,59 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
         }, 12)
     }
 
+    private fun chooseGuarantor() {
+        val query = input("Search registered guarantor name / mobile / PAN")
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(query); addView(list) }
+        val dlg = AlertDialog.Builder(this).setTitle("Select registered guarantor").setView(wrap).setNegativeButton("CANCEL", null).create()
+        fun refresh() {
+            list.removeAllViews()
+            val rows = V62Integration.findCounterparties(this, query.text.toString()).take(12)
+            if (rows.isEmpty()) list.addView(ArthSaathiV62Design.text(this, "No matching registered profile.", 11f, ArthSaathiV62Design.MUTED))
+            rows.forEach { cp -> list.addView(ArthSaathiV62Design.button(this, "${cp.optString("name")} • ${cp.optString("mobile")}", ArthSaathiV62Design.NAVY) {
+                dlg.dismiss()
+                draft.edit().putString("guarantorCounterpartyId", cp.optString("id")).putString("guarantorName", cp.optString("name")).putString("guarantorMobile", cp.optString("mobile")).putBoolean("guarantorConsent", false).apply()
+                render()
+            }) }
+            list.addView(ArthSaathiV62Design.button(this, "CREATE GUARANTOR PROFILE", ArthSaathiV62Design.TEAL) {
+                val name = input("Guarantor name *"); val mobile = input("Indian mobile number *")
+                val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(name); addView(mobile) }
+                AlertDialog.Builder(this).setTitle("Create guarantor profile").setView(box).setNegativeButton("CANCEL", null).setPositiveButton("CREATE") { _, _ ->
+                    val cp = V62Integration.createCounterparty(this, name.text.toString(), mobile.text.toString(), transactionContext = relationshipId)
+                    if (cp == null) Toast.makeText(this, "Enter a name and valid 10-digit Indian mobile.", Toast.LENGTH_LONG).show()
+                    else { dlg.dismiss(); draft.edit().putString("guarantorCounterpartyId", cp.optString("id")).putString("guarantorName", cp.optString("name")).putString("guarantorMobile", cp.optString("mobile")).putBoolean("guarantorConsent", false).apply(); render() }
+                }.show()
+            })
+        }
+        query.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { refresh() }
+            override fun afterTextChanged(e: android.text.Editable?) {}
+        })
+        dlg.show(); refresh()
+    }
+
     private fun evidence() {
         add(ArthSaathiV62Design.section(this, "3 • GUARANTOR & SUPPORTING DOCUMENT"), 8)
-        val gName = input("Guarantor name (optional)")
-        val gMobile = input("Guarantor mobile")
+        val guarantorId = draft.getString("guarantorCounterpartyId", "").orEmpty()
+        val guarantor = V62Integration.findCounterparties(this, "").firstOrNull { it.optString("id") == guarantorId }
+        add(ArthSaathiV62Design.button(this, "SEARCH / CREATE REGISTERED GUARANTOR", ArthSaathiV62Design.TEAL) { chooseGuarantor() }, 5)
+        add(ArthSaathiV62Design.text(this, guarantor?.let { "Selected: ${it.optString("name")} • ${it.optString("mobile")}" } ?: "No guarantor selected (optional)", 11f, ArthSaathiV62Design.NAVY), 5)
         val gConsent = CheckBox(this).apply { text = "Separate guarantor OTP consent verified"; isEnabled = false; isChecked = draft.getBoolean("guarantorConsent", false) }
-        add(gName, 4); add(gMobile, 4); add(gConsent, 4)
+        add(gConsent, 4)
         add(ArthSaathiV62Design.button(this, "REQUEST GUARANTOR CONSENT OTP", ArthSaathiV62Design.TEAL) {
-            val name = gName.text.toString().trim()
-            val mobile = gMobile.text.toString().trim()
-            if (name.isBlank() || !mobile.matches(Regex("[6-9][0-9]{9}"))) {
-                Toast.makeText(this, "Enter guarantor name and valid 10-digit mobile first.", Toast.LENGTH_LONG).show()
+            if (guarantor == null || !guarantor.optString("mobile").matches(Regex("[6-9][0-9]{9}"))) {
+                Toast.makeText(this, "Select a registered guarantor profile with a valid mobile.", Toast.LENGTH_LONG).show()
             } else {
                 val otp = (100000..999999).random()
                 val entry = input("Enter guarantor's 6-digit OTP")
-                val dlg = AlertDialog.Builder(this).setTitle("Guarantor consent").setMessage("Ask the guarantor to review and enter this demo OTP on this device. Demo OTP: $otp").setView(entry).setNegativeButton("DECLINE", null).setPositiveButton("VERIFY CONSENT", null).create()
+                val dlg = AlertDialog.Builder(this).setTitle("Guarantor consent").setMessage("Ask ${guarantor.optString("name")} to review and enter this demo OTP on this device. Demo OTP: $otp").setView(entry).setNegativeButton("DECLINE", null).setPositiveButton("VERIFY CONSENT", null).create()
                 dlg.setOnShowListener { dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                     if (entry.text.toString() == otp.toString()) {
                         dlg.dismiss()
                         gConsent.isChecked = true
-                        draft.edit().putString("guarantorName", name).putString("guarantorMobile", mobile).putBoolean("guarantorConsent", true).apply()
-                        V62Integration.recordConsent(this, "GUARANTOR:$mobile", relationshipId, "GUARANTOR_CONSENT", true)
+                        draft.edit().putBoolean("guarantorConsent", true).apply()
+                        V62Integration.recordConsent(this, guarantorId, relationshipId, "GUARANTOR_CONSENT", true)
                         Toast.makeText(this, "Demo guarantor consent recorded.", Toast.LENGTH_SHORT).show()
                     } else entry.error = "Incorrect OTP"
                 } }
@@ -208,17 +240,15 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
             }
         }, 6)
         add(ArthSaathiV62Design.button(this, "SAVE GUARANTOR DETAILS", ArthSaathiV62Design.BLUE) {
-            if (gName.text.isNotBlank() && !gMobile.text.toString().matches(Regex("[6-9][0-9]{9}"))) Toast.makeText(this, "Enter a valid guarantor mobile.", Toast.LENGTH_LONG).show()
-            else if (gName.text.isNotBlank() && !gConsent.isChecked) Toast.makeText(this, "Separate guarantor OTP consent is required.", Toast.LENGTH_LONG).show()
-            else { draft.edit().putString("guarantorName", gName.text.toString().trim()).putString("guarantorMobile", gMobile.text.toString().trim()).putBoolean("guarantorConsent", gConsent.isChecked || gName.text.isBlank()).apply(); Toast.makeText(this, "Guarantor details saved.", Toast.LENGTH_SHORT).show() }
+            if (guarantor != null && !gConsent.isChecked) Toast.makeText(this, "Separate guarantor OTP consent is required.", Toast.LENGTH_LONG).show()
+            else Toast.makeText(this, "Guarantor details saved.", Toast.LENGTH_SHORT).show()
         }, 6)
-        add(ArthSaathiV62Design.text(this, "Attach the invoice/supporting evidence before final consent. Trade-credit invoices can be OCR-read locally and remain reviewable.", 10f, ArthSaathiV62Design.MUTED), 8)
+        add(ArthSaathiV62Design.text(this, "Attach supporting evidence where relevant. Trade-credit invoices can be OCR-read locally and remain reviewable.", 10f, ArthSaathiV62Design.MUTED), 8)
         add(ArthSaathiV62Design.button(this, "SCAN / ATTACH INVOICE OR EVIDENCE", ArthSaathiV62Design.TEAL) { pickDoc() }, 8)
         if (docUri.isNotBlank()) add(ArthSaathiV62Design.text(this, "Original retained: $docUri\nOCR text: ${if (invoiceText.isBlank()) "pending" else "available for review"}", 10f, ArthSaathiV62Design.GREEN, true), 6)
         add(ArthSaathiV62Design.button(this, "REVIEW PROMISSORY NOTE →", ArthSaathiV62Design.GREEN) {
-            val guarantorRequired = draft.getString("guarantorName", "").orEmpty().isNotBlank()
-            if (docUri.isBlank()) Toast.makeText(this, "Attach supporting evidence first.", Toast.LENGTH_LONG).show()
-            else if (guarantorRequired && !draft.getBoolean("guarantorConsent", false)) Toast.makeText(this, "Guarantor acknowledgement is required.", Toast.LENGTH_LONG).show()
+            val guarantorRequired = guarantor != null
+            if (guarantorRequired && !draft.getBoolean("guarantorConsent", false)) Toast.makeText(this, "Guarantor OTP consent is required.", Toast.LENGTH_LONG).show()
             else { step = 4; render() }
         }, 12)
     }
