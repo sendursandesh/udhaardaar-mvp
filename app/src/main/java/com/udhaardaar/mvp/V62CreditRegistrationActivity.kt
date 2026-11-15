@@ -131,8 +131,10 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
     }
 
     private fun historySummary(id: String): String {
-        val rels = store.all(V62Store.RELATIONSHIPS).filter { it.optString("counterpartyId") == id && it.optString("id") != relationshipId }
-        val repayments = store.all(V62Store.REPAYMENTS).filter { it.optString("counterpartyId") == id || rels.any { r -> r.optString("id") == it.optString("relationshipId") } }
+        val owner = V62Integration.currentUserId(this)
+        val rels = store.all(V62Store.RELATIONSHIPS).filter { it.optString("ownerUserId", "") == owner && it.optString("counterpartyId") == id && it.optString("id") != relationshipId }
+        val relationshipIds = rels.map { it.optString("id") }.toSet()
+        val repayments = store.all(V62Store.REPAYMENTS).filter { it.optString("recordedBy", it.optString("ownerUserId", "")) == owner && (it.optString("counterpartyId") == id || it.optString("relationshipId") in relationshipIds) }
         val exposure = rels.sumOf { it.optDouble("amount", it.optDouble("principal", 0.0)) }
         val repaid = repayments.sumOf { it.optDouble("principal", it.optDouble("amount", 0.0)) }
         return "CONSENTED HISTORY\nRelationships: ${rels.size}\nRecorded exposure: ₹${"%.2f".format(Locale.US, exposure)}\nRecorded repayments: ₹${"%.2f".format(Locale.US, repaid)}\nArthSaathi Score (internal): ${V62Integration.score(this, id)}"
