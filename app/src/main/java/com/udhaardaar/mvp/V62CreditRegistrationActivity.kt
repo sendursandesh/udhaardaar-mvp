@@ -184,10 +184,32 @@ class V62CreditRegistrationActivity : AppCompatActivity() {
         add(ArthSaathiV62Design.section(this, "3 • GUARANTOR & SUPPORTING DOCUMENT"), 8)
         val gName = input("Guarantor name (optional)")
         val gMobile = input("Guarantor mobile")
-        val gConsent = CheckBox(this).apply { text = "Guarantor consent acknowledged (only if a guarantor is added)" }
-        add(gName, 4); add(gMobile, 4); add(gConsent, 7)
+        val gConsent = CheckBox(this).apply { text = "Separate guarantor OTP consent verified"; isEnabled = false; isChecked = draft.getBoolean("guarantorConsent", false) }
+        add(gName, 4); add(gMobile, 4); add(gConsent, 4)
+        add(ArthSaathiV62Design.button(this, "REQUEST GUARANTOR CONSENT OTP", ArthSaathiV62Design.TEAL) {
+            val name = gName.text.toString().trim()
+            val mobile = gMobile.text.toString().trim()
+            if (name.isBlank() || !mobile.matches(Regex("[6-9][0-9]{9}"))) {
+                Toast.makeText(this, "Enter guarantor name and valid 10-digit mobile first.", Toast.LENGTH_LONG).show()
+            } else {
+                val otp = (100000..999999).random()
+                val entry = input("Enter guarantor's 6-digit OTP")
+                val dlg = AlertDialog.Builder(this).setTitle("Guarantor consent").setMessage("Ask the guarantor to review and enter this demo OTP on this device. Demo OTP: $otp").setView(entry).setNegativeButton("DECLINE", null).setPositiveButton("VERIFY CONSENT", null).create()
+                dlg.setOnShowListener { dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    if (entry.text.toString() == otp.toString()) {
+                        dlg.dismiss()
+                        gConsent.isChecked = true
+                        draft.edit().putString("guarantorName", name).putString("guarantorMobile", mobile).putBoolean("guarantorConsent", true).apply()
+                        V62Integration.recordConsent(this, "GUARANTOR:$mobile", relationshipId, "GUARANTOR_CONSENT", true)
+                        Toast.makeText(this, "Demo guarantor consent recorded.", Toast.LENGTH_SHORT).show()
+                    } else entry.error = "Incorrect OTP"
+                } }
+                dlg.show()
+            }
+        }, 6)
         add(ArthSaathiV62Design.button(this, "SAVE GUARANTOR DETAILS", ArthSaathiV62Design.BLUE) {
             if (gName.text.isNotBlank() && !gMobile.text.toString().matches(Regex("[6-9][0-9]{9}"))) Toast.makeText(this, "Enter a valid guarantor mobile.", Toast.LENGTH_LONG).show()
+            else if (gName.text.isNotBlank() && !gConsent.isChecked) Toast.makeText(this, "Separate guarantor OTP consent is required.", Toast.LENGTH_LONG).show()
             else { draft.edit().putString("guarantorName", gName.text.toString().trim()).putString("guarantorMobile", gMobile.text.toString().trim()).putBoolean("guarantorConsent", gConsent.isChecked || gName.text.isBlank()).apply(); Toast.makeText(this, "Guarantor details saved.", Toast.LENGTH_SHORT).show() }
         }, 6)
         add(ArthSaathiV62Design.text(this, "Attach the invoice/supporting evidence before final consent. Trade-credit invoices can be OCR-read locally and remain reviewable.", 10f, ArthSaathiV62Design.MUTED), 8)
