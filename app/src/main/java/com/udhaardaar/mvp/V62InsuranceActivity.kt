@@ -13,7 +13,11 @@ class V62InsuranceActivity : androidx.appcompat.app.AppCompatActivity() {
     private val Int.dp: Int get() = (this * d).toInt()
     private var doc = JSONObject()
     private var extracted = emptyList<V62DocumentIntelligence.Field>()
-    private val fields = listOf("Policy number", "Insurer", "Policy type", "Policyholder", "Insured person", "Premium / frequency", "Sum assured", "Start date", "End / maturity date", "Next premium due", "Nominee", "Status", "Exclusions / waiting period", "Riders / benefits", "Claim contact", "Loan / surrender value")
+    private var insurer: JSONObject? = null
+    private var policyholder: JSONObject? = null
+    private var insured: JSONObject? = null
+    private var nominee: JSONObject? = null
+    private val fields = listOf("Policy number", "Policy type", "Premium / frequency", "Sum assured", "Start date", "End / maturity date", "Next premium due", "Status", "Exclusions / waiting period", "Riders / benefits", "Claim contact", "Loan / surrender value")
 
     override fun onCreate(b: Bundle?) { super.onCreate(b); window.setSoftInputMode(16); render() }
     private fun render() {
@@ -38,15 +42,62 @@ class V62InsuranceActivity : androidx.appcompat.app.AppCompatActivity() {
         }
     }
 
+    private fun chooseParty(title: String, onSelected: (JSONObject) -> Unit) {
+        val query = ArthSaathiV62Design.input(this, "Search registered name / mobile / PAN / GSTIN")
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(query); addView(list) }
+        val dlg = android.app.AlertDialog.Builder(this).setTitle(title).setView(wrap).setNegativeButton("CANCEL", null).create()
+        fun refresh() {
+            list.removeAllViews()
+            val rows = V62Integration.findCounterparties(this, query.text.toString()).take(15)
+            if (rows.isEmpty()) list.addView(ArthSaathiV62Design.text(this, "No matching registered profile. Create one for this policy.", 11f, ArthSaathiV62Design.MUTED))
+            rows.forEach { p -> list.addView(ArthSaathiV62Design.button(this, "${p.optString("name")} • ${p.optString("mobile")}", ArthSaathiV62Design.NAVY) { dlg.dismiss(); onSelected(p) }) }
+            list.addView(ArthSaathiV62Design.button(this, "CREATE REGISTERED PROFILE", ArthSaathiV62Design.TEAL) {
+                val name = ArthSaathiV62Design.input(this, "Name / insurer / business name *")
+                val mobile = ArthSaathiV62Design.input(this, "Indian mobile number *")
+                val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; addView(name); addView(mobile) }
+                android.app.AlertDialog.Builder(this).setTitle("Create policy party profile").setView(box).setNegativeButton("CANCEL", null).setPositiveButton("CREATE") { _, _ ->
+                    val cp = V62Integration.createCounterparty(this, name.text.toString(), mobile.text.toString(), transactionContext = "INSURANCE_POLICY")
+                    if (cp == null) Toast.makeText(this, "Enter a name and valid 10-digit Indian mobile.", Toast.LENGTH_LONG).show()
+                    else { dlg.dismiss(); onSelected(cp) }
+                }.show()
+            })
+        }
+        query.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { refresh() }
+            override fun afterTextChanged(e: android.text.Editable?) {}
+        })
+        dlg.show(); refresh()
+    }
+
     private fun showForm() {
         root.removeAllViews()
         ArthSaathiV62Design.add(root, ArthSaathiV62Design.title(this, "Verify Insurance Policy", "AI proposal → your confirmation"), 2)
         if (doc.length() > 0) ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, "Original document retained • every extracted field must be reviewed", 10f, ArthSaathiV62Design.GREEN, true), 8)
+        fun partyButton(title: String, selected: JSONObject?, action: () -> Unit) {
+            ArthSaathiV62Design.add(root, ArthSaathiV62Design.button(this, title, ArthSaathiV62Design.TEAL, action), 4)
+            ArthSaathiV62Design.add(root, ArthSaathiV62Design.text(this, selected?.let { "${it.optString("name")} • ${it.optString("mobile")}" } ?: "No registered profile selected", 10f, ArthSaathiV62Design.NAVY), 3)
+        }
+        partyButton("SELECT REGISTERED INSURER", insurer) { chooseParty("Select insurer") { insurer = it; showForm() } }
+        partyButton("SELECT REGISTERED POLICYHOLDER", policyholder) { chooseParty("Select policyholder") { policyholder = it; showForm() } }
+        partyButton("SELECT REGISTERED INSURED PERSON", insured) { chooseParty("Select insured person") { insured = it; showForm() } }
+        partyButton("SELECT REGISTERED NOMINEE", nominee) { chooseParty("Select nominee") { nominee = it; showForm() } }
         val map = linkedMapOf<String, EditText>()
         fields.forEach { k -> val e = ArthSaathiV62Design.input(this, k); extracted.firstOrNull { it.name == k }?.let { e.setText(it.value) }; map[k] = e; ArthSaathiV62Design.add(root, e, 4) }
         ArthSaathiV62Design.add(root, ArthSaathiV62Design.button(this, "SAVE VERIFIED POLICY", ArthSaathiV62Design.GREEN) {
+            if (insurer == null || policyholder == null || insured == null || nominee == null) {
+                Toast.makeText(this, "Select registered insurer, policyholder, insured person and nominee profiles.", Toast.LENGTH_LONG).show(); return@button
+            }
             val id = if (doc.optString("id").isBlank()) V62Store.id("POL") else doc.optString("id")
-            val o = JSONObject().apply { put("id", id); put("ownerUserId", V62Integration.currentUserId(this@V62InsuranceActivity)); put("documentId", doc.optString("id")); put("status", "VERIFIED"); put("verifiedAt", System.currentTimeMillis()) }
+            val insurerProfile = insurer!!; val holderProfile = policyholder!!; val insuredProfile = insured!!; val nomineeProfile = nominee!!
+            val o = JSONObject().apply {
+                put("id", id); put("ownerUserId", V62Integration.currentUserId(this@V62InsuranceActivity)); put("documentId", doc.optString("id")); put("status", "VERIFIED"); put("verifiedAt", System.currentTimeMillis())
+                put("insurerCounterpartyId", insurerProfile.optString("id")); put("insurerName", insurerProfile.optString("name"))
+                put("policyholderCounterpartyId", holderProfile.optString("id")); put("policyholderName", holderProfile.optString("name"))
+                put("insuredCounterpartyId", insuredProfile.optString("id")); put("insuredPersonName", insuredProfile.optString("name"))
+                put("nomineeCounterpartyId", nomineeProfile.optString("id")); put("nomineeName", nomineeProfile.optString("name"))
+            }
             map.forEach { (k, e) -> o.put(k, e.text.toString().trim()) }
             s.replace(V62Store.INSURANCE, o)
             V62EventBus.publish(V62Event(V62Events.POLICY_CHANGED, id))
